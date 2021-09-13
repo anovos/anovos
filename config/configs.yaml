@@ -1,0 +1,199 @@
+#Spark Session/Context Configuration
+spark_session:
+  app_name: MW_ML_pipeline
+  jar_packages: []
+  py_files: []
+  spark_configs:
+    spark.sql.session.timeZone: GMT
+
+
+input_dataset:
+  read_file:
+    file_path: "../data/test_dataset/part-00000-3eb0f7bb-05c2-46ec-8913-23ba231d2734-c000.snappy.parquet"
+    file_type: parquet
+    #file_configs:
+    #  header: True
+    #  delimiter: ","
+    #  inferSchema: True
+  delete_cols: ['logfnl']
+  select_cols: null
+  rename_cols:
+    list_of_cols: ['marital-status','education-num']
+    list_of_newcols: ['marital_status','education_num']
+  recast_cols:
+    list_of_cols: ['age','education_num']
+    list_of_dtypes: ['float','float']
+
+output_dataset:
+  file_path: "./output"
+  file_type: csv
+  file_configs:
+    header: True
+    delimiter: ","
+    inferSchema: True
+    mode: overwrite
+    compression: gzip
+
+intermediate_dataset:
+  file_path: "./output"
+  file_type: parquet
+  file_configs:
+    mode: overwrite
+  #  header: True
+  #  delimiter: ","
+  #  inferSchema: True
+
+concatenate_datasets:
+  method: name
+  dataset1:
+    read_file:
+      file_path: "../data/test_dataset/part-00000-3eb0f7bb-05c2-46ec-8913-23ba231d2734-c000.snappy.parquet"
+      file_type: parquet
+      #file_configs:
+      #  header: True
+      #  delimiter: ","
+      #  inferSchema: True
+    delete_cols: ['logfnl']
+    select_cols: null
+    rename_cols:
+      list_of_cols: ['marital-status','education-num']
+      list_of_newcols: ['marital_status','education_num']
+    recast_cols:
+      list_of_cols: ['age','education_num']
+      list_of_dtypes: ['float','float']
+    
+  dataset2:
+    read_file:
+      file_path: "../data/test_dataset/part-00000-3eb0f7bb-05c2-46ec-8913-23ba231d2734-c000.snappy.parquet"
+      file_type: parquet
+      #file_configs:
+      #  header: True
+      #  delimiter: ","
+      #  inferSchema: True
+    delete_cols: ['logfnl']
+    select_cols: null
+    rename_cols:
+      list_of_cols: ['marital-status','education-num']
+      list_of_newcols: ['marital_status','education_num']
+    recast_cols:
+      list_of_cols: ['age','education_num']
+      list_of_dtypes: ['float','float']
+    
+join_datasets:
+  join_cols: ifa
+  join_type: inner
+  dataset1:
+    read_file:
+      file_path: "../data/test_dataset/join_file/"
+      file_type: csv
+      file_configs:
+        header: True
+        delimiter: ","
+        inferSchema: True
+    delete_cols: null
+    select_cols: null
+    rename_cols:
+      list_of_cols: age
+      list_of_newcols: age2
+    recast_cols: null
+
+stats_generator:
+  list_of_cols: all
+  drop_cols: ['ifa']
+
+quality_checker:
+  duplicate_detection:
+    list_of_cols: all
+    drop_cols: ['ifa']
+    treatment: True
+  
+  rows_wMissingFeats:
+    list_of_cols: all
+    drop_cols: []
+    treatment: True
+    treatment_threshold: 0.25
+  
+  invalidEntries_detection:
+    list_of_cols: all
+    drop_cols: ['ifa']
+    treatment: True
+    output_mode: replace
+  
+  IDness_detection:
+    list_of_cols: all
+    drop_cols: []
+    treatment: True
+    treatment_threshold: 0.9
+  
+  baisedness_detection:
+    list_of_cols: all
+    drop_cols: []
+    treatment: True
+    treatment_threshold: 0.9
+
+
+  outlier_detection:
+    list_of_cols: all
+    drop_cols: ['ifa']
+    detection_side: upper
+    detection_configs:
+      pctile_lower: 0.05
+      pctile_upper: 0.95
+      stdev_lower: 3.0
+      stdev_upper: 3.0
+      IQR_lower: 1.5
+      IQR_upper: 1.5
+      min_validation: 2
+    treatment: True
+    treatment_type: value_replacement
+    pre_existing_model: False
+    model_path: NA
+    output_mode: replace
+
+  null_detection:
+    list_of_cols: all
+    drop_cols: ['ifa']
+    treatment: True
+    treatment_method: MMM
+    treatment_configs:
+      method_type: median
+      pre_existing_model: False
+      model_path: NA
+      output_mode: replace
+
+
+association_evaluator:
+
+  correlation_matrix:
+    list_of_cols: all
+    drop_cols: ['ifa']
+  
+  IV_calculation:
+    list_of_cols: all
+    drop_cols: ifa
+    label_col: income
+    event_label: '>50K'
+    encoding_configs:
+      bin_method: equal_frequency
+      bin_size: 10
+      monotonicity_check: 0
+
+  IG_calculation:
+    list_of_cols: all
+    drop_cols: ifa
+    label_col: income
+    event_label: '>50K'
+    encoding_configs:
+      bin_method: equal_frequency
+      bin_size: 10
+      monotonicity_check: 0
+
+
+  #SHAP_calculation:
+  #  list_of_cols: all
+  #  drop_cols: ifa
+  #  label_col: income
+  
+  variable_clustering:
+    list_of_cols: all
+    drop_cols: ifa|income

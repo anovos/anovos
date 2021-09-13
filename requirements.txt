@@ -1,0 +1,18 @@
+pandas==1.2.5
+scipy
+#--upgrade --no-deps --force-reinstall scikit-learn
+scikit-learn
+joblib
+boto3
+fuzzywuzzy
+#pyarrow==0.14.1 #latest version throw module error for Cython
+pyarrow==3.0.0 
+sparkpickle
+s3path
+statsmodels
+pybind11
+popmon
+seaborn
+varclushi
+pytest
+datapane
