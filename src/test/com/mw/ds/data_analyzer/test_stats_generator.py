@@ -49,12 +49,25 @@ def test_uniqueCount_computation(spark_session):
     assert result_df1.where(F.col("feature") == "education").toPandas().to_dict('list')['unique_values'][0] == 2 
     assert result_df1.where(F.col("feature") == "age").toPandas().to_dict('list')['unique_values'][0] == 4   
 
-
-
-
-
+def test_mode_computation(spark_session):
+    test_df2 = spark_session.createDataFrame(
+        [
+            ('27520a', 51, 'HS-grad'),
+            ('10a', 42, 'Postgrad'),
+            ('11a', 55, None),
+            ('1100b', 23, 'HS-grad')
+        ],
+        ['ifa', 'age', 'education']
+    )
+    assert test_df2.where(F.col("ifa") == "27520a").count() == 1
+    assert test_df2.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['age'][0] == 51   
+    assert test_df2.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['education'][0] == 'HS-grad'
     
-# def mode_computation(idf, list_of_cols='all', drop_cols=[], print_impact=False):
+    result_df2 = mode_computation(test_df2)
+    assert result_df2.count() == 3
+    assert result_df2.where(F.col("feature") == "education").toPandas().to_dict('list')['mode'][0] == 'HS-grad' 
+    assert result_df2.where(F.col("feature") == "education").toPandas().to_dict('list')['mode_pct'][0] == 0.6667  
+    
 # def nonzeroCount_computation(idf, list_of_cols='all', drop_cols=[], print_impact=False):
 # def measures_of_centralTendency(idf, list_of_cols='all', drop_cols=[], print_impact=False):
 # def measures_of_cardinality(idf, list_of_cols='all', drop_cols=[], print_impact=False):
