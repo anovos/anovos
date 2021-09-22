@@ -66,14 +66,55 @@ def test_mode_computation(spark_session):
     result_df2 = mode_computation(test_df2)
     assert result_df2.count() == 3
     assert result_df2.where(F.col("feature") == "education").toPandas().to_dict('list')['mode'][0] == 'HS-grad' 
-    assert result_df2.where(F.col("feature") == "education").toPandas().to_dict('list')['mode_pct'][0] == 0.6667  
+    assert result_df2.where(F.col("feature") == "education").toPandas().to_dict('list')['mode_pct'][0] == 0.6667
     
-# def nonzeroCount_computation(idf, list_of_cols='all', drop_cols=[], print_impact=False):
-# def measures_of_centralTendency(idf, list_of_cols='all', drop_cols=[], print_impact=False):
+def test_nonzeroCount_computation(spark_session):
+    test_df3 = spark_session.createDataFrame(
+        [
+            ('27520a', 51, 9000, 'HS-grad'),
+            ('10a', 42, 7000,'Postgrad'),
+            ('11a', 0, None, None),
+            ('1100b', 23, 6000, 'HS-grad')
+        ],
+        ['ifa', 'age', 'income','education']
+    )
+    assert test_df3.where(F.col("ifa") == "27520a").count() == 1
+    assert test_df3.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['age'][0] == 51 
+    assert test_df3.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['income'][0] == 9000   
+    assert test_df3.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['education'][0] == 'HS-grad'
+    
+    result_df3 = nonzeroCount_computation(test_df3)
+    assert result_df3.count() == 4
+    assert result_df3.where(F.col("feature") == "age").toPandas().to_dict('list')['nonzero_count'][0] == 3 
+    assert result_df3.where(F.col("feature") == "age").toPandas().to_dict('list')['nonzero_pct'][0] == 0.75
+    assert result_df3.where(F.col("feature") == "income").toPandas().to_dict('list')['nonzero_count'][0] == 3 
+    assert result_df3.where(F.col("feature") == "income").toPandas().to_dict('list')['nonzero_pct'][0] == 0.75
+    
+def test_measures_of_centralTendency(spark_session):
+    test_df4 = spark_session.createDataFrame(
+        [
+            ('27520a', 51, 'HS-grad'),
+            ('10a', 42, 'Postgrad'),
+            ('11a', 55, None),
+            ('1100b', 23, 'HS-grad')
+        ],
+        ['ifa', 'age', 'education']
+    )
+    assert test_df4.where(F.col("ifa") == "27520a").count() == 1
+    assert test_df4.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['age'][0] == 51   
+    assert test_df4.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['education'][0] == 'HS-grad'
+
+    result_df4 = measures_of_centralTendency(test_df4)
+    assert result_df4.count() == 3
+    assert result_df4.where(F.col("feature") == "education").toPandas().to_dict('list')['mode'][0] == 'HS-grad' 
+    assert result_df4.where(F.col("feature") == "age").toPandas().to_dict('list')['mean'][0] == 42.75 
+    assert result_df4.where(F.col("feature") == "age").toPandas().to_dict('list')['median'][0] == 42.0 
+    assert result_df4.where(F.col("feature") == "education").toPandas().to_dict('list')['mode_pct'][0] == 0.6667
+
+    
 # def measures_of_cardinality(idf, list_of_cols='all', drop_cols=[], print_impact=False):
 # def measures_of_dispersion(idf, list_of_cols='all', drop_cols=[], print_impact=False):
 # def measures_of_percentiles(idf, list_of_cols='all', drop_cols=[], print_impact=False):
 # def measures_of_counts (idf, list_of_cols='all', drop_cols=[], print_impact=False):
 # def measures_of_shape(idf, list_of_cols='all', drop_cols=[], print_impact=False):
 # def global_summary(idf, list_of_cols='all', drop_cols=[], print_impact=True):
-# def descriptive_stats(idf, list_of_cols='all', drop_cols=[], print_impact=True):
