@@ -192,6 +192,32 @@ drift_detector:
       list_of_cols: ['age','education_num']
       list_of_dtypes: ['float','float']
 
+report_gen_inter:
+  charts_to_objects:
+    id_col: "ifa"
+    label: "income"
+    event_class: ">50K"
+    chart_output_path: "./output/chart_objects/"
+    max_cat: 10
+  output_pandas_df:
+    input_path: "./stats"
+    pandas_df_output_path: "./output/pandas_df/"
+    list_tabs: 'stats_generator,quality_checker,association_evaluator'
+    list_tab1: 'measures_of_shape,measures_of_centralTendency,measures_of_percentiles,measures_of_dispersion,measures_of_cardinality,measures_of_counts'
+    list_tab2: 'duplicate_detection,rows_wMissingFeats,IDness_detection,null_detection,biasedness_detection,invalidEntries_detection,outlier_detection'
+    list_tab3: 'correlation_matrix,IV_calculation,IG_calculation,variable_clustering'
+  data_drift: 
+    read_file:
+      file_path: "./stats/drift_detector/drift_statistics/"
+      file_type: csv
+      file_configs:
+        header: True
+        delimiter: ","
+        inferSchema: True
+    pandas_df_output_path: "./output/pandas_df/"
+
+report_gen_final:
+  base_path: "./output/"
 
 write_intermediate:
   file_path: "intermediate_data"

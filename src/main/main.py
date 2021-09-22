@@ -1,6 +1,7 @@
 import yaml
 import subprocess
 import copy
+import os
 import sys
 from com.mw.ds.shared.spark import *
 from com.mw.ds.shared.utils import *
@@ -9,6 +10,7 @@ from com.mw.ds.data_analyzer import stats_generator
 from com.mw.ds.data_analyzer import quality_checker
 from com.mw.ds.data_analyzer import association_evaluator
 from com.mw.ds.data_drift import drift_detector
+from com.mw.ds.data_report import report_gen_inter
 import timeit
 
 def ETL(args):
@@ -124,6 +126,19 @@ def main(all_configs):
             save(stats,write_stats,folder_name="drift_detector/drift_statistics",reread=True).show(100)
             end = timeit.default_timer()
             print(key, end-start)
+
+        if (key == 'report_gen_inter') & (args != None):
+            for subkey, value in args.items():
+                if value != None:
+                    start = timeit.default_timer()
+                    print("\n" + subkey + ": \n")
+                    f = getattr(report_gen_inter, subkey)
+                    if subkey == 'data_drift':
+                        f(**value)
+                    else:
+                        f(df,**value)
+                    end = timeit.default_timer()
+                    print(key, end-start)
 
     save(df,write_main,folder_name="final_dataset",reread=False)  
     

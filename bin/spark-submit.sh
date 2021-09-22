@@ -24,3 +24,6 @@ spark-submit \
 main.py \
 configs.yaml \
 local
+
+echo "Generating data report.... "
+python3 com/mw/ds/data_report/report_gen_final.py
