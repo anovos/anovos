@@ -32,11 +32,11 @@ test:
 	pytest src/test
 
 build: clean
-	rm -rf ./dist && mkdir ./dist
+	rm -rf ./dist && mkdir ./dist && mkdir ./dist/data
 	cp ./src/main/main.py ./dist
-	cp ./src/main/spark.py ./dist
 	cp ./config/configs.yaml ./dist
 	cp -rf ./src/main/com ./dist/com
 	cd ./dist && zip -r com.zip spark.py ./com
+	cp -rf ./data/income_dataset ./dist/data/income_dataset
 	pip3 install -r requirements.txt
 	cp ./bin/spark-submit.sh ./dist

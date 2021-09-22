@@ -2,7 +2,7 @@ import pyspark
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
 import warnings
-from spark import *
+from com.mw.ds.shared.spark import *
 from com.mw.ds.shared.utils import *
 from com.mw.ds.data_analyzer.stats_generator import *
 
@@ -36,7 +36,7 @@ def feature_binning (idf, list_of_cols='all', drop_cols=[], method_type="equal_r
     if any(x not in num_cols for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
     if len(list_of_cols) == 0:
-        warnings.warn("No Transformation Performed")
+        warnings.warn("No Transformation Performed - Binning")
         return idf
     
     if method_type not in ("equal_frequency", "equal_range"):
@@ -65,12 +65,13 @@ def feature_binning (idf, list_of_cols='all', drop_cols=[], method_type="equal_r
         else:
             bin_cutoffs = []
             for i in list_of_cols:
-                max_val = idf.select(F.col(i)).groupBy().max().rdd.flatMap(lambda x: x).collect()[0]
-                min_val = idf.select(F.col(i)).groupBy().min().rdd.flatMap(lambda x: x).collect()[0]
-                bin_width = (max_val - min_val)/bin_size
+                max_val = (idf.select(F.col(i)).groupBy().max().rdd.flatMap(lambda x: x).collect() + [None])[0]
+                min_val = (idf.select(F.col(i)).groupBy().min().rdd.flatMap(lambda x: x).collect() + [None])[0]
                 bin_cutoff = []
-                for j in range(1,bin_size):
-                    bin_cutoff.append(min_val+j*bin_width) 
+                if max_val:
+                    bin_width = (max_val - min_val)/bin_size
+                    for j in range(1,bin_size):
+                        bin_cutoff.append(min_val+j*bin_width) 
                 bin_cutoffs.append(bin_cutoff)
                 
         if model_path != "NA":
@@ -80,13 +81,13 @@ def feature_binning (idf, list_of_cols='all', drop_cols=[], method_type="equal_r
     def bucket_label (value, index):
         if value is None:
             return None
-        for j in range (0,len(bin_cutoffs[0])):
+        for j in range (0,len(bin_cutoffs[index])):
             if value <= bin_cutoffs[index][j]:
-                return round((j + 1.0)*0.1,2)
+                return j + 1
             else:
                 next
-        return 1.0
-    f_bucket_label = F.udf(bucket_label, T.FloatType())
+        return len(bin_cutoffs[0]) + 1
+    f_bucket_label = F.udf(bucket_label, T.IntegerType())
 
     odf = idf
     for idx, i in enumerate(list_of_cols):
@@ -210,8 +211,7 @@ def monotonic_encoding(idf,list_of_cols='all', drop_cols=[], label_col='label',
     :return: Binned Dataframe
     """
     if list_of_cols == 'all':
-        num_cols, cat_cols, other_cols = featureType_segregation(idf)
-        list_of_cols = num_cols
+        list_of_cols = featureType_segregation(idf)[0]
     if isinstance(list_of_cols, str):
         list_of_cols = [x.strip() for x in list_of_cols.split('|')]
     
@@ -221,20 +221,22 @@ def monotonic_encoding(idf,list_of_cols='all', drop_cols=[], label_col='label',
         n = 20 #max_bin
         r = 0
         while n > 2:                
-            tmp = feature_binning (idf,[col],bin_method, n,output_mode='append')\
+            tmp = feature_binning (idf,[col],drop_cols,bin_method, n,output_mode='append')\
                     .select(label_col,col,col+'_binned')\
-                    .withColumn(label_col, F.when(F.col(label_col) == event_label,1).otherwise(0))\
+                    .withColumn(label_col+'_encoded', F.when(F.col(label_col) == event_label,1).otherwise(0))\
+                    .dropColumn(label_col)\
+                    .withColumnRenamed(label_col+'_encoded',label_col)\
                     .groupBy(col+'_binned').agg(F.avg(col).alias('mean_val'), F.avg(label_col).alias('mean_label')).dropna()
             #r = tmp.stat.corr('mean_age','mean_label')
             r,p = stats.spearmanr(tmp.toPandas()[['mean_val']], tmp.toPandas()[['mean_label']])
             if r == 1.0:
-                idf_encoded = feature_binning (idf_encoded,[col],bin_method, n)
+                idf_encoded = feature_binning (idf_encoded,[col],drop_cols,bin_method, n)
                 print(col,n)
                 break
             n = n-1
             r = 0
         if r < 1.0:
-            idf_encoded = feature_binning (idf_encoded,[col],bin_method, bin_size)
+            idf_encoded = feature_binning (idf_encoded,[col],drop_cols,bin_method, bin_size)
             
     return idf_encoded
 
@@ -267,7 +269,7 @@ def cat_to_num_unsupervised (idf, list_of_cols, method_type, index_order='freque
     if output_mode not in ('replace','append'):
         raise TypeError('Invalid input for output_mode')
     if len(list_of_cols) == 0:
-        warnings.warn("No Action Performed")
+        warnings.warn("No Transformation Performed - Encoding")
         return idf
         
     if pre_existing_model == True:
