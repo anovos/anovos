@@ -1,105 +1,77 @@
-#Spark Session/Context Configuration
-spark_session:
-  app_name: MW_ML_pipeline
-  jar_packages: []
-  py_files: []
-  spark_configs:
-    spark.sql.session.timeZone: GMT
-
-
+#input_dataset: ETL configurations of main dataset.
+#input_dataset can be renamed but need to change the name in main script as well
+#keys of input_dataset are function names (cannot be renamed) & values are function arguments (value can be null to skip except for read_dataset)
+#delete_column/select_column: arguments can be in front or under as list_of_cols
+#list_of_cols: list or string with multiple columns separated by | (refer doc string for further details)
 input_dataset:
-  read_file:
-    file_path: "../data/test_dataset/part-00000-3eb0f7bb-05c2-46ec-8913-23ba231d2734-c000.snappy.parquet"
-    file_type: parquet
-    #file_configs:
-    #  header: True
-    #  delimiter: ","
-    #  inferSchema: True
-  delete_cols: ['logfnl']
-  select_cols: null
-  rename_cols:
+  read_dataset:
+    file_path: "data/income_dataset/csv"
+    file_type: csv
+    file_configs:
+      header: True
+      delimiter: ","
+      inferSchema: True
+  delete_column: ['logfnl']
+  select_column: null
+  rename_column:
     list_of_cols: ['marital-status','education-num']
     list_of_newcols: ['marital_status','education_num']
-  recast_cols:
+  recast_column:
     list_of_cols: ['age','education_num']
     list_of_dtypes: ['float','float']
 
-output_dataset:
-  file_path: "./output"
-  file_type: csv
-  file_configs:
-    header: True
-    delimiter: ","
-    inferSchema: True
-    mode: overwrite
-    compression: gzip
-
-intermediate_dataset:
-  file_path: "./output"
-  file_type: parquet
-  file_configs:
-    mode: overwrite
-  #  header: True
-  #  delimiter: ","
-  #  inferSchema: True
-
-concatenate_datasets:
+concatenate_dataset:
   method: name
   dataset1:
-    read_file:
-      file_path: "../data/test_dataset/part-00000-3eb0f7bb-05c2-46ec-8913-23ba231d2734-c000.snappy.parquet"
+    read_dataset:
+      file_path: "data/income_dataset/parquet"
       file_type: parquet
-      #file_configs:
-      #  header: True
-      #  delimiter: ","
-      #  inferSchema: True
-    delete_cols: ['logfnl']
-    select_cols: null
-    rename_cols:
+    delete_column: ['logfnl']
+    select_column: null
+    rename_column:
       list_of_cols: ['marital-status','education-num']
       list_of_newcols: ['marital_status','education_num']
-    recast_cols:
+    recast_column:
       list_of_cols: ['age','education_num']
       list_of_dtypes: ['float','float']
     
   dataset2:
-    read_file:
-      file_path: "../data/test_dataset/part-00000-3eb0f7bb-05c2-46ec-8913-23ba231d2734-c000.snappy.parquet"
+    read_dataset:
+      file_path: "data/income_dataset/parquet"
       file_type: parquet
-      #file_configs:
-      #  header: True
-      #  delimiter: ","
-      #  inferSchema: True
-    delete_cols: ['logfnl']
-    select_cols: null
-    rename_cols:
+    delete_column: ['logfnl']
+    select_column: null
+    rename_column:
       list_of_cols: ['marital-status','education-num']
       list_of_newcols: ['marital_status','education_num']
-    recast_cols:
+    recast_column:
       list_of_cols: ['age','education_num']
       list_of_dtypes: ['float','float']
     
-join_datasets:
+join_dataset:
   join_cols: ifa
   join_type: inner
   dataset1:
-    read_file:
-      file_path: "../data/test_dataset/join_file/"
+    read_dataset:
+      file_path: "data/income_dataset/join"
       file_type: csv
       file_configs:
         header: True
         delimiter: ","
         inferSchema: True
-    delete_cols: null
-    select_cols: null
-    rename_cols:
+    delete_column: null
+    select_column: null
+    rename_column:
       list_of_cols: age
       list_of_newcols: age2
-    recast_cols: null
+    recast_column: null
 
 stats_generator:
-  list_of_cols: all
-  drop_cols: ['ifa']
+  metric: ['global_summary','measures_of_counts','measures_of_centralTendency','measures_of_cardinality'
+            ,'measures_of_percentiles','measures_of_dispersion','measures_of_shape']
+  metric_args:
+    list_of_cols: all
+    drop_cols: ['ifa']
 
 quality_checker:
   duplicate_detection:
@@ -122,15 +94,14 @@ quality_checker:
   IDness_detection:
     list_of_cols: all
     drop_cols: []
-    treatment: True
+    treatment: False
     treatment_threshold: 0.9
   
-  baisedness_detection:
+  biasedness_detection:
     list_of_cols: all
     drop_cols: []
-    treatment: True
+    treatment: False
     treatment_threshold: 0.9
-
 
   outlier_detection:
     list_of_cols: all
@@ -187,13 +158,66 @@ association_evaluator:
       bin_method: equal_frequency
       bin_size: 10
       monotonicity_check: 0
-
-
-  #SHAP_calculation:
-  #  list_of_cols: all
-  #  drop_cols: ifa
-  #  label_col: income
   
   variable_clustering:
     list_of_cols: all
     drop_cols: ifa|income
+
+
+drift_detector:
+  drift_statistics:
+    list_of_cols: all
+    drop_cols: []
+    method_type: all
+    threshold: 0.1
+    bin_method: equal_range
+    bin_size: 10
+    pre_existing_source: False
+    source_path: NA
+
+  source_dataset:
+    read_dataset:
+      file_path: "data/income_dataset/source"
+      file_type: csv
+      file_configs:
+        header: True
+        delimiter: ","
+        inferSchema: True
+    delete_column: ['logfnl']
+    select_column: null
+    rename_column:
+      list_of_cols: ['marital-status','education-num']
+      list_of_newcols: ['marital_status','education_num']
+    recast_column:
+      list_of_cols: ['age','education_num']
+      list_of_dtypes: ['float','float']
+
+
+write_intermediate:
+  file_path: "intermediate_data"
+  file_type: csv
+  file_configs:
+    mode: overwrite
+    header: True
+    delimiter: ","
+    inferSchema: True
+
+write_main:
+  file_path: "output"
+  file_type: parquet
+  file_configs:
+    mode: overwrite
+    
+write_stats:
+  file_path: "stats"
+  file_type: parquet
+  file_configs:
+    mode: overwrite
+
+
+
+
+
+  
+
+    

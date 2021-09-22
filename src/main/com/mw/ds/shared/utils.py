@@ -1,7 +1,7 @@
 import pyspark
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
-from spark import *
+from com.mw.ds.shared.spark import *
 
 def flatten_dataframe(idf, fixed_cols):
     """
