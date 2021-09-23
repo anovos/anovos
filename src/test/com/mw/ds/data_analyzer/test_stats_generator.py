@@ -84,7 +84,7 @@ def test_nonzeroCount_computation(spark_session):
     assert test_df3.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['education'][0] == 'HS-grad'
     
     result_df3 = nonzeroCount_computation(test_df3)
-    assert result_df3.count() == 4
+    assert result_df3.count() == 2
     assert result_df3.where(F.col("feature") == "age").toPandas().to_dict('list')['nonzero_count'][0] == 3 
     assert result_df3.where(F.col("feature") == "age").toPandas().to_dict('list')['nonzero_pct'][0] == 0.75
     assert result_df3.where(F.col("feature") == "income").toPandas().to_dict('list')['nonzero_count'][0] == 3 
@@ -112,9 +112,112 @@ def test_measures_of_centralTendency(spark_session):
     assert result_df4.where(F.col("feature") == "education").toPandas().to_dict('list')['mode_pct'][0] == 0.6667
 
     
-# def measures_of_cardinality(idf, list_of_cols='all', drop_cols=[], print_impact=False):
-# def measures_of_dispersion(idf, list_of_cols='all', drop_cols=[], print_impact=False):
+def test_measures_of_cardinality(spark_session):
+    test_df5 = spark_session.createDataFrame(
+        [
+            ('27520a', 51, 'HS-grad'),
+            ('10a', 42, 'Postgrad'),
+            ('11a', 55, None),
+            ('1100b', 23, 'HS-grad')
+        ],
+        ['ifa', 'age', 'education']
+    )
+    assert test_df5.where(F.col("ifa") == "27520a").count() == 1
+    assert test_df5.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['age'][0] == 51   
+    assert test_df5.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['education'][0] == 'HS-grad'
+
+    result_df5 = measures_of_cardinality(test_df5)
+    assert result_df5.count() == 3
+    assert result_df5.where(F.col("feature") == "education").toPandas().to_dict('list')['unique_values'][0] == 2
+    assert result_df5.where(F.col("feature") == "age").toPandas().to_dict('list')['unique_values'][0] == 4
+    assert result_df5.where(F.col("feature") == "age").toPandas().to_dict('list')['IDness'][0] == 1.0 
+    assert result_df5.where(F.col("feature") == "education").toPandas().to_dict('list')['IDness'][0] == 0.6667
+    
+def test_measures_of_dispersion(spark_session):
+    test_df6 = spark_session.createDataFrame(
+        [
+            ('27520a', 51, 'HS-grad'),
+            ('10a', 42, 'Postgrad'),
+            ('11a', 55, None),
+            ('1100b', 23, 'HS-grad')
+        ],
+        ['ifa', 'age', 'education']
+    )
+    assert test_df6.where(F.col("ifa") == "27520a").count() == 1
+    assert test_df6.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['age'][0] == 51   
+    assert test_df6.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['education'][0] == 'HS-grad'
+
+    result_df6 = measures_of_dispersion(test_df6)
+    assert result_df6.count() == 1
+    assert result_df6.where(F.col("feature") == "age").toPandas().to_dict('list')['stddev'][0] == 14.2449
+    assert result_df6.where(F.col("feature") == "age").toPandas().to_dict('list')['variance'][0] == 202.9172
+    assert result_df6.where(F.col("feature") == "age").toPandas().to_dict('list')['cov'][0] == 0.3332 
+    assert result_df6.where(F.col("feature") == "age").toPandas().to_dict('list')['IQR'][0] == 28.0
+    assert result_df6.where(F.col("feature") == "age").toPandas().to_dict('list')['range'][0] == 32.0
+    
 # def measures_of_percentiles(idf, list_of_cols='all', drop_cols=[], print_impact=False):
-# def measures_of_counts (idf, list_of_cols='all', drop_cols=[], print_impact=False):
-# def measures_of_shape(idf, list_of_cols='all', drop_cols=[], print_impact=False):
-# def global_summary(idf, list_of_cols='all', drop_cols=[], print_impact=True):
+def test_measures_of_counts(spark_session):
+    test_df7 = spark_session.createDataFrame(
+        [
+            ('27520a', 51, 'HS-grad'),
+            ('10a', 42, 'Postgrad'),
+            ('11a', 55, None),
+            ('1100b', 23, 'HS-grad')
+        ],
+        ['ifa', 'age', 'education']
+    )
+    assert test_df7.where(F.col("ifa") == "27520a").count() == 1
+    assert test_df7.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['age'][0] == 51   
+    assert test_df7.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['education'][0] == 'HS-grad'
+
+    result_df7 = measures_of_counts(test_df7)
+    assert result_df7.count() == 3
+    assert result_df7.where(F.col("feature") == "age").toPandas().to_dict('list')['fill_count'][0] == 4
+    assert result_df7.where(F.col("feature") == "age").toPandas().to_dict('list')['fill_pct'][0] == 1.0
+    assert result_df7.where(F.col("feature") == "age").toPandas().to_dict('list')['missing_count'][0] == 0 
+    assert result_df7.where(F.col("feature") == "age").toPandas().to_dict('list')['missing_pct'][0] == 0.0
+    assert result_df7.where(F.col("feature") == "age").toPandas().to_dict('list')['nonzero_count'][0] == 4
+    assert result_df7.where(F.col("feature") == "age").toPandas().to_dict('list')['nonzero_pct'][0] == 1.0
+    
+def test_measures_of_shape(spark_session):
+    test_df8 = spark_session.createDataFrame(
+        [
+            ('27520a', 51, 'HS-grad'),
+            ('10a', 42, 'Postgrad'),
+            ('11a', 55, None),
+            ('1100b', 23, 'HS-grad')
+        ],
+        ['ifa', 'age', 'education']
+    )
+    assert test_df8.where(F.col("ifa") == "27520a").count() == 1
+    assert test_df8.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['age'][0] == 51   
+    assert test_df8.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['education'][0] == 'HS-grad'
+
+    result_df8 = measures_of_shape(test_df8)
+    assert result_df8.count() == 1
+    assert result_df8.where(F.col("feature") == "age").toPandas().to_dict('list')['skewness'][0] == -0.7063
+    assert result_df8.where(F.col("feature") == "age").toPandas().to_dict('list')['kurtosis'][0] == -1.0646
+    
+
+def test_global_summary(spark_session):
+    test_df9 = spark_session.createDataFrame(
+        [
+            ('27520a', 51, 'HS-grad'),
+            ('10a', 42, 'Postgrad'),
+            ('11a', 55, None),
+            ('1100b', 23, 'HS-grad')
+        ],
+        ['ifa', 'age', 'education']
+    )
+    assert test_df9.where(F.col("ifa") == "27520a").count() == 1
+    assert test_df9.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['age'][0] == 51   
+    assert test_df9.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['education'][0] == 'HS-grad'
+
+    result_df9 = global_summary(test_df9)
+    assert result_df9.count() == 6
+    assert result_df9.where(F.col("metric") == "rows_count").toPandas().to_dict('list')['value'][0] == "4"
+    assert result_df9.where(F.col("metric") == "columns_count").toPandas().to_dict('list')['value'][0] == "3"
+    assert result_df9.where(F.col("metric") == "numcols_count").toPandas().to_dict('list')['value'][0] == "1" 
+    assert result_df9.where(F.col("metric") == "numcols_name").toPandas().to_dict('list')['value'][0] == "age"
+    assert result_df9.where(F.col("metric") == "catcols_count").toPandas().to_dict('list')['value'][0] == "2"
+    assert result_df9.where(F.col("metric") == "catcols_name").toPandas().to_dict('list')['value'][0] == "ifa, education"
