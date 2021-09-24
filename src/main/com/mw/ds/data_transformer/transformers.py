@@ -3,10 +3,11 @@ from pyspark.sql import functions as F
 from pyspark.sql import types as T
 import warnings
 from com.mw.ds.shared.spark import *
-from com.mw.ds.shared.utils import *
-from com.mw.ds.data_analyzer.stats_generator import *
+from com.mw.ds.shared.utils import attributeType_segregation, get_dtype
+from com.mw.ds.data_analyzer.stats_generator import missingCount_computation
+from com.mw.ds.data_ingest.data_ingest import recast_column
 
-def feature_binning (idf, list_of_cols='all', drop_cols=[], method_type="equal_range", bin_size=10, 
+def attribute_binning (idf, list_of_cols='all', drop_cols=[], method_type="equal_range", bin_size=10, 
                      pre_existing_model=False, model_path="NA", output_mode="replace", print_impact=False):
     """
     :params idf: Input Dataframe
@@ -23,7 +24,7 @@ def feature_binning (idf, list_of_cols='all', drop_cols=[], method_type="equal_r
     :return: Binned Dataframe
     """
     
-    num_cols = featureType_segregation(idf)[0]
+    num_cols = attributeType_segregation(idf)[0]
     if list_of_cols == 'all':
         list_of_cols = num_cols
     if isinstance(list_of_cols, str):
@@ -48,10 +49,10 @@ def feature_binning (idf, list_of_cols='all', drop_cols=[], method_type="equal_r
     
 
     if pre_existing_model:
-        df_model = sqlContext.read.parquet(model_path + "/feature_binning")
+        df_model = sqlContext.read.parquet(model_path + "/attribute_binning")
         bin_cutoffs = []
         for i in list_of_cols:
-            mapped_value = df_model.where(F.col('feature') == i).select('parameters')\
+            mapped_value = df_model.where(F.col('attribute') == i).select('parameters')\
                                 .rdd.flatMap(lambda x: x).collect()[0]
             bin_cutoffs.append(mapped_value)
     else:
@@ -75,8 +76,8 @@ def feature_binning (idf, list_of_cols='all', drop_cols=[], method_type="equal_r
                 bin_cutoffs.append(bin_cutoff)
                 
         if model_path != "NA":
-            df_model = spark.createDataFrame(zip(list_of_cols, bin_cutoffs), schema=['feature', 'parameters'])
-            df_model.write.parquet(model_path + "/feature_binning", mode='overwrite')
+            df_model = spark.createDataFrame(zip(list_of_cols, bin_cutoffs), schema=['attribute', 'parameters'])
+            df_model.write.parquet(model_path + "/attribute_binning", mode='overwrite')
     
     def bucket_label (value, index):
         if value is None:
@@ -109,7 +110,7 @@ def feature_binning (idf, list_of_cols='all', drop_cols=[], method_type="equal_r
     return odf
 
 """
-def feature_binning (idf, list_of_cols='all', drop_cols=[], method_type="equal_range", bin_size=10, 
+def attribute_binning (idf, list_of_cols='all', drop_cols=[], method_type="equal_range", bin_size=10, 
                      pre_existing_model=False, model_path="NA", output_mode="replace", print_impact=False):
     '''
     :params idf: Input Dataframe
@@ -126,7 +127,7 @@ def feature_binning (idf, list_of_cols='all', drop_cols=[], method_type="equal_r
     :return: Binned Dataframe
     '''
     
-    num_cols = featureType_segregation(idf)[0]
+    num_cols = attributeType_segregation(idf)[0]
     if list_of_cols == 'all':
         list_of_cols = num_cols
     if isinstance(list_of_cols, str):
@@ -149,12 +150,12 @@ def feature_binning (idf, list_of_cols='all', drop_cols=[], method_type="equal_r
     for idx, col in enumerate(list_of_cols):
         
         #if (idx-1)%5 == 0:
-         #   odf = spark.read.parquet("intermediate_data/feature_binning/"+str(idx-1))
+         #   odf = spark.read.parquet("intermediate_data/attribute_binning/"+str(idx-1))
         
         if method_type == "equal_frequency":
             from pyspark.ml.feature import QuantileDiscretizer
             if pre_existing_model == True:
-                discretizerModel = QuantileDiscretizer.load(model_path + "/feature_binning/" + col)
+                discretizerModel = QuantileDiscretizer.load(model_path + "/attribute_binning/" + col)
             else:
                 discretizer = QuantileDiscretizer(numBuckets=bin_size,inputCol=col, outputCol=col+"_binned")
                 discretizerModel = discretizer.fit(odf)
@@ -162,11 +163,11 @@ def feature_binning (idf, list_of_cols='all', drop_cols=[], method_type="equal_r
             odf = discretizerModel.transform(odf)
             
             if (pre_existing_model == False) & (model_path != "NA"):
-                discretizerModel.write().overwrite().save(model_path + "/feature_binning/" + col)
+                discretizerModel.write().overwrite().save(model_path + "/attribute_binning/" + col)
         else:
             from pyspark.ml.feature import Bucketizer
             if pre_existing_model == True:
-                bucketizer = Bucketizer.load(model_path + "/feature_binning/" + col)
+                bucketizer = Bucketizer.load(model_path + "/attribute_binning/" + col)
             else:
                 max_val = idf.select(F.col(col)).groupBy().max().rdd.flatMap(lambda x: x).collect()[0]
                 min_val = idf.select(F.col(col)).groupBy().min().rdd.flatMap(lambda x: x).collect()[0]
@@ -179,14 +180,14 @@ def feature_binning (idf, list_of_cols='all', drop_cols=[], method_type="equal_r
                 bucketizer = Bucketizer(splits=bin_cutoff, inputCol=col, outputCol=col+"_binned")
                 
                 if (pre_existing_model == False) & (model_path != "NA"):
-                    bucketizer.write().overwrite().save(model_path + "/feature_binning/" + col)    
+                    bucketizer.write().overwrite().save(model_path + "/attribute_binning/" + col)    
             #print(bucketizer.getSplits())
             odf = bucketizer.transform(odf)
             
         if idx%5 == 0:
             odf.persist()
             print(odf.count())
-         #   odf.write.parquet("intermediate_data/feature_binning/"+str(idx),mode='overwrite')
+         #   odf.write.parquet("intermediate_data/attribute_binning/"+str(idx),mode='overwrite')
             
     if output_mode == 'replace':
         for col in list_of_cols:
@@ -211,7 +212,7 @@ def monotonic_encoding(idf,list_of_cols='all', drop_cols=[], label_col='label',
     :return: Binned Dataframe
     """
     if list_of_cols == 'all':
-        list_of_cols = featureType_segregation(idf)[0]
+        list_of_cols = attributeType_segregation(idf)[0]
     if isinstance(list_of_cols, str):
         list_of_cols = [x.strip() for x in list_of_cols.split('|')]
     
@@ -221,22 +222,20 @@ def monotonic_encoding(idf,list_of_cols='all', drop_cols=[], label_col='label',
         n = 20 #max_bin
         r = 0
         while n > 2:                
-            tmp = feature_binning (idf,[col],drop_cols,bin_method, n,output_mode='append')\
+            tmp = attribute_binning (idf,[col],drop_cols,bin_method, n,output_mode='append')\
                     .select(label_col,col,col+'_binned')\
-                    .withColumn(label_col+'_encoded', F.when(F.col(label_col) == event_label,1).otherwise(0))\
-                    .dropColumn(label_col)\
-                    .withColumnRenamed(label_col+'_encoded',label_col)\
+                    .withColumn(label_col, F.when(F.col(label_col) == event_label,1).otherwise(0))\
                     .groupBy(col+'_binned').agg(F.avg(col).alias('mean_val'), F.avg(label_col).alias('mean_label')).dropna()
             #r = tmp.stat.corr('mean_age','mean_label')
             r,p = stats.spearmanr(tmp.toPandas()[['mean_val']], tmp.toPandas()[['mean_label']])
             if r == 1.0:
-                idf_encoded = feature_binning (idf_encoded,[col],drop_cols,bin_method, n)
+                idf_encoded = attribute_binning (idf_encoded,[col],drop_cols,bin_method, n)
                 print(col,n)
                 break
             n = n-1
             r = 0
         if r < 1.0:
-            idf_encoded = feature_binning (idf_encoded,[col],drop_cols,bin_method, bin_size)
+            idf_encoded = attribute_binning (idf_encoded,[col],drop_cols,bin_method, bin_size)
             
     return idf_encoded
 
@@ -245,7 +244,7 @@ def cat_to_num_unsupervised (idf, list_of_cols, method_type, index_order='freque
                              pre_existing_model=False, model_path="NA", output_mode='replace',print_impact=False):
     '''
     idf: Input Dataframe
-    list_of_cols: List of categorical features
+    list_of_cols: List of categorical attributes
     method_type: 1 (Label Encoding) or 0 (One hot encoding)
     index_order: frequencyDesc, frequencyAsc, alphabetDesc, alphabetAsc
     onehot_dropLast= True or False (Dropping last column in one hot encoding)
@@ -254,7 +253,7 @@ def cat_to_num_unsupervised (idf, list_of_cols, method_type, index_order='freque
                 this argument can be used for saving the normalization model (value other than NA). 
                 Default ("NA") means there is neither pre_existing_model nor there is a need to save one.
     output_mode: replace or append
-    return: Dataframe with transformed categorical features
+    return: Dataframe with transformed categorical attributes
     '''
     from pyspark.ml.feature import OneHotEncoder, StringIndexer, OneHotEncoderModel, StringIndexerModel, OneHotEncoderEstimator
     from pyspark.ml import Pipeline, PipelineModel
@@ -346,3 +345,133 @@ def cat_to_num_unsupervised (idf, list_of_cols, method_type, index_order='freque
 
     return odf
 
+def imputation_MMM(idf, list_of_cols="missing", drop_cols=[], method_type="median",
+                   pre_existing_model=False, model_path="NA", output_mode="replace", print_impact=False):
+    """
+    :params idf: Pyspark Dataframe
+    :params list_of_cols: list of columns (in list format or string separated by |)
+                                 all - to include all non-array columns (excluding drop_cols)
+                                 missing - all feautures with missing values (excluding drop_cols)
+    :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
+    :params method_type: median (default), mean for Numerical attributes. Mode is only option for categorical attributes
+    :params pre_existing_model: True if median/mean/mode values exists already, False Otherwise.
+    :params model_path: If pre_existing_model is True, this argument is path for imputation model.
+                  If pre_existing_model is False, this argument can be used for saving the imputation model.
+                  Default "NA" means there is neither pre_existing_model nor there is a need to save one.
+    :params output_mode: replace or append
+    :return: Imputed Dataframe
+    """
+    
+    missing_cols = missingCount_computation(idf)\
+                    .where(F.col('missing_count') > 0).select('attribute').rdd.flatMap(lambda x: x).collect()
+    if str(pre_existing_model).lower() == 'true':
+        pre_existing_model = True
+    elif str(pre_existing_model).lower() == 'false':
+        pre_existing_model = False
+    else:
+        raise TypeError('Non-Boolean input for pre_existing_model')
+
+    if (len(missing_cols) == 0) & (pre_existing_model == False) & (model_path == "NA"):
+        return idf
+
+    if list_of_cols == 'all':
+        num_cols, cat_cols, other_cols = attributeType_segregation(idf)
+        list_of_cols = num_cols + cat_cols
+    if list_of_cols == "missing":
+        list_of_cols = missing_cols
+    if isinstance(list_of_cols, str):
+        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
+    if isinstance(drop_cols, str):
+        drop_cols = [x.strip() for x in drop_cols.split('|')]
+        
+    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+
+    if len(list_of_cols) == 0:
+        warnings.warn("No Action Performed - Imputation")
+        return idf
+    if any(x not in idf.columns for x in list_of_cols):
+        raise TypeError('Invalid input for Column(s)')
+    if method_type not in ('mean', 'median'):
+        raise TypeError('Invalid input for method_type')
+    if output_mode not in ('replace', 'append'):
+        raise TypeError('Invalid input for output_mode')
+
+    num_cols, cat_cols, other_cols = attributeType_segregation(idf.select(list_of_cols))
+
+    odf = idf
+    if len(num_cols) > 0:
+
+        # Checking for Integer Type Columns & Converting them into Float/Double Type
+        recast_cols = []
+        recast_type = []
+        mapping = {"int": "Integer", "bigint": "Long"}
+        for i in num_cols:
+            if get_dtype(idf, i) in ('int', 'bigint'):
+                odf = odf.withColumn(i, F.col(i).cast(T.FloatType()))
+                recast_cols.append(i + "_imputed")
+                recast_type.append(mapping[get_dtype(idf, i)])
+
+        # Building new imputer model or uploading the existing model
+        from pyspark.ml.feature import Imputer, ImputerModel
+        if pre_existing_model == True:
+            imputerModel = ImputerModel.load(model_path + "/imputation_MMM/num_imputer-model")
+        else:
+            imputer = Imputer(strategy=method_type, inputCols=num_cols,
+                              outputCols=[(e + "_imputed") for e in num_cols])
+            imputerModel = imputer.fit(odf)
+
+        # Applying model
+        odf = recast_column(imputerModel.transform(odf), recast_cols, recast_type)
+
+        # Saving model if required
+        if (pre_existing_model == False) & (model_path != "NA"):
+            imputerModel.write().overwrite().save(model_path + "/imputation_MMM/num_imputer-model")
+
+    if len(cat_cols) > 0:
+        if pre_existing_model:
+            df_model = sqlContext.read.csv(model_path + "/imputation_MMM/cat_imputer", header=True, inferSchema=True)
+            parameters = []
+            for i in cat_cols:
+                mapped_value = \
+                df_model.where(F.col('attribute') == i).select('parameters').rdd.flatMap(lambda x: x).collect()[0]
+                parameters.append(mapped_value)
+            # imputerModel = ImputerModel.load(model_path + "/imputation_MMM/cat_imputer-model") #spark 3.X
+        else:
+            parameters = [str((idf.select(i).dropna().groupby(i).count().orderBy("count", ascending=False).first() 
+                               or [None])[0]) for i in cat_cols]
+            #imputer = Imputer(strategy='mode', inputCols=cat_cols, outputCols=[(e + "_imputed") for e in cat_cols]) #spark 3.X
+            # imputerModel = imputer.fit(odf) #spark 3.X
+
+        for index, i in enumerate(cat_cols):
+            odf = odf.withColumn(i + "_imputed", F.when(F.col(i).isNull(), parameters[index]).otherwise(F.col(i)))
+        # odf = imputerModel.transform(odf) #spark 3.X
+
+        # Saving model File if required
+        if (pre_existing_model == False) & (model_path != "NA"):
+            df_model = sqlContext.createDataFrame(zip(cat_cols, parameters), schema=['attribute', 'parameters'])
+            df_model.repartition(1).write.csv(model_path + "/imputation_MMM/cat_imputer", header=True, mode='overwrite')
+            # imputerModel.write().overwrite().save(model_path + "/imputation_MMM/num_imputer-model") #spark 3.X
+
+    for i in (num_cols + cat_cols):
+        if i not in missing_cols:
+            odf = odf.drop(i + "_imputed")
+        elif output_mode == 'replace':
+            odf = odf.drop(i).withColumnRenamed(i + "_imputed", i)
+
+    if print_impact:
+        if output_mode == 'replace':
+            odf_print = missingCount_computation(idf,list_of_cols)\
+                        .select('attribute', F.col("missing_count").alias("missingCount_before"))\
+                        .join(missingCount_computation(odf,list_of_cols)\
+                        .select('attribute', F.col("missing_count").alias("missingCount_after")),'attribute','inner')
+        else:
+            from pyspark.sql.functions import substring, length
+            output_cols = [(i + "_imputed") for i in (num_cols + cat_cols)]
+            odf_print = missingCount_computation(idf,list_of_cols)\
+                        .select('attribute', F.col("missing_count").alias("missingCount_before"))\
+                        .join(missingCount_computation(odf,output_cols)\
+                        .withColumnRename('attribute','attribute_after')\
+                        .withColumn('attribute', F.expr("substring(attribute_after, 1, length(attribute_after)-8)"))\
+                        .drop('missing_pct'),'attribute','inner')
+        odf_print.show(len(list_of_cols))
+    return odf

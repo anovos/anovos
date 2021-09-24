@@ -22,19 +22,21 @@ def drift_statistics(idf_target,idf_source, list_of_cols='all',drop_cols=[], met
                     all - to calculate all metrics 
     :params bin_method: equal_frequency, equal_range
     :params bin_size: 10 - 20 (recommended for PSI), >100 (other method types)
-    :params threshold: To flag features meeting drift threshold
-    :params pre_existing_source: True if binning model & frequency counts/feature exists already, False Otherwise. 
-    :params source_path: If pre_existing_source is True, this argument is path for the source dataset details. 
+    :params threshold: To flag attributes meeting drift threshold
+    :params pre_existing_source: True if binning model & frequency counts/attribute exists already, False Otherwise. 
+    :params source_path: If pre_existing_source is True, this argument is path for the source dataset details - drift_statistics folder.
+                  drift_statistics folder must contain attribute_binning & frequency_counts folders
                   If pre_existing_source is False, this argument can be used for saving the details. 
-                  Default "NA" means there is neither pre_existing_source nor there is a need to save one.
-    :return: Output Dataframe <feature, <metric>>
+                  Default "NA" for temporarily saving source dataset attribute_binning folder 
+    :return: Output Dataframe <attribute, <metric>>
     '''
     
     import numpy as np
     import pandas as pd
+    import math
     
     if list_of_cols == 'all':
-        num_cols, cat_cols, other_cols = featureType_segregation(idf_target)
+        num_cols, cat_cols, other_cols = attributeType_segregation(idf_target)
         list_of_cols = num_cols + cat_cols
     if isinstance(list_of_cols, str):
         list_of_cols = [x.strip() for x in list_of_cols.split('|')]
@@ -53,20 +55,20 @@ def drift_statistics(idf_target,idf_source, list_of_cols='all',drop_cols=[], met
     if any(x not in ("PSI","JSD","HD","KS") for x in method_type):
         raise TypeError('Invalid input for method_type')
     
-    num_cols = featureType_segregation(idf_target.select(list_of_cols))[0]
+    num_cols = attributeType_segregation(idf_target.select(list_of_cols))[0]
     
     if not pre_existing_source:
-        source_bin = feature_binning(idf_source, list_of_cols=num_cols, method_type=bin_method, bin_size=bin_size, 
-                               pre_existing_model=False, model_path=source_path+"/drift_statistics/binning_model")
+        source_bin = attribute_binning(idf_source, list_of_cols=num_cols, method_type=bin_method, bin_size=bin_size, 
+                               pre_existing_model=False, model_path=source_path+"/drift_statistics")
         source_bin.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
     
-    target_bin = feature_binning(idf_target, list_of_cols=num_cols, method_type=bin_method, bin_size=bin_size,  
-                               pre_existing_model=True, model_path=source_path+"/drift_statistics/binning_model")
+    target_bin = attribute_binning(idf_target, list_of_cols=num_cols, method_type=bin_method, bin_size=bin_size,  
+                               pre_existing_model=True, model_path=source_path+"/drift_statistics")
     target_bin.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
     
     
     def hellinger_distance(p, q):
-        hd = np.sum((np.sqrt(p)-np.sqrt(q))**2)/len(p)
+        hd = math.sqrt(np.sum((np.sqrt(p)-np.sqrt(q))**2)/2)
         return hd
 
     def PSI(p,q):
@@ -87,18 +89,18 @@ def drift_statistics(idf_target,idf_source, list_of_cols='all',drop_cols=[], met
         dstats = np.max(np.abs(np.cumsum(p)-np.cumsum(q)))
         return dstats
     
-    output = {'feature': []}
+    output = {'attribute': []}
     output["flagged"] = []
     for method in method_type:
         output[method] = []
     
     for i in list_of_cols:
         if pre_existing_source:
-            x = spark.read.csv(source_path+"/drift_statistics/" + i, header=True, inferSchema=True)
+            x = spark.read.csv(source_path+"/drift_statistics/frequency_counts" + i, header=True, inferSchema=True)
         else:
             x = source_bin.groupBy(i).agg((F.count(i)/idf_source.count()).alias('p')).fillna(-1)
             if source_path != "NA":
-                x.repartition(1).write.csv(source_path+"/drift_statistics/" + i, header=True, mode='overwrite')
+                x.repartition(1).write.csv(source_path+"/drift_statistics/frequency_counts" + i, header=True, mode='overwrite')
             
         y = target_bin.groupBy(i).agg((F.count(i)/idf_target.count()).alias('q')).fillna(-1)
         
@@ -106,7 +108,7 @@ def drift_statistics(idf_target,idf_source, list_of_cols='all',drop_cols=[], met
         p = np.array(xy.select('p').rdd.flatMap(lambda x:x).collect())
         q = np.array(xy.select('q').rdd.flatMap(lambda x:x).collect())
         
-        output['feature'].append(i)
+        output['attribute'].append(i)
         counter = 0
         for idx, method in enumerate(method_type):
             drift_function = {'PSI': PSI,'JSD':JS_divergence,'HD': hellinger_distance,'KS': KS_distance}
@@ -123,13 +125,13 @@ def drift_statistics(idf_target,idf_source, list_of_cols='all',drop_cols=[], met
                 output["flagged"].append(0)
     
     odf = spark.createDataFrame(pd.DataFrame.from_dict(output,orient='index').transpose())\
-            .select(['feature'] + method_type + ['flagged']).orderBy(F.desc('flagged'))
+            .select(['attribute'] + method_type + ['flagged']).orderBy(F.desc('flagged'))
     
     if print_impact:
-        print("All Features:")
+        print("All Attributes:")
         odf.show(len(list_of_cols))
         if threshold != None:
-            print("Features meeting Data Drift threshold:")
+            print("Attributes meeting Data Drift threshold:")
             drift = odf.where(F.col('flagged')  == 1)
             drift.show(drift.count())
     

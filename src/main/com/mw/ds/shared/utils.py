@@ -26,7 +26,7 @@ def transpose_dataframe(idf, fixed_col):
     odf = idf_flatten.groupBy('key').pivot(fixed_col).agg(F.first('value'))
     return odf
 
-def featureType_segregation(idf):
+def attributeType_segregation(idf):
     """
     :param idf: Input Dataframe
     :return: 3 lists - numerical, categorical, others columns

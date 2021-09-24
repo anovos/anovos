@@ -3,10 +3,9 @@ import warnings
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
 from com.mw.ds.shared.spark import *
-from com.mw.ds.shared.utils import *
-from com.mw.ds.data_transformer.transformers import *
-from com.mw.ds.data_analyzer.quality_checker import *
-from com.mw.ds.data_analyzer.stats_generator import *
+from com.mw.ds.shared.utils import attributeType_segregation
+from com.mw.ds.data_transformer.transformers import attribute_binning, monotonic_encoding, cat_to_num_unsupervised, imputation_MMM
+from com.mw.ds.data_analyzer.stats_generator import uniqueCount_computation
 
 def correlation_matrix(idf, list_of_cols='all', drop_cols=[], plot=False):
     """
@@ -14,7 +13,7 @@ def correlation_matrix(idf, list_of_cols='all', drop_cols=[], plot=False):
     :params list_of_cols: list of columns (in list format or string separated by |)
                          all - to include all non-array columns (excluding drop_cols)
     :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
-    :return: Correlation Dataframe <feature,<col_names>>
+    :return: Correlation Dataframe <attribute,<col_names>>
     """
      
     from phik.phik import spark_phik_matrix_from_hist2d_dict
@@ -22,7 +21,7 @@ def correlation_matrix(idf, list_of_cols='all', drop_cols=[], plot=False):
     import itertools
     
     if list_of_cols == 'all':
-        num_cols, cat_cols, other_cols = featureType_segregation(idf)
+        num_cols, cat_cols, other_cols = attributeType_segregation(idf)
         list_of_cols = num_cols + cat_cols
     if isinstance(list_of_cols, str):
         list_of_cols = [x.strip() for x in list_of_cols.split('|')]
@@ -30,7 +29,7 @@ def correlation_matrix(idf, list_of_cols='all', drop_cols=[], plot=False):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
         
     remove_cols = uniqueCount_computation(idf, list_of_cols).where(F.col('unique_values') < 2)\
-                    .select('feature').rdd.flatMap(lambda x:x).collect() 
+                    .select('attribute').rdd.flatMap(lambda x:x).collect() 
         
     list_of_cols = [e for e in list_of_cols if e not in (drop_cols + remove_cols)]
 
@@ -53,7 +52,7 @@ def correlation_matrix(idf, list_of_cols='all', drop_cols=[], plot=False):
         plt.figure()
         plt.show()
     
-    odf_pd['feature'] = odf_pd.index
+    odf_pd['attribute'] = odf_pd.index
     odf = sqlContext.createDataFrame(odf_pd)
     
     return odf
@@ -70,14 +69,14 @@ def IV_calculation(idf, list_of_cols='all', drop_cols=[], label_col='label', eve
     :params encoding_configs: dict format, {} empty dict for no encoding
                             bin_size: No. of bins, bin_method: equal_frequency, equal_range, 
                             monotonicity_check = 1 for monotonicity encoding else 0
-    :return: Dataframe <feature, iv>
+    :return: Dataframe <attribute, iv>
     """
     
     if label_col not in idf.columns:
         raise TypeError('Invalid input for Label Column')
     
     if list_of_cols == 'all':
-        num_cols, cat_cols, other_cols = featureType_segregation(idf)
+        num_cols, cat_cols, other_cols = attributeType_segregation(idf)
         list_of_cols = num_cols + cat_cols
     if isinstance(list_of_cols, str):
         list_of_cols = [x.strip() for x in list_of_cols.split('|')]
@@ -91,7 +90,7 @@ def IV_calculation(idf, list_of_cols='all', drop_cols=[], label_col='label', eve
     if (idf.where(F.col(label_col) == event_label).count() == 0):
         raise TypeError('Invalid input for Event Label Value')
         
-    num_cols, cat_cols, other_cols = featureType_segregation(idf.select(list_of_cols))
+    num_cols, cat_cols, other_cols = attributeType_segregation(idf.select(list_of_cols))
     
     if (len(num_cols) > 0) & bool(encoding_configs):
         bin_size = encoding_configs['bin_size']
@@ -100,7 +99,7 @@ def IV_calculation(idf, list_of_cols='all', drop_cols=[], label_col='label', eve
         if monotonicity_check == 1:
             idf_encoded = monotonic_encoding(idf,num_cols,[],label_col,event_label,bin_method,bin_size)
         else:
-            idf_encoded = feature_binning(idf,num_cols,[],bin_method,bin_size)
+            idf_encoded = attribute_binning(idf,num_cols,[],bin_method,bin_size)
             
         idf_encoded.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
     else:
@@ -119,7 +118,7 @@ def IV_calculation(idf, list_of_cols='all', drop_cols=[], label_col='label', eve
         iv_value = df_iv.select(F.sum('iv')).collect()[0][0]
         output.append([col,iv_value])
         
-    odf = spark.createDataFrame(output, ["feature", "iv"])\
+    odf = spark.createDataFrame(output, ["attribute", "iv"])\
                 .withColumn('iv', F.round(F.col('iv'),4)).orderBy(F.desc('iv'))
     
         
@@ -131,7 +130,7 @@ def IV_calculation(idf, list_of_cols='all', drop_cols=[], label_col='label', eve
         plt.style.use('ggplot')
         sns.set(font_scale = 1)
         data = odf.toPandas()
-        sns.barplot(x="iv", y="feature", data=data, orient="h", color='steelblue')
+        sns.barplot(x="iv", y="attribute", data=data, orient="h", color='steelblue')
         plt.figure()
         plt.show()
     return odf
@@ -148,14 +147,14 @@ def IG_calculation(idf, list_of_cols='all', drop_cols=[], label_col='label', eve
     :params encoding_configs: dict format, {} empty dict for no encoding
                             bin_size: No. of bins, bin_method: equal_frequency, equal_range, 
                             monotonicity_check = 1 for monotonicity encoding else 0
-    :return: Dataframe <feature, ig>
+    :return: Dataframe <attribute, ig>
     """
     
     if label_col not in idf.columns:
         raise TypeError('Invalid input for Label Column')
     
     if list_of_cols == 'all':
-        num_cols, cat_cols, other_cols = featureType_segregation(idf)
+        num_cols, cat_cols, other_cols = attributeType_segregation(idf)
         list_of_cols = num_cols + cat_cols
     if isinstance(list_of_cols, str):
         list_of_cols = [x.strip() for x in list_of_cols.split('|')]
@@ -169,7 +168,7 @@ def IG_calculation(idf, list_of_cols='all', drop_cols=[], label_col='label', eve
     if (idf.where(F.col(label_col) == event_label).count() == 0):
         raise TypeError('Invalid input for Event Label Value')
         
-    num_cols, cat_cols, other_cols = featureType_segregation(idf.select(list_of_cols))
+    num_cols, cat_cols, other_cols = attributeType_segregation(idf.select(list_of_cols))
     
     if (len(num_cols) > 0) & bool(encoding_configs):
         bin_size = encoding_configs['bin_size']
@@ -178,7 +177,7 @@ def IG_calculation(idf, list_of_cols='all', drop_cols=[], label_col='label', eve
         if monotonicity_check == 1:
             idf_encoded = monotonic_encoding(idf,num_cols,[],label_col,event_label,bin_method,bin_size)
         else:
-            idf_encoded = feature_binning(idf,num_cols,[],bin_method,bin_size)
+            idf_encoded = attribute_binning(idf,num_cols,[],bin_method,bin_size)
         idf_encoded.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
     else:
         idf_encoded = idf
@@ -200,7 +199,7 @@ def IG_calculation(idf, list_of_cols='all', drop_cols=[], label_col='label', eve
         ig_value = total_entropy - entropy if entropy else None
         output.append([col,ig_value])
     
-    odf = sqlContext.createDataFrame(output, ["feature", "ig"])\
+    odf = sqlContext.createDataFrame(output, ["attribute", "ig"])\
                 .withColumn('ig', F.round(F.col('ig'),4)).orderBy(F.desc('ig'))
     
     if plot:
@@ -211,7 +210,7 @@ def IG_calculation(idf, list_of_cols='all', drop_cols=[], label_col='label', eve
         plt.style.use('ggplot')
         sns.set(font_scale = 1)
         data = odf.toPandas()
-        sns.barplot(x="ig", y="feature", data=data, orient="h", color='steelblue')
+        sns.barplot(x="ig", y="attribute", data=data, orient="h", color='steelblue')
         plt.figure()
         plt.show()
     return odf
@@ -225,13 +224,13 @@ def variable_clustering(idf, list_of_cols='all', drop_cols=[], sample_size=10000
                          all - to include all non-array columns (excluding drop_cols)
     :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
     :params sample_size: maximum sample size for computation
-    :return: Dataframe <Cluster, feature, RS_Ratio>
+    :return: Dataframe <Cluster, attribute, RS_Ratio>
     """
     
     from varclushi import VarClusHi
     
     if list_of_cols == 'all':
-        num_cols, cat_cols, other_cols = featureType_segregation(idf)
+        num_cols, cat_cols, other_cols = attributeType_segregation(idf)
         list_of_cols = num_cols + cat_cols
     if isinstance(list_of_cols, str):
         list_of_cols = [x.strip() for x in list_of_cols.split('|')]
@@ -239,21 +238,21 @@ def variable_clustering(idf, list_of_cols='all', drop_cols=[], sample_size=10000
         drop_cols = [x.strip() for x in drop_cols.split('|')]
         
     remove_cols = uniqueCount_computation(idf, list_of_cols).where(F.col('unique_values') < 2)\
-                    .select('feature').rdd.flatMap(lambda x:x).collect()        
+                    .select('attribute').rdd.flatMap(lambda x:x).collect()        
     list_of_cols = [e for e in list_of_cols if e not in (drop_cols + remove_cols)]
 
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError('Invalid input for Column(s)')
     
-    num_cols, cat_cols, other_cols = featureType_segregation(idf.select(list_of_cols))
-    idf_encoded = cat_to_num_unsupervised (idf, list_of_cols=cat_cols, method_type=1)
+    num_cols, cat_cols, other_cols = attributeType_segregation(idf.select(list_of_cols))
+    idf_encoded = cat_to_num_unsupervised(idf, list_of_cols=cat_cols, method_type=1)
     idf_imputed = imputation_MMM(idf_encoded.select(list_of_cols))
     idf_imputed.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
     idf_pd = idf_imputed.sample(False, min(1.0, float(sample_size)/idf.count()), 0).toPandas()    
     vc = VarClusHi(idf_pd,maxeigval2=1,maxclus=None)
     vc.varclus()
     odf_pd = vc.rsquare
-    odf = sqlContext.createDataFrame(odf_pd).select('Cluster',F.col('Variable').alias('feature'),'RS_Ratio')    
+    odf = sqlContext.createDataFrame(odf_pd).select('Cluster',F.col('Variable').alias('Attribute'),'RS_Ratio')    
     if plot:
         odf.show(odf.count())
     return odf
