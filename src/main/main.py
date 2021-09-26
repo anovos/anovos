@@ -131,14 +131,13 @@ def main(all_configs):
             for subkey, value in args.items():
                 if value != None:
                     start = timeit.default_timer()
-                    print("\n" + subkey + ": \n")
                     f = getattr(report_gen_inter, subkey)
                     if subkey == 'data_drift':
                         f(**value)
                     else:
                         f(df,**value)
                     end = timeit.default_timer()
-                    print(key, end-start)
+                    print(key, subkey, end-start)
 
     save(df,write_main,folder_name="final_dataset",reread=False)  
     

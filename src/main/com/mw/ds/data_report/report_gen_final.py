@@ -68,19 +68,19 @@ def data_analyzer_output(p2,tab_name):
             for j in list_tabs_all[idx]:
                 if j == "correlation_matrix":
                     df_list_ = pd.read_csv(ends_with(p2) + str(tab_name)+"_" + str(j) + ".csv").round(3)
-                    feats_order = list(df_list_["feature"].values)
+                    feats_order = list(df_list_["attribute"].values)
                     df_list_ = df_list_.round(3)
                     fig = px.imshow(df_list_[feats_order],y=feats_order,color_continuous_scale=global_theme_r)
                     fig.layout.plot_bgcolor = global_plot_bg_color
                     fig.layout.paper_bgcolor = global_paper_bg_color
                     fig.update_layout(title_text=str("Correlation Plot "))
-                    df_list.append(dp.DataTable(df_list_[["feature"]+feats_order],label=remove_u_score(j)))
+                    df_list.append(dp.DataTable(df_list_[["attribute"]+feats_order],label=remove_u_score(j)))
                     plot_list.append(dp.Plot(fig,label=remove_u_score(j)))
                     
                     
                 elif j == "variable_clustering":
                     df_list_ = pd.read_csv(ends_with(p2) + str(tab_name)+"_" + str(j) + ".csv").round(3)
-                    fig = px.sunburst(df_list_, path=['Cluster', 'feature'], values='RS_Ratio',color_discrete_sequence=global_theme)
+                    fig = px.sunburst(df_list_, path=['Cluster', 'Attribute'], values='RS_Ratio',color_discrete_sequence=global_theme)
                     fig.update_layout(title_text=str("Distribution of homogenous variable across Clusters"))
                     fig.layout.plot_bgcolor = global_plot_bg_color
                     fig.layout.paper_bgcolor = global_paper_bg_color
@@ -91,9 +91,9 @@ def data_analyzer_output(p2,tab_name):
                 
                 else:
                     df_list_ = pd.read_csv(ends_with(p2) + str(tab_name)+"_" + str(j) + ".csv").round(3)
-                    col_nm = [x for x in list(df_list_.columns) if "feature" not in x]
+                    col_nm = [x for x in list(df_list_.columns) if "attribute" not in x]
                     df_list_ = df_list_.sort_values(col_nm[0], ascending=True)
-                    fig = px.bar(df_list_,x=col_nm[0],y='feature',orientation='h',color_discrete_sequence=global_theme_r)
+                    fig = px.bar(df_list_,x=col_nm[0],y='attribute',orientation='h',color_discrete_sequence=global_theme_r)
                     fig.layout.plot_bgcolor = global_plot_bg_color
                     fig.layout.paper_bgcolor = global_paper_bg_color
                     fig.update_layout(title_text=str("Representation of " + str(remove_u_score(j))))

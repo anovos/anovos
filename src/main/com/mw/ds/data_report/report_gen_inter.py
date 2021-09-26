@@ -6,6 +6,7 @@ import warnings
 from com.mw.ds.shared.spark import *
 from com.mw.ds.shared.utils import *
 from com.mw.ds.data_transformer.transformers import *
+from com.mw.ds.data_ingest.data_ingest import *
 import plotly
 from plotly.io import write_json
 import plotly.express as px
@@ -34,7 +35,7 @@ def outlier_catfeats(idf, list_of_cols, coverage, max_category=50, pre_existing_
     list_of_cols: List of columns for outlier treatment
     coverage: Minimum % of rows mapped to actual category name and rest will be mapped to others
     max_category: Even if coverage is less, only these many categories will be mapped to actual name and rest to others
-    pre_existing_model: outlier value for each feature. True if model files exists already, False Otherwise
+    pre_existing_model: outlier value for each attribute. True if model files exists already, False Otherwise
     model_path: If pre_existing_model is True, this argument is path for model file. 
                   If pre_existing_model is False, this field can be used for saving the model file. 
                   param NA means there is neither pre_existing_model nor there is a need to save one.
@@ -64,7 +65,7 @@ def outlier_catfeats(idf, list_of_cols, coverage, max_category=50, pre_existing_
                          .withColumn('lag_cumu', F.lag('cumu').over(window)).fillna(0)\
                          .where(~((F.col('cumu') >= coverage) & (F.col('lag_cumu') >= coverage)))\
                          .where(F.col('rank') <= max_category)\
-                         .select(F.lit(i).alias('feature'), F.col(i).alias('parameters'))
+                         .select(F.lit(i).alias('attribute'), F.col(i).alias('parameters'))
                         
             if index == 0:
                 df_model = df_cats
@@ -73,7 +74,7 @@ def outlier_catfeats(idf, list_of_cols, coverage, max_category=50, pre_existing_
     
     odf = idf
     for i in list_of_cols:
-        parameters = df_model.where(F.col('feature') == i).select('parameters').rdd.flatMap(lambda x:x).collect()
+        parameters = df_model.where(F.col('attribute') == i).select('parameters').rdd.flatMap(lambda x:x).collect()
         if output_mode == 'replace':
             odf = odf.withColumn(i, F.when((F.col(i).isin(parameters)) | (F.col(i).isNull()), F.col(i)).otherwise("others"))
         else:
@@ -88,8 +89,8 @@ def outlier_catfeats(idf, list_of_cols, coverage, max_category=50, pre_existing_
             output_cols = list_of_cols
         else:
             output_cols = [(i+"_outliered") for i in list_of_cols]
-        uniquecount_computation(idf, list_of_cols).select('feature', F.col("unique_values").alias("uniqueValues_before")).show(len(list_of_cols))
-        uniquecount_computation(odf, output_cols).select('feature', F.col("unique_values").alias("uniqueValues_after")).show(len(list_of_cols))
+        uniquecount_computation(idf, list_of_cols).select('attribute', F.col("unique_values").alias("uniqueValues_before")).show(len(list_of_cols))
+        uniquecount_computation(odf, output_cols).select('attribute', F.col("unique_values").alias("uniqueValues_after")).show(len(list_of_cols))
          
     return odf
 
@@ -98,7 +99,7 @@ def plot_gen_hist_bar(idf,col,cov=None,max_cat=50,bin_type=None):
     
     import plotly.express as px
     from plotly.figure_factory import create_distplot
-    num_cols,cat_cols,other_cols = featureType_segregation(idf)
+    num_cols,cat_cols,other_cols = attributeType_segregation(idf)
     
 
     #try:
@@ -117,7 +118,7 @@ def plot_gen_hist_bar(idf,col,cov=None,max_cat=50,bin_type=None):
 
     elif col in num_cols:
 
-        idf = feature_binning(idf,list_of_cols=col,method_type=bin_type,bin_size=max_cat)\
+        idf = attribute_binning(idf,list_of_cols=col,method_type=bin_type,bin_size=max_cat)\
                              .groupBy(col).count()\
                              .withColumn("count_%",100*(F.col("count")/F.sum("count").over(Window.partitionBy())))\
                              .orderBy("count",ascending=False)\
@@ -207,7 +208,7 @@ def plot_gen_feat_analysis_label(idf,col,label,event_class,max_cat=None,bin_type
     
     import plotly.express as px
     from plotly.figure_factory import create_distplot
-    num_cols,cat_cols,other_cols = featureType_segregation(idf)
+    num_cols,cat_cols,other_cols = attributeType_segregation(idf)
     
     event_class = str(event_class)
     
@@ -228,7 +229,7 @@ def plot_gen_feat_analysis_label(idf,col,label,event_class,max_cat=None,bin_type
     
     elif col in num_cols:
         
-        idf = feature_binning(idf, method_type=bin_type, bin_size=max_cat, list_of_cols=col)
+        idf = attribute_binning(idf, method_type=bin_type, bin_size=max_cat, list_of_cols=col)
         
         idf = idf.groupBy(col).pivot(label).count()\
                  .fillna(0,subset=class_cats)\
@@ -257,7 +258,7 @@ def plot_gen_variable_clustering(idf):
     import plotly.express as px
     from plotly.figure_factory import create_distplot
     
-    fig = px.sunburst(idf, path=['Cluster', 'feature'], values='RS_Ratio',color_discrete_sequence=global_theme)
+    fig = px.sunburst(idf, path=['Cluster', 'attribute'], values='RS_Ratio',color_discrete_sequence=global_theme)
     fig.update_layout(title_text=str("Distribution of homogenous variable across Clusters"))
     
 #     plotly.offline.plot(fig, auto_open=False, validate=False, filename=f"{base_loc}/{file_name_}plot_sunburst.html")
@@ -304,7 +305,7 @@ def plot_gen_dist(idf,col,threshold=500000, rug_chart=False):
 def num_cols_chart_list(df,max_cat=10,bin_type="equal_frequency",output_path=None):
     
     num_cols_chart = []
-    num_cols,cat_cols,other_cols = featureType_segregation(df)
+    num_cols,cat_cols,other_cols = attributeType_segregation(df)
     for index,i in enumerate(num_cols):
         
         f = plot_gen_hist_bar(idf=df,col=i,max_cat=max_cat,bin_type=bin_type)
@@ -320,7 +321,7 @@ def num_cols_chart_list(df,max_cat=10,bin_type="equal_frequency",output_path=Non
 def cat_cols_chart_list(df,id_col,max_cat=10,cov=0.9,output_path=None):
 
     cat_cols_chart = []
-    num_cols,cat_cols,other_cols = featureType_segregation(df)
+    num_cols,cat_cols,other_cols = attributeType_segregation(df)
     for index,i in enumerate(cat_cols):
         if i !=id_col:
             f=plot_gen_hist_bar(idf=df,col=i,max_cat=max_cat,cov=cov)
@@ -338,7 +339,7 @@ def cat_cols_chart_list(df,id_col,max_cat=10,cov=0.9,output_path=None):
 def num_cols_int_chart_list(df,label,event_class,bin_type="equal_range",max_cat=10,output_path=None):
 
     num_cols_int_chart = []
-    num_cols,cat_cols,other_cols = featureType_segregation(df)
+    num_cols,cat_cols,other_cols = attributeType_segregation(df)
     for index,i in enumerate(num_cols):
         f = plot_gen_feat_analysis_label(idf=df,col=i,label=label,event_class=event_class,bin_type=bin_type,max_cat=max_cat)
         if output_path is None:
@@ -352,7 +353,7 @@ def num_cols_int_chart_list(df,label,event_class,bin_type="equal_range",max_cat=
 def cat_cols_int_chart_list(df,id_col,label,event_class,output_path=None):
     
     cat_cols_int_chart = []
-    num_cols,cat_cols,other_cols = featureType_segregation(df)
+    num_cols,cat_cols,other_cols = attributeType_segregation(df)
     for index,i in enumerate(cat_cols):
         if i!=id_col:
             f = plot_gen_feat_analysis_label(idf=df,col=i,label=label,event_class=event_class)
