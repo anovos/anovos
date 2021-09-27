@@ -13,6 +13,21 @@ from com.mw.ds.data_drift import drift_detector
 from com.mw.ds.data_report import report_gen_inter
 import timeit
 
+
+def range_generator(df,col_orig,col_binned):
+    
+    range_table = df.groupBy(col_binned)\
+                    .agg(F.round(F.min(col_orig),2).alias("min"),F.round(F.max(col_orig),2).alias("max"))\
+                    .withColumn("range",F.concat(F.col("min"),F.lit("-"),F.col("max")))\
+                    .select(col_binned, "range")
+    
+    df_ = df.join(range_table,col_binned,"left_outer")\
+            .drop(col_binned)\
+            .withColumnRenamed("range",col_binned)
+    
+    return df_
+
+
 def ETL(args):
     f = getattr(data_ingest, 'read_dataset')
     read_args = args.get('read_dataset', None)
@@ -135,7 +150,7 @@ def main(all_configs):
                     if subkey == 'data_drift':
                         f(**value)
                     else:
-                        f(df,**value)
+                        f(range_generator(df),**value)
                     end = timeit.default_timer()
                     print(key, subkey, end-start)
 
