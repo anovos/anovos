@@ -9,11 +9,6 @@ sample_output_path = "./data/tmp/output/"
 
 @pytest.mark.usefixtures("spark_session")
 
-# def outlier_detection(idf, list_of_cols='all', drop_cols=[], detection_side='upper', 
-# def imputation_MMM(idf, list_of_cols="missing", drop_cols=[], method_type="median",
-# def null_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, treatment_method='row_removal', 
-
-
 
 def test_rows_wMissingFeats(spark_session):
     test_df = spark_session.createDataFrame(
@@ -130,9 +125,52 @@ def test_biasedness_detection(spark_session):
     assert result_df4[1].where(F.col("feature") == "education").toPandas().to_dict('list')['mode'][0] == 'HS-grad' 
     assert result_df4[1].where(F.col("feature") == "education").toPandas().to_dict('list')['mode_pct'][0] == 0.8
     assert result_df4[1].where(F.col("feature") == "education").toPandas().to_dict('list')['flagged'][0] == 1
-
     
-    
+def test_imputation_MMM(spark_session):
+    test_df5 = spark_session.createDataFrame(
+        [
+            ('27520a', 51, 8000, 'HS-grad'),
+            ('10a', 42, 7000,'HS-grad'),
+            ('10b', 34, 6000,'grad'),
+            ('10c', 29, 9000,'HS-grad'),
+            ('11a', 35, None, None),
+            ('1100b', 23, 9000, 'Postgrad')
+        ],
+        ['ifa', 'age', 'income','education']
+    )
+    assert test_df5.where(F.col("ifa") == "27520a").count() == 1
+    assert test_df5.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['age'][0] == 51
+    assert test_df5.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['income'][0] == 8000  
+    assert test_df5.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['education'][0] == 'HS-grad' 
 
+    result_df5 = imputation_MMM(test_df5)
+
+    assert result_df5.count() == 6
+    assert result_df5.where(F.col("ifa") == "11a").toPandas().to_dict('list')['income'][0] == 8000 
+    assert result_df5.where(F.col("ifa") == "11a").toPandas().to_dict('list')['education'][0] == 'HS-grad'
+    
+def test_null_detection(spark_session):
+    test_df6 = spark_session.createDataFrame(
+        [
+            ('27520a', 51, 9000, 'HS-grad'),
+            ('10a', 42, 7000,'Postgrad'),
+            ('11a', 35, None, None),
+            ('1100b', 23, 6000, 'HS-grad')
+        ],
+        ['ifa', 'age', 'income','education']
+    )
+    assert test_df6.where(F.col("ifa") == "27520a").count() == 1
+    assert test_df6.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['age'][0] == 51
+    assert test_df6.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['income'][0] == 9000  
+    assert test_df6.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['education'][0] == 'HS-grad' 
+
+    result_df6 = null_detection(test_df6,treatment=True)
+
+    assert len(result_df6[0].columns) == 4
+    assert result_df6[0].count() == 3
+    assert result_df6[1].where(F.col("feature") == "education").toPandas().to_dict('list')['missing_count'][0] == 1 
+    assert result_df6[1].where(F.col("feature") == "education").toPandas().to_dict('list')['missing_pct'][0] == 0.25
+    assert result_df6[1].where(F.col("feature") == "income").toPandas().to_dict('list')['missing_count'][0] == 1 
+    assert result_df6[1].where(F.col("feature") == "income").toPandas().to_dict('list')['missing_pct'][0] == 0.25
 
 
