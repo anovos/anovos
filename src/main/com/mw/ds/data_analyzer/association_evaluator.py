@@ -191,7 +191,7 @@ def IG_calculation(idf, list_of_cols='all', drop_cols=[], label_col='label', eve
     return odf
 
 
-def variable_clustering(idf, list_of_cols='all', drop_cols=[], sample_size=100000, plot=False):
+def variable_clustering(idf, list_of_cols='all', drop_cols=[], sample_size=100000, print_impact=False):
     
     """
     :params idf: Input Dataframe
@@ -238,6 +238,6 @@ def variable_clustering(idf, list_of_cols='all', drop_cols=[], sample_size=10000
     vc.varclus()
     odf_pd = vc.rsquare
     odf = sqlContext.createDataFrame(odf_pd).select('Cluster',F.col('Variable').alias('Attribute'),'RS_Ratio')    
-    if plot:
+    if print_impact:
         odf.show(odf.count())
     return odf
