@@ -125,7 +125,7 @@ def main(all_configs):
                     start = timeit.default_timer()
                     print("\n" + subkey + ": \n")
                     f = getattr(association_evaluator, subkey)
-                    stats = f(df,**value, plot=False)
+                    stats = f(df,**value, print_impact=False)
                     save(stats,write_stats,folder_name="data_analyzer/association_evaluator/" + 
                          subkey +"/stats",reread=True).show(100)
                     end = timeit.default_timer()

@@ -7,7 +7,7 @@ from com.mw.ds.shared.utils import attributeType_segregation
 from com.mw.ds.data_transformer.transformers import attribute_binning, monotonic_encoding, cat_to_num_unsupervised, imputation_MMM
 from com.mw.ds.data_analyzer.stats_generator import uniqueCount_computation
 
-def correlation_matrix(idf, list_of_cols='all', drop_cols=[], plot=False):
+def correlation_matrix(idf, list_of_cols='all', drop_cols=[], print_impact=False):
     """
     :params idf: Input Dataframe
     :params list_of_cols: list of columns (in list format or string separated by |)
@@ -40,25 +40,18 @@ def correlation_matrix(idf, list_of_cols='all', drop_cols=[], plot=False):
     hists = idf.select(list_of_cols).pm_make_histograms(combis)
     grids = {k:get_2dgrid(h) for k,h in hists.items()}
     odf_pd = spark_phik_matrix_from_hist2d_dict(sc, grids)
-    
-    if plot:
-        from IPython import get_ipython
-        get_ipython().run_line_magic('matplotlib', 'inline')
-        import matplotlib.pyplot as plt
-        import seaborn as sns
-        fig, (ax) = plt.subplots(1, 1, figsize=(10,6))
-        hm = sns.heatmap(odf_pd,ax=ax,  cmap="Blues", linewidths=.05)
-        fig.subplots_adjust(top=0.93)
-        plt.figure()
-        plt.show()
-    
     odf_pd['attribute'] = odf_pd.index
     odf = sqlContext.createDataFrame(odf_pd)
     
+    if print_impact:
+        odf.show(odf.count())
+
     return odf
 
+
 def IV_calculation(idf, list_of_cols='all', drop_cols=[], label_col='label', event_label=1, 
-                   encoding_configs={'bin_method':'equal_frequency', 'bin_size':10,'monotonicity_check':0}, plot=False):
+                   encoding_configs={'bin_method':'equal_frequency', 'bin_size':10,'monotonicity_check':0},
+                   print_impact=False):
     """
     :params idf: Input Dataframe
     :params list_of_cols: list of columns (in list format or string separated by |)
@@ -120,23 +113,14 @@ def IV_calculation(idf, list_of_cols='all', drop_cols=[], label_col='label', eve
         
     odf = spark.createDataFrame(output, ["attribute", "iv"])\
                 .withColumn('iv', F.round(F.col('iv'),4)).orderBy(F.desc('iv'))
-    
-        
-    if plot:
-        from IPython import get_ipython
-        get_ipython().run_line_magic('matplotlib', 'inline')
-        import matplotlib.pyplot as plt
-        import seaborn as sns
-        plt.style.use('ggplot')
-        sns.set(font_scale = 1)
-        data = odf.toPandas()
-        sns.barplot(x="iv", y="attribute", data=data, orient="h", color='steelblue')
-        plt.figure()
-        plt.show()
+    if print_impact:
+        odf.show(odf.count())
+                 
     return odf
 
 def IG_calculation(idf, list_of_cols='all', drop_cols=[], label_col='label', event_label=1, 
-                   encoding_configs={'bin_method':'equal_frequency', 'bin_size':10,'monotonicity_check':0}, plot=False):
+                   encoding_configs={'bin_method':'equal_frequency', 'bin_size':10,'monotonicity_check':0},
+                   print_impact=False):
     """
     :params idf: Input Dataframe
     :params list_of_cols: list of columns (in list format or string separated by |)
@@ -201,22 +185,13 @@ def IG_calculation(idf, list_of_cols='all', drop_cols=[], label_col='label', eve
     
     odf = sqlContext.createDataFrame(output, ["attribute", "ig"])\
                 .withColumn('ig', F.round(F.col('ig'),4)).orderBy(F.desc('ig'))
-    
-    if plot:
-        from IPython import get_ipython
-        get_ipython().run_line_magic('matplotlib', 'inline')
-        import matplotlib.pyplot as plt
-        import seaborn as sns
-        plt.style.use('ggplot')
-        sns.set(font_scale = 1)
-        data = odf.toPandas()
-        sns.barplot(x="ig", y="attribute", data=data, orient="h", color='steelblue')
-        plt.figure()
-        plt.show()
+    if print_impact:
+        odf.show(odf.count())
+                 
     return odf
 
 
-def variable_clustering(idf, list_of_cols='all', drop_cols=[], sample_size=100000, plot=False):
+def variable_clustering(idf, list_of_cols='all', drop_cols=[], sample_size=100000, print_impact=False):
     
     """
     :params idf: Input Dataframe
@@ -236,23 +211,29 @@ def variable_clustering(idf, list_of_cols='all', drop_cols=[], sample_size=10000
         list_of_cols = [x.strip() for x in list_of_cols.split('|')]
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
-        
-    remove_cols = uniqueCount_computation(idf, list_of_cols).where(F.col('unique_values') < 2)\
-                    .select('attribute').rdd.flatMap(lambda x:x).collect()        
-    list_of_cols = [e for e in list_of_cols if e not in (drop_cols + remove_cols)]
+               
+    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
 
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError('Invalid input for Column(s)')
-    
+        
+    idf_sample = idf.sample(False, min(1.0, float(sample_size)/idf.count()), 0)
+    idf_sample.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
+    remove_cols = uniqueCount_computation(idf_sample, list_of_cols).where(F.col('unique_values') < 2)\
+                    .select('attribute').rdd.flatMap(lambda x:x).collect() 
+    list_of_cols = [e for e in list_of_cols if e not in remove_cols]
     num_cols, cat_cols, other_cols = attributeType_segregation(idf.select(list_of_cols))
-    idf_encoded = cat_to_num_unsupervised(idf, list_of_cols=cat_cols, method_type=1)
+    idf_encoded = cat_to_num_unsupervised(idf_sample, list_of_cols=cat_cols, method_type=1)
     idf_imputed = imputation_MMM(idf_encoded.select(list_of_cols))
     idf_imputed.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
-    idf_pd = idf_imputed.sample(False, min(1.0, float(sample_size)/idf.count()), 0).toPandas()    
+    idf_sample.unpersist()
+    idf_pd = idf_imputed.toPandas()    
     vc = VarClusHi(idf_pd,maxeigval2=1,maxclus=None)
     vc.varclus()
     odf_pd = vc.rsquare
     odf = sqlContext.createDataFrame(odf_pd).select('Cluster',F.col('Variable').alias('Attribute'),'RS_Ratio')    
-    if plot:
+   
+    if print_impact:
         odf.show(odf.count())
+                 
     return odf

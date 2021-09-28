@@ -389,6 +389,11 @@ def outlier_detection(idf, list_of_cols='all', drop_cols=[], detection_side='upp
                 raise TypeError('Invalid input for ' + arg)
 
     import numpy as np
+    
+    for i in idf.dtypes:
+        if i[1].startswith('decimal'):
+            idf = idf.withColumn(i[0],F.col(i[0]).cast('double'))
+    
     if pre_existing_model:
         df_model = sqlContext.read.parquet(model_path + "/outlier_numfeats")
         params = []

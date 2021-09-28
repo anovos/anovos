@@ -11,14 +11,14 @@ from com.mw.ds.data_transformer.transformers import *
 from com.mw.ds.data_analyzer.quality_checker import *
 
 
-def drift_statistics(idf_target,idf_source, list_of_cols='all',drop_cols=[], method_type='PSI', bin_method='equal_range', 
-                     bin_size=10,threshold=None, pre_existing_source=False, source_path="NA",print_impact=False):
+def drift_statistics(idf_target, idf_source, list_of_cols='all', drop_cols=[], method_type='PSI', bin_method='equal_range', 
+                     bin_size=10, threshold=None, pre_existing_source=False, source_path="NA", print_impact=False):
     '''
     :params idf_target, idf_source: Input Dataframe
     :params list_of_cols: List of columns to check drift (list or string of col names separated by |)
                           all - to include all non-array columns (excluding drop_cols)
     :params drop_cols: List of columns to be dropped (list or string of col names separated by |)  
-    :params method: PSI,JSD, HD,KS (list or string of methods separated by |)
+    :params method: PSI, JSD, HD, KS (list or string of methods separated by |)
                     all - to calculate all metrics 
     :params bin_method: equal_frequency, equal_range
     :params bin_size: 10 - 20 (recommended for PSI), >100 (other method types)
