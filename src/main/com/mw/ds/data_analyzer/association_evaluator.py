@@ -191,7 +191,7 @@ def IG_calculation(idf, list_of_cols='all', drop_cols=[], label_col='label', eve
     return odf
 
 
-def variable_clustering(idf, list_of_cols='all', drop_cols=[], sample_size=100000, print_impact=False):
+def variable_clustering(idf, list_of_cols='all', drop_cols=[], sample_size=100000, plot=False):
     
     """
     :params idf: Input Dataframe
@@ -216,15 +216,21 @@ def variable_clustering(idf, list_of_cols='all', drop_cols=[], sample_size=10000
 
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError('Invalid input for Column(s)')
-        
+    
     idf_sample = idf.sample(False, min(1.0, float(sample_size)/idf.count()), 0)
     idf_sample.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
     remove_cols = uniqueCount_computation(idf_sample, list_of_cols).where(F.col('unique_values') < 2)\
                     .select('attribute').rdd.flatMap(lambda x:x).collect() 
     list_of_cols = [e for e in list_of_cols if e not in remove_cols]
-    num_cols, cat_cols, other_cols = attributeType_segregation(idf.select(list_of_cols))
+    idf_sample = idf_sample.select(list_of_cols)
+    num_cols, cat_cols, other_cols = attributeType_segregation(idf_sample)
+    
+    for i in idf_sample.dtypes:
+        if i[1].startswith('decimal'):
+            idf_sample = idf_sample.withColumn(i[0],F.col(i[0]).cast('double'))
+    
     idf_encoded = cat_to_num_unsupervised(idf_sample, list_of_cols=cat_cols, method_type=1)
-    idf_imputed = imputation_MMM(idf_encoded.select(list_of_cols))
+    idf_imputed = imputation_MMM(idf_encoded)
     idf_imputed.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
     idf_sample.unpersist()
     idf_pd = idf_imputed.toPandas()    
@@ -232,8 +238,6 @@ def variable_clustering(idf, list_of_cols='all', drop_cols=[], sample_size=10000
     vc.varclus()
     odf_pd = vc.rsquare
     odf = sqlContext.createDataFrame(odf_pd).select('Cluster',F.col('Variable').alias('Attribute'),'RS_Ratio')    
-   
-    if print_impact:
+    if plot:
         odf.show(odf.count())
-                 
     return odf

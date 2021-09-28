@@ -402,6 +402,7 @@ def imputation_MMM(idf, list_of_cols="missing", drop_cols=[], method_type="media
     if len(num_cols) > 0:
 
         # Checking for Integer Type Columns & Converting them into Float/Double Type
+        """
         recast_cols = []
         recast_type = []
         mapping = {"int": "Integer", "bigint": "Long"}
@@ -410,7 +411,12 @@ def imputation_MMM(idf, list_of_cols="missing", drop_cols=[], method_type="media
                 odf = odf.withColumn(i, F.col(i).cast(T.FloatType()))
                 recast_cols.append(i + "_imputed")
                 recast_type.append(mapping[get_dtype(idf, i)])
-
+        """
+        
+        for i in idf.dtypes:
+            if i[1] not in ('string','float','double'):
+                odf = odf.withColumn(i[0],F.col(i[0]).cast('double'))
+        
         # Building new imputer model or uploading the existing model
         from pyspark.ml.feature import Imputer, ImputerModel
         if pre_existing_model == True:
@@ -421,7 +427,8 @@ def imputation_MMM(idf, list_of_cols="missing", drop_cols=[], method_type="media
             imputerModel = imputer.fit(odf)
 
         # Applying model
-        odf = recast_column(imputerModel.transform(odf), recast_cols, recast_type)
+        #odf = recast_column(imputerModel.transform(odf), recast_cols, recast_type)
+        odf = imputerModel.transform(odf)
 
         # Saving model if required
         if (pre_existing_model == False) & (model_path != "NA"):
@@ -475,3 +482,69 @@ def imputation_MMM(idf, list_of_cols="missing", drop_cols=[], method_type="media
                         .drop('missing_pct'),'attribute','inner')
         odf_print.show(len(list_of_cols))
     return odf
+
+def outlier_catfeats(idf, list_of_cols, coverage, max_category=50, pre_existing_model=False, model_path="NA", output_mode='replace', print_impact=False):
+    '''
+    idf: Input Dataframe
+    list_of_cols: List of columns for outlier treatment
+    coverage: Minimum % of rows mapped to actual category name and rest will be mapped to others
+    max_category: Even if coverage is less, only these many categories will be mapped to actual name and rest to others
+    pre_existing_model: outlier value for each feature. True if model files exists already, False Otherwise
+    model_path: If pre_existing_model is True, this argument is path for model file. 
+                  If pre_existing_model is False, this field can be used for saving the model file. 
+                  param NA means there is neither pre_existing_model nor there is a need to save one.
+    output_mode: replace or append
+    return: Dataframe after outlier treatment
+    '''
+    if isinstance(list_of_cols, str):
+        list_of_cols = [x.strip() for x in list_of_cols.split('|') if x.strip() in idf.columns]
+    else:
+        list_of_cols = [e for e in list_of_cols if e in idf.columns]
+        
+    if output_mode not in ('replace','append'):
+        raise TypeError('Invalid input for output_mode')
+    if len(list_of_cols) == 0:
+        raise TypeError('Invalid input for Column(s)')
+    
+    if pre_existing_model == True:
+        df_model = sqlContext.read.csv(model_path + "/outlier_catfeats", header=True, inferSchema=True)
+    else:
+        for index, i in enumerate(list_of_cols):
+            from pyspark.sql.window import Window
+            window = Window.partitionBy().orderBy(F.desc('count_pct'))
+            df_cats = idf.groupBy(i).count().dropna()\
+                         .withColumn('count_pct', F.col('count')/F.sum('count').over(Window.partitionBy()))\
+                         .withColumn('rank', F.rank().over(window))\
+                         .withColumn('cumu', F.sum('count_pct').over(window.rowsBetween(Window.unboundedPreceding, 0)))\
+                         .withColumn('lag_cumu', F.lag('cumu').over(window)).fillna(0)\
+                         .where(~((F.col('cumu') >= coverage) & (F.col('lag_cumu') >= coverage)))\
+                         .where(F.col('rank') <= max_category)\
+                         .select(F.lit(i).alias('feature'), F.col(i).alias('parameters'))
+                        
+            if index == 0:
+                df_model = df_cats
+            else:
+                df_model = df_model.union(df_cats)
+    
+    odf = idf
+    for i in list_of_cols:
+        parameters = df_model.where(F.col('feature') == i).select('parameters').rdd.flatMap(lambda x:x).collect()
+        if output_mode == 'replace':
+            odf = odf.withColumn(i, F.when((F.col(i).isin(parameters)) | (F.col(i).isNull()), F.col(i)).otherwise("others"))
+        else:
+            odf = odf.withColumn(i + "_outliered", F.when((F.col(i).isin(parameters)) | (F.col(i).isNull()), F.col(i)).otherwise("others"))
+        
+    # Saving model File if required
+    if (pre_existing_model == False) & (model_path != "NA"):
+        df_model.repartition(1).write.csv(model_path + "/outlier_catfeats", header=True, mode='overwrite')
+        
+    if print_impact:
+        if output_mode == 'replace':
+            output_cols = list_of_cols
+        else:
+            output_cols = [(i+"_outliered") for i in list_of_cols]
+        uniquecount_computation(idf, list_of_cols).select('feature', F.col("unique_values").alias("uniqueValues_before")).show(len(list_of_cols))
+        uniquecount_computation(odf, output_cols).select('feature', F.col("unique_values").alias("uniqueValues_after")).show(len(list_of_cols))
+         
+    return odf
+
