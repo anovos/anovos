@@ -3,11 +3,11 @@ import warnings
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
 from com.mw.ds.shared.spark import *
-from com.mw.ds.shared.utils import attributeType_segregation, transpose_dataframe
+from com.mw.ds.shared.utils import attributeType_segregation, transpose_dataframe, get_dtype
 from com.mw.ds.data_analyzer.stats_generator import uniqueCount_computation, missingCount_computation, mode_computation, measures_of_cardinality
 from com.mw.ds.data_transformer.transformers import imputation_MMM
 
-def rows_wMissingFeats(idf, list_of_cols='all', drop_cols=[], treatment=False, treatment_threshold=0.8, print_impact=False):
+def nullRows_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, treatment_threshold=0.8, print_impact=False):
     """
     :params idf: Input Dataframe
     :params list_of_cols: list or string of col names separated by |
@@ -16,7 +16,7 @@ def rows_wMissingFeats(idf, list_of_cols='all', drop_cols=[], treatment=False, t
     :params treatment: True if rows to be removed else False
     :params treatment_threshold: % of columns allowed to be Null per row, No row removal if treatment_threshold = 1
     :return: Output Dataframe (after row removal),
-             Analysis Dataframe <null_feats_count,row_count,row_pct>
+             Analysis Dataframe <null_cols_count,row_count,row_pct>
     """
 
     if list_of_cols == 'all':
@@ -43,20 +43,20 @@ def rows_wMissingFeats(idf, list_of_cols='all', drop_cols=[], treatment=False, t
         return cols.count(None)
     f_null_count = F.udf(null_count, T.LongType())
 
-    odf_tmp = idf.withColumn("null_feats_count", f_null_count(*list_of_cols))\
-                .withColumn('flagged', F.when(F.col("null_feats_count") > (len(list_of_cols)*treatment_threshold), 1)\
+    odf_tmp = idf.withColumn("null_cols_count", f_null_count(*list_of_cols))\
+                .withColumn('flagged', F.when(F.col("null_cols_count") > (len(list_of_cols)*treatment_threshold), 1)\
                            .otherwise(0))
     
     if not(treatment) | (treatment_threshold == 1):
         odf = idf
     else:
-        odf = odf_tmp.where(F.col("flagged") == 0).drop(*["null_feats_count","flagged"])
+        odf = odf_tmp.where(F.col("flagged") == 0).drop(*["null_cols_count","flagged"])
 
-    odf_print = odf_tmp.groupBy("null_feats_count","flagged").agg(F.count(F.lit(1)).alias('row_count')) \
+    odf_print = odf_tmp.groupBy("null_cols_count","flagged").agg(F.count(F.lit(1)).alias('row_count')) \
                         .withColumn('row_pct', F.round(F.col('row_count') / float(idf.count()), 4)) \
-                        .select('null_feats_count','row_count','row_pct','flagged')
+                        .select('null_cols_count','row_count','row_pct','flagged')
     if print_impact:
-        odf_print.orderBy('null_feats_count').show(odf.count())
+        odf_print.orderBy('null_cols_count').show(odf.count())
         
     return odf, odf_print
 
@@ -390,12 +390,16 @@ def outlier_detection(idf, list_of_cols='all', drop_cols=[], detection_side='upp
 
     import numpy as np
     
-    for i in idf.dtypes:
-        if i[1].startswith('decimal'):
-            idf = idf.withColumn(i[0],F.col(i[0]).cast('double'))
+    recast_cols = []
+    recast_type = []
+    for i in list_of_cols:
+        if get_dtype(idf, i).startswith('decimal'):
+            idf = idf.withColumn(i, F.col(i).cast(T.DoubleType()))
+            recast_cols.append(i)
+            recast_type.append(get_dtype(idf, i))
     
     if pre_existing_model:
-        df_model = sqlContext.read.parquet(model_path + "/outlier_numfeats")
+        df_model = sqlContext.read.parquet(model_path + "/outlier_numcols")
         params = []
         for i in list_of_cols:
             mapped_value = df_model.where(F.col('attribute') == i).select('parameters')\
@@ -427,8 +431,11 @@ def outlier_detection(idf, list_of_cols='all', drop_cols=[], detection_side='upp
         # Saving model File if required
         if model_path != "NA":
             df_model = spark.createDataFrame(zip(list_of_cols, params), schema=['attribute', 'parameters'])
-            df_model.write.parquet(model_path + "/outlier_numfeats", mode='overwrite')
+            df_model.write.parquet(model_path + "/outlier_numcols", mode='overwrite')
 
+    for i,j in zip(recast_cols,recast_type):
+        idf = idf.withColumn(i,F.col(i).cast(j))
+    
     def composite_outlier(*v):
         output = []
         for idx, e in enumerate(v):
@@ -480,7 +487,7 @@ def outlier_detection(idf, list_of_cols='all', drop_cols=[], detection_side='upp
     return odf, odf_print
 
 
-def null_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, treatment_method='row_removal', 
+def nullColumns_detection(idf, list_of_cols='missing', drop_cols=[], treatment=False, treatment_method='row_removal', 
                    treatment_configs={}, print_impact=False):
     """
     :params idf: Pyspark Dataframe
@@ -488,7 +495,7 @@ def null_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, treat
                                  all - to include all non-array columns (excluding drop_cols)
                                  missing - all feautures with missing values (excluding drop_cols)
     :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
-    :params treatment: If True, Imputation/Dropna based on treatment_method
+    :params treatment: If True, Imputation/Dropna/Drop Column based on treatment_method
     :params treatment_method: MMM, row_removal or column_removal(more methods to be added soon)
     :params treatment_configs: All arguments of treatment_method/imputation functions in dictionary format
     :return: Imputed Dataframe
@@ -531,10 +538,12 @@ def null_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, treat
         
         
         if treatment_method == 'row_removal':
+            """
             remove_cols = odf_print.where(F.col('attribute').isin(list_of_cols))\
                             .where(F.col('missing_pct') == 1.0)\
                             .select('attribute').rdd.flatMap(lambda x: x).collect()
             list_of_cols = [e for e in list_of_cols if e not in remove_cols]
+            """
             odf = idf.dropna(subset=list_of_cols)
 
             if print_impact:

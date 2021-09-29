@@ -6,9 +6,8 @@ from pyspark.sql import types as T
 from typing import Iterable
 from itertools import chain
 from com.mw.ds.shared.spark import *
-from com.mw.ds.shared.utils import *
-from com.mw.ds.data_transformer.transformers import *
-from com.mw.ds.data_analyzer.quality_checker import *
+from com.mw.ds.shared.utils import attributeType_segregation
+from com.mw.ds.data_transformer.transformers import attribute_binning
 
 
 def drift_statistics(idf_target, idf_source, list_of_cols='all', drop_cols=[], method_type='PSI', bin_method='equal_range', 

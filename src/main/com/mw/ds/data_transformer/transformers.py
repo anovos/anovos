@@ -4,7 +4,7 @@ from pyspark.sql import types as T
 import warnings
 from com.mw.ds.shared.spark import *
 from com.mw.ds.shared.utils import attributeType_segregation, get_dtype
-from com.mw.ds.data_analyzer.stats_generator import missingCount_computation
+from com.mw.ds.data_analyzer.stats_generator import missingCount_computation, uniqueCount_computation
 from com.mw.ds.data_ingest.data_ingest import recast_column
 
 def attribute_binning (idf, list_of_cols='all', drop_cols=[], method_type="equal_range", bin_size=10, 
@@ -109,24 +109,20 @@ def attribute_binning (idf, list_of_cols='all', drop_cols=[], method_type="equal
         uniqueCount_computation(odf, output_cols).show(len(output_cols))
     return odf
 
-"""
-def attribute_binning (idf, list_of_cols='all', drop_cols=[], method_type="equal_range", bin_size=10, 
-                     pre_existing_model=False, model_path="NA", output_mode="replace", print_impact=False):
-    '''
+
+def monotonic_encoding(idf,list_of_cols='all', drop_cols=[], label_col='label', 
+                       event_label=1, bin_method="equal_frequency", bin_size=10):
+    """
     :params idf: Input Dataframe
     :params list_of_cols: Numerical columns (in list format or string separated by |)
                          all - to include all numerical columns (excluding drop_cols)
     :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
-    :params method_type: equal_frequency, equal_range
+    :params label_col: Label column
+    :params event_label: Value of event (binary classfication)
+    :params bin_method: equal_frequency, equal_range
     :params bin_size: No of bins
-    :params pre_existing_model: True if mapping values exists already, False Otherwise. 
-    :params model_path: If pre_existing_model is True, this argument is path for the saved model. 
-                  If pre_existing_model is False, this argument can be used for saving the model. 
-                  Default "NA" means there is neither pre_existing_model nor there is a need to save one.
-    :params output_mode: replace or append
     :return: Binned Dataframe
-    '''
-    
+    """
     num_cols = attributeType_segregation(idf)[0]
     if list_of_cols == 'all':
         list_of_cols = num_cols
@@ -135,143 +131,82 @@ def attribute_binning (idf, list_of_cols='all', drop_cols=[], method_type="equal
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = [e for e in list_of_cols if e not in (drop_cols+[label_col])]
 
-    if any(x not in num_cols for x in list_of_cols) | (len(list_of_cols) == 0):
+    if any(x not in num_cols for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
-    if method_type not in ("equal_frequency", "equal_range"):
-        raise TypeError('Invalid input for method_type')
-    if bin_size < 2:
-        raise TypeError('Invalid input for bin_size')
-    if output_mode not in ('replace','append'):
-        raise TypeError('Invalid input for output_mode')
     
-    odf = idf
-    for idx, col in enumerate(list_of_cols):
-        
-        #if (idx-1)%5 == 0:
-         #   odf = spark.read.parquet("intermediate_data/attribute_binning/"+str(idx-1))
-        
-        if method_type == "equal_frequency":
-            from pyspark.ml.feature import QuantileDiscretizer
-            if pre_existing_model == True:
-                discretizerModel = QuantileDiscretizer.load(model_path + "/attribute_binning/" + col)
-            else:
-                discretizer = QuantileDiscretizer(numBuckets=bin_size,inputCol=col, outputCol=col+"_binned")
-                discretizerModel = discretizer.fit(odf)
-            #print(discretizerModel.getSplits())
-            odf = discretizerModel.transform(odf)
-            
-            if (pre_existing_model == False) & (model_path != "NA"):
-                discretizerModel.write().overwrite().save(model_path + "/attribute_binning/" + col)
-        else:
-            from pyspark.ml.feature import Bucketizer
-            if pre_existing_model == True:
-                bucketizer = Bucketizer.load(model_path + "/attribute_binning/" + col)
-            else:
-                max_val = idf.select(F.col(col)).groupBy().max().rdd.flatMap(lambda x: x).collect()[0]
-                min_val = idf.select(F.col(col)).groupBy().min().rdd.flatMap(lambda x: x).collect()[0]
-                bin_width = (max_val - min_val)/bin_size
-                bin_cutoff = [-float("inf")]
-                for i in range(1,bin_size):
-                    bin_cutoff.append(min_val+i*bin_width)            
-                bin_cutoff.append(float("inf"))
-                #print(col, bin_cutoff)
-                bucketizer = Bucketizer(splits=bin_cutoff, inputCol=col, outputCol=col+"_binned")
-                
-                if (pre_existing_model == False) & (model_path != "NA"):
-                    bucketizer.write().overwrite().save(model_path + "/attribute_binning/" + col)    
-            #print(bucketizer.getSplits())
-            odf = bucketizer.transform(odf)
-            
-        if idx%5 == 0:
-            odf.persist()
-            print(odf.count())
-         #   odf.write.parquet("intermediate_data/attribute_binning/"+str(idx),mode='overwrite')
-            
-    if output_mode == 'replace':
-        for col in list_of_cols:
-            odf = odf.drop(col).withColumnRenamed(col+"_binned",col)
-        
-    if print_impact:
-        if output_mode == 'replace':
-            output_cols = list_of_cols
-        else:
-            output_cols = [(i+"_binned") for i in list_of_cols]
-        uniqueCount_computation(odf, output_cols).show(len(output_cols))
-    return odf
-"""
+    attribute_binning (idf, list_of_cols='all', drop_cols=[], method_type="equal_range", bin_size=10, 
+                     pre_existing_model=False, model_path="NA", output_mode="replace", print_impact=False)
 
-def monotonic_encoding(idf,list_of_cols='all', drop_cols=[], label_col='label', 
-                       event_label=1, bin_method="equal_frequency", bin_size=10):
-    """
-    :params idf: Input Dataframe
-    :params list_of_cols: all or list of numerical columns (in list format or string separated by |)
-    :params method_type: equal_frequency, equal_range
-    :params bin_size: No of bins
-    :return: Binned Dataframe
-    """
-    if list_of_cols == 'all':
-        list_of_cols = attributeType_segregation(idf)[0]
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
-    
     from scipy import stats
     idf_encoded = idf
     for col in list_of_cols:
         n = 20 #max_bin
         r = 0
         while n > 2:                
-            tmp = attribute_binning (idf,[col],drop_cols,bin_method, n,output_mode='append')\
+            tmp = attribute_binning (idf,[col],drop_cols=[],method_type=bin_method, bin_size=n,output_mode='append')\
                     .select(label_col,col,col+'_binned')\
                     .withColumn(label_col, F.when(F.col(label_col) == event_label,1).otherwise(0))\
                     .groupBy(col+'_binned').agg(F.avg(col).alias('mean_val'), F.avg(label_col).alias('mean_label')).dropna()
             #r = tmp.stat.corr('mean_age','mean_label')
             r,p = stats.spearmanr(tmp.toPandas()[['mean_val']], tmp.toPandas()[['mean_label']])
             if r == 1.0:
-                idf_encoded = attribute_binning (idf_encoded,[col],drop_cols,bin_method, n)
-                print(col,n)
+                idf_encoded = attribute_binning (idf_encoded,[col],drop_cols=[],method_type=bin_method, bin_size=n)
                 break
             n = n-1
             r = 0
         if r < 1.0:
-            idf_encoded = attribute_binning (idf_encoded,[col],drop_cols,bin_method, bin_size)
+            idf_encoded = attribute_binning (idf_encoded,[col],drop_cols=[],method_type=bin_method, bin_size=bin_size)
             
     return idf_encoded
 
 
-def cat_to_num_unsupervised (idf, list_of_cols, method_type, index_order='frequencyDesc', onehot_dropLast=False,
+def cat_to_num_unsupervised (idf, list_of_cols='all', drop_cols=[], method_type=1, index_order='frequencyDesc', onehot_dropLast=False,
                              pre_existing_model=False, model_path="NA", output_mode='replace',print_impact=False):
     '''
-    idf: Input Dataframe
-    list_of_cols: List of categorical attributes
-    method_type: 1 (Label Encoding) or 0 (One hot encoding)
-    index_order: frequencyDesc, frequencyAsc, alphabetDesc, alphabetAsc
-    onehot_dropLast= True or False (Dropping last column in one hot encoding)
-    pre_existing_model: True if the models exist already, False Otherwise
-    model_path: If pre_existing_model is True, this argument is path for the saved models. If pre_existing_model is False, 
+    :params idf: Input Dataframe
+    :params list_of_cols: Categorical columns (in list format or string separated by |)
+                         all - to include all categorical columns (excluding drop_cols)
+    :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
+    :params method_type: 1 (Label Encoding) or 0 (One hot encoding)
+    :params index_order: Valid only for Label Encoding - frequencyDesc, frequencyAsc, alphabetDesc, alphabetAsc
+    :params onehot_dropLast= True or False (Dropping last column in one hot encoding)
+    :params pre_existing_model: True if the models exist already, False Otherwise
+    :params model_path: If pre_existing_model is True, this argument is path for the saved models. If pre_existing_model is False, 
                 this argument can be used for saving the normalization model (value other than NA). 
                 Default ("NA") means there is neither pre_existing_model nor there is a need to save one.
-    output_mode: replace or append
-    return: Dataframe with transformed categorical attributes
+    :params output_mode: replace or append
+    :return: Dataframe with transformed categorical attributes
     '''
     from pyspark.ml.feature import OneHotEncoder, StringIndexer, OneHotEncoderModel, StringIndexerModel, OneHotEncoderEstimator
     from pyspark.ml import Pipeline, PipelineModel
     
+    cat_cols = attributeType_segregation(idf)[1]
+    if list_of_cols == 'all':
+        list_of_cols = cat_cols
     if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split('|') if x.strip() in idf.columns]
-    else:
-        list_of_cols = [e for e in list_of_cols if e in idf.columns]
+        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
+    if isinstance(drop_cols, str):
+        drop_cols = [x.strip() for x in drop_cols.split('|')]
     
+    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    
+    if any(x not in cat_cols for x in list_of_cols):
+        raise TypeError('Invalid input for Column(s)')
+    
+    if len(list_of_cols) == 0:
+        warnings.warn("No Encoding Computation")
+        return idf      
     if method_type not in (0,1):
         raise TypeError('Invalid input for method_type')
+    if index_order not in ('frequencyDesc', 'frequencyAsc', 'alphabetDesc', 'alphabetAsc'):
+        raise TypeError('Invalid input for Encoding Index Order')
     if output_mode not in ('replace','append'):
         raise TypeError('Invalid input for output_mode')
-    if len(list_of_cols) == 0:
-        warnings.warn("No Transformation Performed - Encoding")
-        return idf
+
         
-    if pre_existing_model == True:
+    if pre_existing_model:
         pipelineModel = PipelineModel.load(model_path + "/cat_to_num_unsupervised/indexer")
     else:
         stages = []
@@ -401,21 +336,14 @@ def imputation_MMM(idf, list_of_cols="missing", drop_cols=[], method_type="media
     odf = idf
     if len(num_cols) > 0:
 
-        # Checking for Integer Type Columns & Converting them into Float/Double Type
-        """
+        # Checking for Integer/Decimal Type Columns & Converting them into Float/Double Type
         recast_cols = []
         recast_type = []
-        mapping = {"int": "Integer", "bigint": "Long"}
         for i in num_cols:
-            if get_dtype(idf, i) in ('int', 'bigint'):
-                odf = odf.withColumn(i, F.col(i).cast(T.FloatType()))
+            if get_dtype(idf, i) not in ('float','double'):
+                odf = odf.withColumn(i, F.col(i).cast(T.DoubleType()))
                 recast_cols.append(i + "_imputed")
-                recast_type.append(mapping[get_dtype(idf, i)])
-        """
-        
-        for i in idf.dtypes:
-            if i[1] not in ('string','float','double'):
-                odf = odf.withColumn(i[0],F.col(i[0]).cast('double'))
+                recast_type.append(get_dtype(idf, i))
         
         # Building new imputer model or uploading the existing model
         from pyspark.ml.feature import Imputer, ImputerModel
@@ -429,6 +357,8 @@ def imputation_MMM(idf, list_of_cols="missing", drop_cols=[], method_type="media
         # Applying model
         #odf = recast_column(imputerModel.transform(odf), recast_cols, recast_type)
         odf = imputerModel.transform(odf)
+        for i,j in zip(recast_cols,recast_type):
+            odf = odf.withColumn(i,F.col(i).cast(j))
 
         # Saving model if required
         if (pre_existing_model == False) & (model_path != "NA"):
@@ -483,31 +413,49 @@ def imputation_MMM(idf, list_of_cols="missing", drop_cols=[], method_type="media
         odf_print.show(len(list_of_cols))
     return odf
 
-def outlier_catfeats(idf, list_of_cols, coverage, max_category=50, pre_existing_model=False, model_path="NA", output_mode='replace', print_impact=False):
+def outlier_categories(idf, list_of_cols='all', drop_cols=[], coverage=1.0, max_category=50, 
+                       pre_existing_model=False, model_path="NA", output_mode='replace', print_impact=False):
     '''
-    idf: Input Dataframe
-    list_of_cols: List of columns for outlier treatment
-    coverage: Minimum % of rows mapped to actual category name and rest will be mapped to others
-    max_category: Even if coverage is less, only these many categories will be mapped to actual name and rest to others
-    pre_existing_model: outlier value for each feature. True if model files exists already, False Otherwise
-    model_path: If pre_existing_model is True, this argument is path for model file. 
+    :params idf: Input Dataframe
+    :params list_of_cols: Categorical columns (in list format or string separated by |)
+                         all - to include all categorical columns (excluding drop_cols)
+    :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
+    :params coverage: Minimum % of rows mapped to actual category name and rest will be mapped to others
+    :params max_category: Even if coverage is less, only (max_category - 1) categories will be mapped to actual name and rest to others.
+                            Caveat is when multiple categories have same rank. Then #categories can be more than max_category
+    :params pre_existing_model: outlier value for each attribute. True if model files exists already, False Otherwise
+    :params model_path: If pre_existing_model is True, this argument is path for model file. 
                   If pre_existing_model is False, this field can be used for saving the model file. 
                   param NA means there is neither pre_existing_model nor there is a need to save one.
-    output_mode: replace or append
-    return: Dataframe after outlier treatment
+    :params output_mode: replace or append
+    "return: Dataframe after outlier treatment
     '''
+    
+    cat_cols = attributeType_segregation(idf)[1]
+    if list_of_cols == 'all':
+        list_of_cols = cat_cols
     if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split('|') if x.strip() in idf.columns]
-    else:
-        list_of_cols = [e for e in list_of_cols if e in idf.columns]
-        
-    if output_mode not in ('replace','append'):
-        raise TypeError('Invalid input for output_mode')
-    if len(list_of_cols) == 0:
+        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
+    if isinstance(drop_cols, str):
+        drop_cols = [x.strip() for x in drop_cols.split('|')]
+    
+    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    
+    if any(x not in cat_cols for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
     
+    if len(list_of_cols) == 0:
+        warnings.warn("No Outlier Categories Computation")
+        return idf        
+    if (coverage <= 0) | (coverage > 1):
+        raise TypeError('Invalid input for Coverage Value')
+    if max_category < 2:
+        raise TypeError('Invalid input for Maximum No. of Categories Allowed')
+    if output_mode not in ('replace','append'):
+        raise TypeError('Invalid input for output_mode')
+    
     if pre_existing_model == True:
-        df_model = sqlContext.read.csv(model_path + "/outlier_catfeats", header=True, inferSchema=True)
+        df_model = sqlContext.read.csv(model_path + "/outlier_categories", header=True, inferSchema=True)
     else:
         for index, i in enumerate(list_of_cols):
             from pyspark.sql.window import Window
@@ -518,9 +466,8 @@ def outlier_catfeats(idf, list_of_cols, coverage, max_category=50, pre_existing_
                          .withColumn('cumu', F.sum('count_pct').over(window.rowsBetween(Window.unboundedPreceding, 0)))\
                          .withColumn('lag_cumu', F.lag('cumu').over(window)).fillna(0)\
                          .where(~((F.col('cumu') >= coverage) & (F.col('lag_cumu') >= coverage)))\
-                         .where(F.col('rank') <= max_category)\
-                         .select(F.lit(i).alias('feature'), F.col(i).alias('parameters'))
-                        
+                         .where(F.col('rank') <= (max_category - 1))\
+                         .select(F.lit(i).alias('attribute'), F.col(i).alias('parameters'))   
             if index == 0:
                 df_model = df_cats
             else:
@@ -528,7 +475,7 @@ def outlier_catfeats(idf, list_of_cols, coverage, max_category=50, pre_existing_
     
     odf = idf
     for i in list_of_cols:
-        parameters = df_model.where(F.col('feature') == i).select('parameters').rdd.flatMap(lambda x:x).collect()
+        parameters = df_model.where(F.col('attribute') == i).select('parameters').rdd.flatMap(lambda x:x).collect()
         if output_mode == 'replace':
             odf = odf.withColumn(i, F.when((F.col(i).isin(parameters)) | (F.col(i).isNull()), F.col(i)).otherwise("others"))
         else:
@@ -536,15 +483,15 @@ def outlier_catfeats(idf, list_of_cols, coverage, max_category=50, pre_existing_
         
     # Saving model File if required
     if (pre_existing_model == False) & (model_path != "NA"):
-        df_model.repartition(1).write.csv(model_path + "/outlier_catfeats", header=True, mode='overwrite')
+        df_model.repartition(1).write.csv(model_path + "/outlier_categories", header=True, mode='overwrite')
         
     if print_impact:
         if output_mode == 'replace':
             output_cols = list_of_cols
         else:
             output_cols = [(i+"_outliered") for i in list_of_cols]
-        uniquecount_computation(idf, list_of_cols).select('feature', F.col("unique_values").alias("uniqueValues_before")).show(len(list_of_cols))
-        uniquecount_computation(odf, output_cols).select('feature', F.col("unique_values").alias("uniqueValues_after")).show(len(list_of_cols))
+        uniqueCount_computation(idf, list_of_cols).select('attribute', F.col("unique_values").alias("uniqueValues_before")).show(len(list_of_cols))
+        uniqueCount_computation(odf, output_cols).select('attribute', F.col("unique_values").alias("uniqueValues_after")).show(len(list_of_cols))
          
     return odf
 

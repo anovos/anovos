@@ -79,7 +79,7 @@ quality_checker:
     drop_cols: ['ifa']
     treatment: True
   
-  rows_wMissingFeats:
+  nullRows_detection:
     list_of_cols: all
     drop_cols: []
     treatment: True
@@ -121,7 +121,7 @@ quality_checker:
     model_path: NA
     output_mode: replace
 
-  null_detection:
+  nullColumns_detection:
     list_of_cols: all
     drop_cols: ['ifa']
     treatment: True
