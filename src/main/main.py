@@ -133,7 +133,7 @@ def main(all_configs):
                     start = timeit.default_timer()
                     f = getattr(report_gen_inter, subkey)
                     if subkey == 'data_drift':
-                        f(**value)
+                        f(df, **value)
                     else:
                         f(report_gen_inter.processed_df(df),**value)
                     end = timeit.default_timer()

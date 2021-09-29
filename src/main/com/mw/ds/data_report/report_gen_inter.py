@@ -79,7 +79,7 @@ def plot_gen_hist_bar(idf,col,cov=None,max_cat=50,bin_type=None):
     #try:
     if col in cat_cols:
     
-        idf = outlier_catfeats(idf,list_of_cols=col,coverage=cov,max_category=max_cat)\
+        idf = outlier_categories(idf,list_of_cols=col,coverage=cov,max_category=max_cat)\
                               .groupBy(col).count()\
                               .withColumn("count_%",100*(F.col("count")/F.sum("count").over(Window.partitionBy())))\
                               .withColumn(col,f_remove_dups(col))\
@@ -145,7 +145,7 @@ def plot_gen_boxplot(idf,cont_col,cat_col=None,color_by=None,cov=None,max_cat=50
         else:
             idf = idf.fillna("Missing",subset=cat_col)
         
-        idf = outlier_catfeats(idf,list_of_cols=cat_col,coverage=cov,max_category=max_cat).toPandas()
+        idf = outlier_categories(idf,list_of_cols=cat_col,coverage=cov,max_category=max_cat).toPandas()
         
         fig = px.box(idf,x=cat_col,y=cont_col,color=color_by,color_discrete_sequence=global_theme)
 #         fig.update_traces(textposition='outside')
@@ -210,7 +210,7 @@ def plot_gen_feat_analysis_label(idf,col,label,event_class,max_cat=None,bin_type
         
         idf = attribute_binning(idf, method_type=bin_type, bin_size=max_cat, list_of_cols=col)
         
-        idf = idf.groupBy(col).pivot(label).count()\
+        odf = idf.groupBy(col).pivot(label).count()\
                  .fillna(0,subset=class_cats)\
                  .withColumn("event_rate",100*(F.col(event_class)/(F.col(class_cats[0])+F.col(class_cats[1]))))\
                  .withColumn("attribute_name",F.lit(col))\
@@ -218,7 +218,7 @@ def plot_gen_feat_analysis_label(idf,col,label,event_class,max_cat=None,bin_type
                  .orderBy("event_rate",ascending=False)\
                  .toPandas()
         
-        fig = px.bar(idf,x=col,y='event_rate',text=idf['event_rate'].apply(lambda x: '{0:1.2f}%'.format(x)),color_discrete_sequence=global_theme)
+        fig = px.bar(odf,x=col,y='event_rate',text=odf['event_rate'].apply(lambda x: '{0:1.2f}%'.format(x)),color_discrete_sequence=global_theme)
         fig.update_traces(textposition='outside')
         fig.update_layout(title_text=str('Event Rate Distribution for ' +str(col.upper()) + str(" [Target Variable : " + str(event_class) + str("]"))))
         fig.update_xaxes(type='category')
@@ -355,10 +355,10 @@ def plot_comparative_drift_gen(df1,df2,col):
 
     if col in cat_cols:
 
-        xx = outlier_catfeats(idf=df1,list_of_cols=col,coverage=0.9,max_category=10)\
+        xx = outlier_categories(idf=df1,list_of_cols=col,coverage=0.9,max_category=10)\
                               .groupBy(col).count()\
                               .orderBy(col,ascending=True).withColumnRenamed("count","count_source")\
-                              .join(outlier_catfeats(idf=df2,list_of_cols=col,coverage=0.9,max_category=10)\
+                              .join(outlier_categories(idf=df2,list_of_cols=col,coverage=0.9,max_category=10)\
                               .groupBy(col).count()\
                               .orderBy(col,ascending=True).withColumnRenamed("count","count_target"),col,"left_outer")\
                               .toPandas()
@@ -425,7 +425,7 @@ def num_cols_chart_list_outlier(idf,split_var=None,output_path=None):
 
     for index,i in enumerate(num_cols):
 
-        f = violin_plot_gen(df,i,split_var=split_var)
+        f = violin_plot_gen(idf,i,split_var=split_var)
         if output_path is None:
             f.write_json("fig_num_f3_" + str(index))
         else:
@@ -478,15 +478,17 @@ def output_pandas_df(idf,input_path,pandas_df_output_path, list_tabs, list_tab1,
     
     spark.read.parquet(ends_with(input_path) + ends_with("data_analyzer") +  ends_with("stats_generator") + ends_with("global_summary")).toPandas().to_csv(ends_with(pandas_df_output_path) + "global_summary_df.csv",index=False) 
 
-def data_drift(df_source_path, df_target_path, drift_stats_path,chart_output_path=None,pandas_df_output_path=None,driftcheckrequired=False):
+def data_drift(df2, df_source_path, drift_stats_path,chart_output_path=None,pandas_df_output_path=None,driftcheckrequired=False):
     
     if bool(driftcheckrequired):
         
         Path(pandas_df_output_path).mkdir(parents=True, exist_ok=True)
+        df1 = read_dataset(df_source_path.get("file_path"),df_source_path.get("file_type"),df_source_path.get("file_configs"))
+        stats_drift = read_dataset(drift_stats_path.get("file_path"),drift_stats_path.get("file_type"))
 
-        df1 = read_dataset(**df_source_path)
-        df2 = read_dataset(**df_target_path)
-        stats_drift = read_dataset(**drift_stats_path)
+        #df1 = read_dataset(**df_source_path)
+        #df2 = read_dataset(**df_target_path)
+        #stats_drift = read_dataset(**drift_stats_path)
 
         stats_drift.toPandas().to_csv(ends_with(pandas_df_output_path) + "drift_statistics.csv",index=False)
 
