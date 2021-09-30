@@ -199,6 +199,7 @@ report_gen_inter:
     event_class: ">50K" 
     chart_output_path: "./output/chart_objects/"
     max_cat: 10
+  
   output_pandas_df:
     islabel: True
     input_path: "./stats"

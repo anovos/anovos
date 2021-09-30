@@ -4,10 +4,11 @@ from pyspark.sql import functions as F
 from pyspark.sql import types as T
 from com.mw.ds.shared.spark import *
 from com.mw.ds.shared.utils import attributeType_segregation
+from com.mw.ds.data_ingest.data_ingest import read_dataset
 from com.mw.ds.data_transformer.transformers import attribute_binning, monotonic_encoding, cat_to_num_unsupervised, imputation_MMM
 from com.mw.ds.data_analyzer.stats_generator import uniqueCount_computation
 
-def correlation_matrix(idf, list_of_cols='all', drop_cols=[], print_impact=False):
+def correlation_matrix(idf, list_of_cols='all', drop_cols=[], stats_unique={}, print_impact=False):
     """
     :params idf: Input Dataframe
     :params list_of_cols: list of columns (in list format or string separated by |)
@@ -28,8 +29,12 @@ def correlation_matrix(idf, list_of_cols='all', drop_cols=[], print_impact=False
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
         
-    remove_cols = uniqueCount_computation(idf, list_of_cols).where(F.col('unique_values') < 2)\
-                    .select('attribute').rdd.flatMap(lambda x:x).collect() 
+    if stats_unique == {}:
+        remove_cols = uniqueCount_computation(idf, list_of_cols).where(F.col('unique_values') < 2)\
+                    .select('attribute').rdd.flatMap(lambda x:x).collect()
+    else:
+        remove_cols = read_dataset(**stats_unique).where(F.col('unique_values') < 2)\
+                    .select('attribute').rdd.flatMap(lambda x:x).collect()
         
     list_of_cols = [e for e in list_of_cols if e not in (drop_cols + remove_cols)]
 
@@ -191,7 +196,7 @@ def IG_calculation(idf, list_of_cols='all', drop_cols=[], label_col='label', eve
     return odf
 
 
-def variable_clustering(idf, list_of_cols='all', drop_cols=[], sample_size=100000, print_impact=False):
+def variable_clustering(idf, list_of_cols='all', drop_cols=[], sample_size=100000, stats_unique={}, stats_mode={}, print_impact=False):
     
     """
     :params idf: Input Dataframe
@@ -219,8 +224,13 @@ def variable_clustering(idf, list_of_cols='all', drop_cols=[], sample_size=10000
     
     idf_sample = idf.sample(False, min(1.0, float(sample_size)/idf.count()), 0)
     idf_sample.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
-    remove_cols = uniqueCount_computation(idf_sample, list_of_cols).where(F.col('unique_values') < 2)\
-                    .select('attribute').rdd.flatMap(lambda x:x).collect() 
+    if stats_unique == {}:
+        remove_cols = uniqueCount_computation(idf_sample, list_of_cols).where(F.col('unique_values') < 2)\
+                    .select('attribute').rdd.flatMap(lambda x:x).collect()
+    else:
+        remove_cols = read_dataset(**stats_unique).where(F.col('unique_values') < 2)\
+                    .select('attribute').rdd.flatMap(lambda x:x).collect()
+
     list_of_cols = [e for e in list_of_cols if e not in remove_cols]
     idf_sample = idf_sample.select(list_of_cols)
     num_cols, cat_cols, other_cols = attributeType_segregation(idf_sample)
@@ -228,9 +238,8 @@ def variable_clustering(idf, list_of_cols='all', drop_cols=[], sample_size=10000
     for i in idf_sample.dtypes:
         if i[1].startswith('decimal'):
             idf_sample = idf_sample.withColumn(i[0],F.col(i[0]).cast('double'))
-    
     idf_encoded = cat_to_num_unsupervised(idf_sample, list_of_cols=cat_cols, method_type=1)
-    idf_imputed = imputation_MMM(idf_encoded)
+    idf_imputed = imputation_MMM(idf_encoded,stats_mode=stats_mode)
     idf_imputed.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
     idf_sample.unpersist()
     idf_pd = idf_imputed.toPandas()    

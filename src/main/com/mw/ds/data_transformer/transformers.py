@@ -5,7 +5,7 @@ import warnings
 from com.mw.ds.shared.spark import *
 from com.mw.ds.shared.utils import attributeType_segregation, get_dtype
 from com.mw.ds.data_analyzer.stats_generator import missingCount_computation, uniqueCount_computation
-from com.mw.ds.data_ingest.data_ingest import recast_column
+from com.mw.ds.data_ingest.data_ingest import recast_column, read_dataset
 
 def attribute_binning (idf, list_of_cols='all', drop_cols=[], method_type="equal_range", bin_size=10, 
                      pre_existing_model=False, model_path="NA", output_mode="replace", print_impact=False):
@@ -280,8 +280,8 @@ def cat_to_num_unsupervised (idf, list_of_cols='all', drop_cols=[], method_type=
 
     return odf
 
-def imputation_MMM(idf, list_of_cols="missing", drop_cols=[], method_type="median",
-                   pre_existing_model=False, model_path="NA", output_mode="replace", print_impact=False):
+def imputation_MMM(idf, list_of_cols="missing", drop_cols=[], method_type="median", pre_existing_model=False, model_path="NA", 
+                    output_mode="replace", stats_missing={}, stats_mode={}, print_impact=False):
     """
     :params idf: Pyspark Dataframe
     :params list_of_cols: list of columns (in list format or string separated by |)
@@ -296,9 +296,13 @@ def imputation_MMM(idf, list_of_cols="missing", drop_cols=[], method_type="media
     :params output_mode: replace or append
     :return: Imputed Dataframe
     """
+    if stats_missing == {}:
+        missing_df = missingCount_computation(idf)
+    else:
+        missing_df = read_dataset(**stats_missing).select('attribute','missing_count','missing_pct')
     
-    missing_cols = missingCount_computation(idf)\
-                    .where(F.col('missing_count') > 0).select('attribute').rdd.flatMap(lambda x: x).collect()
+    missing_cols = missing_df.where(F.col('missing_count') > 0).select('attribute').rdd.flatMap(lambda x: x).collect()
+
     if str(pre_existing_model).lower() == 'true':
         pre_existing_model = True
     elif str(pre_existing_model).lower() == 'false':
@@ -374,10 +378,14 @@ def imputation_MMM(idf, list_of_cols="missing", drop_cols=[], method_type="media
                 parameters.append(mapped_value)
             # imputerModel = ImputerModel.load(model_path + "/imputation_MMM/cat_imputer-model") #spark 3.X
         else:
-            parameters = [str((idf.select(i).dropna().groupby(i).count().orderBy("count", ascending=False).first() 
+            if stats_mode == {}:
+                parameters = [str((idf.select(i).dropna().groupby(i).count().orderBy("count", ascending=False).first() 
                                or [None])[0]) for i in cat_cols]
-            #imputer = Imputer(strategy='mode', inputCols=cat_cols, outputCols=[(e + "_imputed") for e in cat_cols]) #spark 3.X
-            # imputerModel = imputer.fit(odf) #spark 3.X
+                #imputer = Imputer(strategy='mode', inputCols=cat_cols, outputCols=[(e + "_imputed") for e in cat_cols]) #spark 3.X
+                # imputerModel = imputer.fit(odf) #spark 3.X
+            else:
+                mode_df = read_dataset(**stats_mode).replace('None', None)
+                parameters = [mode_df.where(F.col('attribute') == i).select('mode').rdd.flatMap(list).collect()[0] for i in cat_cols]
 
         for index, i in enumerate(cat_cols):
             odf = odf.withColumn(i + "_imputed", F.when(F.col(i).isNull(), parameters[index]).otherwise(F.col(i)))
@@ -397,15 +405,13 @@ def imputation_MMM(idf, list_of_cols="missing", drop_cols=[], method_type="media
 
     if print_impact:
         if output_mode == 'replace':
-            odf_print = missingCount_computation(idf,list_of_cols)\
-                        .select('attribute', F.col("missing_count").alias("missingCount_before"))\
+            odf_print = missing_df.select('attribute', F.col("missing_count").alias("missingCount_before"))\
                         .join(missingCount_computation(odf,list_of_cols)\
                         .select('attribute', F.col("missing_count").alias("missingCount_after")),'attribute','inner')
         else:
             from pyspark.sql.functions import substring, length
             output_cols = [(i + "_imputed") for i in (num_cols + cat_cols)]
-            odf_print = missingCount_computation(idf,list_of_cols)\
-                        .select('attribute', F.col("missing_count").alias("missingCount_before"))\
+            odf_print = missing_df.select('attribute', F.col("missing_count").alias("missingCount_before"))\
                         .join(missingCount_computation(odf,output_cols)\
                         .withColumnRename('attribute','attribute_after')\
                         .withColumn('attribute', F.expr("substring(attribute_after, 1, length(attribute_after)-8)"))\

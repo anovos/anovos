@@ -1,10 +1,8 @@
 import yaml
 import subprocess
 import copy
-import os
 import sys
 from com.mw.ds.shared.spark import *
-from com.mw.ds.shared.utils import *
 from com.mw.ds.data_ingest import data_ingest
 from com.mw.ds.data_analyzer import stats_generator
 from com.mw.ds.data_analyzer import quality_checker
@@ -47,8 +45,35 @@ def save(data,write_configs,folder_name,reread=False):
                 read['file_configs'].pop('mode', None)
             data = data_ingest.read_dataset(**read)
             return data
+        
+def stats_args(all_configs,k):
+    stats_configs = all_configs.get('stats_generator',None)
+    write_configs = all_configs.get('write_stats',None)
+    output = {}
+    if (stats_configs != None) & (write_configs != None):
+        read = copy.deepcopy(write_configs)
+        if 'file_configs' in read:
+            read['file_configs'].pop('repartition', None)
+            read['file_configs'].pop('mode', None)
+            
+        mainfunc_to_args = {'biasedness_detection': ['stats_mode'],
+                     'IDness_detection': ['stats_unique'],
+                     'outlier_detection': ['stats_unique'],
+                     'correlation_matrix': ['stats_unique'],
+                     'nullColumns_detection': ['stats_unique','stats_mode','stats_missing'],
+                     'variable_clustering':['stats_unique','stats_mode']}
+        args_to_statsfunc = {'stats_unique':'measures_of_cardinality','stats_mode': 'measures_of_centralTendency', 
+                             'stats_missing':'measures_of_counts'}
+        for arg in mainfunc_to_args.get(k,[]):
+            k_read = copy.deepcopy(read)
+            k_read['file_path'] = k_read['file_path'] + "/data_analyzer/stats_generator/" + args_to_statsfunc[arg]
+            output[arg]= k_read
+            
+    return output
 
 def main(all_configs):
+    
+    start_main = timeit.default_timer()
     
     # reading main dataset
     df = ETL(all_configs.get('input_dataset'))
@@ -84,9 +109,9 @@ def main(all_configs):
             for m in args['metric']:
                 start = timeit.default_timer()
                 print("\n" + m + ": \n")
-                f = getattr(stats_generator, m) 
-                stats = f(df,**args['metric_args'], print_impact=False)
-                save(stats,write_stats,folder_name="data_analyzer/stats_generator/" + m,reread=True).show(100)
+                f = getattr(stats_generator, m)
+                df_stats = f(df,**args['metric_args'], print_impact=False)
+                save(df_stats,write_stats,folder_name="data_analyzer/stats_generator/" + m,reread=True).show(100)
                 end = timeit.default_timer()
                 print(key,m, end-start)
 
@@ -96,10 +121,12 @@ def main(all_configs):
                     start = timeit.default_timer()
                     print("\n" + subkey + ": \n")
                     f = getattr(quality_checker, subkey)
-                    df,stats = f(df,**value, print_impact=False)
+                    extra_args = stats_args(all_configs,subkey)
+                    print(extra_args)
+                    df,df_stats = f(df,**value, **extra_args, print_impact=False)
                     df = save(df,write_intermediate,folder_name="data_analyzer/quality_checker/" + 
                                               subkey +"/dataset",reread=True)
-                    save(stats,write_stats,folder_name="data_analyzer/quality_checker/" + 
+                    save(df_stats,write_stats,folder_name="data_analyzer/quality_checker/" + 
                                               subkey +"/stats",reread=True).show(100)
                     end = timeit.default_timer()
                     print(key, subkey, end-start)
@@ -110,8 +137,9 @@ def main(all_configs):
                     start = timeit.default_timer()
                     print("\n" + subkey + ": \n")
                     f = getattr(association_evaluator, subkey)
-                    stats = f(df,**value, print_impact=False)
-                    save(stats,write_stats,folder_name="data_analyzer/association_evaluator/" + 
+                    extra_args = stats_args(all_configs,subkey)
+                    df_stats = f(df,**value, **extra_args, print_impact=False)
+                    save(df_stats,write_stats,folder_name="data_analyzer/association_evaluator/" + 
                          subkey +"/stats",reread=True).show(100)
                     end = timeit.default_timer()
                     print(key, subkey, end-start)
@@ -122,10 +150,11 @@ def main(all_configs):
                 source = ETL(args.get('source_dataset'))
             else:
                 source = None
-            stats = drift_detector.drift_statistics(df,source,**args['drift_statistics'],print_impact=False)
-            save(stats,write_stats,folder_name="drift_detector/drift_statistics",reread=True).show(100)
+            df_stats = drift_detector.drift_statistics(df,source,**args['drift_statistics'],print_impact=False)
+            save(df_stats,write_stats,folder_name="drift_detector/drift_statistics",reread=True).show(100)
             end = timeit.default_timer()
             print(key, end-start)
+            print("w/o report", end-start_main)
 
         if (key == 'report_gen_inter') & (args != None):
             for subkey, value in args.items():
@@ -139,7 +168,7 @@ def main(all_configs):
                     end = timeit.default_timer()
                     print(key, subkey, end-start)
 
-    save(df,write_main,folder_name="final_dataset",reread=False)  
+    save(df,write_main,folder_name="final_dataset",reread=False) 
     
 if __name__ == '__main__':
     config_path = sys.argv[1]
