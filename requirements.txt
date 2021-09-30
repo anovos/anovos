@@ -1,4 +1,4 @@
-pandas==1.2.5
+pandas==1.1.5
 scipy
 #--upgrade --no-deps --force-reinstall scikit-learn
 scikit-learn
@@ -16,3 +16,4 @@ seaborn
 varclushi
 pytest
 datapane
+plotly==5.2.1
