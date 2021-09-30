@@ -35,71 +35,142 @@ def remove_u_score(col):
     return " ".join(bl)
 
 
-global_theme = px.colors.sequential.Peach_r
-global_theme_r = px.colors.sequential.Peach_r
+global_theme = px.colors.sequential.Plasma
+global_theme_r = px.colors.sequential.Plasma_r
 global_plot_bg_color = 'rgba(0,0,0,0)'
 global_paper_bg_color = 'rgba(0,0,0,0)'
 
+
 config_file = "configs.yaml"
 config_file = open(config_file, 'r')
+
 args = yaml.load(config_file, yaml.SafeLoader)
 
-base_path = args.get('report_gen_final').get('base_path')
-list_tabs = args.get('report_gen_inter').get('output_pandas_df',None).get('list_tabs').split(",")
-list_tab1 = args.get('report_gen_inter').get('output_pandas_df',None).get('list_tab1').split(",")
-list_tab2 = args.get('report_gen_inter').get('output_pandas_df',None).get('list_tab2').split(",")
-list_tab3 = args.get('report_gen_inter').get('output_pandas_df',None).get('list_tab3').split(",")
-list_tabs_all = [list_tab1,list_tab2,list_tab3]
+list_tabs = args.get('report_gen_inter',None).get('output_pandas_df',None).get('list_tabs').split(",")
+list_tab1_arr = args.get('report_gen_inter',None).get('output_pandas_df',None).get('list_tab1').split(",")
+list_tab2_arr = args.get('report_gen_inter',None).get('output_pandas_df',None).get('list_tab2').split(",")
+list_tab3_arr = args.get('report_gen_inter',None).get('output_pandas_df',None).get('list_tab3').split(",")
+islabel = args.get('report_gen_inter',None).get('output_pandas_df',None).get('islabel',None)
+data_drift_check = args.get('report_gen_inter',None).get('data_drift').get('driftcheckrequired')
+
+base_path = args.get('report_gen_final',None).get('base_path')
+data_dictionary_path = args.get('report_gen_final',None).get('data_dictionary_path',None)
+
+t1 = args.get('drift_detector',None).get('drift_statistics',None).get('threshold')
+t2 = args.get('report_gen_final',None).get('threshold')
+
+remove_list = ['IV_calculation','IG_calculation']
+
+if islabel == False:
+    list_tab3_arr = [x for x in list_tab3_arr if x not in remove_list]
+else:
+    pass
+
+list_tabs_all = [list_tab1_arr,list_tab2_arr,list_tab3_arr]
+
+data = [['1','Descriptor Statistics','','Used to summarize basic and statistical infromation of the datasets'],\
+        ['1.1','Global Summary','int, string','Summarize global information about the datasets like number of rows and columns, name and number of categorical and numerical attributes'],\
+        ['1.2','Statistics by Metric Type','',''],\
+        ['','Measures of Shape','float','Describe the distribution(or pattern) of different attributes in the datasets using skewness and kurtosis'],\
+        ['','Measures of Central Tendency','int, float, double,  string','Describe the central position of each attributes in datasets by finding basic measures like mean, median and mode'],\
+        ['','Measure Of Percentiles','int','Indicate the value below which a given percentage of data of given attribute falls'],\
+        ['','Measures Of Dispersion','int, float','Measure the spread of data about the mean e.g., Standard Deviation, Variance, Covariance, IQR and range of each attribute of datasets'],\
+        ['','Measures Of Cardinality','int, float','Measure the count of unique values present in each attribute'],\
+        ['','Measures Of Counts','int, float','Measure the sparsity of the datasets, e.g., fill count and percenatge, missing value count and percentage and nonzero count and percenatge'],\
+        ['1.3','Attribute Visualization','',''],\
+        ['','Numerical','histogram','Visualize the distributions of Numerical attributes using Histograms'],\
+        ['','Categorical','bar plot','Visualize the distributions of Categorical attributes using Barplot'],\
+        ['2','Quality check','','Used to check the quality of a datasets both at column level and row level. '],\
+        ['2.1','Column Level','',''],\
+        ['','IDness Detection','',''],\
+        ['','Null Detection','int, float','Detect the sparsity of the datasets, e.g., count and percentage of missing value of attributes'],\
+        ['','Baisedness Detection','int, float, double, string','Detect the baisedness of the attributes by finding the mode and its percenatge(value that is most frequent in the data)'],\
+        ['','InvalidEntries Detection','int, float, string','Detect the entries and count of invalid values or noise present in the datasets'],\
+        ['','Outlier Detection','int, float, double, plot','Used to detect and visualize the outlier present in numerical attributes of the datasets'],\
+        ['2.2','Row Level','',''],\
+        ['','Duplicate Detection','int','Measure number of rows in the datasets that have same value for each attribute'],\
+        ['','Rows WMissingFeats','int, float','Measure the count/percentage of rows which have missing/null attributes'],\
+        ['3','Association & Interactions','','Used to find interesting associations and relationships among attributes of daatsets'],\
+        ['3.1','Association Matrix','',''],\
+        ['','Correlation Matrix','float','Measure the strength of relationship among each attribute by finding correlation coefficient having range -1.0 to 1.0.'],\
+        ['','IV Calculations',' float','Information Value Calculations- Used to rank variables on the basis of their importance.Greater the value of IV higher rthe attribute importance. IV less than 0.02 is not useful for prediction'],\
+        ['','IG Calculations','float','Information Gain- Measures the reduction in entropy by splitting a dataset according to given value of a attribute.'],\
+        ['','Varibale clustering','set of clusters','Divides the numerical attributes into disjoint or hierarchical clusters based on linear relationship of attributes'],\
+        ['3.2','Association Plot','',''],\
+        ['','Correlation Matrix','heat map','Used to Visualize the strength of relationship among attributes by ploting heat map'],\
+        ['','IV Calculations','bar plot','Used to Visualize attribute importance of in increasing or decreasing order using barplot'],\
+        ['','IG Calculations','bar plot','Used to visualize the purity of attributes in dataset using barplot i.e., how a change to the datasets impact the distribution of data.'],\
+        ['','Varibale clustering','pie chart','Used to visualize how numerical featrures are group together into different clusters formed by variable clustering'],\
+        ['3.3','Attribute to Target Association','',''],\
+        ['','Numerical ','histogram','Used to Visualize the bucket-wise percentage/ditribution of data for Numerical attributes having Target Variable greater/less than or equal to given threshold value'],\
+        ['','Categorical','bar plot','Used to Visualize the Category-wise percentage/distributions of data for categorical attributes having Target Varibale greater/less than or equal to  given threshold value.'],\
+        ['4','Data Drift ','','Used to monitor differences between target and source datasets '],\
+        ['4.1','Data Drift Analyzer','',''],\
+        ['','PSI','int, float','Population Stability Index- Measure how much a attribute has shifted in distribution between two sample of dataset(target and source datasets )'],\
+        ['','JSD','float','Jensen-Shannon Divergence- Used to quantify the difference(or similarity) between distributions of two sample data(target and source datasets). It ranges between 0-1. smaller the score of JSD higher the similarity of two datasets. '],\
+        ['','HD','float','Hellinger Distance- Measure the similarity in distribution between two sample of dataset(target and source datasets ). Smaller the value of hellinger distance higher the similarity in distribution of two sample dataset.'],\
+        ['','KS','float','kolmogorov-Smirnov Test- It quantifies a distance between distribution of two sample dataset to check the similarity between them. Greater the value of K-S test p-value higher the similarity between two dataset.']]
+
+metric_dict = pd.DataFrame(data, columns = ['Module No.', 'Module Name','Metric type','Metric definitions'])
+
 
 def data_analyzer_output(p2,tab_name):
+
     df_list=[]
     txt_list =[]
     plot_list=[]
     idx = list_tabs.index(tab_name)
 
-
     for index,i in enumerate(list_tabs_all[idx]):
+
         if tab_name == "quality_checker":
 
-            df_list.append([dp.Text("### " + str(remove_u_score(i))),dp.DataTable(pd.read_csv(ends_with(p2) + str(tab_name)+"_" + str(i) + ".csv").round(3))])
+            df_list.append([dp.Text("### > " + str(remove_u_score(i))),dp.DataTable(pd.read_csv(ends_with(p2) + str(tab_name)+"_" + str(i) + ".csv").round(3))])
         
         elif tab_name == "association_evaluator":
             
             for j in list_tabs_all[idx]:
+                
                 if j == "correlation_matrix":
+
                     df_list_ = pd.read_csv(ends_with(p2) + str(tab_name)+"_" + str(j) + ".csv").round(3)
                     feats_order = list(df_list_["feature"].values)
                     df_list_ = df_list_.round(3)
-                    fig = px.imshow(df_list_[feats_order],y=feats_order,color_continuous_scale=global_theme_r)
+                    fig = px.imshow(df_list_[feats_order],y=feats_order,color_continuous_scale=global_theme)
                     fig.layout.plot_bgcolor = global_plot_bg_color
                     fig.layout.paper_bgcolor = global_paper_bg_color
-                    fig.update_layout(title_text=str("Correlation Plot "))
-                    df_list.append(dp.DataTable(df_list_[["feature"]+feats_order],label=remove_u_score(j)))
+#                     fig.update_layout(title_text=str("Correlation Plot "))
+                    df_list.append(dp.DataTable(df_list_[["feature"]+feats_order],label= remove_u_score(j)))
                     plot_list.append(dp.Plot(fig,label=remove_u_score(j)))
                     
                     
                 elif j == "variable_clustering":
+
                     df_list_ = pd.read_csv(ends_with(p2) + str(tab_name)+"_" + str(j) + ".csv").round(3)
                     fig = px.sunburst(df_list_, path=['Cluster', 'feature'], values='RS_Ratio',color_discrete_sequence=global_theme)
-                    fig.update_layout(title_text=str("Distribution of homogenous variable across Clusters"))
+#                     fig.update_layout(title_text=str("Distribution of homogenous variable across Clusters"))
                     fig.layout.plot_bgcolor = global_plot_bg_color
                     fig.layout.paper_bgcolor = global_paper_bg_color
-                    fig.update_layout(title_text=str("Variable Clustering Plot "))
+#                     fig.update_layout(title_text=str("Variable Clustering Plot "))
                     fig.layout.autosize=True
                     df_list.append(dp.DataTable(df_list_,label=remove_u_score(j)))
                     plot_list.append(dp.Plot(fig,label=remove_u_score(j)))
                 
                 else:
-                    df_list_ = pd.read_csv(ends_with(p2) + str(tab_name)+"_" + str(j) + ".csv").round(3)
-                    col_nm = [x for x in list(df_list_.columns) if "feature" not in x]
-                    df_list_ = df_list_.sort_values(col_nm[0], ascending=True)
-                    fig = px.bar(df_list_,x=col_nm[0],y='feature',orientation='h',color_discrete_sequence=global_theme_r)
-                    fig.layout.plot_bgcolor = global_plot_bg_color
-                    fig.layout.paper_bgcolor = global_paper_bg_color
-                    fig.update_layout(title_text=str("Representation of " + str(remove_u_score(j))))
-                    fig.layout.autosize=True
-                    df_list.append(dp.DataTable(df_list_,label=remove_u_score(j)))
-                    plot_list.append(dp.Plot(fig,label=remove_u_score(j)))
+
+                    try:
+                        df_list_ = pd.read_csv(ends_with(p2) + str(tab_name)+"_" + str(j) + ".csv").round(3)
+                        col_nm = [x for x in list(df_list_.columns) if "feature" not in x]
+                        df_list_ = df_list_.sort_values(col_nm[0], ascending=True)
+                        fig = px.bar(df_list_,x=col_nm[0],y='feature',orientation='h',color_discrete_sequence=global_theme)
+                        fig.layout.plot_bgcolor = global_plot_bg_color
+                        fig.layout.paper_bgcolor = global_paper_bg_color
+#                         fig.update_layout(title_text=str("Representation of " + str(remove_u_score(j))))
+                        fig.layout.autosize=True
+                        df_list.append(dp.DataTable(df_list_,label=remove_u_score(j)))
+                        plot_list.append(dp.Plot(fig,label=remove_u_score(j)))
+                    except:
+                        pass
 
             return df_list,plot_list
         else:
@@ -115,101 +186,271 @@ def main(base_path):
     p3 = ends_with(base_path) + ends_with("report")
 
     Path(p3).mkdir(parents=True, exist_ok=True)
-
-    dd1 = pd.read_csv(ends_with(base_path) + ends_with("data_dict") + "data.csv")
-    dd2 = pd.read_csv(ends_with(base_path) + ends_with("pandas_df") + "data_type_df.csv")
-    data_dict = dd1.merge(dd2,how="outer",on="Attributes")
     
-    metric_dict = pd.read_csv(ends_with(base_path) + ends_with("metric_dict") + "data.csv")
-    feature_mp = pd.read_csv(ends_with(base_path) + ends_with("feature_mp") + "data.csv")
-    drift_stats = pd.read_csv(ends_with(base_path) + ends_with("pandas_df") + "drift_statistics.csv")
+    
+    datatype_df = pd.read_csv(ends_with(base_path) + ends_with("pandas_df") + "data_type_df.csv")
+    
+    if data_dictionary_path is None:
+        data_dict = datatype_df
+    else:
+        data_definitions_df = pd.read_csv(data_dictionary_path)
+        data_dict = data_definitions_df.merge(datatype_df,how="outer",on="Attributes")
+    
+    
     global_summary_df = pd.read_csv(ends_with(base_path) + ends_with("pandas_df") + "global_summary_df.csv").reindex([2,3,4,1,5,1])
+    
 
+    
+    
+    #Drift Chart - 1
+
+    metric_drift = ["PSI","JSD","HD","KS"]
+    drift_df = pd.read_csv(ends_with(p2) + "drift_statistics.csv")
+    len_feats = drift_df.shape[0]
+    drift_df_stats = drift_df[drift_df.flagged.values==1]\
+                            .melt(id_vars="attribute",value_vars=["PSI","JSD","HD","KS"])\
+                            .sort_values(by=['variable','value'], ascending=False)
+    
+    drifted_feats = drift_df[drift_df.flagged.values==1].shape[0]
+    
+    fig_metric_drift = px.sunburst(drift_df_stats, path=['variable','attribute'], values='value',color_discrete_sequence= global_theme)
+    fig_metric_drift.update_layout(margin=dict(t=10, b=10, r=10, l=10))
+
+    
+    
+    
+
+    #Drift Chart - 2
+
+    fig_gauge_drift = go.Figure(go.Indicator(
+                        domain = {'x': [0, 1], 'y': [0, 1]},
+                        value = drifted_feats,
+                        mode = "gauge+number+delta",
+                        title = {'text': ""},
+                        delta = {'reference': drifted_feats + int(t2*len_feats)},
+                        gauge = {'axis': {'range': [None, len_feats]},
+                                 'bar': {'color': global_theme_r[5] },
+
+                                 'steps' : [
+                                     {'range': [0,len_feats], 'color': global_theme_r[6]}],\
+                                 'threshold' : {'line': {'color': 'black', 'width': 1}, 'thickness': 1, 'value': int(t2*len_feats)}}))
+    fig_gauge_drift.update_layout(font = {'color': "black", 'family': "Arial"})
+    fig_gauge_drift.update_layout(height = 400 )
+
+
+    def drift_text_gen(drifted_feats,len_feats,t2):
+        if drifted_feats == 0:
+            text = "*Basic observation is that there were no drift captured in the underlying data. Please refer to the metric values as displayed in the above table & comparison plot for better understanding*"
+        elif drifted_feats>0:
+            if int(t2*len_feats)<=drifted_feats:
+                text = "*Basic observation is that there were " + str(drifted_feats) + " out of " + str(len_feats) + " (" + str(np.round((100*drifted_feats/len_feats),2)) + "%) attributes found to be infected under data drift. In terms of overall data health across the studied attributes, it can be inferred that based on the safe netting threshold of " + str(t2*100) + "% chosen (approx " + str(int(t2*len_feats)) + ") we could see it to be deviated by " + str(drifted_feats-int(t2*len_feats)) + " attributes which contributes to (-)" + str(np.round(100*(drifted_feats-int(t2*len_feats))/(len_feats),2)) + "% below the mark. Please refer to the metric values as displayed in the above table & comparison plot for better understanding*"
+            else:
+                text = "*Basic observation is that there were " + str(drifted_feats) + " out of " + str(len_feats) + " (" + str(np.round((100*drifted_feats/len_feats),2)) + "%) attributes found to be infected under data drift. In terms of overall data health across the studied attributes, it can be inferred that based on the safe netting threshold of " + str(t2*100) + "% chosen (approx " + str(int(t2*len_feats)) + ") we could not see any attribute to be deviated below the mark. Please refer to the metric values as displayed in the above table & comparison plot for better understanding*"
+        else:
+            text = ""
+        return text
+    
+    
     
     all_charts = os.listdir(p1)
     all_charts_cat_1 = [x for x in all_charts if "cat_f1" in x]
     all_charts_cat_2 = [x for x in all_charts if "cat_f2" in x]
     all_charts_num_1 = [x for x in all_charts if "num_f1" in x]
     all_charts_num_2 = [x for x in all_charts if "num_f2" in x]
+    all_charts_num_3 = [x for x in all_charts if "num_f3" in x]
+    all_drift_charts = [x for x in all_charts if "drift_feats" in x]
 
-    all_charts_num_1_,all_charts_num_2_,all_charts_cat_1_,all_charts_cat_2_ = [],[],[],[]
+    all_charts_num_1_,all_charts_num_2_,all_charts_num_3_,all_charts_cat_1_,all_charts_cat_2_,all_drift_charts_ = [],[],[],[],[],[]
 
     for i in all_charts_num_1:
         
         col_name = open(ends_with(p1) + i).readlines()[0].split("hovertemplate")[1].split(":")[1].split("=")[0].split("''")[0][1:]
         all_charts_num_1_.append(dp.Plot(go.Figure(json.load(open(ends_with(p1) + i))),label=col_name))
 
-    print(all_charts)
+    
     for j in all_charts_num_2:
 
-        col_name = open(ends_with(p1) + j).readlines()[0].split("hovertemplate")[1].split(":")[1].split("=")[0].split("''")[0][1:]
-        all_charts_num_2_.append(dp.Plot(go.Figure(json.load(open(ends_with(p1) + j))),label=col_name))
-        
-        
-    for k in all_charts_cat_1:
+        try:
+            col_name = open(ends_with(p1) + j).readlines()[0].split("hovertemplate")[1].split(":")[1].split("=")[0].split("''")[0][1:]
+            all_charts_num_2_.append(dp.Plot(go.Figure(json.load(open(ends_with(p1) + j))),label=col_name))
+        except:
+            pass
 
-        col_name = open(ends_with(p1) + k).readlines()[0].split("hovertemplate")[1].split(":")[1].split("=")[0].split("''")[0][1:]
-        all_charts_cat_1_.append(dp.Plot(go.Figure(json.load(open(ends_with(p1) + k))),label=col_name))
-
-    for l in all_charts_cat_2:
+    for k in all_charts_num_3:
+        try:
+            if bool(islabel):
+                col_name = open(ends_with(p1) + k).readlines()[0].split("hovertemplate")[1].split(":")[1].split("=")[2].split(">")[1]
+                all_charts_num_3_.append(dp.Plot(go.Figure(json.load(open(ends_with(p1) + k))),label=col_name))
+            else:            
+                col_name = open(ends_with(p1) + k).readlines()[0].split("hovertemplate")[1].split(":")[1].split("=")[0][1:]
+                all_charts_num_3_.append(dp.Plot(go.Figure(json.load(open(ends_with(p1) + k))),label=col_name))            
+        except:
+            pass
+        
+    for l in all_charts_cat_1:
 
         col_name = open(ends_with(p1) + l).readlines()[0].split("hovertemplate")[1].split(":")[1].split("=")[0].split("''")[0][1:]
-        all_charts_cat_2_.append(dp.Plot(go.Figure(json.load(open(ends_with(p1) + l))),label=col_name))
+        all_charts_cat_1_.append(dp.Plot(go.Figure(json.load(open(ends_with(p1) + l))),label=col_name))
 
+    for m in all_charts_cat_2:
 
-    dp.Report("# ML-Sphere Report",\
-       dp.Select(blocks=[
-       dp.Group(dp.Select(blocks=[\
-                dp.Group(dp.Group(dp.Text("## "),dp.Text("## Data Dictionary & Schema Structure"),dp.DataTable(data_dict)),label="Data Dictionary"),\
-                dp.Group(dp.Text("##"),dp.Text("## Metric Definitions"),dp.DataTable(metric_dict),label="Metric Dictionary"),\
-                dp.Group(dp.Text("## "),dp.Text("## Recommended Features"),dp.DataTable(feature_mp),label="Feature Marketplace")],type=dp.SelectType.TABS),label="Wiki"),\
-       dp.Group(
-           dp.Text("## Global Summary"),\
-           dp.DataTable(global_summary_df),\
-           dp.Text("## Statistics by Metric Type"),\
-           dp.Select(blocks=data_analyzer_output(p2,"stats_generator"),\
-                     type=dp.SelectType.TABS),\
-           dp.Text("## "),\
-           dp.Text("## Attribute Visualization"),\
-           dp.Group(dp.Select(blocks=\
-                   [dp.Group(dp.Select(blocks=all_charts_num_1_,type=dp.SelectType.DROPDOWN),label="Numeric"),\
-                    dp.Group(dp.Select(blocks=all_charts_cat_1_,type=dp.SelectType.DROPDOWN),label="Categorical")],\
-                     type=dp.SelectType.TABS)),\
-           label="Descriptor Statistics"),\
-       dp.Group(dp.Select(blocks=[
-                dp.Group(
-                    data_analyzer_output(p2 ,"quality_checker")[0][0],\
-                    data_analyzer_output(p2 ,"quality_checker")[0][1],\
-                    data_analyzer_output(p2 ,"quality_checker")[1][0],\
-                    data_analyzer_output(p2 ,"quality_checker")[1][1],label="Row Level"),\
-                dp.Group(
-                    data_analyzer_output(p2,"quality_checker")[2][0],\
-                    data_analyzer_output(p2,"quality_checker")[2][1],\
-                    data_analyzer_output(p2,"quality_checker")[3][0],\
-                    data_analyzer_output(p2,"quality_checker")[3][1],\
-                    data_analyzer_output(p2,"quality_checker")[4][0],\
-                    data_analyzer_output(p2,"quality_checker")[4][1],\
-                    data_analyzer_output(p2,"quality_checker")[5][0],\
-                    data_analyzer_output(p2,"quality_checker")[5][1],\
-                    data_analyzer_output(p2,"quality_checker")[6][0],\
-                    data_analyzer_output(p2,"quality_checker")[6][1],label="Column Level")],\
-               type=dp.SelectType.TABS),\
-                label="Quality Check"),\
-       dp.Group(dp.Text("## Association Matrix"),\
-                dp.Select(blocks=data_analyzer_output(p2,tab_name="association_evaluator")[0],type=dp.SelectType.DROPDOWN),\
-                dp.Text("## "),\
-                dp.Text("## Association Plot"),\
-                dp.Select(blocks=data_analyzer_output(p2,"association_evaluator")[1],type=dp.SelectType.DROPDOWN),\
-                dp.Text("## "),\
-                dp.Text("### Attribute to Target Association"),\
-                dp.Group(dp.Select(blocks=
-                   [dp.Group(dp.Select(blocks=all_charts_num_2_,type=dp.SelectType.DROPDOWN),label="Numeric"),\
-                    dp.Group(dp.Select(blocks=all_charts_cat_2_,type=dp.SelectType.DROPDOWN),label="Categorical")],\
-                     type=dp.SelectType.TABS)),\
-                label="Association & Interactions"),\
-       dp.Group(dp.Text("## Data Drift Analyzer"),dp.DataTable(drift_stats),label="Data Drift")],\
-       type=dp.SelectType.TABS)).save(ends_with(p3) + "ml_sphere_report.html",open=True)
+        try:
+            col_name = open(ends_with(p1) + m).readlines()[0].split("hovertemplate")[1].split(":")[1].split("=")[0].split("''")[0][1:]
+            all_charts_cat_2_.append(dp.Plot(go.Figure(json.load(open(ends_with(p1) + m))),label=col_name))
+        except:
+            pass
 
+    for n in all_drift_charts:
+
+        try:
+            col_name = open(ends_with(p1) + n).readlines()[0].split("<br>")[0].split(" ")[-1]
+            all_drift_charts_.append(dp.Plot(go.Figure(json.load(open(ends_with(p1) + n))),label=col_name))
+        except:
+            pass
+        
+    if bool(islabel):
+        l1 = dp.Group(dp.Text("### > Attribute to Target Association"),dp.Text("*Distribution of event across the different attribute splits (or categories)*"))
+        l2 = dp.Group(dp.Select(blocks=[dp.Group(dp.Select(blocks=all_charts_num_2_,type=dp.SelectType.DROPDOWN),label="Numeric"),dp.Group(dp.Select(blocks=all_charts_cat_2_,type=dp.SelectType.DROPDOWN),label="Categorical")],type=dp.SelectType.TABS))
+    else:
+        l1 = dp.Text("##")
+        l2 = dp.Text("##")
+
+    if bool(data_drift_check):
+        dp.Report(dp.HTML('<html><img src="https://plsadaptive.s3.amazonaws.com/eco/images/partners/Y5Zm9VJkHtunAAdmazwsO2lhTwftfYNfk5aP4RJ7.png" style="height:40px;display:flex;margin:auto;float:right"></img></html>'),\
+                  dp.Text("# ML-Anovos Report"),\
+           dp.Select(blocks=[
+           dp.Group(dp.Select(blocks=[\
+                    dp.Group(dp.Group(dp.Text("## "),dp.Text("### > Data Dictionary"),dp.DataTable(data_dict)),label="Data Dictionary"),\
+                    dp.Group(dp.Text("##"),dp.Text("### > Metric Definitions"),dp.DataTable(metric_dict),label="Metric Dictionary")],type=dp.SelectType.TABS),label="Wiki"),\
+           dp.Group(
+               dp.Text("# "),\
+               dp.Text("*Descriptor Statistics summarizes the basic information about the data elements and their individual distribution*"),\
+               dp.Text("### > Global Summary"),\
+               dp.Text("*This section details about the dimension of dataset and the details of attributes across respective data type*"),\
+               dp.DataTable(global_summary_df),\
+               dp.Text("### > Statistics by Metric Type"),\
+               dp.Text("*Gives an overall representation of the data anatomy as measured across the different statistical tests*"),\
+               dp.Select(blocks=data_analyzer_output(p2,"stats_generator"),\
+                         type=dp.SelectType.TABS),\
+               dp.Text("# "),\
+               dp.Text("### > Attribute Visualization"),\
+               dp.Text("*Univariate representation of attributes can be studied here through the histogram (continuous) / bar plots (categorical). For a comprehensive view, a restriction is made to the number of buckets based on the user input*"),\
+               dp.Group(dp.Select(blocks=\
+                       [dp.Group(dp.Select(blocks=all_charts_num_1_,type=dp.SelectType.DROPDOWN),label="Numeric"),\
+                        dp.Group(dp.Select(blocks=all_charts_cat_1_,type=dp.SelectType.DROPDOWN),label="Categorical")],\
+                         type=dp.SelectType.TABS)),\
+               label="Descriptor Statistics"),\
+           dp.Group(dp.Select(blocks=[
+                    dp.Group(
+                        dp.Text("# "),\
+                        dp.Text("*Qualitative inspection of Data at a columnar level basis checks like detection of NULL & Invalid records , Biasedness, Outlier observations*"),\
+                        data_analyzer_output(p2,"quality_checker")[2][0],\
+                        data_analyzer_output(p2,"quality_checker")[2][1],\
+                        data_analyzer_output(p2,"quality_checker")[3][0],\
+                        data_analyzer_output(p2,"quality_checker")[3][1],\
+                        data_analyzer_output(p2,"quality_checker")[4][0],\
+                        data_analyzer_output(p2,"quality_checker")[4][1],\
+                        data_analyzer_output(p2,"quality_checker")[5][0],\
+                        data_analyzer_output(p2,"quality_checker")[5][1],\
+                        data_analyzer_output(p2,"quality_checker")[6][0],\
+                        dp.Group(data_analyzer_output(p2,"quality_checker")[6][1],dp.Select(blocks=all_charts_num_3_,type=dp.SelectType.DROPDOWN),columns=2),label="Column Level"),\
+                    dp.Group(
+                        dp.Text("# "),\
+                        dp.Text("*Qualitative inspection of Data at a row level basis checks like duplicate entry finding & observation of missing features*"),\
+                        data_analyzer_output(p2 ,"quality_checker")[0][0],\
+                        data_analyzer_output(p2 ,"quality_checker")[0][1],\
+                        data_analyzer_output(p2 ,"quality_checker")[1][0],\
+                        data_analyzer_output(p2 ,"quality_checker")[1][1],label="Row Level")],\
+                   type=dp.SelectType.TABS),\
+                    label="Quality Check"),\
+           dp.Group(dp.Text("# "),\
+                    dp.Text("*Association analysis basis different statistical checks*"),\
+                    dp.Text("### > Association Matrix"),\
+                    dp.Select(blocks=data_analyzer_output(p2,tab_name="association_evaluator")[0],type=dp.SelectType.DROPDOWN),\
+                    dp.Text("### "),\
+                    dp.Text("### > Association Plot"),\
+                    dp.Select(blocks=data_analyzer_output(p2,"association_evaluator")[1],type=dp.SelectType.DROPDOWN),\
+                    dp.Text("## "),\
+                    l1,\
+                    l2,\
+                    label="Association & Interactions"),\
+           dp.Group(dp.Text("# "),\
+                    dp.Text("*Useful in capturing the underlying data drift / deviation of the attribute composition as compared to the source data used for analysis*"),\
+                    dp.Text("### > Data Drift Analyzer"),\
+                    dp.Text("*Flagging of Data Drift basis the threshold of " + str(t1) + " chosen across the measured metrics. This means, for a given attribute, if any of the 4 metrices have been found to be beyond the threshold, there would be a flagging done. However, in case the user wants to manually customize it further, filter option (refer to a funnel-like logo by hovering on the table header) could be leveraged.*"),\
+                    dp.DataTable(drift_df),\
+                    dp.Text("##"),\
+                    dp.Select(blocks=all_drift_charts_,type=dp.SelectType.DROPDOWN),\
+                    dp.Text("*Source & Target datasets were compared to see the % deviation. For continuous attributes, the comparison is done at each decile level while for the other type, it's done across individual category level*"),\
+                    dp.Text("###  "),\
+                    dp.Text("###  "),\
+                    dp.Text("### > Overall Data Health basis computed Drift Metrices"),\
+                    dp.Group(dp.Plot(fig_metric_drift),dp.Plot(fig_gauge_drift),columns=2),\
+                    dp.Group(dp.Text("*Representation of Attributes across different computed Drift Metrics*"),dp.Text(drift_text_gen(drifted_feats,len_feats,t2)),columns=2),\
+                    dp.Text("## "),\
+                    dp.Text("## "),\
+                    label="Data Drift")],\
+                   type=dp.SelectType.TABS)).save(ends_with(p3) + "ml_anovos_report.html",open=True)
+    else:
+        dp.Report(dp.HTML('<html><img src="https://plsadaptive.s3.amazonaws.com/eco/images/partners/Y5Zm9VJkHtunAAdmazwsO2lhTwftfYNfk5aP4RJ7.png" style="height:40px;display:flex;margin:auto;float:right"></img></html>'),\
+                  dp.Text("# ML-Anovos Report"),\
+           dp.Select(blocks=[
+           dp.Group(dp.Select(blocks=[\
+                    dp.Group(dp.Group(dp.Text("## "),dp.Text("## > Data Dictionary"),dp.DataTable(data_dict)),label="Data Dictionary"),\
+                    dp.Group(dp.Text("##"),dp.Text("## > Metric Definitions"),dp.DataTable(metric_dict),label="Metric Dictionary")],type=dp.SelectType.TABS),label="Wiki"),\
+           dp.Group(
+               dp.Text("# "),\
+               dp.Text("*Descriptor Statistics summarizes the basic information about the data elements and their individual distribution*"),\
+               dp.Text("### > Global Summary"),\
+               dp.Text("*This section details about the dimension of dataset and the details of attributes across respective data type*"),\
+               dp.DataTable(global_summary_df),\
+               dp.Text("### > Statistics by Metric Type"),\
+               dp.Text("*Gives an overall representation of the data anatomy as measured across the different statistical tests*"),\
+               dp.Select(blocks=data_analyzer_output(p2,"stats_generator"),\
+                         type=dp.SelectType.TABS),\
+               dp.Text("# "),\
+               dp.Text("### > Attribute Visualization"),\
+               dp.Text("*Univariate representation of attributes can be studied here through the histogram (continuous) / bar plots (categorical). For a comprehensive view, a restriction is made to the number of buckets based on the user input*"),\
+               dp.Group(dp.Select(blocks=\
+                       [dp.Group(dp.Select(blocks=all_charts_num_1_,type=dp.SelectType.DROPDOWN),label="Numeric"),\
+                        dp.Group(dp.Select(blocks=all_charts_cat_1_,type=dp.SelectType.DROPDOWN),label="Categorical")],\
+                         type=dp.SelectType.TABS)),\
+               label="Descriptor Statistics"),\
+           dp.Group(dp.Select(blocks=[
+                    dp.Group(
+                        dp.Text("# "),\
+                        dp.Text("*Qualitative inspection of Data at a columnar level basis checks like detection of NULL & Invalid records , Biasedness, Outlier observations*"),\
+                        data_analyzer_output(p2,"quality_checker")[2][0],\
+                        data_analyzer_output(p2,"quality_checker")[2][1],\
+                        data_analyzer_output(p2,"quality_checker")[3][0],\
+                        data_analyzer_output(p2,"quality_checker")[3][1],\
+                        data_analyzer_output(p2,"quality_checker")[4][0],\
+                        data_analyzer_output(p2,"quality_checker")[4][1],\
+                        data_analyzer_output(p2,"quality_checker")[5][0],\
+                        data_analyzer_output(p2,"quality_checker")[5][1],\
+                        data_analyzer_output(p2,"quality_checker")[6][0],\
+                        dp.Group(data_analyzer_output(p2,"quality_checker")[6][1],dp.Select(blocks=all_charts_num_3_,type=dp.SelectType.DROPDOWN),columns=2),label="Column Level"),\
+                    dp.Group(
+                        dp.Text("# "),\
+                        dp.Text("*Qualitative inspection of Data at a row level basis checks like duplicate entry finding & observation of missing features*"),\
+                        data_analyzer_output(p2 ,"quality_checker")[0][0],\
+                        data_analyzer_output(p2 ,"quality_checker")[0][1],\
+                        data_analyzer_output(p2 ,"quality_checker")[1][0],\
+                        data_analyzer_output(p2 ,"quality_checker")[1][1],label="Row Level")],\
+                   type=dp.SelectType.TABS),\
+                    label="Quality Check"),\
+           dp.Group(dp.Text("# "),\
+                    dp.Text("*Association analysis basis different statistical checks*"),\
+                    dp.Text("### > Association Matrix"),\
+                    dp.Select(blocks=data_analyzer_output(p2,tab_name="association_evaluator")[0],type=dp.SelectType.DROPDOWN),\
+                    dp.Text("### "),\
+                    dp.Text("### > Association Plot"),\
+                    dp.Select(blocks=data_analyzer_output(p2,"association_evaluator")[1],type=dp.SelectType.DROPDOWN),\
+                    dp.Text("## "),\
+                    l1,\
+                    l2,\
+                    label="Association & Interactions")],\
+                   type=dp.SelectType.TABS)).save(ends_with(p3) + "ml_anovos_report.html",open=True)
 
 if __name__ == '__main__':
     #base_path = sys.argv[1]

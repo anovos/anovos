@@ -4,15 +4,17 @@ from pyspark.sql import types as T
 from pyspark.sql.window import Window
 import warnings
 from com.mw.ds.shared.spark import *
-from com.mw.ds.shared.utils import *
 from com.mw.ds.data_transformer.transformers import *
+from com.mw.ds.data_ingest.data_ingest import *
+from com.mw.ds.shared.utils import *
 import plotly
 from plotly.io import write_json
 import plotly.express as px
 from pathlib import Path
 import pandas as pd
-global_theme = px.colors.sequential.Peach
-global_theme_r = px.colors.sequential.Peach_r
+
+global_theme = px.colors.sequential.Plasma
+global_theme_r = px.colors.sequential.Plasma_r
 global_plot_bg_color = 'rgba(0,0,0,0)'
 global_paper_bg_color = 'rgba(0,0,0,0)'
 
@@ -28,104 +30,80 @@ def ends_with(string, end_str="/"):
     return string + end_str
 
 
-def outlier_catfeats(idf, list_of_cols, coverage, max_category=50, pre_existing_model=False, model_path="NA", output_mode='replace', print_impact=False):
-    '''
-    idf: Input Dataframe
-    list_of_cols: List of columns for outlier treatment
-    coverage: Minimum % of rows mapped to actual category name and rest will be mapped to others
-    max_category: Even if coverage is less, only these many categories will be mapped to actual name and rest to others
-    pre_existing_model: outlier value for each feature. True if model files exists already, False Otherwise
-    model_path: If pre_existing_model is True, this argument is path for model file. 
-                  If pre_existing_model is False, this field can be used for saving the model file. 
-                  param NA means there is neither pre_existing_model nor there is a need to save one.
-    output_mode: replace or append
-    return: Dataframe after outlier treatment
-    '''
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split('|') if x.strip() in idf.columns]
-    else:
-        list_of_cols = [e for e in list_of_cols if e in idf.columns]
-        
-    if output_mode not in ('replace','append'):
-        raise TypeError('Invalid input for output_mode')
-    if len(list_of_cols) == 0:
-        raise TypeError('Invalid input for Column(s)')
-    
-    if pre_existing_model == True:
-        df_model = sqlContext.read.csv(model_path + "/outlier_catfeats", header=True, inferSchema=True)
-    else:
-        for index, i in enumerate(list_of_cols):
-            from pyspark.sql.window import Window
-            window = Window.partitionBy().orderBy(F.desc('count_pct'))
-            df_cats = idf.groupBy(i).count().dropna()\
-                         .withColumn('count_pct', F.col('count')/F.sum('count').over(Window.partitionBy()))\
-                         .withColumn('rank', F.rank().over(window))\
-                         .withColumn('cumu', F.sum('count_pct').over(window.rowsBetween(Window.unboundedPreceding, 0)))\
-                         .withColumn('lag_cumu', F.lag('cumu').over(window)).fillna(0)\
-                         .where(~((F.col('cumu') >= coverage) & (F.col('lag_cumu') >= coverage)))\
-                         .where(F.col('rank') <= max_category)\
-                         .select(F.lit(i).alias('feature'), F.col(i).alias('parameters'))
-                        
-            if index == 0:
-                df_model = df_cats
-            else:
-                df_model = df_model.union(df_cats)
-    
-    odf = idf
-    for i in list_of_cols:
-        parameters = df_model.where(F.col('feature') == i).select('parameters').rdd.flatMap(lambda x:x).collect()
-        if output_mode == 'replace':
-            odf = odf.withColumn(i, F.when((F.col(i).isin(parameters)) | (F.col(i).isNull()), F.col(i)).otherwise("others"))
+def remove_dups(col):
+    try:
+        list_col = col.split("-")
+        deduped_col = list(set(list_col))
+        if len(list_col) != len(deduped_col):
+            return deduped_col[0]
         else:
-            odf = odf.withColumn(i + "_outliered", F.when((F.col(i).isin(parameters)) | (F.col(i).isNull()), F.col(i)).otherwise("others"))
-        
-    # Saving model File if required
-    if (pre_existing_model == False) & (model_path != "NA"):
-        df_model.repartition(1).write.csv(model_path + "/outlier_catfeats", header=True, mode='overwrite')
-        
-    if print_impact:
-        if output_mode == 'replace':
-            output_cols = list_of_cols
-        else:
-            output_cols = [(i+"_outliered") for i in list_of_cols]
-        uniquecount_computation(idf, list_of_cols).select('feature', F.col("unique_values").alias("uniqueValues_before")).show(len(list_of_cols))
-        uniquecount_computation(odf, output_cols).select('feature', F.col("unique_values").alias("uniqueValues_after")).show(len(list_of_cols))
-         
-    return odf
+            return col
+    except:
+        pass
 
+f_remove_dups = F.udf(remove_dups,T.StringType())
+
+def processed_df(df):
+    num_cols,cat_cols,other_cols = attributeType_segregation(df)
+    df_ = df.select(num_cols + cat_cols)
+    zero_var_col = []
+    for i in df_.columns:
+        x = df_.select(i).distinct().count()
+        if x==1:
+            zero_var_col.append(i)
+        else:
+            pass
+    df_ = df_.drop(*zero_var_col)
+    return df_
+
+def range_generator(df,col_orig,col_binned):
+    
+    range_table = df.groupBy(col_binned)\
+                    .agg(F.round(F.min(col_orig),2).alias("min"),F.round(F.max(col_orig),2).alias("max"))\
+                    .withColumn("range",F.concat(F.col("min"),F.lit("-"),F.col("max")))\
+                    .select(col_binned, "range")
+    
+    df_ = df.join(range_table,col_binned,"left_outer")\
+            .drop(col_binned)\
+            .withColumnRenamed("range",col_binned)
+    
+    return df_
 
 def plot_gen_hist_bar(idf,col,cov=None,max_cat=50,bin_type=None):
     
     import plotly.express as px
     from plotly.figure_factory import create_distplot
-    num_cols,cat_cols,other_cols = featureType_segregation(idf)
+    num_cols,cat_cols,other_cols = attributeType_segregation(idf)
     
 
     #try:
     if col in cat_cols:
     
-        idf = outlier_catfeats(idf,list_of_cols=col,coverage=cov,max_category=max_cat)\
+        idf = outlier_categories(idf,list_of_cols=col,coverage=cov,max_category=max_cat)\
                               .groupBy(col).count()\
                               .withColumn("count_%",100*(F.col("count")/F.sum("count").over(Window.partitionBy())))\
+                              .withColumn(col,f_remove_dups(col))\
                               .orderBy("count",ascending=False)\
-                              .toPandas()
+                              .toPandas().fillna("Missing")
         
         fig = px.bar(idf,x=col,y='count',text=idf['count_%'].apply(lambda x: '{0:1.2f}%'.format(x)),color_discrete_sequence=global_theme)
         fig.update_traces(textposition='outside')
-        fig.update_layout(title_text=str('Bar Plot Distribution for ' +str(col.upper())))
+        fig.update_layout(title_text=str('Bar Plot for ' +str(col.upper())))
 #         fig.update_layout(barmode='stack', xaxis={'categoryorder':'total descending'})
 
     elif col in num_cols:
 
-        idf = feature_binning(idf,list_of_cols=col,method_type=bin_type,bin_size=max_cat)\
+        idf = attribute_binning(idf,list_of_cols=col,method_type=bin_type,bin_size=max_cat)\
                              .groupBy(col).count()\
                              .withColumn("count_%",100*(F.col("count")/F.sum("count").over(Window.partitionBy())))\
+                             .withColumn(col,f_remove_dups(col))\
                              .orderBy("count",ascending=False)\
-                             .toPandas()
+                             .toPandas().fillna("Missing")
         
         fig = px.bar(idf,x=col,y='count',text=idf['count_%'].apply(lambda x: '{0:1.2f}%'.format(x)),color_discrete_sequence=global_theme)
         fig.update_traces(textposition='outside')
-        fig.update_layout(title_text=str('Bar Plot Distribution for ' +str(col.upper())))
+        fig.update_layout(title_text=str('Histogram for ' +str(col.upper())))
+        fig.update_xaxes(type='category')
 #         fig.update_layout(barmode='stack', xaxis={'categoryorder':'total descending'})
 
 
@@ -156,18 +134,18 @@ def plot_gen_boxplot(idf,cont_col,cat_col=None,color_by=None,cov=None,max_cat=50
         if count_df > threshold:
             
             group_dist = dict(sub.values() for sub in \
-                               idf.groupBy(cat_col).count().fillna("NA_Missing",subset=cat_col)\
+                               idf.groupBy(cat_col).count().fillna("Missing",subset=cat_col)\
                                  .withColumn("count_%",\
                                  int(threshold)*(F.col("count")/F.sum("count")\
                                  .over(Window.partitionBy()))/F.col("count"))\
                                  .select(cat_col,"count_%").toPandas().to_dict('r'))
             
-            idf = idf.fillna("NA_Missing",subset=cat_col).sampleBy(cat_col,fractions=group_dist,seed=common_seed)
+            idf = idf.fillna("Missing",subset=cat_col).sampleBy(cat_col,fractions=group_dist,seed=common_seed)
         
         else:
-            idf = idf.fillna("NA_Missing",subset=cat_col)
+            idf = idf.fillna("Missing",subset=cat_col)
         
-        idf = outlier_catfeats(idf,list_of_cols=cat_col,coverage=cov,max_category=max_cat).toPandas()
+        idf = outlier_categories(idf,list_of_cols=cat_col,coverage=cov,max_category=max_cat).toPandas()
         
         fig = px.box(idf,x=cat_col,y=cont_col,color=color_by,color_discrete_sequence=global_theme)
 #         fig.update_traces(textposition='outside')
@@ -178,11 +156,11 @@ def plot_gen_boxplot(idf,cont_col,cat_col=None,color_by=None,cov=None,max_cat=50
         if count_df > threshold:
             
             group_dist = dict(sub.values() for sub in \
-                           idf.groupBy(cont_col).count().fillna("NA_Missing")\
+                           idf.groupBy(cont_col).count().fillna("Missing")\
                              .withColumn("count_%",int(threshold)*(F.col("count")/F.sum("count")\
                              .over(Window.partitionBy()))/F.col("count"))\
                              .select(cont_col,"count_%").toPandas().to_dict('r'))
-            idf = idf.fillna("NA_Missing",subset=cont_col).sampleBy(cont_col,fractions=group_dist,seed=common_seed)
+            idf = idf.fillna("Missing",subset=cont_col).sampleBy(cont_col,fractions=group_dist,seed=common_seed)
             
         else:
             pass
@@ -207,7 +185,7 @@ def plot_gen_feat_analysis_label(idf,col,label,event_class,max_cat=None,bin_type
     
     import plotly.express as px
     from plotly.figure_factory import create_distplot
-    num_cols,cat_cols,other_cols = featureType_segregation(idf)
+    num_cols,cat_cols,other_cols = attributeType_segregation(idf)
     
     event_class = str(event_class)
     
@@ -218,28 +196,32 @@ def plot_gen_feat_analysis_label(idf,col,label,event_class,max_cat=None,bin_type
         idf = idf.groupBy(col).pivot(label).count()\
                 .fillna(0,subset=class_cats)\
                 .withColumn("event_rate",100*(F.col(event_class)/(F.col(class_cats[0])+F.col(class_cats[1]))))\
-                .withColumn("feature_name",F.lit(col))\
+                .withColumn("attribute_name",F.lit(col))\
+                .withColumn(col,f_remove_dups(col))\
                 .orderBy("event_rate",ascending=False)\
                 .toPandas()
                 
         fig = px.bar(idf,x=col,y='event_rate',text=idf['event_rate'].apply(lambda x: '{0:1.2f}%'.format(x)),color_discrete_sequence=global_theme)
         fig.update_traces(textposition='outside')
         fig.update_layout(title_text=str('Event Rate Distribution for ' +str(col.upper()) + str(" [Target Variable : " + str(event_class) + str("]"))))
+        fig.update_xaxes(type='category')
     
     elif col in num_cols:
         
-        idf = feature_binning(idf, method_type=bin_type, bin_size=max_cat, list_of_cols=col)
+        idf = attribute_binning(idf, method_type=bin_type, bin_size=max_cat, list_of_cols=col)
         
-        idf = idf.groupBy(col).pivot(label).count()\
+        odf = idf.groupBy(col).pivot(label).count()\
                  .fillna(0,subset=class_cats)\
                  .withColumn("event_rate",100*(F.col(event_class)/(F.col(class_cats[0])+F.col(class_cats[1]))))\
-                 .withColumn("feature_name",F.lit(col))\
+                 .withColumn("attribute_name",F.lit(col))\
+                 .withColumn(col,f_remove_dups(col))\
                  .orderBy("event_rate",ascending=False)\
                  .toPandas()
         
-        fig = px.bar(idf,x=col,y='event_rate',text=idf['event_rate'].apply(lambda x: '{0:1.2f}%'.format(x)),color_discrete_sequence=global_theme)
+        fig = px.bar(odf,x=col,y='event_rate',text=odf['event_rate'].apply(lambda x: '{0:1.2f}%'.format(x)),color_discrete_sequence=global_theme)
         fig.update_traces(textposition='outside')
         fig.update_layout(title_text=str('Event Rate Distribution for ' +str(col.upper()) + str(" [Target Variable : " + str(event_class) + str("]"))))
+        fig.update_xaxes(type='category')
 
     else:
         pass
@@ -257,8 +239,8 @@ def plot_gen_variable_clustering(idf):
     import plotly.express as px
     from plotly.figure_factory import create_distplot
     
-    fig = px.sunburst(idf, path=['Cluster', 'feature'], values='RS_Ratio',color_discrete_sequence=global_theme)
-    fig.update_layout(title_text=str("Distribution of homogenous variable across Clusters"))
+    fig = px.sunburst(idf, path=['Cluster', 'attribute'], values='RS_Ratio',color_discrete_sequence=global_theme)
+#     fig.update_layout(title_text=str("Distribution of homogenous variable across Clusters"))
     
 #     plotly.offline.plot(fig, auto_open=False, validate=False, filename=f"{base_loc}/{file_name_}plot_sunburst.html")
 
@@ -276,7 +258,7 @@ def plot_gen_dist(idf,col,threshold=500000, rug_chart=False):
         
         if count_df > threshold:
             group_dist = dict(sub.values() for sub in \
-                               idf.groupBy(col).count().fillna("NA_Missing",subset=col)\
+                               idf.groupBy(col).count().fillna("Missing",subset=col)\
                                  .withColumn("count_%",\
                                  int(threshold)*(F.col("count")/F.sum("count")\
                                  .over(Window.partitionBy()))/F.col("count"))\
@@ -301,10 +283,10 @@ def plot_gen_dist(idf,col,threshold=500000, rug_chart=False):
         return 0
 
 
-def num_cols_chart_list(df,max_cat=10,bin_type="equal_frequency",output_path=None):
+def num_cols_chart_list(df,max_cat=10,bin_type="equal_range",output_path=None):
     
     num_cols_chart = []
-    num_cols,cat_cols,other_cols = featureType_segregation(df)
+    num_cols,cat_cols,other_cols = attributeType_segregation(df)
     for index,i in enumerate(num_cols):
         
         f = plot_gen_hist_bar(idf=df,col=i,max_cat=max_cat,bin_type=bin_type)
@@ -320,7 +302,7 @@ def num_cols_chart_list(df,max_cat=10,bin_type="equal_frequency",output_path=Non
 def cat_cols_chart_list(df,id_col,max_cat=10,cov=0.9,output_path=None):
 
     cat_cols_chart = []
-    num_cols,cat_cols,other_cols = featureType_segregation(df)
+    num_cols,cat_cols,other_cols = attributeType_segregation(df)
     for index,i in enumerate(cat_cols):
         if i !=id_col:
             f=plot_gen_hist_bar(idf=df,col=i,max_cat=max_cat,cov=cov)
@@ -338,7 +320,7 @@ def cat_cols_chart_list(df,id_col,max_cat=10,cov=0.9,output_path=None):
 def num_cols_int_chart_list(df,label,event_class,bin_type="equal_range",max_cat=10,output_path=None):
 
     num_cols_int_chart = []
-    num_cols,cat_cols,other_cols = featureType_segregation(df)
+    num_cols,cat_cols,other_cols = attributeType_segregation(df)
     for index,i in enumerate(num_cols):
         f = plot_gen_feat_analysis_label(idf=df,col=i,label=label,event_class=event_class,bin_type=bin_type,max_cat=max_cat)
         if output_path is None:
@@ -352,7 +334,7 @@ def num_cols_int_chart_list(df,label,event_class,bin_type="equal_range",max_cat=
 def cat_cols_int_chart_list(df,id_col,label,event_class,output_path=None):
     
     cat_cols_int_chart = []
-    num_cols,cat_cols,other_cols = featureType_segregation(df)
+    num_cols,cat_cols,other_cols = attributeType_segregation(df)
     for index,i in enumerate(cat_cols):
         if i!=id_col:
             f = plot_gen_feat_analysis_label(idf=df,col=i,label=label,event_class=event_class)
@@ -366,6 +348,90 @@ def cat_cols_int_chart_list(df,id_col,label,event_class,output_path=None):
             pass
 
 
+def plot_comparative_drift_gen(df1,df2,col):
+    
+    num_cols,cat_cols,other_cols = attributeType_segregation(df1)
+
+
+    if col in cat_cols:
+
+        xx = outlier_categories(idf=df1,list_of_cols=col,coverage=0.9,max_category=10)\
+                              .groupBy(col).count()\
+                              .orderBy(col,ascending=True).withColumnRenamed("count","count_source")\
+                              .join(outlier_categories(idf=df2,list_of_cols=col,coverage=0.9,max_category=10)\
+                              .groupBy(col).count()\
+                              .orderBy(col,ascending=True).withColumnRenamed("count","count_target"),col,"left_outer")\
+                              .toPandas()
+        xx.fillna({col:'Missing', 'count_source':0,'count_target':0}, inplace=True)
+
+    elif col in num_cols:
+
+        xx = attribute_binning(df1,list_of_cols=col,method_type="equal_range",bin_size=10,output_type="number")\
+             .groupBy(col).count()\
+             .orderBy(col,ascending=True).withColumnRenamed("count","count_source")\
+             .join(attribute_binning(df2,list_of_cols=col,method_type="equal_range",bin_size=10,output_type="number")\
+             .groupBy(col).count()\
+             .orderBy(col,ascending=True).withColumnRenamed("count","count_target"),col,"left_outer")\
+             .toPandas()
+        xx.fillna({col:'Missing', 'count_source':0,'count_target':0}, inplace=True)
+
+    else:
+        pass
+    
+    
+    xx['%_diff']=(((xx['count_target']/xx['count_source'])-1)*100)
+    fig = go.Figure()
+    fig.add_bar(y = list(xx.count_source.values),x=xx[col], name = "source",marker=dict(color=global_theme))
+    fig.update_traces(overwrite=True, marker={"opacity": 0.7})
+    fig.add_bar(y = list(xx.count_target.values),x=xx[col],name = "target",text=xx['%_diff'].apply(lambda x: '{0:0.2f}%'.format(x)),marker=dict(color=global_theme))
+    fig.update_traces(textposition='outside')
+    fig.update_layout(paper_bgcolor=global_paper_bg_color,plot_bgcolor=global_plot_bg_color,showlegend=False)
+    fig.update_layout(title_text=str('Drift Comparison Plot Distribution for ' + col + '<br><sup>(L->R : Source->Target)</sup>'))
+    fig.update_traces(marker=dict(color=global_theme))
+    fig.update_xaxes(type='category')
+    fig.add_trace(go.Scatter(x=xx[col], y=xx.count_target.values, mode='lines+markers',line = dict(color=px.colors.qualitative.Antique[10], width=3, dash='dot')))
+#     fig.add_trace(go.Scatter(x=xx[col], y=xx.count_source.values,mode='lines+markers',line = dict(color='rgb(37,37,37)', width=6, dash='dot')))
+
+    return fig
+
+
+def violin_plot_gen(df,col,split_var=None,threshold=500000):
+    
+    count_df = df.count()
+    
+    if count_df > threshold:
+        group_dist = dict(sub.values() for sub in \
+                               df.groupBy(col).count().fillna("Missing",subset=cat_col)\
+                                 .withColumn("count_%",\
+                                 int(threshold)*(F.col("count")/F.sum("count")\
+                                 .over(Window.partitionBy()))/F.col("count"))\
+                                 .select(col,"count_%").toPandas().to_dict('r'))
+            
+        df = df.dropna().sampleBy(col,fractions=group_dist,seed=common_seed).toPandas()
+        
+    else:
+        df = df.dropna().toPandas()
+        
+    fig = px.violin(df, y=col, color=split_var, box=True,points="outliers",color_discrete_sequence=[global_theme_r[8],global_theme_r[4]])
+    fig.layout.plot_bgcolor = global_plot_bg_color
+    fig.layout.paper_bgcolor = global_paper_bg_color
+    
+    return fig
+
+
+def num_cols_chart_list_outlier(idf,split_var=None,output_path=None):
+
+    num_cols,cat_cols,other_cols = attributeType_segregation(idf)
+
+    for index,i in enumerate(num_cols):
+
+        f = violin_plot_gen(idf,i,split_var=split_var)
+        if output_path is None:
+            f.write_json("fig_num_f3_" + str(index))
+        else:
+            f.write_json(ends_with(output_path) + "fig_num_f3_" + str(index))
+    
+
 
 def charts_to_objects(idf,id_col=None,max_cat=10,label=None,event_class=None,chart_output_path=None):
     
@@ -373,11 +439,17 @@ def charts_to_objects(idf,id_col=None,max_cat=10,label=None,event_class=None,cha
     
     num_cols_chart_list(idf,output_path=chart_output_path)
     cat_cols_chart_list(idf,id_col=id_col,output_path=chart_output_path)
-    num_cols_int_chart_list(idf,label=label,event_class=event_class,output_path=chart_output_path)
-    cat_cols_int_chart_list(idf,id_col=id_col, label=label,event_class=event_class,output_path=chart_output_path)
+    num_cols_chart_list_outlier(idf,split_var=label,output_path=chart_output_path)
+
+    
+    if label is not None:
+        num_cols_int_chart_list(idf,label=label,event_class=event_class,output_path=chart_output_path)
+        cat_cols_int_chart_list(idf,id_col=id_col, label=label,event_class=event_class,output_path=chart_output_path)
+    else:
+        pass
 
 
-def output_pandas_df(idf,input_path,pandas_df_output_path, list_tabs, list_tab1, list_tab2, list_tab3):
+def output_pandas_df(idf,input_path,pandas_df_output_path, list_tabs, list_tab1, list_tab2, list_tab3,islabel=True):
     
     Path(pandas_df_output_path).mkdir(parents=True, exist_ok=True)
 
@@ -387,8 +459,15 @@ def output_pandas_df(idf,input_path,pandas_df_output_path, list_tabs, list_tab1,
     list_tab1_arr = list_tab1.split(",")
     list_tab2_arr = list_tab2.split(",")
     list_tab3_arr = list_tab3.split(",")
-    list_tabs_all = [list_tab1_arr,list_tab2_arr,list_tab3_arr]
+    
+    remove_list = ['IV_calculation','IG_calculation']
 
+    if islabel == False:
+        list_tab3_arr = [x for x in list_tab3_arr if x not in remove_list]
+    else:
+        pass
+
+    list_tabs_all = [list_tab1_arr,list_tab2_arr,list_tab3_arr]
 
     for index,i in enumerate(list_tabs_arr):
         for j in list_tabs_all[index]:
@@ -399,10 +478,31 @@ def output_pandas_df(idf,input_path,pandas_df_output_path, list_tabs, list_tab1,
     
     spark.read.parquet(ends_with(input_path) + ends_with("data_analyzer") +  ends_with("stats_generator") + ends_with("global_summary")).toPandas().to_csv(ends_with(pandas_df_output_path) + "global_summary_df.csv",index=False) 
 
-def data_drift(read_file,pandas_df_output_path):
+def data_drift(df2, df_source_path, drift_stats_path,chart_output_path=None,pandas_df_output_path=None,driftcheckrequired=False):
     
-    Path(pandas_df_output_path).mkdir(parents=True, exist_ok=True)
-    read_dataset(**read_file).toPandas().to_csv(ends_with(pandas_df_output_path) + "drift_statistics.csv",index=False)
+    if bool(driftcheckrequired):
+        
+        Path(pandas_df_output_path).mkdir(parents=True, exist_ok=True)
+        df1 = read_dataset(df_source_path.get("file_path"),df_source_path.get("file_type"),df_source_path.get("file_configs"))
+        stats_drift = read_dataset(drift_stats_path.get("file_path"),drift_stats_path.get("file_type"))
 
+        #df1 = read_dataset(**df_source_path)
+        #df2 = read_dataset(**df_target_path)
+        #stats_drift = read_dataset(**drift_stats_path)
 
+        stats_drift.toPandas().to_csv(ends_with(pandas_df_output_path) + "drift_statistics.csv",index=False)
 
+        drifted_feats = stats_drift.where(F.col("flagged")==1).select("attribute").rdd.flatMap(lambda x: x).collect()
+
+        num_cols,cat_cols,other_cols = attributeType_segregation(df1)
+
+        for index,i in enumerate(drifted_feats):
+            f = plot_comparative_drift_gen(df1,df2,i)
+            if chart_output_path is None:
+                f.write_json("fig_drift_feats_" + str(index))
+            else:
+                f.write_json(ends_with(chart_output_path) + "fig_drift_feats_" + str(index))
+    else:
+        pass
+
+        

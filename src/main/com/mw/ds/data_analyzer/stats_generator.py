@@ -3,8 +3,7 @@ import warnings
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
 from com.mw.ds.shared.spark import *
-from com.mw.ds.shared.utils import *
-from com.mw.ds.data_ingest.data_ingest import *
+from com.mw.ds.shared.utils import transpose_dataframe, attributeType_segregation
 
 def missingCount_computation(idf, list_of_cols='all', drop_cols=[], print_impact=False):
     """
@@ -12,10 +11,10 @@ def missingCount_computation(idf, list_of_cols='all', drop_cols=[], print_impact
     :params list_of_cols: List of columns for missing stats computation (list or string of col names separated by |)
                           all - to include all non-array columns (excluding drop_cols)
     :params drop_cols: List of columns to be dropped (list or string of col names separated by |)             
-    :return: Dataframe <feature,missing_count,missing_pct>
+    :return: Dataframe <attribute,missing_count,missing_pct>
     """  
     if list_of_cols == 'all':
-        num_cols, cat_cols, other_cols = featureType_segregation(idf)
+        num_cols, cat_cols, other_cols = attributeType_segregation(idf)
         list_of_cols = num_cols + cat_cols
     if isinstance(list_of_cols, str):
         list_of_cols = [x.strip() for x in list_of_cols.split('|')]
@@ -31,7 +30,7 @@ def missingCount_computation(idf, list_of_cols='all', drop_cols=[], print_impact
     odf = transpose_dataframe(idf_stats, 'summary')\
                 .withColumn('missing_count', F.lit(idf.count()) - F.col('count').cast(T.LongType()))\
                 .withColumn('missing_pct', F.round(F.col('missing_count')/F.lit(idf.count()),4))\
-                .select(F.col('key').alias('feature'),'missing_count','missing_pct')
+                .select(F.col('key').alias('attribute'),'missing_count','missing_pct')
     if print_impact:
         odf.show(len(list_of_cols))
     return odf
@@ -39,15 +38,17 @@ def missingCount_computation(idf, list_of_cols='all', drop_cols=[], print_impact
 def uniqueCount_computation(idf, list_of_cols='all', drop_cols=[], print_impact=False):
     """
     :params idf: Input Dataframe
-    :params list_of_cols: List of column for cardinality computation. Ideally categorical features.
+    :params list_of_cols: List of column for cardinality computation. Ideally categorical attributes.
                          List or string of col names separated by |.
                          all - to include all non-array columns (excluding drop_cols)
     :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
-    :return: Dataframe <feature,unique_values>
+    :return: Dataframe <attribute,unique_values>
     """
     if list_of_cols == 'all':
-        num_cols, cat_cols, other_cols = featureType_segregation(idf)
-        list_of_cols = num_cols + cat_cols
+        list_of_cols = []
+        for i in idf.dtypes:
+            if (i[1] in ('string', 'int', 'bigint', 'long')):
+                list_of_cols.append(i[0])
     if isinstance(list_of_cols, str):
         list_of_cols = [x.strip() for x in list_of_cols.split('|')]
     if isinstance(drop_cols, str):
@@ -59,43 +60,11 @@ def uniqueCount_computation(idf, list_of_cols='all', drop_cols=[], print_impact=
         raise TypeError('Invalid input for Column(s)')
     
     uniquevalue_count = idf.agg(*(F.countDistinct(F.col(i)).alias(i) for i in list_of_cols))
-    odf = transpose_dataframe(uniquevalue_count.withColumn("tmp", F.lit("unique_values")),"tmp")\
-            .select(F.col("key").alias("feature"), F.col("unique_values").cast(T.LongType()))
+    odf = spark.createDataFrame(zip(list_of_cols,uniquevalue_count.rdd.map(list).collect()[0]), 
+                                schema=("attribute", "unique_values"))
     if print_impact:
         odf.show(len(list_of_cols))
     return odf
-
-def mode_computation(idf, list_of_cols='all', drop_cols=[], print_impact=False):
-    """
-    :params idf: Input Dataframe
-    :params list_of_cols: List of columns for mode (most frequently seen value) computation. Ideally categorical features.
-                         List or string of col names separated by |. In case of tie, one value is randomly picked as mode.
-                         all - to include all non-array columns (excluding drop_cols)
-    :params drop_cols: List of columns to be dropped (list or string of col names separated by |)                   
-    :return: Dataframe <feature,mode, mode_pct>
-    """
-    if list_of_cols == 'all':
-        num_cols, cat_cols, other_cols = featureType_segregation(idf)
-        list_of_cols = num_cols + cat_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split('|')]
-    
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
-    
-    if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
-        raise TypeError('Invalid input for Column(s)')
-    
-    mode = [str((idf.select(i).dropna().groupby(i).count().orderBy("count", ascending=False).first() or [None])[0]) 
-            for i in list_of_cols]
-    mode_pct = [round(idf.where(F.col(i) == m).count()/idf.select(i).dropna().count(),4) if m != 'None' else None 
-                for i,m in zip(list_of_cols,mode)]
-    odf = spark.createDataFrame(zip(list_of_cols,mode,mode_pct), schema=("feature", "mode","mode_pct"))
-    if print_impact:
-        odf.show(len(list_of_cols))
-    return odf
-
 
 def nonzeroCount_computation(idf, list_of_cols='all', drop_cols=[], print_impact=False):
     """
@@ -104,9 +73,9 @@ def nonzeroCount_computation(idf, list_of_cols='all', drop_cols=[], print_impact
                          List or string of col names separated by |
                          all - to include all numerical columns (excluding drop_cols)
     :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
-    :return: Dataframe <feature, nonzero_count,nonzero_pct>
+    :return: Dataframe <attribute, nonzero_count,nonzero_pct>
     """
-    num_cols = featureType_segregation(idf)[0]
+    num_cols = attributeType_segregation(idf)[0]
     if list_of_cols == 'all':
         list_of_cols = num_cols
     if isinstance(list_of_cols, str):
@@ -121,7 +90,7 @@ def nonzeroCount_computation(idf, list_of_cols='all', drop_cols=[], print_impact
     
     if len(list_of_cols) == 0:
         warnings.warn("No Non-Zero Count Computation")
-        schema = T.StructType([T.StructField('feature', T.StringType(), True),
+        schema = T.StructType([T.StructField('attribute', T.StringType(), True),
                               T.StructField('nonzero_count', T.StringType(), True),
                               T.StructField('nonzero_pct', T.StringType(), True)])
         odf = spark.sparkContext.emptyRDD().toDF(schema)
@@ -129,10 +98,46 @@ def nonzeroCount_computation(idf, list_of_cols='all', drop_cols=[], print_impact
       
     from pyspark.mllib.stat import Statistics
     from pyspark.mllib.linalg import Vectors
-    tmp = idf.select(list_of_cols).fillna("0").rdd.map(lambda row: Vectors.dense(row))
+    tmp = idf.select(list_of_cols).fillna(0).rdd.map(lambda row: Vectors.dense(row))
     nonzero_count = Statistics.colStats(tmp).numNonzeros()
-    odf = spark.createDataFrame(zip(list_of_cols,[int(i) for i in nonzero_count]), schema=("feature","nonzero_count"))\
+    odf = spark.createDataFrame(zip(list_of_cols,[int(i) for i in nonzero_count]), schema=("attribute","nonzero_count"))\
             .withColumn("nonzero_pct",F.round(F.col('nonzero_count')/F.lit(idf.count()),4))
+    if print_impact:
+        odf.show(len(list_of_cols))
+    return odf
+
+
+def mode_computation(idf, list_of_cols='all', drop_cols=[], print_impact=False):
+    """
+    :params idf: Input Dataframe
+    :params list_of_cols: List of columns for mode (most frequently seen value) computation. Ideally categorical attributes.
+                         List or string of col names separated by |. In case of tie, one value is randomly picked as mode.
+                         all - to include all non-array columns (excluding drop_cols)
+    :params drop_cols: List of columns to be dropped (list or string of col names separated by |)                   
+    :return: Dataframe <attribute,mode, mode_rows>
+    """
+    if list_of_cols == 'all':
+        list_of_cols = []
+        for i in idf.dtypes:
+            if (i[1] in ('string', 'int', 'bigint', 'long')):
+                list_of_cols.append(i[0])
+    if isinstance(list_of_cols, str):
+        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
+    if isinstance(drop_cols, str):
+        drop_cols = [x.strip() for x in drop_cols.split('|')]
+    
+    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    
+    if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
+        raise TypeError('Invalid input for Column(s)')
+    
+    mode = [list(idf.select(i).dropna().groupby(i).count().orderBy("count", ascending=False).first() or [None, None]) 
+            for i in list_of_cols]
+    mode = [(str(i),str(j)) for i,j in mode]
+    
+    odf = spark.createDataFrame(zip(list_of_cols,mode), schema=("attribute", "metric"))\
+            .select('attribute', (F.col('metric')["_1"]).alias('mode'),(F.col('metric')["_2"]).alias('mode_rows'))
+    
     if print_impact:
         odf.show(len(list_of_cols))
     return odf
@@ -143,10 +148,10 @@ def measures_of_centralTendency(idf, list_of_cols='all', drop_cols=[], print_imp
     :params list_of_cols: list or string of col names separated by |
                          all - to include all non-array columns (excluding drop_cols)
     :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
-    :return: Dataframe <feature, mean, median, mode, mode_pct>
+    :return: Dataframe <attribute, mean, median, mode, mode_pct>
     """
     if list_of_cols == 'all':
-        num_cols, cat_cols, other_cols = featureType_segregation(idf)
+        num_cols, cat_cols, other_cols = attributeType_segregation(idf)
         list_of_cols = num_cols + cat_cols
     if isinstance(list_of_cols, str):
         list_of_cols = [x.strip() for x in list_of_cols.split('|')]
@@ -158,11 +163,13 @@ def measures_of_centralTendency(idf, list_of_cols='all', drop_cols=[], print_imp
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError('Invalid input for Column(s)')
     
-    odf = transpose_dataframe(idf.select(list_of_cols).summary("mean","50%"), 'summary')\
+    odf = transpose_dataframe(idf.select(list_of_cols).summary("mean","50%","count"), 'summary')\
                     .withColumn('mean', F.round(F.col('mean').cast(T.DoubleType()),4))\
                     .withColumn('median', F.round(F.col('50%').cast(T.DoubleType()),4))\
-                    .select(F.col('key').alias('feature'), 'mean', 'median')\
-                    .join(mode_computation(idf, list_of_cols),'feature','full_outer')\
+                    .withColumnRenamed('key','attribute')\
+                    .join(mode_computation(idf, list_of_cols),'attribute','full_outer')\
+                    .withColumn('mode_pct', F.round(F.col('mode_rows')/F.col('count').cast(T.DoubleType()),4))\
+                    .select('attribute','mean','median','mode','mode_pct')
                     
     if print_impact:
         odf.show(len(list_of_cols))
@@ -174,10 +181,10 @@ def measures_of_cardinality(idf, list_of_cols='all', drop_cols=[], print_impact=
     :params list_of_cols: Ideally Categorical Columns (list or string of col names separated by |)
                          all - to include all non-array columns (excluding drop_cols)
     :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
-    :return: Dataframe <feature, unique_values, IDness>
+    :return: Dataframe <attribute, unique_values, IDness>
     """
     if list_of_cols == 'all':
-        num_cols, cat_cols, other_cols = featureType_segregation(idf)
+        num_cols, cat_cols, other_cols = attributeType_segregation(idf)
         list_of_cols = num_cols + cat_cols
     if isinstance(list_of_cols, str):
         list_of_cols = [x.strip() for x in list_of_cols.split('|')]
@@ -190,9 +197,9 @@ def measures_of_cardinality(idf, list_of_cols='all', drop_cols=[], print_impact=
         raise TypeError('Invalid input for Column(s)')
     
     odf = uniqueCount_computation(idf, list_of_cols)\
-            .join(missingCount_computation(idf, list_of_cols),'feature','full_outer')\
+            .join(missingCount_computation(idf, list_of_cols),'attribute','full_outer')\
             .withColumn('IDness', F.round(F.col('unique_values')/(F.lit(idf.count()) - F.col('missing_count')),4))\
-            .select('feature', 'unique_values','IDness')                    
+            .select('attribute', 'unique_values','IDness')                    
     if print_impact:
         odf.show(len(list_of_cols))
     return odf
@@ -203,9 +210,9 @@ def measures_of_dispersion(idf, list_of_cols='all', drop_cols=[], print_impact=F
     :params list_of_cols: Numerical Columns (list or string of col names separated by |)
                          all - to include all numerical columns (excluding drop_cols)
     :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
-    :return: Dataframe <feature, stddev, variance, cov, IQR, range>
+    :return: Dataframe <attribute, stddev, variance, cov, IQR, range>
     """
-    num_cols = featureType_segregation(idf)[0]
+    num_cols = attributeType_segregation(idf)[0]
     if list_of_cols == 'all':
         list_of_cols = num_cols
     if isinstance(list_of_cols, str):
@@ -219,7 +226,7 @@ def measures_of_dispersion(idf, list_of_cols='all', drop_cols=[], print_impact=F
         raise TypeError('Invalid input for Column(s)')
     if len(list_of_cols) == 0:
         warnings.warn("No Dispersion Computation")
-        schema = T.StructType([T.StructField('feature', T.StringType(), True),
+        schema = T.StructType([T.StructField('attribute', T.StringType(), True),
                               T.StructField('stddev', T.StringType(), True),
                               T.StructField('variance', T.StringType(), True),
                               T.StructField('cov', T.StringType(), True),
@@ -234,7 +241,7 @@ def measures_of_dispersion(idf, list_of_cols='all', drop_cols=[], print_impact=F
                     .withColumn('range', F.round(F.col('max') - F.col('min'),4))\
                     .withColumn('cov', F.round(F.col('stddev')/F.col('mean'),4))\
                     .withColumn('IQR', F.round(F.col('75%') - F.col('25%'),4))\
-                    .select(F.col('key').alias('feature'),'stddev','variance','cov','IQR','range')
+                    .select(F.col('key').alias('attribute'),'stddev','variance','cov','IQR','range')
     if print_impact:
         odf.show(len(list_of_cols))
     return odf
@@ -245,9 +252,9 @@ def measures_of_percentiles(idf, list_of_cols='all', drop_cols=[], print_impact=
     :params list_of_cols: Numerical Columns (list or string of col names separated by |)
                          all - to include all numerical columns (excluding drop_cols)
     :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
-    :return: Dataframe <feature,min,1%,5%,10%,25%,50%,75%,90%,95%,99%,max>
+    :return: Dataframe <attribute,min,1%,5%,10%,25%,50%,75%,90%,95%,99%,max>
     """
-    num_cols = featureType_segregation(idf)[0]
+    num_cols = attributeType_segregation(idf)[0]
     if list_of_cols == 'all':
         list_of_cols = num_cols
     if isinstance(list_of_cols, str):
@@ -261,7 +268,7 @@ def measures_of_percentiles(idf, list_of_cols='all', drop_cols=[], print_impact=
         raise TypeError('Invalid input for Column(s)')
     if len(list_of_cols) == 0:
         warnings.warn("No Percentiles Computation")
-        schema = T.StructType([T.StructField('feature', T.StringType(), True),
+        schema = T.StructType([T.StructField('attribute', T.StringType(), True),
                               T.StructField('min', T.StringType(), True),
                               T.StructField('1%', T.StringType(), True),
                               T.StructField('5%', T.StringType(), True),
@@ -278,11 +285,11 @@ def measures_of_percentiles(idf, list_of_cols='all', drop_cols=[], print_impact=
     
     stats = ["min", "1%","5%","10%","25%","50%","75%","90%","95%","99%","max"]
     odf = transpose_dataframe(idf.select(list_of_cols).summary(*stats), 'summary')\
-            .withColumnRenamed("key","feature")
+            .withColumnRenamed("key","attribute")
     for i in odf.columns:
-        if i != "feature":
+        if i != "attribute":
             odf = odf.withColumn(i, F.round(F.col(i).cast("Double"),4))
-    odf = odf.select(['feature'] + stats)
+    odf = odf.select(['attribute'] + stats)
     if print_impact:
         odf.show(len(list_of_cols))
     return odf
@@ -293,10 +300,10 @@ def measures_of_counts (idf, list_of_cols='all', drop_cols=[], print_impact=Fals
     :params list_of_cols: list or string of col names separated by |
                          all - to include all non-array columns (excluding drop_cols)
     :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
-    :return: Dataframe <feature, fill_count,fill_pct,missing_count,missing_pct,nonzero_count,nonzero_pct>
+    :return: Dataframe <attribute, fill_count,fill_pct,missing_count,missing_pct,nonzero_count,nonzero_pct>
     """
     if list_of_cols == 'all':
-        num_cols, cat_cols, other_cols = featureType_segregation(idf)
+        num_cols, cat_cols, other_cols = attributeType_segregation(idf)
         list_of_cols = num_cols + cat_cols
     if isinstance(list_of_cols, str):
         list_of_cols = [x.strip() for x in list_of_cols.split('|')]
@@ -304,17 +311,17 @@ def measures_of_counts (idf, list_of_cols='all', drop_cols=[], print_impact=Fals
         drop_cols = [x.strip() for x in drop_cols.split('|')]
     
     list_of_cols = [e for e in list_of_cols if e not in drop_cols]
-    num_cols = featureType_segregation(idf)[0]
+    num_cols = attributeType_segregation(idf)[0]
     
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError('Invalid input for Column(s)')
 
     odf = transpose_dataframe(idf.select(list_of_cols).summary("count"), 'summary')\
-            .select(F.col("key").alias("feature"),F.col("count").cast(T.LongType()).alias("fill_count"))\
+            .select(F.col("key").alias("attribute"),F.col("count").cast(T.LongType()).alias("fill_count"))\
             .withColumn('fill_pct', F.round(F.col('fill_count')/F.lit(idf.count()),4))\
             .withColumn('missing_count', F.lit(idf.count()) - F.col('fill_count').cast(T.LongType()))\
             .withColumn('missing_pct', F.round(1 - F.col('fill_pct'),4))\
-            .join(nonzeroCount_computation(idf,num_cols),"feature","full_outer")
+            .join(nonzeroCount_computation(idf,num_cols),"attribute","full_outer")
         
     if print_impact:
         odf.show(len(list_of_cols))
@@ -326,10 +333,10 @@ def measures_of_shape(idf, list_of_cols='all', drop_cols=[], print_impact=False)
     :params list_of_cols: Numerical Columns (list or string of col names separated by |)
                          all - to include all numerical columns (excluding drop_cols)
     :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
-    :return: Dataframe <feature,skewness,kurtosis>
+    :return: Dataframe <attribute,skewness,kurtosis>
     """
     
-    num_cols = featureType_segregation(idf)[0]
+    num_cols = attributeType_segregation(idf)[0]
     if list_of_cols == 'all':
         list_of_cols = num_cols
     if isinstance(list_of_cols, str):
@@ -343,7 +350,7 @@ def measures_of_shape(idf, list_of_cols='all', drop_cols=[], print_impact=False)
         raise TypeError('Invalid input for Column(s)')
     if len(list_of_cols) == 0:
         warnings.warn("No Skewness/Kurtosis Computation")
-        schema = T.StructType([T.StructField('feature', T.StringType(), True),
+        schema = T.StructType([T.StructField('attribute', T.StringType(), True),
                               T.StructField('skewness', T.StringType(), True),
                               T.StructField('kurtosis', T.StringType(), True)])
         odf = spark.sparkContext.emptyRDD().toDF(schema)
@@ -353,7 +360,7 @@ def measures_of_shape(idf, list_of_cols='all', drop_cols=[], print_impact=False)
     for i in list_of_cols:
         s, k = idf.select(F.skewness(i), F.kurtosis(i)).first()
         shapes.append([i,s,k])
-    odf = spark.createDataFrame(shapes, schema=("feature","skewness","kurtosis"))\
+    odf = spark.createDataFrame(shapes, schema=("attribute","skewness","kurtosis"))\
                 .withColumn('skewness', F.round(F.col("skewness"),4))\
                 .withColumn('kurtosis', F.round(F.col("kurtosis"),4))
     if print_impact:
@@ -383,7 +390,7 @@ def global_summary(idf, list_of_cols='all', drop_cols=[], print_impact=True):
     
     row_count = idf.count()
     col_count = len(list_of_cols)
-    num_cols, cat_cols, other_cols = featureType_segregation(idf.select(list_of_cols))
+    num_cols, cat_cols, other_cols = attributeType_segregation(idf.select(list_of_cols))
     numcol_count = len(num_cols)
     catcol_count = len(cat_cols)
     if print_impact:

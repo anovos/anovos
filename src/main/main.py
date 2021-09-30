@@ -110,7 +110,7 @@ def main(all_configs):
                     start = timeit.default_timer()
                     print("\n" + subkey + ": \n")
                     f = getattr(association_evaluator, subkey)
-                    stats = f(df,**value, plot=False)
+                    stats = f(df,**value, print_impact=False)
                     save(stats,write_stats,folder_name="data_analyzer/association_evaluator/" + 
                          subkey +"/stats",reread=True).show(100)
                     end = timeit.default_timer()
@@ -131,14 +131,13 @@ def main(all_configs):
             for subkey, value in args.items():
                 if value != None:
                     start = timeit.default_timer()
-                    print("\n" + subkey + ": \n")
                     f = getattr(report_gen_inter, subkey)
                     if subkey == 'data_drift':
-                        f(**value)
+                        f(df, **value)
                     else:
-                        f(df,**value)
+                        f(report_gen_inter.processed_df(df),**value)
                     end = timeit.default_timer()
-                    print(key, end-start)
+                    print(key, subkey, end-start)
 
     save(df,write_main,folder_name="final_dataset",reread=False)  
     
