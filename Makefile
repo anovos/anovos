@@ -14,6 +14,7 @@ default: clean dev_deps deps test build
 clean: clean-build clean-pyc clean-test
 
 clean-build:
+	rm -rf Dockerfile
 	rm -fr dist/
 
 clean-pyc:
@@ -32,6 +33,7 @@ test:
 	pytest src/test
 
 build: clean
+	cp ./docker_build/Dockerfile ./Dockerfile
 	rm -rf ./dist && mkdir ./dist && mkdir ./dist/data && mkdir ./dist/output
 	cp ./src/main/main.py ./dist
 	cp ./config/configs.yaml ./dist
