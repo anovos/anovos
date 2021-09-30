@@ -156,17 +156,17 @@ def main(all_configs):
             print(key, end-start)
             print("w/o report", end-start_main)
 
-        if (key == 'report_gen_inter') & (args != None):
-            for subkey, value in args.items():
-                if value != None:
-                    start = timeit.default_timer()
-                    f = getattr(report_gen_inter, subkey)
-                    if subkey == 'data_drift':
-                        f(df, **value)
-                    else:
-                        f(report_gen_inter.processed_df(df),**value)
-                    end = timeit.default_timer()
-                    print(key, subkey, end-start)
+        #if (key == 'report_gen_inter') & (args != None):
+        #    for subkey, value in args.items():
+        #        if value != None:
+        #            start = timeit.default_timer()
+        #            f = getattr(report_gen_inter, subkey)
+        #            if subkey == 'data_drift':
+        #                f(df, **value)
+        #            else:
+        #                f(report_gen_inter.processed_df(df),**value)
+        #            end = timeit.default_timer()
+        #            print(key, subkey, end-start)
 
     save(df,write_main,folder_name="final_dataset",reread=False) 
     
