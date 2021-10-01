@@ -10,7 +10,7 @@ sample_output_path = "./data/tmp/output/"
 @pytest.mark.usefixtures("spark_session")
 
 
-def test_rows_wMissingFeats(spark_session):
+def test_nullRows_detection(spark_session):
     test_df = spark_session.createDataFrame(
         [
             ('27520a', 51, 9000, 'HS-grad'),
@@ -25,15 +25,15 @@ def test_rows_wMissingFeats(spark_session):
     assert test_df.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['income'][0] == 9000  
     assert test_df.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['education'][0] == 'HS-grad' 
 
-    result_df = rows_wMissingFeats(test_df,treatment = True,treatment_threshold=0.4)
+    result_df = nullRows_detection(test_df,treatment = True,treatment_threshold=0.4)
 
     assert result_df[0].count() == 3
-    assert result_df[1].where(F.col("null_feats_count") == 0).toPandas().to_dict('list')['row_count'][0] == 3   
-    assert result_df[1].where(F.col("null_feats_count") == 0).toPandas().to_dict('list')['row_pct'][0] == 0.75
-    assert result_df[1].where(F.col("null_feats_count") == 0).toPandas().to_dict('list')['flagged'][0] == 0
-    assert result_df[1].where(F.col("null_feats_count") == 2).toPandas().to_dict('list')['row_count'][0] == 1   
-    assert result_df[1].where(F.col("null_feats_count") == 2).toPandas().to_dict('list')['row_pct'][0] == 0.25
-    assert result_df[1].where(F.col("null_feats_count") == 2).toPandas().to_dict('list')['flagged'][0] == 1 
+    assert result_df[1].where(F.col("null_cols_count") == 0).toPandas().to_dict('list')['row_count'][0] == 3   
+    assert result_df[1].where(F.col("null_cols_count") == 0).toPandas().to_dict('list')['row_pct'][0] == 0.75
+    assert result_df[1].where(F.col("null_cols_count") == 0).toPandas().to_dict('list')['flagged'][0] == 0
+    assert result_df[1].where(F.col("null_cols_count") == 2).toPandas().to_dict('list')['row_count'][0] == 1   
+    assert result_df[1].where(F.col("null_cols_count") == 2).toPandas().to_dict('list')['row_pct'][0] == 0.25
+    assert result_df[1].where(F.col("null_cols_count") == 2).toPandas().to_dict('list')['flagged'][0] == 1 
     
 def test_duplicate_detection(spark_session):
     test_df1 = spark_session.createDataFrame(
@@ -76,10 +76,10 @@ def test_invalidEntries_detection(spark_session):
     result_df2 = invalidEntries_detection(test_df2,treatment = True)
 
     assert result_df2[0].count() == 5
-    assert result_df2[1].where(F.col("feature") == "age").toPandas().to_dict('list')['invalid_count'][0] == 1 
-    assert result_df2[1].where(F.col("feature") == "age").toPandas().to_dict('list')['invalid_pct'][0] == 0.2
-    assert result_df2[1].where(F.col("feature") == "education").toPandas().to_dict('list')['invalid_count'][0] == 1 
-    assert result_df2[1].where(F.col("feature") == "education").toPandas().to_dict('list')['invalid_pct'][0] == 0.2
+    assert result_df2[1].where(F.col("attribute") == "age").toPandas().to_dict('list')['invalid_count'][0] == 1 
+    assert result_df2[1].where(F.col("attribute") == "age").toPandas().to_dict('list')['invalid_pct'][0] == 0.2
+    assert result_df2[1].where(F.col("attribute") == "education").toPandas().to_dict('list')['invalid_count'][0] == 1 
+    assert result_df2[1].where(F.col("attribute") == "education").toPandas().to_dict('list')['invalid_pct'][0] == 0.2
     
 def test_IDness_detection(spark_session):
     test_df3 = spark_session.createDataFrame(
@@ -99,9 +99,9 @@ def test_IDness_detection(spark_session):
     result_df3 = IDness_detection(test_df3,drop_cols=['ifa'],treatment=True,treatment_threshold=1.0)
 
     assert len(result_df3[0].columns) == 3
-    assert result_df3[1].where(F.col("feature") == "education").toPandas().to_dict('list')['unique_values'][0] == 4 
-    assert result_df3[1].where(F.col("feature") == "education").toPandas().to_dict('list')['IDness'][0] == 1.0
-    assert result_df3[1].where(F.col("feature") == "education").toPandas().to_dict('list')['flagged'][0] == 1
+    assert result_df3[1].where(F.col("attribute") == "education").toPandas().to_dict('list')['unique_values'][0] == 4 
+    assert result_df3[1].where(F.col("attribute") == "education").toPandas().to_dict('list')['IDness'][0] == 1.0
+    assert result_df3[1].where(F.col("attribute") == "education").toPandas().to_dict('list')['flagged'][0] == 1
     
 def test_biasedness_detection(spark_session):
     test_df4 = spark_session.createDataFrame(
@@ -122,9 +122,9 @@ def test_biasedness_detection(spark_session):
     result_df4 = biasedness_detection(test_df4,treatment=True,treatment_threshold=0.8)
 
     assert len(result_df4[0].columns) == 3
-    assert result_df4[1].where(F.col("feature") == "education").toPandas().to_dict('list')['mode'][0] == 'HS-grad' 
-    assert result_df4[1].where(F.col("feature") == "education").toPandas().to_dict('list')['mode_pct'][0] == 0.8
-    assert result_df4[1].where(F.col("feature") == "education").toPandas().to_dict('list')['flagged'][0] == 1
+    assert result_df4[1].where(F.col("attribute") == "education").toPandas().to_dict('list')['mode'][0] == 'HS-grad' 
+    assert result_df4[1].where(F.col("attribute") == "education").toPandas().to_dict('list')['mode_pct'][0] == 0.8
+    assert result_df4[1].where(F.col("attribute") == "education").toPandas().to_dict('list')['flagged'][0] == 1
     
 def test_imputation_MMM(spark_session):
     test_df5 = spark_session.createDataFrame(
@@ -150,7 +150,7 @@ def test_imputation_MMM(spark_session):
     assert result_df5.where(F.col("ifa") == "11a").toPandas().to_dict('list')['education'][0] == 'HS-grad'
     
     
-def test_null_detection(spark_session):
+def test_nullColumns_detection(spark_session):
     test_df6 = spark_session.createDataFrame(
         [
             ('27520a', 51, 9000, 'HS-grad'),
@@ -165,14 +165,14 @@ def test_null_detection(spark_session):
     assert test_df6.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['income'][0] == 9000  
     assert test_df6.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['education'][0] == 'HS-grad' 
 
-    result_df6 = null_detection(test_df6,treatment=True)
+    result_df6 = nullColumns_detection(test_df6,treatment=True)
 
     assert len(result_df6[0].columns) == 4
     assert result_df6[0].count() == 3
-    assert result_df6[1].where(F.col("feature") == "education").toPandas().to_dict('list')['missing_count'][0] == 1 
-    assert result_df6[1].where(F.col("feature") == "education").toPandas().to_dict('list')['missing_pct'][0] == 0.25
-    assert result_df6[1].where(F.col("feature") == "income").toPandas().to_dict('list')['missing_count'][0] == 1 
-    assert result_df6[1].where(F.col("feature") == "income").toPandas().to_dict('list')['missing_pct'][0] == 0.25
+    assert result_df6[1].where(F.col("attribute") == "education").toPandas().to_dict('list')['missing_count'][0] == 1 
+    assert result_df6[1].where(F.col("attribute") == "education").toPandas().to_dict('list')['missing_pct'][0] == 0.25
+    assert result_df6[1].where(F.col("attribute") == "income").toPandas().to_dict('list')['missing_count'][0] == 1 
+    assert result_df6[1].where(F.col("attribute") == "income").toPandas().to_dict('list')['missing_pct'][0] == 0.25
     
 def test_outlier_detection(spark_session):
     test_df7 = spark.read.parquet(sample_parquet)
@@ -186,20 +186,20 @@ def test_outlier_detection(spark_session):
 
     assert result_df7.count() == 7
     assert len(result_df7.columns) == 3
-    assert result_df7.where(F.col("feature") == "age").toPandas().to_dict('list')['lower_outliers'][0] == 0   
-    assert result_df7.where(F.col("feature") == "age").toPandas().to_dict('list')["upper_outliers"][0] == 87
-    assert result_df7.where(F.col("feature") == "fnlwgt").toPandas().to_dict('list')['lower_outliers'][0] == 0   
-    assert result_df7.where(F.col("feature") == "fnlwgt").toPandas().to_dict('list')['upper_outliers'][0] == 518
-    assert result_df7.where(F.col("feature") == "logfnl").toPandas().to_dict('list')['lower_outliers'][0] == 0 
-    assert result_df7.where(F.col("feature") == "logfnl").toPandas().to_dict('list')['upper_outliers'][0] == 15
-    assert result_df7.where(F.col("feature") == "education-num").toPandas().to_dict('list')['lower_outliers'][0] == 0 
-    assert result_df7.where(F.col("feature") == "education-num").toPandas().to_dict('list')['upper_outliers'][0] == 0
-    assert result_df7.where(F.col("feature") == "capital-gain").toPandas().to_dict('list')['lower_outliers'][0] == 0
-    assert result_df7.where(F.col("feature") == "capital-gain").toPandas().to_dict('list')['upper_outliers'][0] == 955
-    assert result_df7.where(F.col("feature") == "capital-loss").toPandas().to_dict('list')['lower_outliers'][0] == 0
-    assert result_df7.where(F.col("feature") == "capital-loss").toPandas().to_dict('list')['upper_outliers'][0] == 790
-    assert result_df7.where(F.col("feature") == "hours-per-week").toPandas().to_dict('list')['lower_outliers'][0] == 0
-    assert result_df7.where(F.col("feature") == "hours-per-week").toPandas().to_dict('list')['upper_outliers'][0] == 515
+    assert result_df7.where(F.col("attribute") == "age").toPandas().to_dict('list')['lower_outliers'][0] == 0   
+    assert result_df7.where(F.col("attribute") == "age").toPandas().to_dict('list')["upper_outliers"][0] == 87
+    assert result_df7.where(F.col("attribute") == "fnlwgt").toPandas().to_dict('list')['lower_outliers'][0] == 0   
+    assert result_df7.where(F.col("attribute") == "fnlwgt").toPandas().to_dict('list')['upper_outliers'][0] == 518
+    assert result_df7.where(F.col("attribute") == "logfnl").toPandas().to_dict('list')['lower_outliers'][0] == 0 
+    assert result_df7.where(F.col("attribute") == "logfnl").toPandas().to_dict('list')['upper_outliers'][0] == 15
+    assert result_df7.where(F.col("attribute") == "education-num").toPandas().to_dict('list')['lower_outliers'][0] == 0 
+    assert result_df7.where(F.col("attribute") == "education-num").toPandas().to_dict('list')['upper_outliers'][0] == 0
+    assert result_df7.where(F.col("attribute") == "capital-gain").toPandas().to_dict('list')['lower_outliers'][0] == 0
+    assert result_df7.where(F.col("attribute") == "capital-gain").toPandas().to_dict('list')['upper_outliers'][0] == 955
+    assert result_df7.where(F.col("attribute") == "capital-loss").toPandas().to_dict('list')['lower_outliers'][0] == 0
+    assert result_df7.where(F.col("attribute") == "capital-loss").toPandas().to_dict('list')['upper_outliers'][0] == 790
+    assert result_df7.where(F.col("attribute") == "hours-per-week").toPandas().to_dict('list')['lower_outliers'][0] == 0
+    assert result_df7.where(F.col("attribute") == "hours-per-week").toPandas().to_dict('list')['upper_outliers'][0] == 515
 
 
 

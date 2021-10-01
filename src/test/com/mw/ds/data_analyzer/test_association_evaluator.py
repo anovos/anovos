@@ -24,16 +24,16 @@ def test_IV_calculation(spark_session):
     result_df = IV_calculation(test_df,drop_cols = ['ifa'])
 
     assert result_df.count() == 15
-    assert result_df.where(F.col("feature") == "relationship").toPandas().to_dict('list')['iv'][0] == 1.6205   
-    assert result_df.where(F.col("feature") == "marital-status").toPandas().to_dict('list')['iv'][0] == 1.3929
-    assert result_df.where(F.col("feature") == "age").toPandas().to_dict('list')["iv"][0] == 1.1891
-    assert result_df.where(F.col("feature") == "occupation").toPandas().to_dict('list')['iv'][0] == 0.7467   
-    assert result_df.where(F.col("feature") == "education").toPandas().to_dict('list')['iv'][0] == 0.7459
-    assert result_df.where(F.col("feature") == "education-num").toPandas().to_dict('list')['iv'][0] == 0.7095 
-    assert result_df.where(F.col("feature") == "hours-per-week").toPandas().to_dict('list')['iv'][0] == 0.4441
-    assert result_df.where(F.col("feature") == "capital-gain").toPandas().to_dict('list')['iv'][0] == 0.3179 
-    assert result_df.where(F.col("feature") == "sex").toPandas().to_dict('list')['iv'][0] == 0.3106 
-    assert result_df.where(F.col("feature") == "workclass").toPandas().to_dict('list')['iv'][0] == 0.1669
+    assert result_df.where(F.col("attribute") == "relationship").toPandas().to_dict('list')['iv'][0] == 1.6205   
+    assert result_df.where(F.col("attribute") == "marital-status").toPandas().to_dict('list')['iv'][0] == 1.3929
+    assert result_df.where(F.col("attribute") == "age").toPandas().to_dict('list')["iv"][0] == 1.1891
+    assert result_df.where(F.col("attribute") == "occupation").toPandas().to_dict('list')['iv'][0] == 0.7467   
+    assert result_df.where(F.col("attribute") == "education").toPandas().to_dict('list')['iv'][0] == 0.7459
+    assert result_df.where(F.col("attribute") == "education-num").toPandas().to_dict('list')['iv'][0] == 0.7095 
+    assert result_df.where(F.col("attribute") == "hours-per-week").toPandas().to_dict('list')['iv'][0] == 0.4441
+    assert result_df.where(F.col("attribute") == "capital-gain").toPandas().to_dict('list')['iv'][0] == 0.3179 
+    assert result_df.where(F.col("attribute") == "sex").toPandas().to_dict('list')['iv'][0] == 0.3106 
+    assert result_df.where(F.col("attribute") == "workclass").toPandas().to_dict('list')['iv'][0] == 0.1669
     
 def test_IG_calculation(spark_session):
     test_df = spark.read.parquet(sample_parquet)
@@ -46,16 +46,16 @@ def test_IG_calculation(spark_session):
     result_df1 = IG_calculation(test_df,drop_cols = ['ifa'])
 
     assert result_df1.count() == 15
-    assert result_df1.where(F.col("feature") == "relationship").toPandas().to_dict('list')['ig'][0] == 0.1702   
-    assert result_df1.where(F.col("feature") == "marital-status").toPandas().to_dict('list')['ig'][0] == 0.1583
-    assert result_df1.where(F.col("feature") == "age").toPandas().to_dict('list')["ig"][0] == 0.0943
-    assert result_df1.where(F.col("feature") == "occupation").toPandas().to_dict('list')['ig'][0] == 0.0917   
-    assert result_df1.where(F.col("feature") == "education").toPandas().to_dict('list')['ig'][0] == 0.0873
-    assert result_df1.where(F.col("feature") == "education-num").toPandas().to_dict('list')['ig'][0] == 0.0888 
-    assert result_df1.where(F.col("feature") == "hours-per-week").toPandas().to_dict('list')['ig'][0] == 0.0552
-    assert result_df1.where(F.col("feature") == "capital-gain").toPandas().to_dict('list')['ig'][0] == 0.0431
-    assert result_df1.where(F.col("feature") == "sex").toPandas().to_dict('list')['ig'][0] == 0.0379 
-    assert result_df1.where(F.col("feature") == "workclass").toPandas().to_dict('list')['ig'][0] == 0.0223
+    assert result_df1.where(F.col("attribute") == "relationship").toPandas().to_dict('list')['ig'][0] == 0.1702   
+    assert result_df1.where(F.col("attribute") == "marital-status").toPandas().to_dict('list')['ig'][0] == 0.1583
+    assert result_df1.where(F.col("attribute") == "age").toPandas().to_dict('list')["ig"][0] == 0.0943
+    assert result_df1.where(F.col("attribute") == "occupation").toPandas().to_dict('list')['ig'][0] == 0.0917   
+    assert result_df1.where(F.col("attribute") == "education").toPandas().to_dict('list')['ig'][0] == 0.0873
+    assert result_df1.where(F.col("attribute") == "education-num").toPandas().to_dict('list')['ig'][0] == 0.0888 
+    assert result_df1.where(F.col("attribute") == "hours-per-week").toPandas().to_dict('list')['ig'][0] == 0.0552
+    assert result_df1.where(F.col("attribute") == "capital-gain").toPandas().to_dict('list')['ig'][0] == 0.0431
+    assert result_df1.where(F.col("attribute") == "sex").toPandas().to_dict('list')['ig'][0] == 0.0379 
+    assert result_df1.where(F.col("attribute") == "workclass").toPandas().to_dict('list')['ig'][0] == 0.0223
     
 def test_variable_clustering(spark_session):
     test_df = spark.read.parquet(sample_parquet)
@@ -69,15 +69,15 @@ def test_variable_clustering(spark_session):
 
     assert result_df2.count() == 15
     assert len(result_df2.columns) == 3
-    assert result_df2.where((F.col("cluster")==0) & (F.col("feature") == "relationship")).toPandas().to_dict('list')['RS_Ratio'][0] == 0.3409127531278682 
-    assert result_df2.where((F.col("cluster")==0) & (F.col("feature") == "sex")).toPandas().to_dict('list')['RS_Ratio'][0] == 0.33779295118072383
-    assert result_df2.where((F.col("cluster")==0) & (F.col("feature") == "marital-status")).toPandas().to_dict('list')['RS_Ratio'][0] == 0.46933342119492977
-    assert result_df2.where((F.col("cluster")==0) & (F.col("feature") == "hours-per-week")).toPandas().to_dict('list')['RS_Ratio'][0] == 0.8105795691359969
-    assert result_df2.where((F.col("cluster")==1) & (F.col("feature") == "fnlwgt")).toPandas().to_dict('list')['RS_Ratio'][0] == 0.22615883103056889
-    assert result_df2.where((F.col("cluster")==1) & (F.col("feature") == "logfnl")).toPandas().to_dict('list')['RS_Ratio'][0] == 0.22574711203494083
-    assert result_df2.where((F.col("cluster")==2) & (F.col("feature") == "capital-loss")).toPandas().to_dict('list')['RS_Ratio'][0] == 0.9184927063017515
-    assert result_df2.where((F.col("cluster")==2) & (F.col("feature") == "education-num")).toPandas().to_dict('list')['RS_Ratio'][0] == 0.348300651814405
-    assert result_df2.where((F.col("cluster")==2) & (F.col("feature") == "occupation")).toPandas().to_dict('list')['RS_Ratio'][0] == 0.3690423679907467
+    assert result_df2.where((F.col("cluster")==0) & (F.col("attribute") == "relationship")).toPandas().to_dict('list')['RS_Ratio'][0] == 0.3409127531278682 
+    assert result_df2.where((F.col("cluster")==0) & (F.col("attribute") == "sex")).toPandas().to_dict('list')['RS_Ratio'][0] == 0.33779295118072383
+    assert result_df2.where((F.col("cluster")==0) & (F.col("attribute") == "marital-status")).toPandas().to_dict('list')['RS_Ratio'][0] == 0.46933342119492977
+    assert result_df2.where((F.col("cluster")==0) & (F.col("attribute") == "hours-per-week")).toPandas().to_dict('list')['RS_Ratio'][0] == 0.8105795691359969
+    assert result_df2.where((F.col("cluster")==1) & (F.col("attribute") == "fnlwgt")).toPandas().to_dict('list')['RS_Ratio'][0] == 0.22615883103056889
+    assert result_df2.where((F.col("cluster")==1) & (F.col("attribute") == "logfnl")).toPandas().to_dict('list')['RS_Ratio'][0] == 0.22574711203494083
+    assert result_df2.where((F.col("cluster")==2) & (F.col("attribute") == "capital-loss")).toPandas().to_dict('list')['RS_Ratio'][0] == 0.9184927063017515
+    assert result_df2.where((F.col("cluster")==2) & (F.col("attribute") == "education-num")).toPandas().to_dict('list')['RS_Ratio'][0] == 0.348300651814405
+    assert result_df2.where((F.col("cluster")==2) & (F.col("attribute") == "occupation")).toPandas().to_dict('list')['RS_Ratio'][0] == 0.3690423679907467
     
 
 

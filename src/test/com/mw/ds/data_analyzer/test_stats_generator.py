@@ -26,8 +26,8 @@ def test_missingCount_computation(spark_session):
     result_df = missingCount_computation(test_df)
 
     assert result_df.count() == 3
-    assert result_df.where(F.col("feature") == "education").toPandas().to_dict('list')['missing_count'][0] == 1   
-    assert result_df.where(F.col("feature") == "education").toPandas().to_dict('list')['missing_pct'][0] == 0.25   
+    assert result_df.where(F.col("attribute") == "education").toPandas().to_dict('list')['missing_count'][0] == 1   
+    assert result_df.where(F.col("attribute") == "education").toPandas().to_dict('list')['missing_pct'][0] == 0.25   
 
 
 def test_uniqueCount_computation(spark_session):
@@ -46,8 +46,8 @@ def test_uniqueCount_computation(spark_session):
     
     result_df1 = uniqueCount_computation(test_df1)
     assert result_df1.count() == 3
-    assert result_df1.where(F.col("feature") == "education").toPandas().to_dict('list')['unique_values'][0] == 2 
-    assert result_df1.where(F.col("feature") == "age").toPandas().to_dict('list')['unique_values'][0] == 4   
+    assert result_df1.where(F.col("attribute") == "education").toPandas().to_dict('list')['unique_values'][0] == 2 
+    assert result_df1.where(F.col("attribute") == "age").toPandas().to_dict('list')['unique_values'][0] == 4   
 
 def test_mode_computation(spark_session):
     test_df2 = spark_session.createDataFrame(
@@ -65,8 +65,8 @@ def test_mode_computation(spark_session):
     
     result_df2 = mode_computation(test_df2)
     assert result_df2.count() == 3
-    assert result_df2.where(F.col("feature") == "education").toPandas().to_dict('list')['mode'][0] == 'HS-grad' 
-    assert result_df2.where(F.col("feature") == "education").toPandas().to_dict('list')['mode_pct'][0] == 0.6667
+    assert result_df2.where(F.col("attribute") == "education").toPandas().to_dict('list')['mode'][0] == 'HS-grad' 
+    assert result_df2.where(F.col("attribute") == "education").toPandas().to_dict('list')['mode_pct'][0] == 0.6667
     
 def test_nonzeroCount_computation(spark_session):
     test_df3 = spark_session.createDataFrame(
@@ -85,10 +85,10 @@ def test_nonzeroCount_computation(spark_session):
     
     result_df3 = nonzeroCount_computation(test_df3)
     assert result_df3.count() == 2
-    assert result_df3.where(F.col("feature") == "age").toPandas().to_dict('list')['nonzero_count'][0] == 3 
-    assert result_df3.where(F.col("feature") == "age").toPandas().to_dict('list')['nonzero_pct'][0] == 0.75
-    assert result_df3.where(F.col("feature") == "income").toPandas().to_dict('list')['nonzero_count'][0] == 3 
-    assert result_df3.where(F.col("feature") == "income").toPandas().to_dict('list')['nonzero_pct'][0] == 0.75
+    assert result_df3.where(F.col("attribute") == "age").toPandas().to_dict('list')['nonzero_count'][0] == 3 
+    assert result_df3.where(F.col("attribute") == "age").toPandas().to_dict('list')['nonzero_pct'][0] == 0.75
+    assert result_df3.where(F.col("attribute") == "income").toPandas().to_dict('list')['nonzero_count'][0] == 3 
+    assert result_df3.where(F.col("attribute") == "income").toPandas().to_dict('list')['nonzero_pct'][0] == 0.75
     
 def test_measures_of_centralTendency(spark_session):
     test_df4 = spark_session.createDataFrame(
@@ -106,10 +106,10 @@ def test_measures_of_centralTendency(spark_session):
 
     result_df4 = measures_of_centralTendency(test_df4)
     assert result_df4.count() == 3
-    assert result_df4.where(F.col("feature") == "education").toPandas().to_dict('list')['mode'][0] == 'HS-grad' 
-    assert result_df4.where(F.col("feature") == "age").toPandas().to_dict('list')['mean'][0] == 42.75 
-    assert result_df4.where(F.col("feature") == "age").toPandas().to_dict('list')['median'][0] == 42.0 
-    assert result_df4.where(F.col("feature") == "education").toPandas().to_dict('list')['mode_pct'][0] == 0.6667
+    assert result_df4.where(F.col("attribute") == "education").toPandas().to_dict('list')['mode'][0] == 'HS-grad' 
+    assert result_df4.where(F.col("attribute") == "age").toPandas().to_dict('list')['mean'][0] == 42.75 
+    assert result_df4.where(F.col("attribute") == "age").toPandas().to_dict('list')['median'][0] == 42.0 
+    assert result_df4.where(F.col("attribute") == "education").toPandas().to_dict('list')['mode_pct'][0] == 0.6667
 
     
 def test_measures_of_cardinality(spark_session):
@@ -128,10 +128,10 @@ def test_measures_of_cardinality(spark_session):
 
     result_df5 = measures_of_cardinality(test_df5)
     assert result_df5.count() == 3
-    assert result_df5.where(F.col("feature") == "education").toPandas().to_dict('list')['unique_values'][0] == 2
-    assert result_df5.where(F.col("feature") == "age").toPandas().to_dict('list')['unique_values'][0] == 4
-    assert result_df5.where(F.col("feature") == "age").toPandas().to_dict('list')['IDness'][0] == 1.0 
-    assert result_df5.where(F.col("feature") == "education").toPandas().to_dict('list')['IDness'][0] == 0.6667
+    assert result_df5.where(F.col("attribute") == "education").toPandas().to_dict('list')['unique_values'][0] == 2
+    assert result_df5.where(F.col("attribute") == "age").toPandas().to_dict('list')['unique_values'][0] == 4
+    assert result_df5.where(F.col("attribute") == "age").toPandas().to_dict('list')['IDness'][0] == 1.0 
+    assert result_df5.where(F.col("attribute") == "education").toPandas().to_dict('list')['IDness'][0] == 0.6667
     
 def test_measures_of_dispersion(spark_session):
     test_df6 = spark_session.createDataFrame(
@@ -149,11 +149,11 @@ def test_measures_of_dispersion(spark_session):
 
     result_df6 = measures_of_dispersion(test_df6)
     assert result_df6.count() == 1
-    assert result_df6.where(F.col("feature") == "age").toPandas().to_dict('list')['stddev'][0] == 14.2449
-    assert result_df6.where(F.col("feature") == "age").toPandas().to_dict('list')['variance'][0] == 202.9172
-    assert result_df6.where(F.col("feature") == "age").toPandas().to_dict('list')['cov'][0] == 0.3332 
-    assert result_df6.where(F.col("feature") == "age").toPandas().to_dict('list')['IQR'][0] == 28.0
-    assert result_df6.where(F.col("feature") == "age").toPandas().to_dict('list')['range'][0] == 32.0
+    assert result_df6.where(F.col("attribute") == "age").toPandas().to_dict('list')['stddev'][0] == 14.2449
+    assert result_df6.where(F.col("attribute") == "age").toPandas().to_dict('list')['variance'][0] == 202.9172
+    assert result_df6.where(F.col("attribute") == "age").toPandas().to_dict('list')['cov'][0] == 0.3332 
+    assert result_df6.where(F.col("attribute") == "age").toPandas().to_dict('list')['IQR'][0] == 28.0
+    assert result_df6.where(F.col("attribute") == "age").toPandas().to_dict('list')['range'][0] == 32.0
     
 # def measures_of_percentiles(idf, list_of_cols='all', drop_cols=[], print_impact=False):
 def test_measures_of_counts(spark_session):
@@ -172,12 +172,12 @@ def test_measures_of_counts(spark_session):
 
     result_df7 = measures_of_counts(test_df7)
     assert result_df7.count() == 3
-    assert result_df7.where(F.col("feature") == "age").toPandas().to_dict('list')['fill_count'][0] == 4
-    assert result_df7.where(F.col("feature") == "age").toPandas().to_dict('list')['fill_pct'][0] == 1.0
-    assert result_df7.where(F.col("feature") == "age").toPandas().to_dict('list')['missing_count'][0] == 0 
-    assert result_df7.where(F.col("feature") == "age").toPandas().to_dict('list')['missing_pct'][0] == 0.0
-    assert result_df7.where(F.col("feature") == "age").toPandas().to_dict('list')['nonzero_count'][0] == 4
-    assert result_df7.where(F.col("feature") == "age").toPandas().to_dict('list')['nonzero_pct'][0] == 1.0
+    assert result_df7.where(F.col("attribute") == "age").toPandas().to_dict('list')['fill_count'][0] == 4
+    assert result_df7.where(F.col("attribute") == "age").toPandas().to_dict('list')['fill_pct'][0] == 1.0
+    assert result_df7.where(F.col("attribute") == "age").toPandas().to_dict('list')['missing_count'][0] == 0 
+    assert result_df7.where(F.col("attribute") == "age").toPandas().to_dict('list')['missing_pct'][0] == 0.0
+    assert result_df7.where(F.col("attribute") == "age").toPandas().to_dict('list')['nonzero_count'][0] == 4
+    assert result_df7.where(F.col("attribute") == "age").toPandas().to_dict('list')['nonzero_pct'][0] == 1.0
     
 def test_measures_of_shape(spark_session):
     test_df8 = spark_session.createDataFrame(
@@ -195,8 +195,8 @@ def test_measures_of_shape(spark_session):
 
     result_df8 = measures_of_shape(test_df8)
     assert result_df8.count() == 1
-    assert result_df8.where(F.col("feature") == "age").toPandas().to_dict('list')['skewness'][0] == -0.7063
-    assert result_df8.where(F.col("feature") == "age").toPandas().to_dict('list')['kurtosis'][0] == -1.0646
+    assert result_df8.where(F.col("attribute") == "age").toPandas().to_dict('list')['skewness'][0] == -0.7063
+    assert result_df8.where(F.col("attribute") == "age").toPandas().to_dict('list')['kurtosis'][0] == -1.0646
     
 
 def test_global_summary(spark_session):
