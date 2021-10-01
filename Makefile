@@ -8,7 +8,7 @@ help:
 
 all: default
 
-default: clean dev_deps deps test build
+default: clean dev_deps deps build test
 
 
 clean: clean-build clean-pyc clean-test
@@ -30,7 +30,9 @@ clean-test:
 	rm -rf ./data/tmp/output 
 
 test:
-	pytest src/test
+	-coverage run --source=. -m pytest src/test
+	coverage report
+	coverage html
 
 build: clean
 	cp ./docker_build/Dockerfile ./Dockerfile
