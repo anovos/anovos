@@ -1,0 +1,14 @@
+UNKNOWN.egg-info/
+dist/
+com.mw.ds.data_ingest.egg-info/
+src/UNKNOWN.egg-info/
+src/__pycache__/
+src/main/UNKNOWN.egg-info/
+src/main/com.mw.ds.data_ingest.egg-info/
+src/main/com/__pycache__/
+src/main/com/mw/__pycache__/
+src/main/com/mw/ds/__pycache__/
+src/main/com/mw/ds/data_ingest/__pycache__/
+src/main/com/mw/ds/shared/__pycache__/
+src/test/__pycache__/
+src/test/com/mw/ds/data_ingest/__pycache__/
