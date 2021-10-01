@@ -117,17 +117,18 @@ def mode_computation(idf, list_of_cols='all', drop_cols=[], print_impact=False):
     :return: Dataframe <attribute,mode, mode_rows>
     """
     if list_of_cols == 'all':
-        list_of_cols = []
-        for i in idf.dtypes:
-            if (i[1] in ('string', 'int', 'bigint', 'long')):
-                list_of_cols.append(i[0])
+        num_cols, cat_cols, other_cols = attributeType_segregation(idf)
+        list_of_cols = num_cols + cat_cols
     if isinstance(list_of_cols, str):
         list_of_cols = [x.strip() for x in list_of_cols.split('|')]
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
     
     list_of_cols = [e for e in list_of_cols if e not in drop_cols]
-    
+    for i in idf.select(list_of_cols).dtypes:
+        if (i[1] not in ('string', 'int', 'bigint', 'long')):
+            list_of_cols.remove(i[0])
+
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError('Invalid input for Column(s)')
     
@@ -184,8 +185,10 @@ def measures_of_cardinality(idf, list_of_cols='all', drop_cols=[], print_impact=
     :return: Dataframe <attribute, unique_values, IDness>
     """
     if list_of_cols == 'all':
-        num_cols, cat_cols, other_cols = attributeType_segregation(idf)
-        list_of_cols = num_cols + cat_cols
+        list_of_cols = []
+        for i in idf.dtypes:
+            if (i[1] in ('string', 'int', 'bigint', 'long')):
+                list_of_cols.append(i[0])
     if isinstance(list_of_cols, str):
         list_of_cols = [x.strip() for x in list_of_cols.split('|')]
     if isinstance(drop_cols, str):
