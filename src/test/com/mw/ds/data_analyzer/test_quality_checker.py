@@ -182,7 +182,7 @@ def test_outlier_detection(spark_session):
     assert test_df7.where(F.col("ifa") == "4062a").toPandas().to_dict('list')['sex'][0] == 'Male'  
     assert test_df7.where(F.col("ifa") == "4062a").toPandas().to_dict('list')['education'][0] == '11th' 
 
-    result_df7 = outlier_detection(test_df7,drop_cols = ['ifa','label'])
+    result_df7 = outlier_detection(test_df7,drop_cols = ['ifa','label'])[1]
 
     assert result_df7.count() == 7
     assert len(result_df7.columns) == 3
