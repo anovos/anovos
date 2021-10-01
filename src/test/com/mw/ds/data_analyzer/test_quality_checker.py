@@ -2,7 +2,7 @@ import pytest
 import os
 from com.mw.ds.data_analyzer.quality_checker import *
 
-sample_parquet = "./data/test_dataset/part-00001-3eb0f7bb-05c2-46ec-8913-23ba231d2734-c000.snappy.parquet"
+sample_parquet = "./data/test_dataset/part-00000-3eb0f7bb-05c2-46ec-8913-23ba231d2734-c000.snappy.parquet"
 sample_csv = "./data/test_dataset/part-00000-8beb3930-8a44-4b7b-906b-a6deca466d9f-c000.csv"
 sample_avro = "./data/test_dataset/part-00000-f12ee684-956d-487d-b781-fb99af447b34-c000.avro"
 sample_output_path = "./data/tmp/output/"
@@ -149,6 +149,7 @@ def test_imputation_MMM(spark_session):
     assert result_df5.where(F.col("ifa") == "11a").toPandas().to_dict('list')['income'][0] == 8000 
     assert result_df5.where(F.col("ifa") == "11a").toPandas().to_dict('list')['education'][0] == 'HS-grad'
     
+    
 def test_null_detection(spark_session):
     test_df6 = spark_session.createDataFrame(
         [
@@ -172,5 +173,34 @@ def test_null_detection(spark_session):
     assert result_df6[1].where(F.col("feature") == "education").toPandas().to_dict('list')['missing_pct'][0] == 0.25
     assert result_df6[1].where(F.col("feature") == "income").toPandas().to_dict('list')['missing_count'][0] == 1 
     assert result_df6[1].where(F.col("feature") == "income").toPandas().to_dict('list')['missing_pct'][0] == 0.25
+    
+def test_outlier_detection(spark_session):
+    test_df7 = spark.read.parquet(sample_parquet)
+    test_df7 = test_df7.withColumn('label', F.when(F.col('income') == '<=50K', F.lit(0.0)).when(F.col('income') == '>50K', F.lit(1.0))).drop('income')
+    assert test_df7.where(F.col("ifa") == "4062a").count() == 1
+    assert test_df7.where(F.col("ifa") == "4062a").toPandas().to_dict('list')['age'][0] == 28
+    assert test_df7.where(F.col("ifa") == "4062a").toPandas().to_dict('list')['sex'][0] == 'Male'  
+    assert test_df7.where(F.col("ifa") == "4062a").toPandas().to_dict('list')['education'][0] == '11th' 
+
+    result_df7 = outlier_detection(test_df7,drop_cols = ['ifa','label'])
+
+    assert result_df7.count() == 7
+    assert len(result_df7.columns) == 3
+    assert result_df7.where(F.col("feature") == "age").toPandas().to_dict('list')['lower_outliers'][0] == 0   
+    assert result_df7.where(F.col("feature") == "age").toPandas().to_dict('list')["upper_outliers"][0] == 87
+    assert result_df7.where(F.col("feature") == "fnlwgt").toPandas().to_dict('list')['lower_outliers'][0] == 0   
+    assert result_df7.where(F.col("feature") == "fnlwgt").toPandas().to_dict('list')['upper_outliers'][0] == 518
+    assert result_df7.where(F.col("feature") == "logfnl").toPandas().to_dict('list')['lower_outliers'][0] == 0 
+    assert result_df7.where(F.col("feature") == "logfnl").toPandas().to_dict('list')['upper_outliers'][0] == 15
+    assert result_df7.where(F.col("feature") == "education-num").toPandas().to_dict('list')['lower_outliers'][0] == 0 
+    assert result_df7.where(F.col("feature") == "education-num").toPandas().to_dict('list')['upper_outliers'][0] == 0
+    assert result_df7.where(F.col("feature") == "capital-gain").toPandas().to_dict('list')['lower_outliers'][0] == 0
+    assert result_df7.where(F.col("feature") == "capital-gain").toPandas().to_dict('list')['upper_outliers'][0] == 955
+    assert result_df7.where(F.col("feature") == "capital-loss").toPandas().to_dict('list')['lower_outliers'][0] == 0
+    assert result_df7.where(F.col("feature") == "capital-loss").toPandas().to_dict('list')['upper_outliers'][0] == 790
+    assert result_df7.where(F.col("feature") == "hours-per-week").toPandas().to_dict('list')['lower_outliers'][0] == 0
+    assert result_df7.where(F.col("feature") == "hours-per-week").toPandas().to_dict('list')['upper_outliers'][0] == 515
+
+
 
 
