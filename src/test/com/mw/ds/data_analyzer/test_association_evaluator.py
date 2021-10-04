@@ -9,10 +9,6 @@ sample_output_path = "./data/tmp/output/"
 
 @pytest.mark.usefixtures("spark_session")
 
-# def correlation_matrix(idf, list_of_cols='all', drop_cols=[], plot=False):
-# def variable_clustering(idf, list_of_cols='all', drop_cols=[], sample_size=100000, plot=False):
-
-
 def test_IV_calculation(spark_session):
     test_df = spark.read.parquet(sample_parquet)
     test_df = test_df.withColumn('label', F.when(F.col('income') == '<=50K', F.lit(0.0)).when(F.col('income') == '>50K', F.lit(1.0))).drop('income')
@@ -78,8 +74,45 @@ def test_variable_clustering(spark_session):
     assert result_df2.where((F.col("cluster")==2) & (F.col("attribute") == "capital-loss")).toPandas().to_dict('list')['RS_Ratio'][0] == 0.9184927063017515
     assert result_df2.where((F.col("cluster")==2) & (F.col("attribute") == "education-num")).toPandas().to_dict('list')['RS_Ratio'][0] == 0.348300651814405
     assert result_df2.where((F.col("cluster")==2) & (F.col("attribute") == "occupation")).toPandas().to_dict('list')['RS_Ratio'][0] == 0.3690423679907467
-    
+        
+def test_correlation_matrix(spark_session):
+    test_df = spark.read.parquet(sample_parquet)
+    test_df = test_df.withColumn('label', F.when(F.col('income') == '<=50K', F.lit(0.0)).when(F.col('income') == '>50K', F.lit(1.0))).drop('income')
+    assert test_df.where(F.col("ifa") == "4062a").count() == 1
+    assert test_df.where(F.col("ifa") == "4062a").toPandas().to_dict('list')['age'][0] == 28
+    assert test_df.where(F.col("ifa") == "4062a").toPandas().to_dict('list')['sex'][0] == 'Male'  
+    assert test_df.where(F.col("ifa") == "4062a").toPandas().to_dict('list')['education'][0] == '11th' 
 
+    result_df3 = correlation_matrix(test_df,drop_cols = ['ifa'])
 
-
+    assert result_df3.count() == 16
+    assert result_df3.where(F.col("attribute") == "age").toPandas().to_dict('list')['age'][0] == 1.0
+    assert result_df3.where(F.col("attribute") == "age").toPandas().to_dict('list')['native-country'][0] <= 0.2
+    assert result_df3.where(F.col("attribute") == "age").toPandas().to_dict('list')['capital-gain'][0] <= 0.25
+    assert result_df3.where(F.col("attribute") == "age").toPandas().to_dict('list')['capital-loss'][0] <= 0.25
+    assert result_df3.where(F.col("attribute") == "age").toPandas().to_dict('list')['education'][0] <= 0.4
+    assert result_df3.where(F.col("attribute") == "age").toPandas().to_dict('list')['education-num'][0] <= 0.4
+    assert result_df3.where(F.col("attribute") == "age").toPandas().to_dict('list')['fnlwgt'][0] <= 0.1
+    assert result_df3.where(F.col("attribute") == "capital-gain").toPandas().to_dict('list')['capital-gain'][0] == 1.0
+    assert result_df3.where(F.col("attribute") == "capital-gain").toPandas().to_dict('list')['native-country'][0] <= 0.1
+    assert result_df3.where(F.col("attribute") == "capital-gain").toPandas().to_dict('list')['age'][0] <= 0.2
+    assert result_df3.where(F.col("attribute") == "capital-gain").toPandas().to_dict('list')['capital-loss'][0] <= 0.1
+    assert result_df3.where(F.col("attribute") == "capital-gain").toPandas().to_dict('list')['education'][0] <= 0.3
+    assert result_df3.where(F.col("attribute") == "capital-gain").toPandas().to_dict('list')['education-num'][0] <= 0.4
+    assert result_df3.where(F.col("attribute") == "capital-gain").toPandas().to_dict('list')['fnlwgt'][0] <= 0.1
+    assert result_df3.where(F.col("attribute") == "education").toPandas().to_dict('list')['education'][0] == 1.0
+    assert result_df3.where(F.col("attribute") == "education").toPandas().to_dict('list')['native-country'][0] <= 0.45
+    assert result_df3.where(F.col("attribute") == "education").toPandas().to_dict('list')['age'][0] <= 0.4
+    assert result_df3.where(F.col("attribute") == "education").toPandas().to_dict('list')['capital-loss'][0] <= 0.2
+    assert result_df3.where(F.col("attribute") == "education").toPandas().to_dict('list')['capital-gain'][0] <= 0.3
+    assert result_df3.where(F.col("attribute") == "education").toPandas().to_dict('list')['education-num'][0] <= 1.0
+    assert result_df3.where(F.col("attribute") == "education").toPandas().to_dict('list')['fnlwgt'][0] <= 0.1
+    assert result_df3.where(F.col("attribute") == "label").toPandas().to_dict('list')['label'][0] == 1.0
+    assert result_df3.where(F.col("attribute") == "label").toPandas().to_dict('list')['native-country'][0] <= 0.2
+    assert result_df3.where(F.col("attribute") == "label").toPandas().to_dict('list')['age'][0] <= 0.4
+    assert result_df3.where(F.col("attribute") == "label").toPandas().to_dict('list')['capital-loss'][0] <= 0.3
+    assert result_df3.where(F.col("attribute") == "label").toPandas().to_dict('list')['capital-gain'][0] <= 0.4
+    assert result_df3.where(F.col("attribute") == "label").toPandas().to_dict('list')['education'][0] <= 4.0
+    assert result_df3.where(F.col("attribute") == "label").toPandas().to_dict('list')['fnlwgt'][0] <= 0.1
+   
     
