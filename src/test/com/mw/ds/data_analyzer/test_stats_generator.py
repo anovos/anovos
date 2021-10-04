@@ -55,6 +55,7 @@ def test_mode_computation(spark_session):
             ('27520a', 51, 'HS-grad'),
             ('10a', 42, 'Postgrad'),
             ('11a', 55, None),
+            ('13a', 42, 'HS-grad'),
             ('1100b', 23, 'HS-grad')
         ],
         ['ifa', 'age', 'education']
@@ -66,7 +67,9 @@ def test_mode_computation(spark_session):
     result_df2 = mode_computation(test_df2)
     assert result_df2.count() == 3
     assert result_df2.where(F.col("attribute") == "education").toPandas().to_dict('list')['mode'][0] == 'HS-grad' 
-    assert result_df2.where(F.col("attribute") == "education").toPandas().to_dict('list')['mode_pct'][0] == 0.6667
+    assert result_df2.where(F.col("attribute") == "education").toPandas().to_dict('list')['mode_rows'][0] == "3"
+    assert result_df2.where(F.col("attribute") == "age").toPandas().to_dict('list')['mode'][0] == "42" 
+    assert result_df2.where(F.col("attribute") == "age").toPandas().to_dict('list')['mode_rows'][0] == "2"
     
 def test_nonzeroCount_computation(spark_session):
     test_df3 = spark_session.createDataFrame(
