@@ -224,3 +224,37 @@ def test_global_summary(spark_session):
     assert result_df9.where(F.col("metric") == "numcols_name").toPandas().to_dict('list')['value'][0] == "age"
     assert result_df9.where(F.col("metric") == "catcols_count").toPandas().to_dict('list')['value'][0] == "2"
     assert result_df9.where(F.col("metric") == "catcols_name").toPandas().to_dict('list')['value'][0] == "ifa, education"
+    
+def test_measures_of_percentiles(spark_session):
+    test_df10 = spark_session.createDataFrame(
+        [
+            ('27520a', 51, 9000, 'HS-grad'),
+            ('10a', 42, 7000,'HS-grad'),
+            ('11a', 35, None, "HS-grad"),
+            ('1100g', 33, 7500, 'matric'),
+            ('11d', 45, 9500, "HS-grad"),
+            ('1100b', 23, 6000, 'matric')
+        ],
+        ['ifa', 'age', 'income','education']
+    )
+    assert test_df10.where(F.col("ifa") == "27520a").count() == 1
+    assert test_df10.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['age'][0] == 51
+    assert test_df10.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['income'][0] == 9000   
+    assert test_df10.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['education'][0] == 'HS-grad'
+
+    result_df10 = measures_of_percentiles(test_df10)
+    assert result_df10.count() == 2
+    assert result_df10.where(F.col("attribute") == "income").toPandas().to_dict('list')['min'][0] == 6000.0
+    assert result_df10.where(F.col("attribute") == "income").toPandas().to_dict('list')['10%'][0] <= 6000.0 
+    assert result_df10.where(F.col("attribute") == "income").toPandas().to_dict('list')['25%'][0] <= 7000.0
+    assert result_df10.where(F.col("attribute") == "income").toPandas().to_dict('list')['50%'][0] <= 7500.0
+    assert result_df10.where(F.col("attribute") == "income").toPandas().to_dict('list')['75%'][0] <= 9000.0
+    assert result_df10.where(F.col("attribute") == "income").toPandas().to_dict('list')['90%'][0] <= 9500.0
+    assert result_df10.where(F.col("attribute") == "income").toPandas().to_dict('list')['max'][0] == 9500.0
+    assert result_df10.where(F.col("attribute") == "age").toPandas().to_dict('list')['min'][0] == 23.0
+    assert result_df10.where(F.col("attribute") == "age").toPandas().to_dict('list')['10%'][0] <= 23.0 
+    assert result_df10.where(F.col("attribute") == "age").toPandas().to_dict('list')['25%'][0] <= 33.0
+    assert result_df10.where(F.col("attribute") == "age").toPandas().to_dict('list')['50%'][0] <= 35.0
+    assert result_df10.where(F.col("attribute") == "age").toPandas().to_dict('list')['75%'][0] <= 45.0
+    assert result_df10.where(F.col("attribute") == "age").toPandas().to_dict('list')['90%'][0] <= 51.0
+    assert result_df10.where(F.col("attribute") == "age").toPandas().to_dict('list')['max'][0] == 51.0
