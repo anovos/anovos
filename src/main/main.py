@@ -144,16 +144,30 @@ def main(all_configs):
                     print(key, subkey, end-start)
 
         if (key == 'drift_detector') & (args != None):
-            start = timeit.default_timer()
-            if not args['drift_statistics']['pre_existing_source']:
-                source = ETL(args.get('source_dataset'))
-            else:
-                source = None
-            df_stats = drift_detector.drift_statistics(df,source,**args['drift_statistics'],print_impact=False)
-            save(df_stats,write_stats,folder_name="drift_detector/drift_statistics",reread=True).show(100)
-            end = timeit.default_timer()
-            print(key, end-start)
-            print("w/o report", end-start_main)
+            for subkey, value in args.items():
+                if (subkey == 'drift_statistics') & (value != None):
+                    start = timeit.default_timer()
+                    if not value['configs']['pre_existing_source']:
+                        source = ETL(value.get('source_dataset'))
+                    else:
+                        source = None
+                    df_stats = drift_detector.drift_statistics(df,source,**value['configs'],print_impact=False)
+                    save(df_stats,write_stats,folder_name="drift_detector/drift_statistics",reread=True).show(100)
+                    end = timeit.default_timer()
+                    print(key, subkey, end-start)
+                    
+                if (subkey == 'stabilityIndex_computation') & (value != None):
+                    start = timeit.default_timer()
+                    idfs = []
+                    for k in [e for e in value.keys() if e not in ('configs')]:
+                        tmp = ETL(value.get(k))
+                        idfs.append(tmp)
+                    df_stats = drift_detector.stabilityIndex_computation(*idfs,**value['configs'],print_impact=False)
+                    save(df_stats,write_stats,folder_name="drift_detector/stability_index",reread=True).show(100)
+                    end = timeit.default_timer()
+                    print(key, subkey, end-start)
+                    
+                print("w/o report", end-start_main)
 
         """
         if (key == 'report_gen_inter') & (args != None):
@@ -167,10 +181,9 @@ def main(all_configs):
                         f(report_gen_inter.processed_df(df),**value)
                     end = timeit.default_timer()
                     print(key, subkey, end-start)
-
         """
 
-    save(df,write_main,folder_name="final_dataset",reread=False) 
+    save(df,write_main,folder_name="final_dataset",reread=False)
     
 if __name__ == '__main__':
     config_path = sys.argv[1]

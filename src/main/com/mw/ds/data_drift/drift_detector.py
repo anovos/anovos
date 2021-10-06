@@ -8,6 +8,7 @@ from itertools import chain
 from com.mw.ds.shared.spark import *
 from com.mw.ds.shared.utils import attributeType_segregation
 from com.mw.ds.data_transformer.transformers import attribute_binning
+from com.mw.ds.data_ingest.data_ingest import concatenate_dataset
 
 
 def drift_statistics(idf_target, idf_source, list_of_cols='all', drop_cols=[], method_type='PSI', bin_method='equal_range', 
@@ -134,4 +135,111 @@ def drift_statistics(idf_target, idf_source, list_of_cols='all', drop_cols=[], m
             drift = odf.where(F.col('flagged')  == 1)
             drift.show(drift.count())
     
+    return odf
+
+
+def stabilityIndex_computation(*idfs, list_of_cols='all', drop_cols=[], metric_weightages = {'mean':0.5,'stddev':0.3,'kurtosis':0.2}, 
+                               existing_metric_path='', appended_metric_path='', threshold=None, print_impact=False):
+
+    """
+    :params idfs: Input Dataframes (flexible)
+    :params list_of_cols: Numerical columns (in list format or string separated by |)
+                         all - to include all numerical columns (excluding drop_cols)
+    :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
+    :params metric_weightages: A dictionary with key being the metric name (mean,stdev,kurtosis) 
+                              and value being the weightage of the metric (between 0 and 1). 
+                              Sum of all weightages must be 1.
+    :params existing_metric_path: this argument is path for pre-existing metrics of historical datasets 
+                                 <idx,attribute,mean,stdev,kurtosis>. 
+                                 idx is index number of historical datasets assigned in chronological order
+    :params appended_metric_path: this argument is path for saving input dataframes metrics after appending to the historical datasets' metrics. 
+    :params threshold: To flag unstable attributes meeting the threshold
+    :return: Stability Index Dataframe <attribute, *metric_cv, *metric_si, stability_index>
+    """
+    
+    from scipy.stats import variation
+    import numpy as np
+    
+    num_cols = attributeType_segregation(idfs[0])[0]
+    if list_of_cols == 'all':
+        list_of_cols = num_cols
+    if isinstance(list_of_cols, str):
+        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
+    if isinstance(drop_cols, str):
+        drop_cols = [x.strip() for x in drop_cols.split('|')]
+
+    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+
+    if any(x not in num_cols for x in list_of_cols) | (len(list_of_cols) == 0):
+        raise TypeError('Invalid input for Column(s)')
+    if round(metric_weightages.get('mean',0) + metric_weightages.get('stddev',0) + metric_weightages.get('kurtosis',0), 3) != 1:
+        raise ValueError('Invalid input for metric weightages. Either metric name is incorrect or sum of metric weightages is not 1.0')
+
+    if existing_metric_path:
+        existing_metric_df = spark.read.csv(existing_metric_path, header=True, inferSchema=True)
+        dfs_count = existing_metric_df.select(F.max(F.col('idx'))).first()[0]
+    else:
+        schema = T.StructType([T.StructField('idx', T.IntegerType(), True),
+                                  T.StructField('attribute', T.StringType(), True),
+                                  T.StructField('mean', T.DoubleType(), True),
+                                  T.StructField('stddev', T.DoubleType(), True),
+                                  T.StructField('kurtosis', T.DoubleType(), True)])
+        existing_metric_df = spark.sparkContext.emptyRDD().toDF(schema)
+        dfs_count = 0
+
+    metric_ls = []
+    for idf in idfs:
+        for i in list_of_cols:
+            mean, stddev, kurtosis = idf.select(F.mean(i), F.stddev(i), F.kurtosis(i)).first()
+            metric_ls.append([dfs_count+1, i, mean, stddev, kurtosis+3.0 if kurtosis else None])
+        dfs_count += 1
+
+    new_metric_df = spark.createDataFrame(metric_ls, schema=('idx','attribute','mean','stddev','kurtosis'))
+    appended_metric_df = concatenate_dataset(existing_metric_df,new_metric_df)
+    appended_metric_df.show(100)
+    
+    if appended_metric_path:
+        appended_metric_df.write.csv(appended_metric_path, header=True, mode='overwrite')
+
+    output = []
+    for i in list_of_cols:    
+        i_output = [i]
+        for metric in ['mean','stddev','kurtosis']:
+            metric_stats = appended_metric_df.where(F.col('attribute') == i).orderBy('idx')\
+                                .select(metric).fillna(np.nan).rdd.flatMap(list).collect()
+            metric_cv = round(float(variation([a for a in metric_stats])),4) or None
+            i_output.append(metric_cv)
+        output.append(i_output)
+    
+    odf = spark.createDataFrame(output, schema=['attribute','mean_cv','stddev_cv','kurtosis_cv'])
+
+    def score_cv(cv, thresholds=[0.03, 0.1, 0.2, 0.5]):
+        if cv is None:
+            return None
+        else:
+            cv = abs(cv)
+            stability_index = [4, 3, 2, 1, 0]
+            for i, thresh in enumerate(thresholds):
+                if cv < thresh:
+                    return stability_index[i]
+            return stability_index[-1]
+    f_score_cv = F.udf(score_cv, T.IntegerType())
+
+    odf = odf.replace(np.nan, None).withColumn('mean_si', f_score_cv(F.col('mean_cv')))\
+        .withColumn('stddev_si', f_score_cv(F.col('stddev_cv')))\
+        .withColumn('kurtosis_si', f_score_cv(F.col('kurtosis_cv')))\
+        .withColumn('stability_index', F.round((F.col('mean_si') * metric_weightages.get('mean',0) +
+                                       F.col('stddev_si') * metric_weightages.get('stddev',0) + 
+                                       F.col('kurtosis_si') * metric_weightages.get('kurtosis',0)),4))\
+        .withColumn('flagged', F.when(F.lit(threshold).isNull(),"-")\
+                    .otherwise(F.when((F.col('stability_index') < threshold) | (F.col('stability_index').isNull()),1).otherwise(0)))
+
+    if print_impact:
+        print("All Attributes:")
+        odf.show(len(list_of_cols))
+        if threshold != None:
+            print("Potential Unstable Attributes:")
+            unstable = odf.where(F.col('flagged')  == 1)
+            unstable.show(unstable.count())
+
     return odf

@@ -246,7 +246,7 @@ def variable_clustering(idf, list_of_cols='all', drop_cols=[], sample_size=10000
     vc = VarClusHi(idf_pd,maxeigval2=1,maxclus=None)
     vc.varclus()
     odf_pd = vc.rsquare
-    odf = sqlContext.createDataFrame(odf_pd).select('Cluster',F.col('Variable').alias('Attribute'),'RS_Ratio')    
+    odf = sqlContext.createDataFrame(odf_pd).select('Cluster',F.col('Variable').alias('Attribute'),F.round(F.col('RS_Ratio'),4).alias('RS_Ratio'))    
     if print_impact:
         odf.show(odf.count())
     return odf
