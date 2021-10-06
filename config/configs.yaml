@@ -166,31 +166,72 @@ association_evaluator:
 
 drift_detector:
   drift_statistics:
-    list_of_cols: all
-    drop_cols: []
-    method_type: all
-    threshold: 0.1
-    bin_method: equal_range
-    bin_size: 10
-    pre_existing_source: False
-    source_path: NA
+    configs:
+      list_of_cols: all
+      drop_cols: []
+      method_type: all
+      threshold: 0.1
+      bin_method: equal_range
+      bin_size: 10
+      pre_existing_source: False
+      source_path: NA
 
-  source_dataset:
-    read_dataset:
-      file_path: "data/income_dataset/source"
-      file_type: csv
-      file_configs:
-        header: True
-        delimiter: ","
-        inferSchema: True
-    delete_column: ['logfnl']
-    select_column: null
-    rename_column:
-      list_of_cols: ['marital-status','education-num']
-      list_of_newcols: ['marital_status','education_num']
-    recast_column:
-      list_of_cols: ['age','education_num']
-      list_of_dtypes: ['float','float']
+    source_dataset:
+      read_dataset:
+        file_path: "data/income_dataset/source"
+        file_type: csv
+        file_configs:
+          header: True
+          delimiter: ","
+          inferSchema: True
+      delete_column: ['logfnl']
+      select_column: null
+      rename_column:
+        list_of_cols: ['marital-status','education-num']
+        list_of_newcols: ['marital_status','education_num']
+      recast_column:
+        list_of_cols: ['age','education_num']
+        list_of_dtypes: ['float','float']
+
+  stabilityIndex_computation:
+
+    configs:
+      metric_weightages:
+        mean: 0.5
+        stddev: 0.3
+        kurtosis: 0.2 
+      existing_metric_path: ''
+      appended_metric_path: ''
+      threshold: 2
+
+    dataset1:
+      read_dataset:
+        file_path: "data/income_dataset/stability_index/0"
+        file_type: csv
+        file_configs:
+          header: True
+          delimiter: ","
+          inferSchema: True
+
+    dataset2:
+      read_dataset:
+        file_path: "data/income_dataset/stability_index/1"
+        file_type: csv
+        file_configs:
+          header: True
+          delimiter: ","
+          inferSchema: 
+
+    dataset3:
+      read_dataset:
+        file_path: "data/income_dataset/stability_index/2"
+        file_type: csv
+        file_configs:
+          header: True
+          delimiter: ","
+          inferSchema: True
+        
+
 
 report_gen_inter:
   charts_to_objects:
