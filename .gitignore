@@ -12,3 +12,5 @@ src/main/com/mw/ds/data_ingest/__pycache__/
 src/main/com/mw/ds/shared/__pycache__/
 src/test/__pycache__/
 src/test/com/mw/ds/data_ingest/__pycache__/
+test/__pycache__/
+

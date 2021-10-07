@@ -1,10 +1,11 @@
+from typing import List, Tuple
 import pyspark
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
 from com.mw.ds.shared.spark import *
 
 
-def read_dataset(file_path, file_type, file_configs={}):
+def read_dataset(file_path:List[str], file_type: str, file_configs={}):
     """
     :param file_path: Path to input data (directory or filename)
     :param file_type: csv, parquet
@@ -172,10 +173,6 @@ def recast_column(idf, list_of_cols, list_of_dtypes, print_impact=False):
     return odf
 
 
-def inferSchema(paths, file_type, file_configs={}):
-    return read_dataset(paths, file_type, file_configs).schema.json
-
-
 class DataIngestion:
     def __init__(self, spark) -> None:
         self.spark = spark
@@ -191,5 +188,87 @@ class DataIngestion:
             **file_configs).load(file_path)
         return odf
 
-    def infer_schema(self, paths, file_type, file_configs={}):
-        return read_dataset(paths, file_type, file_configs).schema.json
+    def infer_schema(self, paths:List[str], file_type: str, file_configs={}):
+        return read_dataset(paths, file_type, file_configs).schema
+
+
+    def write_dataset(idf, file_path, file_type, file_configs={}):
+        """
+        :param idf: input dataframe
+        :param file_path: Path to input data (directory or filename)
+        :param file_type: csv, parquet
+        :param file_configs: passing arguments in dict format - header, delimiter, mode, compression, repartition
+                    compression options - uncompressed, gzip, snappy (only valid for parquet)
+                    mode options - error (default), overwrite, append
+                    repartition - None or int (no. of part files to generate)
+                    {"header":"True","delimiter":",",'compression':'snappy','mode':'overwrite','repartition':'10'}
+        :return: None, dataframe saved
+        """
+        mode = file_configs['mode'] if 'mode' in file_configs else 'error'
+        repartition = int(file_configs['repartition']
+                        ) if 'repartition' in file_configs else None
+
+        if repartition is None:
+            idf.write.format(file_type).options(
+                **file_configs).save(file_path, mode=mode)
+        else:
+            exist_parts = idf.rdd.getNumPartitions()
+            req_parts = int(repartition)
+            if req_parts > exist_parts:
+                idf.repartition(req_parts).write.format(file_type).options(
+                    **file_configs).save(file_path, mode=mode)
+            else:
+                idf.coalesce(req_parts).write.format(file_type).options(
+                    **file_configs).save(file_path, mode=mode) 
+    
+    def rename_column(idf, list_of_cols : List[Tuple[str,str]] , print_impact=False):
+        """
+        :param idf: Input Dataframe
+        :param list_of_cols: List of tupple of  old column names and new columns
+        :return: dataframe with revised names
+        """
+        mapping = dict(list_of_cols)
+        odf = idf.select([F.col(i[0]).alias(mapping[i[1] or i[0] ]) for i in list_of_cols])
+        return odf  
+
+
+    def recast_column(idf, list_of_cols, list_of_dtypes, print_impact=False):
+        """
+        :param idf: Input Dataframe
+        :param list_of_cols: List of column to cast (list or string of col names separated by |)
+        :param list_of_dtypes: List of corresponding datatype (list or string of col names separated by |)
+                        Float, Integer,Decimal, Long, String etc (case insensitive)
+        :return: dataframe with revised datatypes
+        """
+        if isinstance(list_of_cols, str):
+            list_of_cols = [x.strip() for x in list_of_cols.split('|')]
+        if isinstance(list_of_dtypes, str):
+            list_of_dtypes = [x.strip() for x in list_of_dtypes.split('|')]
+
+        odf = idf
+        for i, j in zip(list_of_cols, list_of_dtypes):
+            odf = odf.withColumn(i, F.col(i).cast(j))
+
+        if print_impact:
+            print("Before: ")
+            idf.printSchema()
+            print("After: ")
+            odf.printSchema()
+        return odf
+
+    def select_column(idf, list_of_cols, print_impact=False):
+        """
+        :param idf: Input Dataframe
+        :param list_of_cols: List of columns to select (list or string of col names separated by |)
+        :return: dataframe after selected columns
+        """
+        if isinstance(list_of_cols, str):
+            list_of_cols = [x.strip() for x in list_of_cols.split('|')]
+        odf = idf.select(list_of_cols)
+
+        if print_impact:
+            print("Before: \nNo. of Columns- ", len(idf.columns))
+            print(idf.columns)
+            print("After: \nNo. of Columns- ", len(odf.columns))
+            print(odf.columns)
+        return odf
