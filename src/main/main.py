@@ -167,21 +167,24 @@ def main(all_configs):
                     end = timeit.default_timer()
                     print(key, subkey, end-start)
                     
-                print("w/o report", end-start_main)
+            print("w/o report", end-start_main)
 
-        """
         if (key == 'report_gen_inter') & (args != None):
+            print("report generation module started")
+            drop_cols_viz = None
             for subkey, value in args.items():
-                if value != None:
-                    start = timeit.default_timer()
-                    f = getattr(report_gen_inter, subkey)
-                    if subkey == 'data_drift':
-                        f(df, **value)
-                    else:
-                        f(report_gen_inter.processed_df(df),**value)
-                    end = timeit.default_timer()
-                    print(key, subkey, end-start)
-        """
+                if subkey == 'drop_cols_viz':
+                    drop_cols_viz = value
+                else:
+                    if value != None:
+                        start = timeit.default_timer()
+                        f = getattr(report_gen_inter, subkey)
+                        if subkey == 'data_drift':
+                            f(report_gen_inter.processed_df(df,drop_cols_viz), **value, drop_cols_viz=drop_cols_viz)
+                        else:
+                            f(report_gen_inter.processed_df(df,drop_cols_viz), **value)
+                        end = timeit.default_timer()
+                        print(key, subkey, end-start)
 
     save(df,write_main,folder_name="final_dataset",reread=False)
     

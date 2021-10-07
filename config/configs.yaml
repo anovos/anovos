@@ -234,6 +234,7 @@ drift_detector:
 
 
 report_gen_inter:
+  drop_cols_viz: ['ifa','label','empty']
   charts_to_objects:
     id_col: "ifa"
     label: "income"
@@ -268,7 +269,9 @@ report_gen_inter:
 report_gen_final:
   data_dictionary_path: null
   base_path: "./output/"
-  threshold: 0.2
+  threshold: 0.1
+  corr_threshold : 0.4
+  iv_threshold : 0.2
 
 write_intermediate:
   file_path: "intermediate_data"
