@@ -31,6 +31,6 @@ local
 nohup ./remove_overheads_docker.sh 10000 2 &
 
 echo "Generating anovos final report.... "
-python3 com/mw/ds/data_report/report_gen_final.py
+#python3 com/mw/ds/data_report/report_gen_final.py
 
 sleep infinity
