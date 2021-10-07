@@ -39,7 +39,8 @@ build: clean
 	cp ./config/configs.yaml ./dist
 	cp -rf ./src/main/com ./dist/com
 	cp -rf ./data/data_report/stability/ ./dist/output/stability/
-	cd ./dist && zip -r com.zip spark.py ./com
+	cd ./dist && zip -r com.zip ./com
+	cd ./dist && tar -cvzf com.tar.gz ./com
 	cp -rf ./data/income_dataset ./dist/data/income_dataset
 	pip3 install -r requirements.txt --no-cache-dir
 	cp ./bin/remove_overheads.sh ./dist
