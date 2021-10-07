@@ -16,4 +16,5 @@ seaborn
 varclushi
 pytest
 datapane
+numpy==1.18.1
 plotly==5.2.1

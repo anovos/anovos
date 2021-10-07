@@ -5,9 +5,9 @@ nohup ./remove_overheads_docker.sh 10000 1 &
 spark-2.4.8-bin-hadoop2.7/bin/spark-submit \
 --deploy-mode client \
 --num-executors 1 \
---executor-cores 1 \
---executor-memory 2g \
---driver-memory 2G \
+--executor-cores 2 \
+--executor-memory 5g \
+--driver-memory 5G \
 --driver-cores 1 \
 --conf spark.driver.maxResultSize=15g \
 --conf spark.yarn.am.memoryOverhead=1000m \
