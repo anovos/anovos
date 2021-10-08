@@ -247,8 +247,8 @@ report_gen_inter:
     input_path: "./stats"
     pandas_df_output_path: "./output/pandas_df/"
     list_tabs: 'stats_generator,quality_checker,association_evaluator'
-    list_tab1: 'measures_of_shape,measures_of_centralTendency,measures_of_percentiles,measures_of_dispersion,measures_of_cardinality,measures_of_counts'
-    list_tab2: 'duplicate_detection,nullRows_detection,IDness_detection,nullColumns_detection,biasedness_detection,invalidEntries_detection,outlier_detection'
+    list_tab1: 'measures_of_counts,measures_of_centralTendency,measures_of_cardinality,measures_of_percentiles,measures_of_dispersion,measures_of_shape'
+    list_tab2: 'nullColumns_detection,outlier_detection,IDness_detection,biasedness_detection,invalidEntries_detection,duplicate_detection,nullRows_detection'
     list_tab3: 'correlation_matrix,IV_calculation,IG_calculation,variable_clustering'
     
   data_drift:
