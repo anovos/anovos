@@ -57,6 +57,7 @@ def processed_df(df,drop_cols_viz):
             pass
     df_ = df_.drop(*zero_var_col+drop_cols_viz)
     return df_
+
 def range_generator(df,col_orig,col_binned):
     
     range_table = df.groupBy(col_binned)\
@@ -65,10 +66,11 @@ def range_generator(df,col_orig,col_binned):
                     .select(col_binned, "range")
     
     df_ = df.join(range_table,col_binned,"left_outer")\
-            .drop(col_binned)\
+            .withColumnRenamed(col_binned,str(col_orig + "_binning_number"))\
             .withColumnRenamed("range",col_binned)
     
     return df_
+
 
 def feature_binning(idf, method_type, bin_size, list_of_cols, id_col="id", label_col="label", pre_existing_model=False, model_path="NA", output_mode="replace", print_impact=False,output_type="number"):
     
@@ -157,39 +159,50 @@ def plot_gen_hist_bar(idf,col,cov=None,max_cat=50,bin_type=None):
     import plotly.express as px
     from plotly.figure_factory import create_distplot
     num_cols,cat_cols,other_cols = attributeType_segregation(idf)
+    
 
+    #try:
     if col in cat_cols:
+    
         idf = outlier_categories(idf,list_of_cols=col,coverage=cov,max_category=max_cat)\
                               .groupBy(col).count()\
                               .withColumn("count_%",100*(F.col("count")/F.sum("count").over(Window.partitionBy())))\
                               .withColumn(col,f_remove_dups(col))\
                               .orderBy("count",ascending=False)\
                               .toPandas().fillna("Missing")
+        
         fig = px.bar(idf,x=col,y='count',text=idf['count_%'].apply(lambda x: '{0:1.2f}%'.format(x)),color_discrete_sequence=global_theme)
         fig.update_traces(textposition='outside')
         fig.update_layout(title_text=str('Bar Plot for ' +str(col.upper())))
-        #fig.update_layout(barmode='stack', xaxis={'categoryorder':'total descending'})
+#         fig.update_layout(barmode='stack', xaxis={'categoryorder':'total descending'})
+
     elif col in num_cols:
-        idf = feature_binning(idf,method_type=bin_type,bin_size=max_cat,list_of_cols=col,output_type="string")\
-                             .groupBy(col).count()\
+
+        idf = feature_binning(idf,list_of_cols=col,method_type=bin_type,bin_size=max_cat,output_type="string")\
+                             .groupBy(str(col+"_binning_number"),col).count()\
                              .withColumn("count_%",100*(F.col("count")/F.sum("count").over(Window.partitionBy())))\
                              .withColumn(col,f_remove_dups(col))\
-                             .orderBy("count",ascending=False)\
+                             .orderBy(str(col+"_binning_number"),ascending=True)\
                              .toPandas().fillna("Missing")
+        
         fig = px.bar(idf,x=col,y='count',text=idf['count_%'].apply(lambda x: '{0:1.2f}%'.format(x)),color_discrete_sequence=global_theme)
         fig.update_traces(textposition='outside')
         fig.update_layout(title_text=str('Histogram for ' +str(col.upper())))
         fig.update_xaxes(type='category')
-        #fig.update_layout(barmode='stack', xaxis={'categoryorder':'total descending'})
+#         fig.update_layout(barmode='stack', xaxis={'categoryorder':'total descending'})
+
+
     else:
-        fig = px.bar()
         pass
+
     fig.layout.plot_bgcolor = global_plot_bg_color
     fig.layout.paper_bgcolor = global_paper_bg_color
 
 #       plotly.offline.plot(fig, auto_open=False, validate=False, filename=f"{base_loc}/{file_name_}bar_graph.html")
     
+    
     return fig
+
 
 def plot_gen_boxplot(idf,cont_col,cat_col=None,color_by=None,cov=None,max_cat=50,threshold=500000):
     
@@ -294,7 +307,6 @@ def plot_gen_feat_analysis_label(idf,col,label,event_class,max_cat=None,bin_type
 
     else:
         pass
-    
     
     fig.layout.plot_bgcolor = global_plot_bg_color
     fig.layout.paper_bgcolor = global_paper_bg_color
@@ -435,10 +447,10 @@ def plot_comparative_drift_gen(df1,df2,col):
 
     elif col in num_cols:
 
-        xx = feature_binning(df1,method_type="equal_range",bin_size=10, list_of_cols=col,output_type="number")\
+        xx = feature_binning(df1,list_of_cols=col,method_type="equal_range",bin_size=10,output_type="number")\
              .groupBy(col).count()\
              .orderBy(col,ascending=True).withColumnRenamed("count","count_source")\
-             .join(feature_binning(df2,method_type="equal_range",bin_size=10,list_of_cols=col,output_type="number")\
+             .join(feature_binning(df2,list_of_cols=col,method_type="equal_range",bin_size=10,output_type="number")\
              .groupBy(col).count()\
              .orderBy(col,ascending=True).withColumnRenamed("count","count_target"),col,"left_outer")\
              .toPandas()
@@ -455,7 +467,7 @@ def plot_comparative_drift_gen(df1,df2,col):
     fig.add_bar(y = list(xx.count_target.values),x=xx[col],name = "target",text=xx['%_diff'].apply(lambda x: '{0:0.2f}%'.format(x)),marker=dict(color=global_theme))
     fig.update_traces(textposition='outside')
     fig.update_layout(paper_bgcolor=global_paper_bg_color,plot_bgcolor=global_plot_bg_color,showlegend=False)
-    fig.update_layout(title_text=str('Drift Comparison Plot Distribution for ' + col + '<br><sup>(L->R : Source->Target)</sup>'))
+    fig.update_layout(title_text=str('Drift Comparison for ' + col + '<br><sup>(L->R : Source->Target)</sup>'))
     fig.update_traces(marker=dict(color=global_theme))
     fig.update_xaxes(type='category')
     fig.add_trace(go.Scatter(x=xx[col], y=xx.count_target.values, mode='lines+markers',line = dict(color=px.colors.qualitative.Antique[10], width=3, dash='dot')))
@@ -464,8 +476,11 @@ def plot_comparative_drift_gen(df1,df2,col):
     return fig
 
 
+
 def violin_plot_gen(df,col,split_var=None,threshold=500000):
+    
     count_df = df.count()
+    
     if count_df > threshold:
         group_dist = dict(sub.values() for sub in \
                                df.groupBy(col).count().fillna("Missing",subset=cat_col)\
@@ -475,6 +490,7 @@ def violin_plot_gen(df,col,split_var=None,threshold=500000):
                                  .select(col,"count_%").toPandas().to_dict('r'))
             
         df = df.dropna().sampleBy(col,fractions=group_dist,seed=common_seed).toPandas()
+        
     else:
         df = df.dropna().toPandas()
         
