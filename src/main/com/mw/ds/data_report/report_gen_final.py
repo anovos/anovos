@@ -56,11 +56,11 @@ label = args.get('report_gen_inter',None).get('charts_to_objects',None).get('lab
 base_path = args.get('report_gen_final',None).get('base_path')
 data_dictionary_path = args.get('report_gen_final',None).get('data_dictionary_path',None)
 id_col = args.get('report_gen_inter',None).get('charts_to_objects',None).get('id_col',None)
-t1 = args.get('drift_detector',None).get('drift_statistics',None).get('threshold')
+t1 = args.get('drift_detector',None).get('drift_statistics',None).get('configs',None).get('threshold')
 t2 = args.get('report_gen_final',None).get('threshold')
 
-corr_threshold = 0.4
-iv_threshold = 0.2
+corr_threshold = args.get('report_gen_final',None).get('corr_threshold',None)
+iv_threshold = args.get('report_gen_final',None).get('iv_threshold',None)
 
 remove_list = ['IV_calculation','IG_calculation']
 
@@ -71,19 +71,9 @@ else:
 
 list_tabs_all = [list_tab1_arr,list_tab2_arr,list_tab3_arr]
 
-
-
-blank_chart = go.Figure()
-blank_chart.update_layout(autosize=False,width=10,height=10)
-blank_chart.layout.plot_bgcolor = global_plot_bg_color
-blank_chart.layout.paper_bgcolor = global_paper_bg_color
-blank_chart.update_xaxes(visible=False)
-blank_chart.update_yaxes(visible=False)
-blank_chart
-
-
 df_stability = pd.read_csv("./output/stability/historical_metrics.csv")
-df_stability['idx']=df_stability['idx'].astype(str).apply(lambda x: 'idx'+x)
+df_stability['idx']=df_stability['idx'].astype(str).apply(lambda x: 'df'+x)
+n_df_stability = df_stability["idx"].nunique()
 
 
 def line_chart_gen_stability(df1,df2,col):
