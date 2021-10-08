@@ -189,10 +189,19 @@ class DataIngestion:
         return odf
 
     def infer_schema(self, paths:List[str], file_type: str, file_configs={}):
-        return read_dataset(paths, file_type, file_configs).schema
+        return self.read_dataset(paths, file_type, file_configs).schema
 
 
-    def write_dataset(idf, file_path, file_type, file_configs={}):
+    def generate_data(self, inputDf, selectColumns: List[str], castColumns:List[Tuple[str,str]], renameColumns:List[Tuple[str,str]]):
+        df = inputDf
+        df = self.select_column(df,selectColumns)
+        df = self.__recast_column(df,castColumns)
+        df = self.rename_column(df,renameColumns)
+        return df
+
+
+
+    def write_dataset(self, idf, file_path, file_type, file_configs={}):
         """
         :param idf: input dataframe
         :param file_path: Path to input data (directory or filename)
@@ -221,18 +230,23 @@ class DataIngestion:
                 idf.coalesce(req_parts).write.format(file_type).options(
                     **file_configs).save(file_path, mode=mode) 
     
-    def rename_column(idf, list_of_cols : List[Tuple[str,str]] , print_impact=False):
+    def rename_column(self, idf, list_of_cols : List[Tuple[str,str]]):
         """
         :param idf: Input Dataframe
         :param list_of_cols: List of tupple of  old column names and new columns
         :return: dataframe with revised names
         """
-        mapping = dict(list_of_cols)
-        odf = idf.select([F.col(i[0]).alias(mapping[i[1] or i[0] ]) for i in list_of_cols])
-        return odf  
+
+        odf = idf
+        for column_name, new_column_name in (list_of_cols):
+            odf = odf.withColumnRenamed(column_name, new_column_name)
+        return odf
+
+        # odf = idf.select([F.col(column_name).alias(new_column_name) for column_name, new_column_name in list_of_cols])
+        # return odf  
 
 
-    def recast_column(idf, list_of_cols, list_of_dtypes, print_impact=False):
+    def __recast_column(self, df, list_of_cols : List[Tuple[str,str]]):
         """
         :param idf: Input Dataframe
         :param list_of_cols: List of column to cast (list or string of col names separated by |)
@@ -240,35 +254,19 @@ class DataIngestion:
                         Float, Integer,Decimal, Long, String etc (case insensitive)
         :return: dataframe with revised datatypes
         """
-        if isinstance(list_of_cols, str):
-            list_of_cols = [x.strip() for x in list_of_cols.split('|')]
-        if isinstance(list_of_dtypes, str):
-            list_of_dtypes = [x.strip() for x in list_of_dtypes.split('|')]
 
-        odf = idf
-        for i, j in zip(list_of_cols, list_of_dtypes):
-            odf = odf.withColumn(i, F.col(i).cast(j))
-
-        if print_impact:
-            print("Before: ")
-            idf.printSchema()
-            print("After: ")
-            odf.printSchema()
+        odf = df
+        for column_name, new_data_type in (list_of_cols):
+            odf = odf.withColumn(column_name, F.col(column_name).cast(new_data_type))
         return odf
 
-    def select_column(idf, list_of_cols, print_impact=False):
+
+    def select_column(self, idf, list_of_cols:List[str]):
         """
         :param idf: Input Dataframe
         :param list_of_cols: List of columns to select (list or string of col names separated by |)
         :return: dataframe after selected columns
         """
-        if isinstance(list_of_cols, str):
-            list_of_cols = [x.strip() for x in list_of_cols.split('|')]
-        odf = idf.select(list_of_cols)
+        odf = idf.select([x.strip() for x in list_of_cols])
 
-        if print_impact:
-            print("Before: \nNo. of Columns- ", len(idf.columns))
-            print(idf.columns)
-            print("After: \nNo. of Columns- ", len(odf.columns))
-            print(odf.columns)
         return odf
