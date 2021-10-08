@@ -421,9 +421,12 @@ def main(base_path):
     all_charts_num_1_,all_charts_num_2_,all_charts_num_3_,all_charts_cat_1_,all_charts_cat_2_,all_drift_charts_ = [],[],[],[],[],[]
 
     for i in all_charts_num_1:
-        
-        col_name = open(ends_with(p1) + i).readlines()[0].split("hovertemplate")[1].split(":")[1].split("=")[0].split("''")[0][1:]
-        all_charts_num_1_.append(dp.Plot(go.Figure(json.load(open(ends_with(p1) + i))),label=col_name))
+
+        try:            
+            col_name = open(ends_with(p1) + i).readlines()[0].split("hovertemplate")[1].split(":")[1].split("=")[0].split("''")[0][1:]
+            all_charts_num_1_.append(dp.Plot(go.Figure(json.load(open(ends_with(p1) + i))),label=col_name))
+        except:
+            pass
 
 
     for j in all_charts_num_2:
