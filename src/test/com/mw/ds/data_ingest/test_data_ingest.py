@@ -8,15 +8,11 @@ sample_avro = "./data/test_dataset/part-00000-f12ee684-956d-487d-b781-fb99af447b
 sample_output_path = "./data/tmp/output/"
 
 @pytest.mark.usefixtures("spark_session")
-#class TestDataIngest(object):
 def test_read_dataset():
     df = read_dataset(sample_parquet, "parquet")
     assert df.where(F.col("ifa") == "27520a").count() == 1
     assert df.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['age'][0] == 51   
     assert df.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['education'][0] == 'HS-grad' 
-    #df2 = read_dataset(sample_avro, "avro")  
-    #assert df2.where(F.col("ifa") == "10a").count() == 1
-    #assert df2.where(F.col("ifa") == "10a").toPandas().to_dict('list')['age'][0] == 42   
 
 def test_write_dataset():
     df = read_dataset(sample_parquet, "parquet")
