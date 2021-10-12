@@ -1,5 +1,7 @@
 UNKNOWN.egg-info/
 dist/
+bin
+pkg
 com.mw.ds.data_ingest.egg-info/
 src/UNKNOWN.egg-info/
 src/__pycache__/
@@ -12,5 +14,6 @@ src/main/com/mw/ds/data_ingest/__pycache__/
 src/main/com/mw/ds/shared/__pycache__/
 src/test/__pycache__/
 src/test/com/mw/ds/data_ingest/__pycache__/
+src/main/com/mw/ds/data_analyzer/__pycache__/
 test/__pycache__/
 
