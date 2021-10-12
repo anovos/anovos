@@ -10,18 +10,33 @@ class DataMetric:
     def __init__(self, spark) -> None:
         self.spark = spark
 
+    def __convertToDict(self, df):
+       return list(map(lambda row: row.asDict(), df.collect()))
+
     def generate_all_metric(self, idf):
-        return {"missingCount": self.__missingCount_computation(idf),
-                "uniqueCount": self.__uniqueCount_computation(idf),
-                "nonzeroCount": self.__nonzeroCount_computation(idf),
-                "mode": self.__mode_computation(idf),
-                "centralTendency": self.__measures_of_centralTendency(idf),
-                #"cardinality": self.__measures_of_cardinality(idf),
-                "dispersion": self.__measures_of_dispersion(idf),
-                "percentiles": self.__measures_of_percentiles(idf),
-                "count": self.__measures_of_counts(idf),
-                "shape": self.__measures_of_shape(idf),
-                "global_summary": self.__global_summary(idf)
+        missiong_count = self.__convertToDict(self.__missingCount_computation(idf))
+        unique_count = self.__convertToDict(self.__uniqueCount_computation(idf))
+        nonzero_count = self.__convertToDict(self.__nonzeroCount_computation(idf))
+        mode = self.__convertToDict(self.__mode_computation(idf))
+        centralTendency = self.__convertToDict(self.__measures_of_centralTendency(idf))
+        cardinality = self.__convertToDict(self.__measures_of_cardinality(idf))
+        dispersion = self.__convertToDict(self.__measures_of_dispersion(idf))
+        percentiles = self.__convertToDict(self.__measures_of_percentiles(idf))
+        count = self.__convertToDict(self.__measures_of_counts(idf))
+        shape = self.__convertToDict(self.__measures_of_shape(idf))
+        global_summary = self.__convertToDict(self.__global_summary(idf))
+
+        return {"missingCount": missiong_count,
+                "uniqueCount": unique_count,
+                "nonzeroCount": nonzero_count,
+                "mode": mode,
+                "centralTendency": centralTendency,
+                "cardinality": cardinality,
+                "dispersion": dispersion,
+                "percentiles": percentiles,
+                "count": count,
+                "shape": shape,
+                "global_summary": global_summary
                 }
 
     def __missingCount_computation(self, idf, list_of_cols='all', drop_cols=[]):
@@ -29,7 +44,7 @@ class DataMetric:
         :params idf: Input Dataframe
         :params list_of_cols: List of columns for missing stats computation (list or string of col names separated by |)
                             all - to include all non-array columns (excluding drop_cols)
-        :params drop_cols: List of columns to be dropped (list or string of col names separated by |)             
+        :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
         :return: Dataframe <attribute,missing_count,missing_pct>
         """
         if list_of_cols == 'all':
@@ -46,10 +61,10 @@ class DataMetric:
             raise TypeError('Invalid input for Column(s)')
 
         idf_stats = idf.select(list_of_cols).summary("count")
-        odf = transpose_dataframe(idf_stats, 'summary')\
-            .withColumn('missing_count', F.lit(idf.count()) - F.col('count').cast(T.LongType()))\
-            .withColumn('missing_pct', F.round(F.col('missing_count')/F.lit(idf.count()), 4))\
-            .select(F.col('key').alias('attribute'), 'missing_count', 'missing_pct')
+        odf = transpose_dataframe(idf_stats, 'summary').withColumn(
+            'missing_count', F.lit(idf.count()) - F.col('count').cast(T.LongType())).withColumn(
+                'missing_pct', F.round(F.col('missing_count')/F.lit(idf.count()), 4)).select(
+                    F.col('key').alias('attribute'), 'missing_count', 'missing_pct')
 
         return odf
 
