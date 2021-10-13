@@ -4,11 +4,9 @@
 
 After checking out, please follow the below instructions to run the ML Anovos Package : 
 
-1. First execute the following command to clean folder, build the latest modules and run unit tests : 
+1. First execute the following command to clean folder, build the latest modules : 
 	
-	`make clean build test`
-
-This step is to ensure there are no unit test errors and build is successful in the checked out branch.
+	`make clean build`
 
 2. There are 2 ways to run after this :
 Follow A, if you have a working environment already and would just like to use the same configs. (Note : version dependencies are to be ensured by user)
