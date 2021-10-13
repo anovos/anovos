@@ -1,24 +1,28 @@
 import pyspark
-import warnings
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
 from com.mw.ds.shared.spark import *
 from com.mw.ds.shared.utils import attributeType_segregation
+from com.mw.ds.data_ingest.data_ingest import read_dataset
 from com.mw.ds.data_transformer.transformers import attribute_binning, monotonic_encoding, cat_to_num_unsupervised, imputation_MMM
 from com.mw.ds.data_analyzer.stats_generator import uniqueCount_computation
+import warnings
+from varclushi import VarClusHi
+from phik.phik import spark_phik_matrix_from_hist2d_dict
+from popmon.analysis.hist_numpy import get_2dgrid
+import itertools
+from pyspark.sql import Window
+import math
 
-def correlation_matrix(idf, list_of_cols='all', drop_cols=[], print_impact=False):
+def correlation_matrix(idf, list_of_cols='all', drop_cols=[], stats_unique={}, print_impact=False):
     """
     :params idf: Input Dataframe
     :params list_of_cols: list of columns (in list format or string separated by |)
                          all - to include all non-array columns (excluding drop_cols)
     :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
+    :params stats_unique: read_dataset arguments to read pre-saved statistics on unique value count (dictionary format)
     :return: Correlation Dataframe <attribute,<col_names>>
     """
-     
-    from phik.phik import spark_phik_matrix_from_hist2d_dict
-    from popmon.analysis.hist_numpy import get_2dgrid
-    import itertools
     
     if list_of_cols == 'all':
         num_cols, cat_cols, other_cols = attributeType_segregation(idf)
@@ -28,8 +32,12 @@ def correlation_matrix(idf, list_of_cols='all', drop_cols=[], print_impact=False
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
         
-    remove_cols = uniqueCount_computation(idf, list_of_cols).where(F.col('unique_values') < 2)\
-                    .select('attribute').rdd.flatMap(lambda x:x).collect() 
+    if stats_unique == {}:
+        remove_cols = uniqueCount_computation(idf, list_of_cols).where(F.col('unique_values') < 2)\
+                    .select('attribute').rdd.flatMap(lambda x:x).collect()
+    else:
+        remove_cols = read_dataset(**stats_unique).where(F.col('unique_values') < 2)\
+                    .select('attribute').rdd.flatMap(lambda x:x).collect()
         
     list_of_cols = [e for e in list_of_cols if e not in (drop_cols + remove_cols)]
 
@@ -48,6 +56,61 @@ def correlation_matrix(idf, list_of_cols='all', drop_cols=[], print_impact=False
 
     return odf
 
+def variable_clustering(idf, list_of_cols='all', drop_cols=[], sample_size=100000, stats_unique={}, stats_mode={}, print_impact=False):
+    
+    """
+    :params idf: Input Dataframe
+    :params list_of_cols: list of columns (in list format or string separated by |)
+                         all - to include all non-array columns (excluding drop_cols)
+    :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
+    :params sample_size: maximum sample size for computation
+    :params stats_unique: read_dataset arguments to read pre-saved statistics on unique value count (dictionary format)
+    :params stats_mode: read_dataset arguments to read pre-saved statistics on mode (dictionary format)
+    :return: Dataframe <Cluster, attribute, RS_Ratio>
+    """
+    
+    if list_of_cols == 'all':
+        num_cols, cat_cols, other_cols = attributeType_segregation(idf)
+        list_of_cols = num_cols + cat_cols
+    if isinstance(list_of_cols, str):
+        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
+    if isinstance(drop_cols, str):
+        drop_cols = [x.strip() for x in drop_cols.split('|')]
+               
+    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+
+    if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
+        raise TypeError('Invalid input for Column(s)')
+    
+    idf_sample = idf.sample(False, min(1.0, float(sample_size)/idf.count()), 0)
+    idf_sample.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
+    if stats_unique == {}:
+        remove_cols = uniqueCount_computation(idf_sample, list_of_cols).where(F.col('unique_values') < 2)\
+                    .select('attribute').rdd.flatMap(lambda x:x).collect()
+    else:
+        remove_cols = read_dataset(**stats_unique).where(F.col('unique_values') < 2)\
+                    .select('attribute').rdd.flatMap(lambda x:x).collect()
+
+    list_of_cols = [e for e in list_of_cols if e not in remove_cols]
+    idf_sample = idf_sample.select(list_of_cols)
+    num_cols, cat_cols, other_cols = attributeType_segregation(idf_sample)
+    
+    for i in idf_sample.dtypes:
+        if i[1].startswith('decimal'):
+            idf_sample = idf_sample.withColumn(i[0],F.col(i[0]).cast('double'))
+    idf_encoded = cat_to_num_unsupervised(idf_sample, list_of_cols=cat_cols, method_type=1)
+    idf_imputed = imputation_MMM(idf_encoded,stats_mode=stats_mode)
+    idf_imputed.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
+    idf_sample.unpersist()
+    idf_pd = idf_imputed.toPandas()    
+    vc = VarClusHi(idf_pd,maxeigval2=1,maxclus=None)
+    vc.varclus()
+    odf_pd = vc.rsquare
+    odf = sqlContext.createDataFrame(odf_pd).select('Cluster',F.col('Variable').alias('Attribute'),F.round(F.col('RS_Ratio'),4).alias('RS_Ratio'))    
+    if print_impact:
+        odf.show(odf.count())
+    return odf
+
 
 def IV_calculation(idf, list_of_cols='all', drop_cols=[], label_col='label', event_label=1, 
                    encoding_configs={'bin_method':'equal_frequency', 'bin_size':10,'monotonicity_check':0},
@@ -58,7 +121,7 @@ def IV_calculation(idf, list_of_cols='all', drop_cols=[], label_col='label', eve
                          all - to include all non-array columns (excluding drop_cols)
     :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
     :params label_col: Label column
-    :params event_label: Value of event (binary classfication)
+    :params event_label: Value of (positive) event (binary classfication)
     :params encoding_configs: dict format, {} empty dict for no encoding
                             bin_size: No. of bins, bin_method: equal_frequency, equal_range, 
                             monotonicity_check = 1 for monotonicity encoding else 0
@@ -100,7 +163,6 @@ def IV_calculation(idf, list_of_cols='all', drop_cols=[], label_col='label', eve
     
     output = []
     for col in list_of_cols:
-        from pyspark.sql import Window
         df_iv = idf_encoded.groupBy(col,label_col).count()\
                     .withColumn(label_col, F.when(F.col(label_col) == event_label,1).otherwise(0))\
                     .groupBy(col).pivot(label_col).sum('count').fillna(0.5)\
@@ -127,7 +189,7 @@ def IG_calculation(idf, list_of_cols='all', drop_cols=[], label_col='label', eve
                          all - to include all non-array columns (excluding drop_cols)
     :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
     :params label_col: Label column
-    :params event_label: Value of event (binary classfication)
+    :params event_label: Value of (positive) event (binary classfication)
     :params encoding_configs: dict format, {} empty dict for no encoding
                             bin_size: No. of bins, bin_method: equal_frequency, equal_range, 
                             monotonicity_check = 1 for monotonicity encoding else 0
@@ -166,8 +228,6 @@ def IG_calculation(idf, list_of_cols='all', drop_cols=[], label_col='label', eve
     else:
         idf_encoded = idf
     
-    import math
-    from pyspark.sql import Window
     output = []
     total_event = idf.where(F.col(label_col) == event_label).count()/idf.count()
     total_entropy = - (total_event*math.log2(total_event) + ((1-total_event)*math.log2((1-total_event))))
@@ -191,53 +251,3 @@ def IG_calculation(idf, list_of_cols='all', drop_cols=[], label_col='label', eve
     return odf
 
 
-def variable_clustering(idf, list_of_cols='all', drop_cols=[], sample_size=100000, print_impact=False):
-    
-    """
-    :params idf: Input Dataframe
-    :params list_of_cols: list of columns (in list format or string separated by |)
-                         all - to include all non-array columns (excluding drop_cols)
-    :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
-    :params sample_size: maximum sample size for computation
-    :return: Dataframe <Cluster, attribute, RS_Ratio>
-    """
-    
-    from varclushi import VarClusHi
-    
-    if list_of_cols == 'all':
-        num_cols, cat_cols, other_cols = attributeType_segregation(idf)
-        list_of_cols = num_cols + cat_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split('|')]
-               
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
-
-    if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
-        raise TypeError('Invalid input for Column(s)')
-    
-    idf_sample = idf.sample(False, min(1.0, float(sample_size)/idf.count()), 0)
-    idf_sample.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
-    remove_cols = uniqueCount_computation(idf_sample, list_of_cols).where(F.col('unique_values') < 2)\
-                    .select('attribute').rdd.flatMap(lambda x:x).collect() 
-    list_of_cols = [e for e in list_of_cols if e not in remove_cols]
-    idf_sample = idf_sample.select(list_of_cols)
-    num_cols, cat_cols, other_cols = attributeType_segregation(idf_sample)
-    
-    for i in idf_sample.dtypes:
-        if i[1].startswith('decimal'):
-            idf_sample = idf_sample.withColumn(i[0],F.col(i[0]).cast('double'))
-    
-    idf_encoded = cat_to_num_unsupervised(idf_sample, list_of_cols=cat_cols, method_type=1)
-    idf_imputed = imputation_MMM(idf_encoded)
-    idf_imputed.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
-    idf_sample.unpersist()
-    idf_pd = idf_imputed.toPandas()    
-    vc = VarClusHi(idf_pd,maxeigval2=1,maxclus=None)
-    vc.varclus()
-    odf_pd = vc.rsquare
-    odf = sqlContext.createDataFrame(odf_pd).select('Cluster',F.col('Variable').alias('Attribute'),'RS_Ratio')    
-    if print_impact:
-        odf.show(odf.count())
-    return odf

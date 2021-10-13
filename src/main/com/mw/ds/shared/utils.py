@@ -2,6 +2,7 @@ import pyspark
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
 from com.mw.ds.shared.spark import *
+from itertools import chain
 
 def flatten_dataframe(idf, fixed_cols):
     """
@@ -9,7 +10,6 @@ def flatten_dataframe(idf, fixed_cols):
     :param fixed_cols: All columns except in this list will be melted/unpivoted
     :return: Flatten/Melted dataframe
     """
-    from itertools import chain
     valid_cols = [e for e in idf.columns if e not in fixed_cols]
     key_and_val = F.create_map(list(chain.from_iterable([[F.lit(c), F.col(c)] for c in valid_cols])))
     odf = idf.select(*fixed_cols, F.explode(key_and_val))

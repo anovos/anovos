@@ -63,7 +63,7 @@ join_dataset:
     select_column: null
     rename_column:
       list_of_cols: age
-      list_of_newcols: age2
+      list_of_newcols: dupl-age
     recast_column: null
 
 stats_generator:
@@ -83,7 +83,7 @@ quality_checker:
     list_of_cols: all
     drop_cols: []
     treatment: True
-    treatment_threshold: 0.25
+    treatment_threshold: 0.75
   
   invalidEntries_detection:
     list_of_cols: all
@@ -93,19 +93,19 @@ quality_checker:
   
   IDness_detection:
     list_of_cols: all
-    drop_cols: []
-    treatment: False
+    drop_cols: ['ifa']
+    treatment: True
     treatment_threshold: 0.9
   
   biasedness_detection:
     list_of_cols: all
-    drop_cols: []
+    drop_cols: ['income']
     treatment: False
-    treatment_threshold: 0.9
+    treatment_threshold: 0.98
 
   outlier_detection:
     list_of_cols: all
-    drop_cols: ['ifa']
+    drop_cols: ['ifa','income']
     detection_side: upper
     detection_configs:
       pctile_lower: 0.05
@@ -123,7 +123,7 @@ quality_checker:
 
   nullColumns_detection:
     list_of_cols: all
-    drop_cols: ['ifa']
+    drop_cols: ['ifa','income']
     treatment: True
     treatment_method: MMM
     treatment_configs:
@@ -166,46 +166,89 @@ association_evaluator:
 
 drift_detector:
   drift_statistics:
-    list_of_cols: all
-    drop_cols: []
-    method_type: all
-    threshold: 0.1
-    bin_method: equal_range
-    bin_size: 10
-    pre_existing_source: False
-    source_path: NA
+    configs:
+      list_of_cols: all
+      drop_cols: ['ifa','income']
+      method_type: all
+      threshold: 0.1
+      bin_method: equal_range
+      bin_size: 10
+      pre_existing_source: False
+      source_path: NA
 
-  source_dataset:
-    read_dataset:
-      file_path: "data/income_dataset/source"
-      file_type: csv
-      file_configs:
-        header: True
-        delimiter: ","
-        inferSchema: True
-    delete_column: ['logfnl']
-    select_column: null
-    rename_column:
-      list_of_cols: ['marital-status','education-num']
-      list_of_newcols: ['marital_status','education_num']
-    recast_column:
-      list_of_cols: ['age','education_num']
-      list_of_dtypes: ['float','float']
+    source_dataset:
+      read_dataset:
+        file_path: "data/income_dataset/source"
+        file_type: csv
+        file_configs:
+          header: True
+          delimiter: ","
+          inferSchema: True
+      delete_column: ['logfnl']
+      select_column: null
+      rename_column:
+        list_of_cols: ['marital-status','education-num','age2']
+        list_of_newcols: ['marital_status','education_num', 'dupl-age']
+      recast_column:
+        list_of_cols: ['age','education_num']
+        list_of_dtypes: ['float','float']
+
+  stabilityIndex_computation:
+
+    configs:
+      metric_weightages:
+        mean: 0.5
+        stddev: 0.3
+        kurtosis: 0.2 
+      existing_metric_path: ''
+      appended_metric_path: ''
+      threshold: 2
+
+    dataset1:
+      read_dataset:
+        file_path: "data/income_dataset/stability_index/0"
+        file_type: csv
+        file_configs:
+          header: True
+          delimiter: ","
+          inferSchema: True
+
+    dataset2:
+      read_dataset:
+        file_path: "data/income_dataset/stability_index/1"
+        file_type: csv
+        file_configs:
+          header: True
+          delimiter: ","
+          inferSchema: 
+
+    dataset3:
+      read_dataset:
+        file_path: "data/income_dataset/stability_index/2"
+        file_type: csv
+        file_configs:
+          header: True
+          delimiter: ","
+          inferSchema: True
+        
+
 
 report_gen_inter:
+  drop_cols_viz: ['ifa','label','empty']
   charts_to_objects:
     id_col: "ifa"
     label: "income"
     event_class: ">50K" 
     chart_output_path: "./output/chart_objects/"
     max_cat: 10
+  
   output_pandas_df:
     islabel: True
     input_path: "./stats"
     pandas_df_output_path: "./output/pandas_df/"
     list_tabs: 'stats_generator,quality_checker,association_evaluator'
-    list_tab1: 'measures_of_shape,measures_of_centralTendency,measures_of_percentiles,measures_of_dispersion,measures_of_cardinality,measures_of_counts'
-    list_tab2: 'duplicate_detection,nullRows_detection,IDness_detection,nullColumns_detection,biasedness_detection,invalidEntries_detection,outlier_detection'
+    list_tab1: 'measures_of_counts,measures_of_centralTendency,measures_of_cardinality,measures_of_percentiles,measures_of_dispersion,measures_of_shape'
+    list_tab2: 'nullColumns_detection,outlier_detection,IDness_detection,biasedness_detection,invalidEntries_detection,duplicate_detection,nullRows_detection'
     list_tab3: 'correlation_matrix,IV_calculation,IG_calculation,variable_clustering'
     
   data_drift:
@@ -226,7 +269,9 @@ report_gen_inter:
 report_gen_final:
   data_dictionary_path: null
   base_path: "./output/"
-  threshold: 0.2
+  threshold: 0.1
+  corr_threshold : 0.4
+  iv_threshold : 0.2
 
 write_intermediate:
   file_path: "intermediate_data"

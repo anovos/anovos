@@ -4,8 +4,50 @@ from pyspark.sql import functions as F
 from pyspark.sql import types as T
 from com.mw.ds.shared.spark import *
 from com.mw.ds.shared.utils import attributeType_segregation, transpose_dataframe, get_dtype
+from com.mw.ds.data_ingest.data_ingest import read_dataset
 from com.mw.ds.data_analyzer.stats_generator import uniqueCount_computation, missingCount_computation, mode_computation, measures_of_cardinality
 from com.mw.ds.data_transformer.transformers import imputation_MMM
+import re
+import numpy as np
+
+def duplicate_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, print_impact=False):
+    """
+    :params idf: Input Dataframe
+    :params list_of_cols: list or string of col names separated by |
+                         all - to include all non-array columns (excluding drop_cols)
+    :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
+    :params treatment: True if rows to be removed else False
+    :return: Filtered Dataframe, Analysis Dataframe
+    """
+    if list_of_cols == 'all':
+        num_cols, cat_cols, other_cols = attributeType_segregation(idf)
+        list_of_cols = num_cols + cat_cols
+    if isinstance(list_of_cols, str):
+        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
+    if isinstance(drop_cols, str):
+        drop_cols = [x.strip() for x in drop_cols.split('|')]
+    
+    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+
+    if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
+        raise TypeError('Invalid input for Column(s)')
+    if str(treatment).lower() == 'true':
+        treatment= True 
+    elif str(treatment).lower() == 'false':
+        treatment= False 
+    else: raise TypeError('Non-Boolean input for treatment')
+
+    odf_tmp = idf.drop_duplicates(subset=list_of_cols)
+    odf = odf_tmp if treatment else idf
+    
+    odf_print = spark.createDataFrame([["rows_count",idf.count()],["unique_rows_count",odf_tmp.count()]],
+                                      schema=['metric','value'])
+    
+    if print_impact:
+        print("No. of Rows: " + str(idf.count()))
+        print("No. of UNIQUE Rows: " + str(odf_tmp.count()))
+        
+    return odf, odf_print
 
 def nullRows_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, treatment_threshold=0.8, print_impact=False):
     """
@@ -61,259 +103,86 @@ def nullRows_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, t
     return odf, odf_print
 
 
-def duplicate_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, print_impact=False):
+def nullColumns_detection(idf, list_of_cols='missing', drop_cols=[], treatment=False, treatment_method='row_removal', 
+                   treatment_configs={}, stats_missing={}, stats_unique={}, stats_mode={}, print_impact=False):
     """
     :params idf: Input Dataframe
-    :params list_of_cols: list or string of col names separated by |
-                         all - to include all non-array columns (excluding drop_cols)
+    :params list_of_cols: list of columns (in list format or string separated by |)
+                            all - to include all non-array columns (excluding drop_cols)
+                            missing - all feautures with missing values (excluding drop_cols)
     :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
-    :params treatment: True if rows to be removed else False
-    :return: Filtered Dataframe, Analysis Dataframe
+    :params treatment: If True, Imputation/Dropna/Drop Column based on treatment_method
+    :params treatment_method: MMM, row_removal or column_removal (more methods to be added soon)
+    :params treatment_configs: All arguments of treatment_method functions in dictionary format
+    :params stats_missing: read_dataset arguments to read pre-saved statistics on missing count/pct (dictionary format)
+    :params stats_unique: read_dataset arguments to read pre-saved statistics on unique value count (dictionary format)
+    :params stats_mode: read_dataset arguments to read pre-saved statistics on mode (dictionary format)
+    :return: Imputed Dataframe
     """
+    if stats_missing == {}:
+        odf_print = missingCount_computation(idf)
+    else:
+        odf_print = read_dataset(**stats_missing).select('attribute','missing_count','missing_pct')
+    
+    missing_cols = odf_print.where(F.col('missing_count') > 0).select('attribute').rdd.flatMap(lambda x: x).collect()
+    
     if list_of_cols == 'all':
         num_cols, cat_cols, other_cols = attributeType_segregation(idf)
         list_of_cols = num_cols + cat_cols
+    if list_of_cols == "missing":
+        list_of_cols = missing_cols
     if isinstance(list_of_cols, str):
         list_of_cols = [x.strip() for x in list_of_cols.split('|')]
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
-    
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
-
-    if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
-        raise TypeError('Invalid input for Column(s)')
-    if str(treatment).lower() == 'true':
-        treatment= True 
-    elif str(treatment).lower() == 'false':
-        treatment= False 
-    else: raise TypeError('Non-Boolean input for treatment')
-
-    odf_tmp = idf.drop_duplicates(subset=list_of_cols)
-    odf = odf_tmp if treatment else idf
-    
-    odf_print = spark.createDataFrame([["rows_count",idf.count()],["unique_rows_count",odf_tmp.count()]],
-                                      schema=['metric','value'])
-    
-    if print_impact:
-        print("No. of Rows: " + str(idf.count()))
-        print("No. of UNIQUE Rows: " + str(odf_tmp.count()))
         
-    return odf, odf_print
-
-
-def invalidEntries_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, 
-                             output_mode='replace', print_impact=False):
-    """
-    :params idf: Input Dataframe
-    :params list_of_cols: list or string of col names separated by |
-                         all - to include all non-array columns (excluding drop_cols)
-    :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
-    :params treatment: If True, replace invalid values by Null (false positives possible)
-    :params output: replace or append
-    :return: Output Dataframe (if treated) else Input Dataframe,
-            Analysis Dataframe <attribute,invalid_entries,invalid_count,invalid_pct>
-    """
-    if list_of_cols == 'all':
-        list_of_cols = []
-        for i in idf.dtypes:
-            if (i[1] in ('string', 'int', 'bigint', 'long')):
-                list_of_cols.append(i[0])
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split('|')]
-    
     list_of_cols = [e for e in list_of_cols if e not in drop_cols]
 
-    if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
-        raise TypeError('Invalid input for Column(s)')
-    if output_mode not in ('replace', 'append'):
-        raise TypeError('Invalid input for output_mode')
-    if str(treatment).lower() == 'true':
-        treatment= True 
-    elif str(treatment).lower() == 'false':
-        treatment= False 
-    else: raise TypeError('Non-Boolean input for treatment')
-
-    null_vocab = ['', ' ', 'nan', 'null', 'na', 'inf', 'n/a', 'not defined', 'none', 'undefined', 'blank']
-    specialChars_vocab = ["&", "$", ";", ":", ".", ",", "*", "#", "@", "_", "?", "%", "!", "^", "(", ")", "-", "/", "'"]
-
-    def detect(*v):
-        output = []
-        for idx,e in enumerate(v):
-            if e is None:
-                output.append(None)
-                continue
-            e = str(e).lower().strip()
-            # Null & Special Chars Search
-            if e in (null_vocab + specialChars_vocab):
-                output.append(1)
-                continue
-            # Consecutive Identical Chars Search
-            import re
-            regex = "\\b([a-zA-Z0-9])\\1\\1+\\b"
-            p = re.compile(regex)
-            if (re.search(p, e)):
-                output.append(1)
-                continue
-            # Ordered Chars Search
-            l = len(e)
-            check = 0
-            if l >= 3:
-                for i in range(1, l):
-                    if ord(e[i]) - ord(e[i - 1]) != 1:
-                        output.append(0)
-                        check = 1
-                        break
-                if check == 1:
-                    continue
-                else:
-                    output.append(1)
-                    continue
-            else:
-                output.append(0)
-                continue
-        return output
-    f_detect = F.udf(detect, T.ArrayType(T.LongType()))
-    
-    odf = idf.withColumn("invalid", f_detect(*list_of_cols))
-    odf.persist()
-    output_print = []
-    for index, i in enumerate(list_of_cols):
-        tmp = odf.withColumn(i + "_invalid", F.col('invalid')[index])
-        invalid = tmp.where(F.col(i + "_invalid") == 1).select(i).distinct().rdd.flatMap(lambda x: x).collect()
-        invalid = [str(x) for x in invalid]
-        invalid_count = tmp.where(F.col(i + "_invalid") == 1).count()
-        output_print.append([i, '|'.join(invalid), invalid_count, round(invalid_count / idf.count(), 4)])
-
-    if treatment:
-        for index, i in enumerate(list_of_cols):
-            odf = odf.withColumn(i + "_invalid", F.when(F.col('invalid')[index] == 1, None).otherwise(F.col(i)))
-            if output_mode == 'replace':
-                odf = odf.drop(i).withColumnRenamed(i + "_invalid", i)
-        odf = odf.drop("invalid")
-    else:
-        odf = idf  
-    
-    odf_print = spark.createDataFrame(output_print,
-                                      schema=['attribute', 'invalid_entries', 'invalid_count', 'invalid_pct'])
-    if print_impact:
-        odf_print.show(len(list_of_cols))
-
-    return odf, odf_print
-
-
-def IDness_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, treatment_threshold=1.0, print_impact=False):
-    """
-    :params idf: Input Dataframe
-    :params list_of_cols: Categorical Columns (list or string of col names separated by |)
-                         all - to include all categorical columns (excluding drop_cols)
-    :params drop_cols: List of columns to be dropped (list or string of col names separated by |)                  
-    :params treatment: If True, delete columns based on treatment_threshold
-    :params treatment_threshold: <0-1> Remove categorical column if no. of unique values is more than X% of total rows.
-    :return: Filtered Dataframe (if treated), Analysis Dataframe <attribute, unique_values, IDness>
-    """
-
-    cat_cols = attributeType_segregation(idf)[1]
-    if list_of_cols == 'all':
-        list_of_cols = cat_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split('|')]
-    
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
-
-    if any(x not in cat_cols for x in list_of_cols):
-        raise TypeError('Invalid input for Column(s)')
     if len(list_of_cols) == 0:
-        warnings.warn("No IDness Check")
-        odf = idf
-        schema = T.StructType([T.StructField('attribute', T.StringType(), True),
-                              T.StructField('unique_values', T.StringType(), True),
-                              T.StructField('IDness', T.StringType(), True),
-                              T.StructField('flagged', T.StringType(), True)])
-        odf_print = spark.sparkContext.emptyRDD().toDF(schema)
-        return odf, odf_print
-    if (treatment_threshold < 0) | (treatment_threshold > 1):
-        raise TypeError('Invalid input for Treatment Threshold Value')
-    if str(treatment).lower() == 'true':
-        treatment= True 
-    elif str(treatment).lower() == 'false':
-        treatment= False 
-    else: raise TypeError('Non-Boolean input for treatment')
-
-    odf_print = measures_of_cardinality(idf, list_of_cols)\
-                    .withColumn('flagged', F.lit("-"))
-
-    if treatment:
-        remove_cols = odf_print.where(F.col('IDness') >= treatment_threshold) \
-            .select('attribute').rdd.flatMap(lambda x: x).collect()
-        odf = idf.drop(*remove_cols)
-        odf_print = odf_print.withColumn('flagged', F.when(F.col('IDness') >= treatment_threshold, 1).otherwise(0))  
-    else:
-        odf = idf
-
-    if print_impact:
-        odf_print.show(len(list_of_cols))
-        if treatment:
-            print("Removed Columns: ", remove_cols)
-
-    return odf, odf_print
-
-
-def biasedness_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, treatment_threshold=1.0, print_impact=False):
-    """
-    :params idf: Input Dataframe
-    :params list_of_cols: Ideally categorical columns (in list format or string separated by |)
-                             all - to include all non-array columns (excluding drop_cols)
-    :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
-    :params treatment: If True, delete columns based on treatment_threshold
-    :params treatment_threshold: <0-1> Remove categorical column if most freq value is in more than X% of total rows.
-    :return: Filtered Dataframe (if treated), Analysis Dataframe <attribute,mode,mode_pct>
-    """
-
-    if list_of_cols == 'all':
-        num_cols, cat_cols, other_cols = attributeType_segregation(idf)
-        list_of_cols = num_cols + cat_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split('|')]
-        
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
-
-    if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
+        warnings.warn("No Action Performed - Imputation")
+        return idf
+    if any(x not in idf.columns for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
-    if (treatment_threshold < 0) | (treatment_threshold > 1):
-        raise TypeError('Invalid input for Treatment Threshold Value')
-    if str(treatment).lower() == 'true':
-        treatment= True 
-    elif str(treatment).lower() == 'false':
-        treatment= False 
-    else: raise TypeError('Non-Boolean input for treatment')
-
-    odf_print = transpose_dataframe(idf.select(list_of_cols).summary("count"), 'summary')\
-                    .withColumnRenamed('key','attribute')\
-                    .join(mode_computation(idf, list_of_cols),'attribute','full_outer')\
-                    .withColumn('mode_pct', F.round(F.col('mode_rows')/F.col('count').cast(T.DoubleType()),4))\
-                    .select('attribute','mode','mode_pct').withColumn('flagged', F.lit("-"))
-
+    if treatment_method not in ('MMM', 'row_removal','column_removal'):
+        raise TypeError('Invalid input for method_type')
+        
+    odf_print = odf_print.where(F.col('attribute').isin(list_of_cols))
 
     if treatment:
-        remove_cols = odf_print.where((F.col('mode_pct') >= treatment_threshold)| (F.col('mode_pct').isNull())) \
-            .select('attribute').rdd.flatMap(lambda x: x).collect()
-        odf = idf.drop(*remove_cols)
-        odf_print = odf_print.withColumn('flagged', 
-                        F.when((F.col('mode_pct') >= treatment_threshold) | (F.col('mode_pct').isNull()), 1).otherwise(0)) 
+        
+        if treatment_method == 'column_removal':
+            remove_cols = odf_print.where(F.col('attribute').isin(list_of_cols))\
+                    .where(F.col('missing_pct') > treatment_configs['treatment_threshold'])\
+                    .select('attribute').rdd.flatMap(lambda x: x).collect()
+            odf = idf.drop(*remove_cols)
+            if print_impact:
+                print("Removed Columns: ", remove_cols)
+        
+        
+        if treatment_method == 'row_removal':
+            remove_cols = odf_print.where(F.col('attribute').isin(list_of_cols))\
+                            .where(F.col('missing_pct') == 1.0)\
+                            .select('attribute').rdd.flatMap(lambda x: x).collect()
+            list_of_cols = [e for e in list_of_cols if e not in remove_cols]
+            odf = idf.dropna(subset=list_of_cols)
+
+            if print_impact:
+                odf_print.show(len(list_of_cols))
+                print("Before Count: " + str(idf.count()))
+                print("After Count: " + str(odf.count()))
+            
+        if treatment_method == 'MMM':
+            if stats_unique == {}:
+                remove_cols = uniqueCount_computation(idf_sample, list_of_cols).where(F.col('unique_values') < 2)\
+                            .select('attribute').rdd.flatMap(lambda x:x).collect()
+            else:
+                remove_cols = read_dataset(**stats_unique).where(F.col('unique_values') < 2)\
+                            .select('attribute').rdd.flatMap(lambda x:x).collect()
+            list_of_cols = [e for e in list_of_cols if e not in remove_cols]
+            odf = imputation_MMM(idf, list_of_cols, **treatment_configs, stats_missing=stats_missing, stats_mode=stats_mode, print_impact=print_impact)
     else:
         odf = idf
-
-    if print_impact:
-        odf_print.show(len(list_of_cols))
-        if treatment:
-            print("Removed Columns: ", remove_cols)
-
+        
     return odf, odf_print
 
 def outlier_detection(idf, list_of_cols='all', drop_cols=[], detection_side='upper', 
@@ -322,7 +191,7 @@ def outlier_detection(idf, list_of_cols='all', drop_cols=[], detection_side='upp
                                         'IQR_lower': 1.5, 'IQR_upper': 1.5,
                                         'min_validation': 2},
                       treatment=False, treatment_type='value_replacement', pre_existing_model=False, 
-                      model_path="NA", output_mode='replace', print_impact=False):
+                      model_path="NA", output_mode='replace', stats_unique={}, print_impact=False):
     """
     :params idf: Input Dataframe
     :params list_of_cols: Numerical Columns (list or string of col names separated by |)
@@ -330,16 +199,17 @@ def outlier_detection(idf, list_of_cols='all', drop_cols=[], detection_side='upp
     :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
     :params detection_side: upper, lower, both
     :params detection_configs: dictionary format - upper & lower bound for each methodology. 
-                        If a attribute value is less (more) than its derived lower (upper) bound value, 
+                        If an attribute value is less (more) than its derived lower (upper) bound value, 
                         it is considered as outlier by a methodology.
                         A attribute value is outliered if it is declared as oultlier by atleast 'min_validation' methodologies.
-    :params treatment: True if rows to be removed else False
+    :params treatment: if True, cleaning based on treatment_method
     :params treatment_type: null_replacement, row_removal, value_replacement
     :params pre_existing_model: outlier value for each attribute. True if model files exists already, False Otherwise
-    :params model_path: If pre_existing_model is True, this argument is path for model file.
+    :params model_path: If pre_existing_model is True, this argument is path for presaved model file.
                   If pre_existing_model is False, this field can be used for saving the model file.
                   param NA means there is neither pre_existing_model nor there is a need to save one.
     :params output_mode: replace or append
+    :params stats_unique: read_dataset arguments to read pre-saved statistics on unique value count (dictionary format)
     :return: Output Dataframe (after outlier treatment),
              Analysis Dataframe <attribute,lower_outliers,upper_outliers>
     """
@@ -360,7 +230,12 @@ def outlier_detection(idf, list_of_cols='all', drop_cols=[], detection_side='upp
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
         
-    remove_cols = uniqueCount_computation(idf, list_of_cols).where(F.col('unique_values') < 2)\
+    
+    if stats_unique == {}:
+        remove_cols = uniqueCount_computation(idf, list_of_cols).where(F.col('unique_values') < 2)\
+                    .select('attribute').rdd.flatMap(lambda x:x).collect()
+    else:
+        remove_cols = read_dataset(**stats_unique).where(F.col('unique_values') < 2)\
                     .select('attribute').rdd.flatMap(lambda x:x).collect()
 
     list_of_cols = [e for e in list_of_cols if e not in (drop_cols + remove_cols)]
@@ -387,8 +262,6 @@ def outlier_detection(idf, list_of_cols='all', drop_cols=[], detection_side='upp
         if arg in detection_configs:
              if (detection_configs[arg] < 0) | (detection_configs[arg] > 1):
                 raise TypeError('Invalid input for ' + arg)
-
-    import numpy as np
     
     recast_cols = []
     recast_type = []
@@ -431,7 +304,7 @@ def outlier_detection(idf, list_of_cols='all', drop_cols=[], detection_side='upp
         # Saving model File if required
         if model_path != "NA":
             df_model = spark.createDataFrame(zip(list_of_cols, params), schema=['attribute', 'parameters'])
-            df_model.write.parquet(model_path + "/outlier_numcols", mode='overwrite')
+            df_model.coalesce(1).write.parquet(model_path + "/outlier_numcols", mode='overwrite')
 
     for i,j in zip(recast_cols,recast_type):
         idf = idf.withColumn(i,F.col(i).cast(j))
@@ -487,28 +360,85 @@ def outlier_detection(idf, list_of_cols='all', drop_cols=[], detection_side='upp
     return odf, odf_print
 
 
-def nullColumns_detection(idf, list_of_cols='missing', drop_cols=[], treatment=False, treatment_method='row_removal', 
-                   treatment_configs={}, print_impact=False):
+def IDness_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, treatment_threshold=1.0, stats_unique={}, print_impact=False):
     """
-    :params idf: Pyspark Dataframe
-    :params list_of_cols: list of columns (in list format or string separated by |)
-                                 all - to include all non-array columns (excluding drop_cols)
-                                 missing - all feautures with missing values (excluding drop_cols)
+    :params idf: Input Dataframe
+    :params list_of_cols: Categorical Columns (list or string of col names separated by |)
+                         all - to include all categorical columns (excluding drop_cols)
+    :params drop_cols: List of columns to be dropped (list or string of col names separated by |)                  
+    :params treatment: If True, delete columns based on treatment_threshold
+    :params treatment_threshold: <0-1> Remove categorical column if no. of unique values is more than X% of total rows.
+    :params stats_unique: read_dataset arguments to read pre-saved statistics on unique value count (dictionary format)
+    :return: Filtered Dataframe (if treated), Analysis Dataframe <attribute, unique_values, IDness>
+    """
+
+    cat_cols = attributeType_segregation(idf)[1]
+    if list_of_cols == 'all':
+        list_of_cols = cat_cols
+    if isinstance(list_of_cols, str):
+        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
+    if isinstance(drop_cols, str):
+        drop_cols = [x.strip() for x in drop_cols.split('|')]
+    
+    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+
+    if any(x not in cat_cols for x in list_of_cols):
+        raise TypeError('Invalid input for Column(s)')
+    if len(list_of_cols) == 0:
+        warnings.warn("No IDness Check")
+        odf = idf
+        schema = T.StructType([T.StructField('attribute', T.StringType(), True),
+                              T.StructField('unique_values', T.StringType(), True),
+                              T.StructField('IDness', T.StringType(), True),
+                              T.StructField('flagged', T.StringType(), True)])
+        odf_print = spark.sparkContext.emptyRDD().toDF(schema)
+        return odf, odf_print
+    if (treatment_threshold < 0) | (treatment_threshold > 1):
+        raise TypeError('Invalid input for Treatment Threshold Value')
+    if str(treatment).lower() == 'true':
+        treatment= True 
+    elif str(treatment).lower() == 'false':
+        treatment= False 
+    else: raise TypeError('Non-Boolean input for treatment')
+
+    if stats_unique == {}:
+        odf_print = measures_of_cardinality(idf, list_of_cols)\
+                    .withColumn('flagged', F.lit("-"))
+    else:
+        odf_print = read_dataset(**stats_unique).withColumn('flagged', F.lit("-"))
+
+
+    if treatment:
+        remove_cols = odf_print.where(F.col('IDness') >= treatment_threshold) \
+            .select('attribute').rdd.flatMap(lambda x: x).collect()
+        odf = idf.drop(*remove_cols)
+        odf_print = odf_print.withColumn('flagged', F.when(F.col('IDness') >= treatment_threshold, 1).otherwise(0))  
+    else:
+        odf = idf
+
+    if print_impact:
+        odf_print.show(len(list_of_cols))
+        if treatment:
+            print("Removed Columns: ", remove_cols)
+
+    return odf, odf_print
+
+
+def biasedness_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, treatment_threshold=1.0, stats_mode={}, print_impact=False):
+    """
+    :params idf: Input Dataframe
+    :params list_of_cols: List of columns (in list format or string separated by |)
+                            all - to include all non-array columns (excluding drop_cols)
     :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
-    :params treatment: If True, Imputation/Dropna/Drop Column based on treatment_method
-    :params treatment_method: MMM, row_removal or column_removal(more methods to be added soon)
-    :params treatment_configs: All arguments of treatment_method/imputation functions in dictionary format
-    :return: Imputed Dataframe
+    :params treatment: If True, delete columns based on treatment_threshold
+    :params treatment_threshold: <0-1> Remove categorical column if most freq value is in more than X% of total rows.
+    :params stats_mode: read_dataset arguments to read pre-saved statistics on mode (dictionary format)
+    :return: Filtered Dataframe (if treated), Analysis Dataframe <attribute,mode,mode_pct>
     """
-    
-    odf_print = missingCount_computation(idf)
-    missing_cols = odf_print.where(F.col('missing_count') > 0).select('attribute').rdd.flatMap(lambda x: x).collect()
-    
+
     if list_of_cols == 'all':
         num_cols, cat_cols, other_cols = attributeType_segregation(idf)
         list_of_cols = num_cols + cat_cols
-    if list_of_cols == "missing":
-        list_of_cols = missing_cols
     if isinstance(list_of_cols, str):
         list_of_cols = [x.strip() for x in list_of_cols.split('|')]
     if isinstance(drop_cols, str):
@@ -516,47 +446,140 @@ def nullColumns_detection(idf, list_of_cols='missing', drop_cols=[], treatment=F
         
     list_of_cols = [e for e in list_of_cols if e not in drop_cols]
 
-    if len(list_of_cols) == 0:
-        warnings.warn("No Action Performed - Imputation")
-        return idf
-    if any(x not in idf.columns for x in list_of_cols):
+    if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError('Invalid input for Column(s)')
-    if treatment_method not in ('MMM', 'row_removal','column_removal'):
-        raise TypeError('Invalid input for method_type')
-        
-    odf_print = odf_print.where(F.col('attribute').isin(list_of_cols))
+    if (treatment_threshold < 0) | (treatment_threshold > 1):
+        raise TypeError('Invalid input for Treatment Threshold Value')
+    if str(treatment).lower() == 'true':
+        treatment= True 
+    elif str(treatment).lower() == 'false':
+        treatment= False 
+    else: raise TypeError('Non-Boolean input for treatment')
+
+    if stats_mode == {}:
+        odf_print = transpose_dataframe(idf.select(list_of_cols).summary("count"), 'summary')\
+                    .withColumnRenamed('key','attribute')\
+                    .join(mode_computation(idf, list_of_cols),'attribute','full_outer')\
+                    .withColumn('mode_pct', F.round(F.col('mode_rows')/F.col('count').cast(T.DoubleType()),4))\
+                    .select('attribute','mode','mode_pct').withColumn('flagged', F.lit("-"))
+    else:
+        odf_print = read_dataset(**stats_mode).select('attribute','mode','mode_pct').withColumn('flagged', F.lit("-"))
+
 
     if treatment:
-        
-        if treatment_method == 'column_removal':
-            remove_cols = odf_print.where(F.col('attribute').isin(list_of_cols))\
-                    .where(F.col('missing_pct') > treatment_configs['treatment_threshold'])\
-                    .select('attribute').rdd.flatMap(lambda x: x).collect()
-            odf = idf.drop(*remove_cols)
-            if print_impact:
-                print("Removed Columns: ", remove_cols)
-        
-        
-        if treatment_method == 'row_removal':
-            """
-            remove_cols = odf_print.where(F.col('attribute').isin(list_of_cols))\
-                            .where(F.col('missing_pct') == 1.0)\
-                            .select('attribute').rdd.flatMap(lambda x: x).collect()
-            list_of_cols = [e for e in list_of_cols if e not in remove_cols]
-            """
-            odf = idf.dropna(subset=list_of_cols)
-
-            if print_impact:
-                odf_print.show(len(list_of_cols))
-                print("Before Count: " + str(idf.count()))
-                print("After Count: " + str(odf.count()))
-            
-        if treatment_method == 'MMM':
-            remove_cols = uniqueCount_computation(idf, list_of_cols).where(F.col('unique_values') < 2)\
-                            .select('attribute').rdd.flatMap(lambda x:x).collect()
-            list_of_cols = [e for e in list_of_cols if e not in remove_cols]
-            odf = imputation_MMM(idf, list_of_cols, **treatment_configs, print_impact=print_impact)
+        remove_cols = odf_print.where((F.col('mode_pct') >= treatment_threshold)| (F.col('mode_pct').isNull())) \
+            .select('attribute').rdd.flatMap(lambda x: x).collect()
+        odf = idf.drop(*remove_cols)
+        odf_print = odf_print.withColumn('flagged', 
+                        F.when((F.col('mode_pct') >= treatment_threshold) | (F.col('mode_pct').isNull()), 1).otherwise(0)) 
     else:
         odf = idf
-        
+
+    if print_impact:
+        odf_print.show(len(list_of_cols))
+        if treatment:
+            print("Removed Columns: ", remove_cols)
+
     return odf, odf_print
+
+
+def invalidEntries_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, 
+                             output_mode='replace', print_impact=False):
+    """
+    :params idf: Input Dataframe
+    :params list_of_cols: List of Distrete (Categorical + Integer) columns (list or string of col names separated by |)
+                         all - to include all valid columns (excluding drop_cols)
+    :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
+    :params treatment: If True, replace invalid values by Null (false positives possible)
+    :params output: replace or append
+    :return: Output Dataframe (if treated) else Input Dataframe,
+            Analysis Dataframe <attribute,invalid_entries,invalid_count,invalid_pct>
+    """
+    if list_of_cols == 'all':
+        list_of_cols = []
+        for i in idf.dtypes:
+            if (i[1] in ('string', 'int', 'bigint', 'long')):
+                list_of_cols.append(i[0])
+    if isinstance(list_of_cols, str):
+        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
+    if isinstance(drop_cols, str):
+        drop_cols = [x.strip() for x in drop_cols.split('|')]
+    
+    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+
+    if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
+        raise TypeError('Invalid input for Column(s)')
+    if output_mode not in ('replace', 'append'):
+        raise TypeError('Invalid input for output_mode')
+    if str(treatment).lower() == 'true':
+        treatment= True 
+    elif str(treatment).lower() == 'false':
+        treatment= False 
+    else: raise TypeError('Non-Boolean input for treatment')
+
+    null_vocab = ['', ' ', 'nan', 'null', 'na', 'inf', 'n/a', 'not defined', 'none', 'undefined', 'blank']
+    specialChars_vocab = ["&", "$", ";", ":", ".", ",", "*", "#", "@", "_", "?", "%", "!", "^", "(", ")", "-", "/", "'"]
+
+    def detect(*v):
+        output = []
+        for idx,e in enumerate(v):
+            if e is None:
+                output.append(None)
+                continue
+            e = str(e).lower().strip()
+            # Null & Special Chars Search
+            if e in (null_vocab + specialChars_vocab):
+                output.append(1)
+                continue
+            # Consecutive Identical Chars Search
+            regex = "\\b([a-zA-Z0-9])\\1\\1+\\b"
+            p = re.compile(regex)
+            if (re.search(p, e)):
+                output.append(1)
+                continue
+            # Ordered Chars Search
+            l = len(e)
+            check = 0
+            if l >= 3:
+                for i in range(1, l):
+                    if ord(e[i]) - ord(e[i - 1]) != 1:
+                        output.append(0)
+                        check = 1
+                        break
+                if check == 1:
+                    continue
+                else:
+                    output.append(1)
+                    continue
+            else:
+                output.append(0)
+                continue
+        return output
+    f_detect = F.udf(detect, T.ArrayType(T.LongType()))
+    
+    odf = idf.withColumn("invalid", f_detect(*list_of_cols))
+    odf.persist()
+    output_print = []
+    for index, i in enumerate(list_of_cols):
+        tmp = odf.withColumn(i + "_invalid", F.col('invalid')[index])
+        invalid = tmp.where(F.col(i + "_invalid") == 1).select(i).distinct().rdd.flatMap(lambda x: x).collect()
+        invalid = [str(x) for x in invalid]
+        invalid_count = tmp.where(F.col(i + "_invalid") == 1).count()
+        output_print.append([i, '|'.join(invalid), invalid_count, round(invalid_count / idf.count(), 4)])
+
+    if treatment:
+        for index, i in enumerate(list_of_cols):
+            odf = odf.withColumn(i + "_invalid", F.when(F.col('invalid')[index] == 1, None).otherwise(F.col(i)))
+            if output_mode == 'replace':
+                odf = odf.drop(i).withColumnRenamed(i + "_invalid", i)
+        odf = odf.drop("invalid")
+    else:
+        odf = idf  
+    
+    odf_print = spark.createDataFrame(output_print,
+                                      schema=['attribute', 'invalid_entries', 'invalid_count', 'invalid_pct'])
+    if print_impact:
+        odf_print.show(len(list_of_cols))
+
+    return odf, odf_print
+
