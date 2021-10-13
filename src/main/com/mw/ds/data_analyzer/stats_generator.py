@@ -185,7 +185,7 @@ def mode_computation(idf, list_of_cols='all', drop_cols=[], print_impact=False):
     mode = [(str(i),str(j)) for i,j in mode]
     
     odf = spark.createDataFrame(zip(list_of_cols,mode), schema=("attribute", "metric"))\
-            .select('attribute', (F.col('metric')["_1"]).alias('mode'),(F.col('metric')["_2"]).alias('mode_rows'))
+            .select('attribute', (F.col('metric')["_1"]).alias('mode'),(F.col('metric')["_2"]).cast("long").alias('mode_rows'))
     
     if print_impact:
         odf.show(len(list_of_cols))
