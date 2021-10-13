@@ -1,11 +1,18 @@
 import pyspark
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
-import warnings
 from com.mw.ds.shared.spark import *
 from com.mw.ds.shared.utils import attributeType_segregation, get_dtype
 from com.mw.ds.data_analyzer.stats_generator import missingCount_computation, uniqueCount_computation
 from com.mw.ds.data_ingest.data_ingest import recast_column, read_dataset
+import warnings
+from scipy import stats
+from pyspark.ml.feature import OneHotEncoder, StringIndexer, OneHotEncoderModel, StringIndexerModel, OneHotEncoderEstimator
+from pyspark.ml import Pipeline, PipelineModel
+from pyspark.ml.linalg import DenseVector
+from pyspark.sql.window import Window
+from pyspark.ml.feature import Imputer, ImputerModel
+from pyspark.sql.functions import substring, length
 
 def attribute_binning (idf, list_of_cols='all', drop_cols=[], method_type="equal_range", bin_size=10, 
                      pre_existing_model=False, model_path="NA", output_mode="replace", print_impact=False):
@@ -17,7 +24,7 @@ def attribute_binning (idf, list_of_cols='all', drop_cols=[], method_type="equal
     :params method_type: equal_frequency, equal_range
     :params bin_size: No of bins
     :params pre_existing_model: True if mapping values exists already, False Otherwise. 
-    :params model_path: If pre_existing_model is True, this argument is path for the saved model. 
+    :params model_path: If pre_existing_model is True, this argument is path for the pre-saved model. 
                   If pre_existing_model is False, this argument can be used for saving the model. 
                   Default "NA" means there is neither pre_existing_model nor there is a need to save one.
     :params output_mode: replace or append
@@ -139,7 +146,6 @@ def monotonic_encoding(idf,list_of_cols='all', drop_cols=[], label_col='label',
     attribute_binning (idf, list_of_cols='all', drop_cols=[], method_type="equal_range", bin_size=10, 
                      pre_existing_model=False, model_path="NA", output_mode="replace", print_impact=False)
 
-    from scipy import stats
     idf_encoded = idf
     for col in list_of_cols:
         n = 20 #max_bin
@@ -173,14 +179,12 @@ def cat_to_num_unsupervised (idf, list_of_cols='all', drop_cols=[], method_type=
     :params index_order: Valid only for Label Encoding - frequencyDesc, frequencyAsc, alphabetDesc, alphabetAsc
     :params onehot_dropLast= True or False (Dropping last column in one hot encoding)
     :params pre_existing_model: True if the models exist already, False Otherwise
-    :params model_path: If pre_existing_model is True, this argument is path for the saved models. If pre_existing_model is False, 
+    :params model_path: If pre_existing_model is True, this argument is path for the pre-saved models. If pre_existing_model is False, 
                 this argument can be used for saving the normalization model (value other than NA). 
                 Default ("NA") means there is neither pre_existing_model nor there is a need to save one.
     :params output_mode: replace or append
     :return: Dataframe with transformed categorical attributes
     '''
-    from pyspark.ml.feature import OneHotEncoder, StringIndexer, OneHotEncoderModel, StringIndexerModel, OneHotEncoderEstimator
-    from pyspark.ml import Pipeline, PipelineModel
     
     cat_cols = attributeType_segregation(idf)[1]
     if list_of_cols == 'all':
@@ -239,7 +243,6 @@ def cat_to_num_unsupervised (idf, list_of_cols='all', drop_cols=[], method_type=
         for i in list_of_cols:
             uniq_cats = idf.select(i).distinct().count()
             def vector_to_array(v):
-                from pyspark.ml.linalg import DenseVector
                 v = DenseVector(v)
                 new_array = list([int(x) for x in v])
                 return new_array
@@ -290,10 +293,12 @@ def imputation_MMM(idf, list_of_cols="missing", drop_cols=[], method_type="media
     :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
     :params method_type: median (default), mean for Numerical attributes. Mode is only option for categorical attributes
     :params pre_existing_model: True if median/mean/mode values exists already, False Otherwise.
-    :params model_path: If pre_existing_model is True, this argument is path for imputation model.
+    :params model_path: If pre_existing_model is True, this argument is path for pre-saved imputation model.
                   If pre_existing_model is False, this argument can be used for saving the imputation model.
                   Default "NA" means there is neither pre_existing_model nor there is a need to save one.
     :params output_mode: replace or append
+    :params stats_missing: read_dataset arguments to read pre-saved statistics on missing count/pct (dictionary format)
+    :params stats_mode: read_dataset arguments to read pre-saved statistics on mode (dictionary format)
     :return: Imputed Dataframe
     """
     if stats_missing == {}:
@@ -350,7 +355,6 @@ def imputation_MMM(idf, list_of_cols="missing", drop_cols=[], method_type="media
                 recast_type.append(get_dtype(idf, i))
         
         # Building new imputer model or uploading the existing model
-        from pyspark.ml.feature import Imputer, ImputerModel
         if pre_existing_model == True:
             imputerModel = ImputerModel.load(model_path + "/imputation_MMM/num_imputer-model")
         else:
@@ -409,7 +413,6 @@ def imputation_MMM(idf, list_of_cols="missing", drop_cols=[], method_type="media
                         .join(missingCount_computation(odf,list_of_cols)\
                         .select('attribute', F.col("missing_count").alias("missingCount_after")),'attribute','inner')
         else:
-            from pyspark.sql.functions import substring, length
             output_cols = [(i + "_imputed") for i in (num_cols + cat_cols)]
             odf_print = missing_df.select('attribute', F.col("missing_count").alias("missingCount_before"))\
                         .join(missingCount_computation(odf,output_cols)\
@@ -430,7 +433,7 @@ def outlier_categories(idf, list_of_cols='all', drop_cols=[], coverage=1.0, max_
     :params max_category: Even if coverage is less, only (max_category - 1) categories will be mapped to actual name and rest to others.
                             Caveat is when multiple categories have same rank. Then #categories can be more than max_category
     :params pre_existing_model: outlier value for each attribute. True if model files exists already, False Otherwise
-    :params model_path: If pre_existing_model is True, this argument is path for model file. 
+    :params model_path: If pre_existing_model is True, this argument is path for pre-saved model file. 
                   If pre_existing_model is False, this field can be used for saving the model file. 
                   param NA means there is neither pre_existing_model nor there is a need to save one.
     :params output_mode: replace or append
@@ -464,7 +467,6 @@ def outlier_categories(idf, list_of_cols='all', drop_cols=[], coverage=1.0, max_
         df_model = sqlContext.read.csv(model_path + "/outlier_categories", header=True, inferSchema=True)
     else:
         for index, i in enumerate(list_of_cols):
-            from pyspark.sql.window import Window
             window = Window.partitionBy().orderBy(F.desc('count_pct'))
             df_cats = idf.groupBy(i).count().dropna()\
                          .withColumn('count_pct', F.col('count')/F.sum('count').over(Window.partitionBy()))\

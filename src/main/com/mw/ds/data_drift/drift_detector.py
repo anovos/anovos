@@ -1,20 +1,24 @@
 from __future__ import division,print_function
 import pyspark
-import warnings
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
-from typing import Iterable
-from itertools import chain
 from com.mw.ds.shared.spark import *
 from com.mw.ds.shared.utils import attributeType_segregation
 from com.mw.ds.data_transformer.transformers import attribute_binning
 from com.mw.ds.data_ingest.data_ingest import concatenate_dataset
+import warnings
+import numpy as np
+import pandas as pd
+import math
+from typing import Iterable
+from itertools import chain
+from scipy.stats import variation
 
 
 def drift_statistics(idf_target, idf_source, list_of_cols='all', drop_cols=[], method_type='PSI', bin_method='equal_range', 
                      bin_size=10, threshold=None, pre_existing_source=False, source_path="NA", print_impact=False):
     '''
-    :params idf_target, idf_source: Input Dataframe
+    :params idf_target, idf_source: Input Dataframes
     :params list_of_cols: List of columns to check drift (list or string of col names separated by |)
                           all - to include all non-array columns (excluding drop_cols)
     :params drop_cols: List of columns to be dropped (list or string of col names separated by |)  
@@ -23,17 +27,13 @@ def drift_statistics(idf_target, idf_source, list_of_cols='all', drop_cols=[], m
     :params bin_method: equal_frequency, equal_range
     :params bin_size: 10 - 20 (recommended for PSI), >100 (other method types)
     :params threshold: To flag attributes meeting drift threshold
-    :params pre_existing_source: True if binning model & frequency counts/attribute exists already, False Otherwise. 
+    :params pre_existing_source: True if binning model & frequency counts per attribute exists already, False Otherwise. 
     :params source_path: If pre_existing_source is True, this argument is path for the source dataset details - drift_statistics folder.
                   drift_statistics folder must contain attribute_binning & frequency_counts folders
                   If pre_existing_source is False, this argument can be used for saving the details. 
                   Default "NA" for temporarily saving source dataset attribute_binning folder 
     :return: Output Dataframe <attribute, <metric>>
     '''
-    
-    import numpy as np
-    import pandas as pd
-    import math
     
     if list_of_cols == 'all':
         num_cols, cat_cols, other_cols = attributeType_segregation(idf_target)
@@ -100,7 +100,7 @@ def drift_statistics(idf_target, idf_source, list_of_cols='all', drop_cols=[], m
         else:
             x = source_bin.groupBy(i).agg((F.count(i)/idf_source.count()).alias('p')).fillna(-1)
             if source_path != "NA":
-                x.repartition(1).write.csv(source_path+"/drift_statistics/frequency_counts" + i, header=True, mode='overwrite')
+                x.coalesce(1).write.csv(source_path+"/drift_statistics/frequency_counts" + i, header=True, mode='overwrite')
             
         y = target_bin.groupBy(i).agg((F.count(i)/idf_target.count()).alias('q')).fillna(-1)
         
@@ -157,9 +157,6 @@ def stabilityIndex_computation(*idfs, list_of_cols='all', drop_cols=[], metric_w
     :return: Stability Index Dataframe <attribute, *metric_cv, *metric_si, stability_index>
     """
     
-    from scipy.stats import variation
-    import numpy as np
-    
     num_cols = attributeType_segregation(idfs[0])[0]
     if list_of_cols == 'all':
         list_of_cols = num_cols
@@ -199,7 +196,7 @@ def stabilityIndex_computation(*idfs, list_of_cols='all', drop_cols=[], metric_w
     appended_metric_df.show(100)
     
     if appended_metric_path:
-        appended_metric_df.write.csv(appended_metric_path, header=True, mode='overwrite')
+        appended_metric_df.coalesce(1).write.csv(appended_metric_path, header=True, mode='overwrite')
 
     output = []
     for i in list_of_cols:    
@@ -211,7 +208,12 @@ def stabilityIndex_computation(*idfs, list_of_cols='all', drop_cols=[], metric_w
             i_output.append(metric_cv)
         output.append(i_output)
     
-    odf = spark.createDataFrame(output, schema=['attribute','mean_cv','stddev_cv','kurtosis_cv'])
+    schema =  T.StructType([T.StructField("attribute",T.StringType(),True),
+                            T.StructField("mean_cv",T.FloatType(),True),
+                            T.StructField("stddev_cv",T.FloatType(),True),
+                            T.StructField("kurtosis_cv", T.FloatType(), True)])
+    
+    odf = spark.createDataFrame(output, schema=schema)
 
     def score_cv(cv, thresholds=[0.03, 0.1, 0.2, 0.5]):
         if cv is None:

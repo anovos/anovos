@@ -92,7 +92,7 @@ def main(all_configs):
             df = data_ingest.concatenate_dataset(*idfs, method_type=args.get('method'))
             df = save(df,write_intermediate,folder_name="data_ingest/concatenate_dataset",reread=True)
             end = timeit.default_timer()
-            print(key, end-start)
+            print(key, ", execution time (in secs) =",round(end-start,4))
 
         if (key == 'join_dataset') & (args != None):
             start = timeit.default_timer()
@@ -103,7 +103,7 @@ def main(all_configs):
             df = data_ingest.join_dataset(*idfs, join_cols=args.get('join_cols'), join_type=args.get('join_type'))
             df = save(df,write_intermediate,folder_name="data_ingest/join_dataset",reread=True)
             end = timeit.default_timer()
-            print(key, end-start)
+            print(key, ", execution time (in secs) =",round(end-start,4))
 
         if (key == 'stats_generator') & (args != None):
             for m in args['metric']:
@@ -113,7 +113,7 @@ def main(all_configs):
                 df_stats = f(df,**args['metric_args'], print_impact=False)
                 save(df_stats,write_stats,folder_name="data_analyzer/stats_generator/" + m,reread=True).show(100)
                 end = timeit.default_timer()
-                print(key,m, end-start)
+                print(key, m, ", execution time (in secs) =",round(end-start,4))
 
         if (key == 'quality_checker') & (args != None):
             for subkey, value in args.items():
@@ -128,7 +128,8 @@ def main(all_configs):
                     save(df_stats,write_stats,folder_name="data_analyzer/quality_checker/" + 
                                               subkey +"/stats",reread=True).show(100)
                     end = timeit.default_timer()
-                    print(key, subkey, end-start)
+                    print(key, subkey, ", execution time (in secs) =",round(end-start,4))
+                    
 
         if (key == 'association_evaluator') & (args != None):
             for subkey, value in args.items():
@@ -141,7 +142,7 @@ def main(all_configs):
                     save(df_stats,write_stats,folder_name="data_analyzer/association_evaluator/" + 
                          subkey +"/stats",reread=True).show(100)
                     end = timeit.default_timer()
-                    print(key, subkey, end-start)
+                    print(key, subkey, ", execution time (in secs) =",round(end-start,4))
 
         if (key == 'drift_detector') & (args != None):
             for subkey, value in args.items():
@@ -154,7 +155,7 @@ def main(all_configs):
                     df_stats = drift_detector.drift_statistics(df,source,**value['configs'],print_impact=False)
                     save(df_stats,write_stats,folder_name="drift_detector/drift_statistics",reread=True).show(100)
                     end = timeit.default_timer()
-                    print(key, subkey, end-start)
+                    print(key, subkey, ", execution time (in secs) =",round(end-start,4))
                     
                 if (subkey == 'stabilityIndex_computation') & (value != None):
                     start = timeit.default_timer()
@@ -165,9 +166,9 @@ def main(all_configs):
                     df_stats = drift_detector.stabilityIndex_computation(*idfs,**value['configs'],print_impact=False)
                     save(df_stats,write_stats,folder_name="drift_detector/stability_index",reread=True).show(100)
                     end = timeit.default_timer()
-                    print(key, subkey, end-start)
+                    print(key, subkey, ", execution time (in secs) =",round(end-start,4))
                     
-            print("w/o report", end-start_main)
+            print("execution time w/o report (in sec) =", round(end-start,4))
 
         if (key == 'report_gen_inter') & (args != None):
             print("report generation module started")
@@ -184,7 +185,7 @@ def main(all_configs):
                         else:
                             f(report_gen_inter.processed_df(df,drop_cols_viz), **value)
                         end = timeit.default_timer()
-                        print(key, subkey, end-start)
+                        print(key, subkey, ", execution time (in secs) =",round(end-start,4))
 
     save(df,write_main,folder_name="final_dataset",reread=False)
     

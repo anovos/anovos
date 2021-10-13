@@ -2,6 +2,8 @@ import pyspark
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
 from com.mw.ds.shared.spark import * 
+from functools import reduce
+from pyspark.sql import DataFrame
 
 def read_dataset(file_path, file_type, file_configs={}):
     """
@@ -53,8 +55,6 @@ def concatenate_dataset(*idfs,method_type='name'):
     :param method_type: index (concatenating without shuffling columns) or name (concatenating after shuffling columns)
     :return: Concatenated dataframe 
     """
-    from functools import reduce
-    from pyspark.sql import DataFrame
     if (method_type not in ['index','name']):
         raise TypeError('Invalid input for concatenate_dataset method')
     if method_type == 'name':
