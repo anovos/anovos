@@ -56,6 +56,9 @@ def stats_args(all_configs,k):
             read['file_configs'].pop('repartition', None)
             read['file_configs'].pop('mode', None)
             
+        if read['file_type'] == 'csv':
+            read['file_configs']['inferSchema'] = True
+
         mainfunc_to_args = {'biasedness_detection': ['stats_mode'],
                      'IDness_detection': ['stats_unique'],
                      'outlier_detection': ['stats_unique'],
