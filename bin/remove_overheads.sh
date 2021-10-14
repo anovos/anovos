@@ -24,7 +24,7 @@ while [ $SECONDS -lt $end ]; do
 	        else
 	        	sleep 10
 			for val in $output; do
-				kill -15 $val
+				kill -9 $val
 			done
 	        fi
 	fi
