@@ -1,0 +1,2163 @@
+start setup
+============================= test session starts ==============================
+platform linux -- Python 3.7.7, pytest-5.4.3, py-1.9.0, pluggy-0.13.1
+rootdir: /home/ie_khing/mobilewalla/workspace/mw_ds_feature_machine
+collected 2 items
+
+test/test_data_metric.py No. of Rows: 21,119
+No. of Columns: 5
+Numerical Columns: 0
+Categorical Columns: 5
+['bundle', 'category', 'platform_category', 'asn', 'global_category']
+{"invalidEntry": [{"attribute": "bundle", "invalid_entries": "com.ubisoft.xxxx|m.n.the.ii.pokemon.yellow.blue.red.gbc.game.boy.color.emulator.pk.ii.yellow.classic.the.iii|com.agilizer.www|pokemon.red.blue.green.game.boy.gb.games.gb.boy.emulator.the.ii.red.and.blue.bn.pm.game.iii|http://www.lovelyapp.com/|com.zzz.flg|ccc.mpmo.maker|exam.ccc.ccc|123|https://www.amazon.com/dratef-learn-laparoscopy/dp/B07L931MM7/ref=sr_1_15?s=mobile-apps&ie=UTF8&qid=1545855458&sr=1-15|com.mmm.trebelmusic", "invalid_count": 11, "invalid_pct": 0.0005}, {"attribute": "category", "invalid_entries": "", "invalid_count": 0, "invalid_pct": 0.0}, {"attribute": "platform_category", "invalid_entries": "", "invalid_count": 0, "invalid_pct": 0.0}, {"attribute": "asn", "invalid_entries": "750 grammes : 80 000 recettes de cuisine|Fortune 777 Classic Slots|Tapatalk - 100,000+ Forums|World War III: Tank Battle|18,000 COOL JOKES FREE|Slots-Fortune 777 Classic Slot|CCC Exam Notes in Hindi|GIF funny Videos \ud83c\udfac 20.000 GIFs to laugh \ud83d\ude02|3 000 \u043a\u0440\u043e\u0441\u0441\u0432\u043e\u0440\u0434\u043e\u0432|iCook \u611b\u6599\u7406 - 140,000+ recipes, new recipe everyday|'AAA 1001 Addictive Moonlight Mahjong Emoji Deluxe ~ Ultimate Memory and Brain Training!|6 000 \u043a\u0440\u043e\u0441\u0441\u0432\u043e\u0440\u0434\u043e\u0432|Vegas Casino Slots 2019 - 2,000,000 Free Coins|50,000 Baby Names  -  Connect Your Friends and Let Them Share Their Favorite Names with You|Slots! Fortune 777 Casino Slot|prepics 15,000,000pics byGMO", "invalid_count": 16, "invalid_pct": 0.0008}, {"attribute": "global_category", "invalid_entries": "", "invalid_count": 0, "invalid_pct": 0.0}], "idNess": [{"attribute": "bundle", "unique_values": 15060, "IDness": 0.7131, "flagged": "-"}, {"attribute": "platform_category", "unique_values": 72, "IDness": 0.0035, "flagged": "-"}, {"attribute": "global_category", "unique_values": 21, "IDness": 0.001, "flagged": "-"}, {"attribute": "category", "unique_values": 71, "IDness": 0.0087, "flagged": "-"}, {"attribute": "asn", "unique_values": 18725, "IDness": 0.9208, "flagged": "-"}], "biasedness": [{"attribute": "bundle", "mode": "1445895825", "mode_pct": 0.0013, "flagged": "-"}, {"attribute": "platform_category", "mode": "IOS-6014", "mode_pct": 0.3197, "flagged": "-"}, {"attribute": "global_category", "mode": "GAMES", "mode_pct": 0.4995, "flagged": "-"}, {"attribute": "category", "mode": "6014", "mode_pct": 0.1386, "flagged": "-"}, {"attribute": "asn", "mode": "Solitaire", "mode_pct": 0.0016, "flagged": "-"}], "outlier": [], "nullColumn": [{"attribute": "platform_category", "missing_count": 783, "missing_pct": 0.0371}, {"attribute": "global_category", "missing_count": 783, "missing_pct": 0.0371}, {"attribute": "category", "missing_count": 12973, "missing_pct": 0.6143}, {"attribute": "asn", "missing_count": 783, "missing_pct": 0.0371}], "nullRow": [{"null_cols_count": 3, "row_count": 65, "row_pct": 0.0031, "flagged": 0}, {"null_cols_count": 0, "row_count": 8081, "row_pct": 0.3826, "flagged": 0}, {"null_cols_count": 1, "row_count": 12255, "row_pct": 0.5803, "flagged": 0}, {"null_cols_count": 4, "row_count": 718, "row_pct": 0.034, "flagged": 0}], "duplicateRow": [{"metric": "rows_count", "value": 21119}, {"metric": "unique_rows_count", "value": 21119}], "centralTendency": [{"attribute": "bundle", "mean": 1209229747544204.2, "median": 1097402595.0, "mode": "1445895825", "mode_pct": 0.0013}, {"attribute": "platform_category", "mean": null, "median": null, "mode": "IOS-6014", "mode_pct": 0.3197}, {"attribute": "global_category", "mean": null, "median": null, "mode": "GAMES", "mode_pct": 0.4995}, {"attribute": "category", "mean": 6013.4307, "median": 6014.0, "mode": "6014", "mode_pct": 0.1386}, {"attribute": "asn", "mean": 1711.8333, "median": 2048.0, "mode": "Solitaire", "mode_pct": 0.0016}], "cardinality": [{"attribute": "bundle", "unique_values": 15060, "IDness": 0.7131}, {"attribute": "platform_category", "unique_values": 72, "IDness": 0.0035}, {"attribute": "global_category", "unique_values": 21, "IDness": 0.001}, {"attribute": "category", "unique_values": 71, "IDness": 0.0087}, {"attribute": "asn", "unique_values": 18725, "IDness": 0.9208}], "dispersion": [], "percentiles": [], "count": [{"attribute": "bundle", "fill_count": 21119, "fill_pct": 1.0, "missing_count": 0, "missing_pct": 0.0, "nonzero_count": null, "nonzero_pct": null}, {"attribute": "platform_category", "fill_count": 20336, "fill_pct": 0.9629, "missing_count": 783, "missing_pct": 0.0371, "nonzero_count": null, "nonzero_pct": null}, {"attribute": "global_category", "fill_count": 20336, "fill_pct": 0.9629, "missing_count": 783, "missing_pct": 0.0371, "nonzero_count": null, "nonzero_pct": null}, {"attribute": "category", "fill_count": 8146, "fill_pct": 0.3857, "missing_count": 12973, "missing_pct": 0.6143, "nonzero_count": null, "nonzero_pct": null}, {"attribute": "asn", "fill_count": 20336, "fill_pct": 0.9629, "missing_count": 783, "missing_pct": 0.0371, "nonzero_count": null, "nonzero_pct": null}], "shape": [], "global_summary": [{"metric": "rows_count", "value": "21119"}, {"metric": "columns_count", "value": "5"}, {"metric": "numcols_count", "value": "0"}, {"metric": "numcols_name", "value": ""}, {"metric": "catcols_count", "value": "5"}, {"metric": "catcols_name", "value": "bundle, category, platform_category, asn, global_category"}]}
+.No. of Rows: 16,281
+No. of Columns: 17
+Numerical Columns: 7
+['age', 'fnlwgt', 'logfnl', 'education-num', 'capital-gain', 'capital-loss', 'hours-per-week']
+Categorical Columns: 10
+['ifa', 'workclass', 'education', 'marital-status', 'occupation', 'relationship', 'race', 'sex', 'native-country', 'income']
+{"invalidEntry": [{"attribute": "ifa", "invalid_entries": "", "invalid_count": 0, "invalid_pct": 0.0}, {"attribute": "age", "invalid_entries": "", "invalid_count": 0, "invalid_pct": 0.0}, {"attribute": "workclass", "invalid_entries": "?", "invalid_count": 912, "invalid_pct": 0.056}, {"attribute": "fnlwgt", "invalid_entries": "", "invalid_count": 0, "invalid_pct": 0.0}, {"attribute": "education", "invalid_entries": "?", "invalid_count": 19, "invalid_pct": 0.0012}, {"attribute": "education-num", "invalid_entries": "", "invalid_count": 0, "invalid_pct": 0.0}, {"attribute": "marital-status", "invalid_entries": "?", "invalid_count": 13, "invalid_pct": 0.0008}, {"attribute": "occupation", "invalid_entries": "?", "invalid_count": 921, "invalid_pct": 0.0566}, {"attribute": "relationship", "invalid_entries": "*|?", "invalid_count": 10, "invalid_pct": 0.0006}, {"attribute": "race", "invalid_entries": "*|?", "invalid_count": 13, "invalid_pct": 0.0008}, {"attribute": "sex", "invalid_entries": "?", "invalid_count": 5, "invalid_pct": 0.0003}, {"attribute": "capital-gain", "invalid_entries": "99999|1111", "invalid_count": 87, "invalid_pct": 0.0053}, {"attribute": "capital-loss", "invalid_entries": "", "invalid_count": 0, "invalid_pct": 0.0}, {"attribute": "hours-per-week", "invalid_entries": "", "invalid_count": 0, "invalid_pct": 0.0}, {"attribute": "native-country", "invalid_entries": "*|?", "invalid_count": 281, "invalid_pct": 0.0173}, {"attribute": "income", "invalid_entries": "", "invalid_count": 0, "invalid_pct": 0.0}], "idNess": [{"attribute": "ifa", "unique_values": 16281, "IDness": 1.0, "flagged": "-"}, {"attribute": "workclass", "unique_values": 9, "IDness": 0.0006, "flagged": "-"}, {"attribute": "education", "unique_values": 16, "IDness": 0.001, "flagged": "-"}, {"attribute": "race", "unique_values": 7, "IDness": 0.0004, "flagged": "-"}, {"attribute": "relationship", "unique_values": 8, "IDness": 0.0005, "flagged": "-"}, {"attribute": "income", "unique_values": 2, "IDness": 0.0001, "flagged": "-"}, {"attribute": "native-country", "unique_values": 44, "IDness": 0.0027, "flagged": "-"}, {"attribute": "marital-status", "unique_values": 7, "IDness": 0.0004, "flagged": "-"}, {"attribute": "sex", "unique_values": 3, "IDness": 0.0002, "flagged": "-"}, {"attribute": "occupation", "unique_values": 15, "IDness": 0.0009, "flagged": "-"}], "biasedness": [{"attribute": "ifa", "mode": "26125a", "mode_pct": 0.0001, "flagged": "-"}, {"attribute": "education-num", "mode": "9", "mode_pct": 0.3211, "flagged": "-"}, {"attribute": "workclass", "mode": "Private", "mode_pct": 0.6917, "flagged": "-"}, {"attribute": "education", "mode": "HS-grad", "mode_pct": 0.3259, "flagged": "-"}, {"attribute": "race", "mode": "White", "mode_pct": 0.8627, "flagged": "-"}, {"attribute": "relationship", "mode": "Husband", "mode_pct": 0.4072, "flagged": "-"}, {"attribute": "capital-gain", "mode": "0", "mode_pct": 0.9155, "flagged": "-"}, {"attribute": "capital-loss", "mode": "0", "mode_pct": 0.9515, "flagged": "-"}, {"attribute": "income", "mode": "<=50K", "mode_pct": 0.7609, "flagged": "-"}, {"attribute": "age", "mode": "34", "mode_pct": 0.0288, "flagged": "-"}, {"attribute": "hours-per-week", "mode": "40", "mode_pct": 0.4674, "flagged": "-"}, {"attribute": "fnlwgt", "mode": "241998", "mode_pct": 0.0005, "flagged": "-"}, {"attribute": "native-country", "mode": "United-States", "mode_pct": 0.8989, "flagged": "-"}, {"attribute": "marital-status", "mode": "Married-civ-spouse", "mode_pct": 0.466, "flagged": "-"}, {"attribute": "sex", "mode": "Male", "mode_pct": 0.6696, "flagged": "-"}, {"attribute": "occupation", "mode": "Prof-specialty", "mode_pct": 0.1285, "flagged": "-"}, {"attribute": "logfnl", "mode": "5.07708434", "mode_pct": 0.0008, "flagged": "-"}], "outlier": [{"attribute": "age", "lower_outliers": 0, "upper_outliers": 87}, {"attribute": "fnlwgt", "lower_outliers": 0, "upper_outliers": 518}, {"attribute": "logfnl", "lower_outliers": 0, "upper_outliers": 15}, {"attribute": "education-num", "lower_outliers": 0, "upper_outliers": 0}, {"attribute": "capital-gain", "lower_outliers": 0, "upper_outliers": 955}, {"attribute": "capital-loss", "lower_outliers": 0, "upper_outliers": 790}, {"attribute": "hours-per-week", "lower_outliers": 0, "upper_outliers": 515}], "nullColumn": [{"attribute": "education-num", "missing_count": 17, "missing_pct": 0.001}, {"attribute": "education", "missing_count": 263, "missing_pct": 0.0162}, {"attribute": "race", "missing_count": 152, "missing_pct": 0.0093}, {"attribute": "capital-gain", "missing_count": 5, "missing_pct": 0.0003}, {"attribute": "capital-loss", "missing_count": 5, "missing_pct": 0.0003}, {"attribute": "age", "missing_count": 31, "missing_pct": 0.0019}, {"attribute": "hours-per-week", "missing_count": 50, "missing_pct": 0.0031}, {"attribute": "fnlwgt", "missing_count": 7, "missing_pct": 0.0004}, {"attribute": "marital-status", "missing_count": 196, "missing_pct": 0.012}, {"attribute": "occupation", "missing_count": 4, "missing_pct": 0.0002}, {"attribute": "logfnl", "missing_count": 10179, "missing_pct": 0.6252}], "nullRow": [{"null_cols_count": 3, "row_count": 7, "row_pct": 0.0004, "flagged": 0}, {"null_cols_count": 2, "row_count": 437, "row_pct": 0.0268, "flagged": 0}, {"null_cols_count": 0, "row_count": 5850, "row_pct": 0.3593, "flagged": 0}, {"null_cols_count": 1, "row_count": 9978, "row_pct": 0.6129, "flagged": 0}, {"null_cols_count": 4, "row_count": 9, "row_pct": 0.0006, "flagged": 0}], "duplicateRow": [{"metric": "rows_count", "value": 16281}, {"metric": "unique_rows_count", "value": 16281}], "centralTendency": [{"attribute": "ifa", "mean": null, "median": null, "mode": "21461a", "mode_pct": 0.0001}, {"attribute": "education-num", "mean": 10.0939, "median": 10.0, "mode": "9", "mode_pct": 0.3211}, {"attribute": "workclass", "mean": null, "median": null, "mode": "Private", "mode_pct": 0.6917}, {"attribute": "education", "mean": null, "median": null, "mode": "HS-grad", "mode_pct": 0.3259}, {"attribute": "race", "mean": null, "median": null, "mode": "White", "mode_pct": 0.8627}, {"attribute": "relationship", "mean": null, "median": null, "mode": "Husband", "mode_pct": 0.4072}, {"attribute": "capital-gain", "mean": 1108.2323, "median": 0.0, "mode": "0", "mode_pct": 0.9155}, {"attribute": "capital-loss", "mean": 89.7021, "median": 0.0, "mode": "0", "mode_pct": 0.9515}, {"attribute": "income", "mean": null, "median": null, "mode": "<=50K", "mode_pct": 0.7609}, {"attribute": "age", "mean": 38.4898, "median": 37.0, "mode": "34", "mode_pct": 0.0288}, {"attribute": "hours-per-week", "mean": 40.3852, "median": 40.0, "mode": "40", "mode_pct": 0.4674}, {"attribute": "fnlwgt", "mean": 190458.4459, "median": 179488.0, "mode": "241998", "mode_pct": 0.0005}, {"attribute": "native-country", "mean": null, "median": null, "mode": "United-States", "mode_pct": 0.8989}, {"attribute": "marital-status", "mean": null, "median": null, "mode": "Married-civ-spouse", "mode_pct": 0.466}, {"attribute": "sex", "mean": null, "median": null, "mode": "Male", "mode_pct": 0.6696}, {"attribute": "occupation", "mean": null, "median": null, "mode": "Prof-specialty", "mode_pct": 0.1285}, {"attribute": "logfnl", "mean": 5.206, "median": 5.2543, "mode": "5.07708434", "mode_pct": 0.0008}], "cardinality": [{"attribute": "ifa", "unique_values": 16281, "IDness": 1.0}, {"attribute": "education-num", "unique_values": 16, "IDness": 0.001}, {"attribute": "workclass", "unique_values": 9, "IDness": 0.0006}, {"attribute": "education", "unique_values": 16, "IDness": 0.001}, {"attribute": "race", "unique_values": 7, "IDness": 0.0004}, {"attribute": "relationship", "unique_values": 8, "IDness": 0.0005}, {"attribute": "capital-gain", "unique_values": 112, "IDness": 0.0069}, {"attribute": "capital-loss", "unique_values": 83, "IDness": 0.0051}, {"attribute": "income", "unique_values": 2, "IDness": 0.0001}, {"attribute": "age", "unique_values": 69, "IDness": 0.0042}, {"attribute": "hours-per-week", "unique_values": 83, "IDness": 0.0051}, {"attribute": "fnlwgt", "unique_values": 12724, "IDness": 0.7819}, {"attribute": "native-country", "unique_values": 44, "IDness": 0.0027}, {"attribute": "marital-status", "unique_values": 7, "IDness": 0.0004}, {"attribute": "sex", "unique_values": 3, "IDness": 0.0002}, {"attribute": "occupation", "unique_values": 15, "IDness": 0.0009}, {"attribute": "logfnl", "unique_values": 5462, "IDness": 0.8951}], "dispersion": [{"attribute": "education-num", "stddev": 2.5653, "variance": 6.5808, "cov": 0.2541, "IQR": 3.0, "range": 15.0}, {"attribute": "capital-gain", "stddev": 7626.007, "variance": 58155982.764, "cov": 6.8812, "IQR": 0.0, "range": 99999.0}, {"attribute": "capital-loss", "stddev": 406.1395, "variance": 164949.2935, "cov": 4.5276, "IQR": 0.0, "range": 4356.0}, {"attribute": "age", "stddev": 13.4651, "variance": 181.3089, "cov": 0.3498, "IQR": 19.0, "range": 68.0}, {"attribute": "hours-per-week", "stddev": 11.8967, "variance": 141.5315, "cov": 0.2946, "IQR": 5.0, "range": 89.0}, {"attribute": "fnlwgt", "stddev": 106488.5894, "variance": 11339819672.4018, "cov": 0.5591, "IQR": 120793.0, "range": 1256054.0}, {"attribute": "logfnl", "stddev": 0.2767, "variance": 0.0766, "cov": 0.0532, "IQR": 0.31, "range": 1.8051}], "percentiles": [{"attribute": "education-num", "min": 1.0, "1%": 3.0, "5%": 5.0, "10%": 7.0, "25%": 9.0, "50%": 10.0, "75%": 12.0, "90%": 13.0, "95%": 14.0, "99%": 16.0, "max": 16.0}, {"attribute": "capital-gain", "min": 0.0, "1%": 0.0, "5%": 0.0, "10%": 0.0, "25%": 0.0, "50%": 0.0, "75%": 0.0, "90%": 0.0, "95%": 5013.0, "99%": 15024.0, "max": 99999.0}, {"attribute": "capital-loss", "min": 0.0, "1%": 0.0, "5%": 0.0, "10%": 0.0, "25%": 0.0, "50%": 0.0, "75%": 0.0, "90%": 0.0, "95%": 0.0, "99%": 1977.0, "max": 4356.0}, {"attribute": "age", "min": 17.0, "1%": 17.0, "5%": 20.0, "10%": 22.0, "25%": 28.0, "50%": 37.0, "75%": 47.0, "90%": 58.0, "95%": 63.0, "99%": 73.0, "max": 85.0}, {"attribute": "hours-per-week", "min": 1.0, "1%": 8.0, "5%": 18.0, "10%": 25.0, "25%": 40.0, "50%": 40.0, "75%": 45.0, "90%": 55.0, "95%": 60.0, "99%": 72.0, "max": 90.0}, {"attribute": "fnlwgt", "min": 12285.0, "1%": 26892.0, "5%": 38876.0, "10%": 64448.0, "25%": 118119.0, "50%": 179488.0, "75%": 238912.0, "90%": 330664.0, "95%": 379883.0, "99%": 511068.0, "max": 1268339.0}, {"attribute": "logfnl", "min": 4.2836, "1%": 4.4278, "5%": 4.5952, "10%": 4.8097, "25%": 5.072, "50%": 5.2543, "75%": 5.382, "90%": 5.5207, "95%": 5.5773, "99%": 5.7041, "max": 6.0887}], "count": [{"attribute": "ifa", "fill_count": 16281, "fill_pct": 1.0, "missing_count": 0, "missing_pct": 0.0, "nonzero_count": null, "nonzero_pct": null}, {"attribute": "education-num", "fill_count": 16264, "fill_pct": 0.999, "missing_count": 17, "missing_pct": 0.001, "nonzero_count": 16264, "nonzero_pct": 0.999}, {"attribute": "workclass", "fill_count": 16281, "fill_pct": 1.0, "missing_count": 0, "missing_pct": 0.0, "nonzero_count": null, "nonzero_pct": null}, {"attribute": "education", "fill_count": 16018, "fill_pct": 0.9838, "missing_count": 263, "missing_pct": 0.0162, "nonzero_count": null, "nonzero_pct": null}, {"attribute": "race", "fill_count": 16129, "fill_pct": 0.9907, "missing_count": 152, "missing_pct": 0.0093, "nonzero_count": null, "nonzero_pct": null}, {"attribute": "relationship", "fill_count": 16281, "fill_pct": 1.0, "missing_count": 0, "missing_pct": 0.0, "nonzero_count": null, "nonzero_pct": null}, {"attribute": "capital-gain", "fill_count": 16276, "fill_pct": 0.9997, "missing_count": 5, "missing_pct": 0.0003, "nonzero_count": 1375, "nonzero_pct": 0.0845}, {"attribute": "capital-loss", "fill_count": 16276, "fill_pct": 0.9997, "missing_count": 5, "missing_pct": 0.0003, "nonzero_count": 790, "nonzero_pct": 0.0485}, {"attribute": "income", "fill_count": 16281, "fill_pct": 1.0, "missing_count": 0, "missing_pct": 0.0, "nonzero_count": null, "nonzero_pct": null}, {"attribute": "age", "fill_count": 16250, "fill_pct": 0.9981, "missing_count": 31, "missing_pct": 0.0019, "nonzero_count": 16250, "nonzero_pct": 0.9981}, {"attribute": "hours-per-week", "fill_count": 16231, "fill_pct": 0.9969, "missing_count": 50, "missing_pct": 0.0031, "nonzero_count": 16231, "nonzero_pct": 0.9969}, {"attribute": "fnlwgt", "fill_count": 16274, "fill_pct": 0.9996, "missing_count": 7, "missing_pct": 0.0004, "nonzero_count": 16274, "nonzero_pct": 0.9996}, {"attribute": "native-country", "fill_count": 16281, "fill_pct": 1.0, "missing_count": 0, "missing_pct": 0.0, "nonzero_count": null, "nonzero_pct": null}, {"attribute": "marital-status", "fill_count": 16085, "fill_pct": 0.988, "missing_count": 196, "missing_pct": 0.012, "nonzero_count": null, "nonzero_pct": null}, {"attribute": "sex", "fill_count": 16281, "fill_pct": 1.0, "missing_count": 0, "missing_pct": 0.0, "nonzero_count": null, "nonzero_pct": null}, {"attribute": "occupation", "fill_count": 16277, "fill_pct": 0.9998, "missing_count": 4, "missing_pct": 0.0002, "nonzero_count": null, "nonzero_pct": null}, {"attribute": "logfnl", "fill_count": 6102, "fill_pct": 0.3748, "missing_count": 10179, "missing_pct": 0.6252, "nonzero_count": 6102, "nonzero_pct": 0.3748}], "shape": [{"attribute": "age", "skewness": 0.5164, "kurtosis": -0.3456}, {"attribute": "fnlwgt", "skewness": 1.4278, "kurtosis": 5.7225}, {"attribute": "logfnl", "skewness": -0.8465, "kurtosis": 0.8045}, {"attribute": "education-num", "skewness": -0.3142, "kurtosis": 0.6306}, {"attribute": "capital-gain", "skewness": 11.7024, "kurtosis": 146.8844}, {"attribute": "capital-loss", "skewness": 4.5118, "kurtosis": 19.6669}, {"attribute": "hours-per-week", "skewness": -0.0522, "kurtosis": 1.9984}], "global_summary": [{"metric": "rows_count", "value": "16281"}, {"metric": "columns_count", "value": "17"}, {"metric": "numcols_count", "value": "7"}, {"metric": "numcols_name", "value": "age, fnlwgt, logfnl, education-num, capital-gain, capital-loss, hours-per-week"}, {"metric": "catcols_count", "value": "10"}, {"metric": "catcols_name", "value": "ifa, workclass, education, marital-status, occupation, relationship, race, sex, native-country, income"}]}
+.
+
+=============================== warnings summary ===============================
+/home/ie_khing/Downloads/spark-2.4.8-bin-hadoop2.7/python/pyspark/cloudpickle.py:47
+  /home/ie_khing/Downloads/spark-2.4.8-bin-hadoop2.7/python/pyspark/cloudpickle.py:47: DeprecationWarning: the imp module is deprecated in favour of importlib; see the module's documentation for alternative uses
+    import imp
+
+/home/ie_khing/Downloads/spark-2.4.8-bin-hadoop2.7/python/lib/py4j-0.10.7-src.zip/py4j/java_gateway.py:2020
+/home/ie_khing/Downloads/spark-2.4.8-bin-hadoop2.7/python/lib/py4j-0.10.7-src.zip/py4j/java_gateway.py:2020
+  /home/ie_khing/Downloads/spark-2.4.8-bin-hadoop2.7/python/lib/py4j-0.10.7-src.zip/py4j/java_gateway.py:2020: DeprecationWarning: invalid escape sequence \*
+
+/home/ie_khing/Downloads/spark-2.4.8-bin-hadoop2.7/python/lib/py4j-0.10.7-src.zip/py4j/java_collections.py:13
+/home/ie_khing/Downloads/spark-2.4.8-bin-hadoop2.7/python/lib/py4j-0.10.7-src.zip/py4j/java_collections.py:13
+/home/ie_khing/Downloads/spark-2.4.8-bin-hadoop2.7/python/lib/py4j-0.10.7-src.zip/py4j/java_collections.py:13
+/home/ie_khing/Downloads/spark-2.4.8-bin-hadoop2.7/python/lib/py4j-0.10.7-src.zip/py4j/java_collections.py:13
+/home/ie_khing/Downloads/spark-2.4.8-bin-hadoop2.7/python/lib/py4j-0.10.7-src.zip/py4j/java_collections.py:13
+  /home/ie_khing/Downloads/spark-2.4.8-bin-hadoop2.7/python/lib/py4j-0.10.7-src.zip/py4j/java_collections.py:13: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3,and in 3.9 it will stop working
+
+/home/ie_khing/Downloads/spark-2.4.8-bin-hadoop2.7/python/pyspark/resultiterable.py:23
+  /home/ie_khing/Downloads/spark-2.4.8-bin-hadoop2.7/python/pyspark/resultiterable.py:23: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3,and in 3.9 it will stop working
+    class ResultIterable(collections.Iterable):
+
+test/test_data_metric.py::test_calc_metrics_for_csv
+test/test_data_metric.py::test_calc_metrics_for_parquet
+  /home/ie_khing/anaconda3/lib/python3.7/importlib/_bootstrap.py:219: RuntimeWarning: numpy.ufunc size changed, may indicate binary incompatibility. Expected 192 from C header, got 216 from PyObject
+    return f(*args, **kwds)
+
+test/test_data_metric.py::test_calc_metrics_for_csv
+  /home/ie_khing/mobilewalla/workspace/mw_ds_feature_machine/src/main/com/mw/ds/data_analyzer/metric.py:409: UserWarning: No Outlier Check
+    warnings.warn("No Outlier Check")
+
+test/test_data_metric.py::test_calc_metrics_for_csv
+  /home/ie_khing/mobilewalla/workspace/mw_ds_feature_machine/src/main/com/mw/ds/data_analyzer/metric.py:846: UserWarning: No Dispersion Computation
+    warnings.warn("No Dispersion Computation")
+
+test/test_data_metric.py::test_calc_metrics_for_csv
+  /home/ie_khing/mobilewalla/workspace/mw_ds_feature_machine/src/main/com/mw/ds/data_analyzer/metric.py:890: UserWarning: No Percentiles Computation
+    warnings.warn("No Percentiles Computation")
+
+test/test_data_metric.py::test_calc_metrics_for_csv
+  /home/ie_khing/mobilewalla/workspace/mw_ds_feature_machine/src/main/com/mw/ds/data_analyzer/metric.py:708: UserWarning: No Non-Zero Count Computation
+    warnings.warn("No Non-Zero Count Computation")
+
+test/test_data_metric.py::test_calc_metrics_for_csv
+  /home/ie_khing/mobilewalla/workspace/mw_ds_feature_machine/src/main/com/mw/ds/data_analyzer/metric.py:973: UserWarning: No Skewness/Kurtosis Computation
+    warnings.warn("No Skewness/Kurtosis Computation")
+
+-- Docs: https://docs.pytest.org/en/latest/warnings.html
+======================= 2 passed, 16 warnings in 41.52s ========================
+============================================================
+Profile of RDD<id=41>
+============================================================
+         206 function calls in 0.001 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+       12    0.000    0.000    0.000    0.000 serializers.py:354(load_stream)
+       12    0.000    0.000    0.000    0.000 serializers.py:396(dump_stream)
+       14    0.000    0.000    0.000    0.000 serializers.py:721(read_int)
+       12    0.000    0.000    0.001    0.000 worker.py:370(process)
+       14    0.000    0.000    0.000    0.000 serializers.py:164(_read_with_length)
+       12    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+       14    0.000    0.000    0.000    0.000 serializers.py:145(load_stream)
+       12    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+        2    0.000    0.000    0.000    0.000 {built-in method _pickle.dumps}
+       12    0.000    0.000    0.000    0.000 rdd.py:323(func)
+        2    0.000    0.000    0.000    0.000 serializers.py:586(loads)
+        2    0.000    0.000    0.000    0.000 util.py:97(wrapper)
+        2    0.000    0.000    0.000    0.000 serializers.py:728(write_int)
+       16    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+       14    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+        2    0.000    0.000    0.000    0.000 {built-in method _pickle.loads}
+       12    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+        4    0.000    0.000    0.000    0.000 {method 'write' of '_io.BufferedWriter' objects}
+        2    0.000    0.000    0.000    0.000 serializers.py:582(dumps)
+       12    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+       12    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+        6    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+        2    0.000    0.000    0.000    0.000 rdd.py:594(<lambda>)
+        2    0.000    0.000    0.000    0.000 {built-in method _struct.pack}
+
+
+============================================================
+Profile of RDD<id=63>
+============================================================
+         3682 function calls (3671 primitive calls) in 0.007 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      200    0.001    0.000    0.004    0.000 serializers.py:396(dump_stream)
+      211    0.001    0.000    0.001    0.000 serializers.py:721(read_int)
+      200    0.001    0.000    0.007    0.000 worker.py:370(process)
+      200    0.001    0.000    0.001    0.000 serializers.py:354(load_stream)
+      211    0.000    0.000    0.003    0.000 serializers.py:164(_read_with_length)
+      211    0.000    0.000    0.003    0.000 serializers.py:145(load_stream)
+      200    0.000    0.000    0.001    0.000 rdd.py:338(func)
+      200    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+       11    0.000    0.000    0.001    0.000 {built-in method _pickle.loads}
+      200    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+       11    0.000    0.000    0.000    0.000 types.py:467(__init__)
+      400    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+      211    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+       11    0.000    0.000    0.000    0.000 decoder.py:343(raw_decode)
+    22/11    0.000    0.000    0.000    0.000 types.py:874(_parse_datatype_json_value)
+      222    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+       11    0.000    0.000    0.000    0.000 decoder.py:332(decode)
+      211    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+       11    0.000    0.000    0.001    0.000 types.py:823(_parse_datatype_json_string)
+       11    0.000    0.000    0.000    0.000 __init__.py:299(loads)
+       11    0.000    0.000    0.000    0.000 types.py:1401(_create_row)
+       11    0.000    0.000    0.000    0.000 serializers.py:728(write_int)
+       11    0.000    0.000    0.000    0.000 types.py:1449(__new__)
+       11    0.000    0.000    0.000    0.000 types.py:431(fromJson)
+       11    0.000    0.000    0.000    0.000 types.py:1542(__setattr__)
+       11    0.000    0.000    0.000    0.000 {built-in method _pickle.dumps}
+       11    0.000    0.000    0.000    0.000 types.py:577(<listcomp>)
+       11    0.000    0.000    0.000    0.000 types.py:575(fromJson)
+       11    0.000    0.000    0.000    0.000 types.py:399(__init__)
+       11    0.000    0.000    0.000    0.000 types.py:438(needConversion)
+       22    0.000    0.000    0.000    0.000 {method 'match' of 're.Pattern' objects}
+      200    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+       11    0.000    0.000    0.000    0.000 types.py:624(fromInternal)
+       11    0.000    0.000    0.000    0.000 serializers.py:582(dumps)
+       11    0.000    0.000    0.001    0.000 serializers.py:586(loads)
+       88    0.000    0.000    0.000    0.000 {built-in method builtins.isinstance}
+       11    0.000    0.000    0.000    0.000 types.py:488(<listcomp>)
+       22    0.000    0.000    0.000    0.000 {method 'write' of '_io.BufferedWriter' objects}
+       11    0.000    0.000    0.000    0.000 types.py:1398(<lambda>)
+       11    0.000    0.000    0.000    0.000 util.py:97(wrapper)
+       11    0.000    0.000    0.000    0.000 types.py:1397(_create_row_inbound_converter)
+       11    0.000    0.000    0.000    0.000 {built-in method builtins.all}
+       22    0.000    0.000    0.000    0.000 types.py:485(<genexpr>)
+       22    0.000    0.000    0.000    0.000 {method 'end' of 're.Match' objects}
+       11    0.000    0.000    0.000    0.000 {built-in method __new__ of type object at 0x55da653cc240}
+       11    0.000    0.000    0.000    0.000 {built-in method _struct.pack}
+       11    0.000    0.000    0.000    0.000 types.py:539(__iter__)
+       11    0.000    0.000    0.000    0.000 {method 'startswith' of 'str' objects}
+       11    0.000    0.000    0.000    0.000 {built-in method builtins.any}
+       44    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+       11    0.000    0.000    0.000    0.000 {method 'keys' of 'dict' objects}
+       11    0.000    0.000    0.000    0.000 types.py:484(<listcomp>)
+       11    0.000    0.000    0.000    0.000 metric.py:244(<lambda>)
+       11    0.000    0.000    0.000    0.000 types.py:75(needConversion)
+
+
+============================================================
+Profile of RDD<id=88>
+============================================================
+         3000 function calls in 0.005 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      200    0.001    0.000    0.003    0.000 serializers.py:396(dump_stream)
+      200    0.001    0.000    0.005    0.000 worker.py:370(process)
+      200    0.001    0.000    0.001    0.000 serializers.py:721(read_int)
+      200    0.001    0.000    0.001    0.000 serializers.py:354(load_stream)
+      200    0.000    0.000    0.001    0.000 serializers.py:164(_read_with_length)
+      200    0.000    0.000    0.002    0.000 serializers.py:145(load_stream)
+      200    0.000    0.000    0.001    0.000 rdd.py:338(func)
+      200    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+      200    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+      200    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+      400    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+      200    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+      200    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+      200    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+
+
+============================================================
+Profile of RDD<id=113>
+============================================================
+         3000 function calls in 0.005 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      200    0.001    0.000    0.003    0.000 serializers.py:396(dump_stream)
+      200    0.001    0.000    0.005    0.000 worker.py:370(process)
+      200    0.001    0.000    0.001    0.000 serializers.py:721(read_int)
+      200    0.001    0.000    0.001    0.000 serializers.py:354(load_stream)
+      200    0.000    0.000    0.001    0.000 serializers.py:164(_read_with_length)
+      200    0.000    0.000    0.002    0.000 serializers.py:145(load_stream)
+      200    0.000    0.000    0.000    0.000 rdd.py:338(func)
+      200    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+      200    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+      400    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+      200    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+      200    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+      200    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+      200    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+
+
+============================================================
+Profile of RDD<id=138>
+============================================================
+         3992 function calls (3976 primitive calls) in 0.006 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      200    0.001    0.000    0.004    0.000 serializers.py:396(dump_stream)
+      200    0.001    0.000    0.006    0.000 worker.py:370(process)
+      216    0.001    0.000    0.001    0.000 serializers.py:721(read_int)
+      200    0.001    0.000    0.001    0.000 serializers.py:354(load_stream)
+      216    0.000    0.000    0.003    0.000 serializers.py:164(_read_with_length)
+      216    0.000    0.000    0.003    0.000 serializers.py:145(load_stream)
+      200    0.000    0.000    0.000    0.000 rdd.py:338(func)
+      200    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+       16    0.000    0.000    0.001    0.000 {built-in method _pickle.loads}
+      200    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+       16    0.000    0.000    0.000    0.000 types.py:467(__init__)
+       16    0.000    0.000    0.000    0.000 decoder.py:343(raw_decode)
+       16    0.000    0.000    0.000    0.000 decoder.py:332(decode)
+      400    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+      232    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+      216    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+    32/16    0.000    0.000    0.000    0.000 types.py:874(_parse_datatype_json_value)
+       16    0.000    0.000    0.001    0.000 types.py:823(_parse_datatype_json_string)
+       16    0.000    0.000    0.000    0.000 __init__.py:299(loads)
+       16    0.000    0.000    0.000    0.000 types.py:1401(_create_row)
+       16    0.000    0.000    0.000    0.000 types.py:1449(__new__)
+       16    0.000    0.000    0.000    0.000 serializers.py:728(write_int)
+       16    0.000    0.000    0.000    0.000 types.py:431(fromJson)
+      216    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+       16    0.000    0.000    0.000    0.000 {built-in method _pickle.dumps}
+       16    0.000    0.000    0.000    0.000 types.py:575(fromJson)
+       16    0.000    0.000    0.000    0.000 types.py:399(__init__)
+       32    0.000    0.000    0.000    0.000 {method 'match' of 're.Pattern' objects}
+       16    0.000    0.000    0.000    0.000 types.py:577(<listcomp>)
+       16    0.000    0.000    0.000    0.000 types.py:1542(__setattr__)
+       16    0.000    0.000    0.000    0.000 types.py:438(needConversion)
+       16    0.000    0.000    0.000    0.000 types.py:624(fromInternal)
+      200    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+       16    0.000    0.000    0.000    0.000 serializers.py:582(dumps)
+       16    0.000    0.000    0.001    0.000 serializers.py:586(loads)
+      128    0.000    0.000    0.000    0.000 {built-in method builtins.isinstance}
+       16    0.000    0.000    0.000    0.000 types.py:1398(<lambda>)
+       16    0.000    0.000    0.000    0.000 {built-in method __new__ of type object at 0x55da653cc240}
+       32    0.000    0.000    0.000    0.000 {method 'write' of '_io.BufferedWriter' objects}
+       16    0.000    0.000    0.000    0.000 util.py:97(wrapper)
+       32    0.000    0.000    0.000    0.000 types.py:485(<genexpr>)
+       16    0.000    0.000    0.000    0.000 types.py:488(<listcomp>)
+       16    0.000    0.000    0.000    0.000 {built-in method builtins.all}
+       16    0.000    0.000    0.000    0.000 types.py:539(__iter__)
+       64    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+       16    0.000    0.000    0.000    0.000 types.py:1397(_create_row_inbound_converter)
+       16    0.000    0.000    0.000    0.000 {built-in method builtins.any}
+       16    0.000    0.000    0.000    0.000 types.py:484(<listcomp>)
+       16    0.000    0.000    0.000    0.000 {built-in method _struct.pack}
+       32    0.000    0.000    0.000    0.000 {method 'end' of 're.Match' objects}
+       16    0.000    0.000    0.000    0.000 {method 'startswith' of 'str' objects}
+       16    0.000    0.000    0.000    0.000 types.py:75(needConversion)
+       16    0.000    0.000    0.000    0.000 metric.py:244(<lambda>)
+       16    0.000    0.000    0.000    0.000 {method 'keys' of 'dict' objects}
+
+
+============================================================
+Profile of RDD<id=163>
+============================================================
+         3000 function calls in 0.005 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      200    0.001    0.000    0.003    0.000 serializers.py:396(dump_stream)
+      200    0.001    0.000    0.005    0.000 worker.py:370(process)
+      200    0.001    0.000    0.001    0.000 serializers.py:721(read_int)
+      200    0.001    0.000    0.001    0.000 serializers.py:354(load_stream)
+      200    0.000    0.000    0.001    0.000 serializers.py:164(_read_with_length)
+      200    0.000    0.000    0.000    0.000 rdd.py:338(func)
+      200    0.000    0.000    0.002    0.000 serializers.py:145(load_stream)
+      200    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+      200    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+      200    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+      200    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+      400    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+      200    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+      200    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+
+
+============================================================
+Profile of RDD<id=179>
+============================================================
+         263 function calls in 0.001 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+       12    0.000    0.000    0.000    0.000 serializers.py:396(dump_stream)
+       12    0.000    0.000    0.001    0.000 worker.py:370(process)
+       17    0.000    0.000    0.000    0.000 serializers.py:721(read_int)
+       12    0.000    0.000    0.000    0.000 serializers.py:354(load_stream)
+       17    0.000    0.000    0.000    0.000 serializers.py:164(_read_with_length)
+        5    0.000    0.000    0.000    0.000 {built-in method _pickle.dumps}
+       17    0.000    0.000    0.000    0.000 serializers.py:145(load_stream)
+        5    0.000    0.000    0.000    0.000 serializers.py:728(write_int)
+       12    0.000    0.000    0.000    0.000 rdd.py:323(func)
+       22    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+       12    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+        5    0.000    0.000    0.000    0.000 {built-in method _pickle.loads}
+       12    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+       17    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+        5    0.000    0.000    0.000    0.000 serializers.py:582(dumps)
+        5    0.000    0.000    0.000    0.000 serializers.py:586(loads)
+        5    0.000    0.000    0.000    0.000 util.py:97(wrapper)
+       10    0.000    0.000    0.000    0.000 {method 'write' of '_io.BufferedWriter' objects}
+       12    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+       12    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+        5    0.000    0.000    0.000    0.000 {built-in method _struct.pack}
+       12    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+       15    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+        5    0.000    0.000    0.000    0.000 rdd.py:594(<lambda>)
+
+
+============================================================
+Profile of RDD<id=196>
+============================================================
+         123 function calls (118 primitive calls) in 0.000 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    0.000    0.000 {built-in method _pickle.loads}
+        1    0.000    0.000    0.000    0.000 decoder.py:343(raw_decode)
+        1    0.000    0.000    0.000    0.000 serializers.py:396(dump_stream)
+      6/1    0.000    0.000    0.000    0.000 types.py:874(_parse_datatype_json_value)
+        1    0.000    0.000    0.000    0.000 decoder.py:332(decode)
+        5    0.000    0.000    0.000    0.000 types.py:399(__init__)
+        3    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+        2    0.000    0.000    0.000    0.000 serializers.py:164(_read_with_length)
+        1    0.000    0.000    0.000    0.000 __init__.py:299(loads)
+        1    0.000    0.000    0.000    0.000 types.py:467(__init__)
+        1    0.000    0.000    0.000    0.000 worker.py:370(process)
+        5    0.000    0.000    0.000    0.000 types.py:431(fromJson)
+        1    0.000    0.000    0.000    0.000 serializers.py:354(load_stream)
+        2    0.000    0.000    0.000    0.000 serializers.py:721(read_int)
+        2    0.000    0.000    0.000    0.000 serializers.py:145(load_stream)
+        1    0.000    0.000    0.000    0.000 types.py:575(fromJson)
+        1    0.000    0.000    0.000    0.000 types.py:577(<listcomp>)
+        1    0.000    0.000    0.000    0.000 types.py:1401(_create_row)
+        1    0.000    0.000    0.000    0.000 types.py:1449(__new__)
+        2    0.000    0.000    0.000    0.000 {method 'match' of 're.Pattern' objects}
+       28    0.000    0.000    0.000    0.000 {built-in method builtins.isinstance}
+        1    0.000    0.000    0.000    0.000 {built-in method _pickle.dumps}
+        1    0.000    0.000    0.000    0.000 types.py:823(_parse_datatype_json_string)
+        1    0.000    0.000    0.000    0.000 serializers.py:728(write_int)
+        5    0.000    0.000    0.000    0.000 types.py:438(needConversion)
+        2    0.000    0.000    0.000    0.000 {method 'write' of '_io.BufferedWriter' objects}
+        6    0.000    0.000    0.000    0.000 types.py:485(<genexpr>)
+        1    0.000    0.000    0.000    0.000 serializers.py:586(loads)
+        1    0.000    0.000    0.000    0.000 types.py:624(fromInternal)
+        1    0.000    0.000    0.000    0.000 types.py:488(<listcomp>)
+        1    0.000    0.000    0.000    0.000 serializers.py:582(dumps)
+        1    0.000    0.000    0.000    0.000 {built-in method builtins.all}
+        1    0.000    0.000    0.000    0.000 rdd.py:323(func)
+        2    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+        4    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+        1    0.000    0.000    0.000    0.000 {built-in method __new__ of type object at 0x55da653cc240}
+        1    0.000    0.000    0.000    0.000 types.py:484(<listcomp>)
+        1    0.000    0.000    0.000    0.000 types.py:1542(__setattr__)
+        5    0.000    0.000    0.000    0.000 types.py:75(needConversion)
+        1    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+        1    0.000    0.000    0.000    0.000 util.py:97(wrapper)
+        1    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+        1    0.000    0.000    0.000    0.000 types.py:1398(<lambda>)
+        1    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+        2    0.000    0.000    0.000    0.000 {method 'end' of 're.Match' objects}
+        1    0.000    0.000    0.000    0.000 {built-in method builtins.any}
+        1    0.000    0.000    0.000    0.000 {method 'startswith' of 'str' objects}
+        5    0.000    0.000    0.000    0.000 {method 'keys' of 'dict' objects}
+        1    0.000    0.000    0.000    0.000 types.py:539(__iter__)
+        1    0.000    0.000    0.000    0.000 types.py:1397(_create_row_inbound_converter)
+        1    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+        1    0.000    0.000    0.000    0.000 {built-in method _struct.pack}
+        2    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+
+
+============================================================
+Profile of RDD<id=198>
+============================================================
+         263 function calls in 0.000 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+       12    0.000    0.000    0.000    0.000 serializers.py:396(dump_stream)
+       12    0.000    0.000    0.000    0.000 worker.py:370(process)
+       17    0.000    0.000    0.000    0.000 serializers.py:721(read_int)
+       12    0.000    0.000    0.000    0.000 serializers.py:354(load_stream)
+       17    0.000    0.000    0.000    0.000 serializers.py:164(_read_with_length)
+       17    0.000    0.000    0.000    0.000 serializers.py:145(load_stream)
+        5    0.000    0.000    0.000    0.000 serializers.py:728(write_int)
+        5    0.000    0.000    0.000    0.000 {built-in method _pickle.dumps}
+       12    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+       12    0.000    0.000    0.000    0.000 rdd.py:323(func)
+       12    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+        5    0.000    0.000    0.000    0.000 serializers.py:582(dumps)
+        5    0.000    0.000    0.000    0.000 serializers.py:586(loads)
+        5    0.000    0.000    0.000    0.000 {built-in method _pickle.loads}
+       17    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+       22    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+        5    0.000    0.000    0.000    0.000 util.py:97(wrapper)
+       12    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+       10    0.000    0.000    0.000    0.000 {method 'write' of '_io.BufferedWriter' objects}
+       12    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+       12    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+        5    0.000    0.000    0.000    0.000 {built-in method _struct.pack}
+       15    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+        5    0.000    0.000    0.000    0.000 rdd.py:594(<lambda>)
+
+
+============================================================
+Profile of RDD<id=310>
+============================================================
+         263 function calls in 0.001 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+       12    0.000    0.000    0.000    0.000 serializers.py:396(dump_stream)
+       17    0.000    0.000    0.000    0.000 serializers.py:721(read_int)
+       12    0.000    0.000    0.000    0.000 serializers.py:354(load_stream)
+       12    0.000    0.000    0.001    0.000 worker.py:370(process)
+       17    0.000    0.000    0.000    0.000 serializers.py:164(_read_with_length)
+       17    0.000    0.000    0.000    0.000 serializers.py:145(load_stream)
+        5    0.000    0.000    0.000    0.000 {built-in method _pickle.dumps}
+        5    0.000    0.000    0.000    0.000 serializers.py:728(write_int)
+       12    0.000    0.000    0.000    0.000 rdd.py:323(func)
+       12    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+       12    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+        5    0.000    0.000    0.000    0.000 serializers.py:582(dumps)
+        5    0.000    0.000    0.000    0.000 {built-in method _pickle.loads}
+        5    0.000    0.000    0.000    0.000 serializers.py:586(loads)
+        5    0.000    0.000    0.000    0.000 util.py:97(wrapper)
+       10    0.000    0.000    0.000    0.000 {method 'write' of '_io.BufferedWriter' objects}
+       22    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+       17    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+       12    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+       12    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+       15    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+        5    0.000    0.000    0.000    0.000 {built-in method _struct.pack}
+       12    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+        5    0.000    0.000    0.000    0.000 rdd.py:594(<lambda>)
+
+
+============================================================
+Profile of RDD<id=384>
+============================================================
+         3248 function calls (3244 primitive calls) in 0.005 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      200    0.001    0.000    0.003    0.000 serializers.py:396(dump_stream)
+      204    0.001    0.000    0.001    0.000 serializers.py:721(read_int)
+      200    0.001    0.000    0.005    0.000 worker.py:370(process)
+      200    0.001    0.000    0.001    0.000 serializers.py:354(load_stream)
+      204    0.000    0.000    0.001    0.000 serializers.py:164(_read_with_length)
+      204    0.000    0.000    0.002    0.000 serializers.py:145(load_stream)
+      200    0.000    0.000    0.000    0.000 rdd.py:338(func)
+      200    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+      200    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+      208    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+      400    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+      204    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+      204    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+        4    0.000    0.000    0.000    0.000 {built-in method _pickle.loads}
+      200    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+        4    0.000    0.000    0.000    0.000 types.py:467(__init__)
+        4    0.000    0.000    0.000    0.000 decoder.py:343(raw_decode)
+        4    0.000    0.000    0.000    0.000 decoder.py:332(decode)
+        4    0.000    0.000    0.000    0.000 __init__.py:299(loads)
+      8/4    0.000    0.000    0.000    0.000 types.py:874(_parse_datatype_json_value)
+        4    0.000    0.000    0.000    0.000 types.py:1449(__new__)
+        4    0.000    0.000    0.000    0.000 types.py:823(_parse_datatype_json_string)
+        4    0.000    0.000    0.000    0.000 types.py:575(fromJson)
+        4    0.000    0.000    0.000    0.000 types.py:1401(_create_row)
+        4    0.000    0.000    0.000    0.000 serializers.py:728(write_int)
+        4    0.000    0.000    0.000    0.000 {built-in method _pickle.dumps}
+        4    0.000    0.000    0.000    0.000 types.py:431(fromJson)
+        8    0.000    0.000    0.000    0.000 {method 'match' of 're.Pattern' objects}
+        4    0.000    0.000    0.000    0.000 types.py:399(__init__)
+        4    0.000    0.000    0.000    0.000 types.py:438(needConversion)
+        4    0.000    0.000    0.000    0.000 serializers.py:582(dumps)
+        4    0.000    0.000    0.000    0.000 serializers.py:586(loads)
+        4    0.000    0.000    0.000    0.000 types.py:624(fromInternal)
+        4    0.000    0.000    0.000    0.000 {built-in method builtins.all}
+       32    0.000    0.000    0.000    0.000 {built-in method builtins.isinstance}
+        4    0.000    0.000    0.000    0.000 types.py:1398(<lambda>)
+        4    0.000    0.000    0.000    0.000 types.py:577(<listcomp>)
+        4    0.000    0.000    0.000    0.000 types.py:1542(__setattr__)
+        8    0.000    0.000    0.000    0.000 {method 'write' of '_io.BufferedWriter' objects}
+        4    0.000    0.000    0.000    0.000 {built-in method __new__ of type object at 0x55da653cc240}
+        4    0.000    0.000    0.000    0.000 {method 'keys' of 'dict' objects}
+        4    0.000    0.000    0.000    0.000 {built-in method _struct.pack}
+        4    0.000    0.000    0.000    0.000 types.py:488(<listcomp>)
+       16    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+        4    0.000    0.000    0.000    0.000 {method 'startswith' of 'str' objects}
+        8    0.000    0.000    0.000    0.000 types.py:485(<genexpr>)
+        4    0.000    0.000    0.000    0.000 types.py:1397(_create_row_inbound_converter)
+        4    0.000    0.000    0.000    0.000 types.py:539(__iter__)
+        8    0.000    0.000    0.000    0.000 {method 'end' of 're.Match' objects}
+        4    0.000    0.000    0.000    0.000 {built-in method builtins.any}
+        4    0.000    0.000    0.000    0.000 types.py:484(<listcomp>)
+        4    0.000    0.000    0.000    0.000 metric.py:565(<lambda>)
+        4    0.000    0.000    0.000    0.000 types.py:75(needConversion)
+        4    0.000    0.000    0.000    0.000 util.py:97(wrapper)
+
+
+============================================================
+Profile of RDD<id=450>
+============================================================
+         263 function calls in 0.000 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+       12    0.000    0.000    0.000    0.000 serializers.py:396(dump_stream)
+       17    0.000    0.000    0.000    0.000 serializers.py:721(read_int)
+       12    0.000    0.000    0.000    0.000 serializers.py:354(load_stream)
+       12    0.000    0.000    0.000    0.000 worker.py:370(process)
+        5    0.000    0.000    0.000    0.000 {built-in method _pickle.dumps}
+       17    0.000    0.000    0.000    0.000 serializers.py:164(_read_with_length)
+       17    0.000    0.000    0.000    0.000 serializers.py:145(load_stream)
+       12    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+        5    0.000    0.000    0.000    0.000 serializers.py:728(write_int)
+       12    0.000    0.000    0.000    0.000 rdd.py:323(func)
+       12    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+        5    0.000    0.000    0.000    0.000 {built-in method _pickle.loads}
+        5    0.000    0.000    0.000    0.000 serializers.py:582(dumps)
+       22    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+       17    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+        5    0.000    0.000    0.000    0.000 serializers.py:586(loads)
+        5    0.000    0.000    0.000    0.000 util.py:97(wrapper)
+       12    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+       10    0.000    0.000    0.000    0.000 {method 'write' of '_io.BufferedWriter' objects}
+       12    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+       12    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+        5    0.000    0.000    0.000    0.000 {built-in method _struct.pack}
+       15    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+        5    0.000    0.000    0.000    0.000 rdd.py:594(<lambda>)
+
+
+============================================================
+Profile of RDD<id=486>
+============================================================
+         123 function calls (118 primitive calls) in 0.000 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    0.000    0.000 {built-in method _pickle.loads}
+      6/1    0.000    0.000    0.000    0.000 types.py:874(_parse_datatype_json_value)
+        1    0.000    0.000    0.000    0.000 decoder.py:343(raw_decode)
+        1    0.000    0.000    0.000    0.000 serializers.py:396(dump_stream)
+        1    0.000    0.000    0.000    0.000 types.py:467(__init__)
+        3    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+        2    0.000    0.000    0.000    0.000 serializers.py:164(_read_with_length)
+        1    0.000    0.000    0.000    0.000 decoder.py:332(decode)
+        5    0.000    0.000    0.000    0.000 types.py:399(__init__)
+        2    0.000    0.000    0.000    0.000 serializers.py:721(read_int)
+        1    0.000    0.000    0.000    0.000 worker.py:370(process)
+        1    0.000    0.000    0.000    0.000 __init__.py:299(loads)
+        1    0.000    0.000    0.000    0.000 types.py:577(<listcomp>)
+        1    0.000    0.000    0.000    0.000 types.py:1401(_create_row)
+        1    0.000    0.000    0.000    0.000 types.py:1449(__new__)
+        1    0.000    0.000    0.000    0.000 types.py:823(_parse_datatype_json_string)
+        5    0.000    0.000    0.000    0.000 types.py:431(fromJson)
+        1    0.000    0.000    0.000    0.000 types.py:488(<listcomp>)
+        2    0.000    0.000    0.000    0.000 {method 'match' of 're.Pattern' objects}
+        1    0.000    0.000    0.000    0.000 {built-in method _pickle.dumps}
+        2    0.000    0.000    0.000    0.000 serializers.py:145(load_stream)
+        1    0.000    0.000    0.000    0.000 serializers.py:582(dumps)
+        1    0.000    0.000    0.000    0.000 serializers.py:354(load_stream)
+        1    0.000    0.000    0.000    0.000 serializers.py:728(write_int)
+       28    0.000    0.000    0.000    0.000 {built-in method builtins.isinstance}
+        5    0.000    0.000    0.000    0.000 types.py:438(needConversion)
+        1    0.000    0.000    0.000    0.000 serializers.py:586(loads)
+        1    0.000    0.000    0.000    0.000 types.py:575(fromJson)
+        1    0.000    0.000    0.000    0.000 types.py:624(fromInternal)
+        6    0.000    0.000    0.000    0.000 types.py:485(<genexpr>)
+        2    0.000    0.000    0.000    0.000 {method 'write' of '_io.BufferedWriter' objects}
+        1    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+        2    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+        4    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+        1    0.000    0.000    0.000    0.000 {method 'startswith' of 'str' objects}
+        5    0.000    0.000    0.000    0.000 {method 'keys' of 'dict' objects}
+        1    0.000    0.000    0.000    0.000 types.py:484(<listcomp>)
+        1    0.000    0.000    0.000    0.000 types.py:539(__iter__)
+        1    0.000    0.000    0.000    0.000 types.py:1542(__setattr__)
+        1    0.000    0.000    0.000    0.000 types.py:1397(_create_row_inbound_converter)
+        1    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+        1    0.000    0.000    0.000    0.000 util.py:97(wrapper)
+        1    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+        1    0.000    0.000    0.000    0.000 {built-in method _struct.pack}
+        1    0.000    0.000    0.000    0.000 types.py:1398(<lambda>)
+        1    0.000    0.000    0.000    0.000 {built-in method builtins.all}
+        1    0.000    0.000    0.000    0.000 rdd.py:323(func)
+        2    0.000    0.000    0.000    0.000 {method 'end' of 're.Match' objects}
+        1    0.000    0.000    0.000    0.000 {built-in method builtins.any}
+        1    0.000    0.000    0.000    0.000 {built-in method __new__ of type object at 0x55da653cc240}
+        1    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+        5    0.000    0.000    0.000    0.000 types.py:75(needConversion)
+        2    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+
+
+============================================================
+Profile of RDD<id=488>
+============================================================
+         263 function calls in 0.000 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+       12    0.000    0.000    0.000    0.000 serializers.py:396(dump_stream)
+       17    0.000    0.000    0.000    0.000 serializers.py:721(read_int)
+       12    0.000    0.000    0.000    0.000 worker.py:370(process)
+       12    0.000    0.000    0.000    0.000 serializers.py:354(load_stream)
+       17    0.000    0.000    0.000    0.000 serializers.py:164(_read_with_length)
+       17    0.000    0.000    0.000    0.000 serializers.py:145(load_stream)
+       12    0.000    0.000    0.000    0.000 rdd.py:323(func)
+        5    0.000    0.000    0.000    0.000 serializers.py:728(write_int)
+       12    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+        5    0.000    0.000    0.000    0.000 {built-in method _pickle.dumps}
+       12    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+        5    0.000    0.000    0.000    0.000 {built-in method _pickle.loads}
+        5    0.000    0.000    0.000    0.000 serializers.py:582(dumps)
+       12    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+       10    0.000    0.000    0.000    0.000 {method 'write' of '_io.BufferedWriter' objects}
+        5    0.000    0.000    0.000    0.000 serializers.py:586(loads)
+       17    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+        5    0.000    0.000    0.000    0.000 util.py:97(wrapper)
+       22    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+       12    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+       12    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+       15    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+        5    0.000    0.000    0.000    0.000 {built-in method _struct.pack}
+        5    0.000    0.000    0.000    0.000 rdd.py:594(<lambda>)
+
+
+============================================================
+Profile of RDD<id=629>
+============================================================
+         282 function calls in 0.000 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+       12    0.000    0.000    0.000    0.000 serializers.py:396(dump_stream)
+       18    0.000    0.000    0.000    0.000 serializers.py:721(read_int)
+       12    0.000    0.000    0.000    0.000 serializers.py:354(load_stream)
+       12    0.000    0.000    0.000    0.000 worker.py:370(process)
+       18    0.000    0.000    0.000    0.000 serializers.py:164(_read_with_length)
+       18    0.000    0.000    0.000    0.000 serializers.py:145(load_stream)
+        6    0.000    0.000    0.000    0.000 serializers.py:728(write_int)
+        6    0.000    0.000    0.000    0.000 {built-in method _pickle.dumps}
+       12    0.000    0.000    0.000    0.000 rdd.py:323(func)
+       12    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+        6    0.000    0.000    0.000    0.000 {built-in method _pickle.loads}
+        6    0.000    0.000    0.000    0.000 serializers.py:586(loads)
+       12    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+        6    0.000    0.000    0.000    0.000 serializers.py:582(dumps)
+       24    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+       12    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+        6    0.000    0.000    0.000    0.000 util.py:97(wrapper)
+       12    0.000    0.000    0.000    0.000 {method 'write' of '_io.BufferedWriter' objects}
+       12    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+       18    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+       18    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+       12    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+        6    0.000    0.000    0.000    0.000 rdd.py:594(<lambda>)
+        6    0.000    0.000    0.000    0.000 {built-in method _struct.pack}
+
+
+============================================================
+Profile of RDD<id=668>
+============================================================
+         206 function calls in 0.000 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+       12    0.000    0.000    0.000    0.000 serializers.py:396(dump_stream)
+       12    0.000    0.000    0.000    0.000 serializers.py:354(load_stream)
+       12    0.000    0.000    0.000    0.000 worker.py:370(process)
+       14    0.000    0.000    0.000    0.000 serializers.py:721(read_int)
+       14    0.000    0.000    0.000    0.000 serializers.py:164(_read_with_length)
+       14    0.000    0.000    0.000    0.000 serializers.py:145(load_stream)
+       12    0.000    0.000    0.000    0.000 rdd.py:323(func)
+       12    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+       12    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+        2    0.000    0.000    0.000    0.000 {built-in method _pickle.dumps}
+        2    0.000    0.000    0.000    0.000 serializers.py:728(write_int)
+       16    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+        2    0.000    0.000    0.000    0.000 serializers.py:586(loads)
+       14    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+        2    0.000    0.000    0.000    0.000 serializers.py:582(dumps)
+        2    0.000    0.000    0.000    0.000 {built-in method _pickle.loads}
+       12    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+        6    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+        2    0.000    0.000    0.000    0.000 util.py:97(wrapper)
+        2    0.000    0.000    0.000    0.000 {built-in method _struct.pack}
+       12    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+        4    0.000    0.000    0.000    0.000 {method 'write' of '_io.BufferedWriter' objects}
+       12    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+        2    0.000    0.000    0.000    0.000 rdd.py:594(<lambda>)
+
+
+============================================================
+Profile of RDD<id=690>
+============================================================
+         3000 function calls in 0.008 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      200    0.004    0.000    0.005    0.000 serializers.py:164(_read_with_length)
+      200    0.001    0.000    0.006    0.000 serializers.py:396(dump_stream)
+      200    0.001    0.000    0.008    0.000 worker.py:370(process)
+      200    0.001    0.000    0.001    0.000 serializers.py:721(read_int)
+      200    0.001    0.000    0.001    0.000 serializers.py:354(load_stream)
+      200    0.000    0.000    0.005    0.000 serializers.py:145(load_stream)
+      200    0.000    0.000    0.000    0.000 rdd.py:338(func)
+      200    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+      200    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+      400    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+      200    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+      200    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+      200    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+      200    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+
+
+============================================================
+Profile of RDD<id=715>
+============================================================
+         3000 function calls in 0.005 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      200    0.001    0.000    0.003    0.000 serializers.py:396(dump_stream)
+      200    0.001    0.000    0.005    0.000 worker.py:370(process)
+      200    0.001    0.000    0.001    0.000 serializers.py:721(read_int)
+      200    0.001    0.000    0.001    0.000 serializers.py:354(load_stream)
+      200    0.000    0.000    0.001    0.000 serializers.py:164(_read_with_length)
+      200    0.000    0.000    0.001    0.000 serializers.py:145(load_stream)
+      200    0.000    0.000    0.000    0.000 rdd.py:338(func)
+      200    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+      200    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+      400    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+      200    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+      200    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+      200    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+      200    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+
+
+============================================================
+Profile of RDD<id=740>
+============================================================
+         3062 function calls (3061 primitive calls) in 0.005 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      200    0.001    0.000    0.003    0.000 serializers.py:396(dump_stream)
+      200    0.001    0.000    0.005    0.000 worker.py:370(process)
+      201    0.001    0.000    0.001    0.000 serializers.py:721(read_int)
+      200    0.001    0.000    0.001    0.000 serializers.py:354(load_stream)
+      201    0.000    0.000    0.001    0.000 serializers.py:164(_read_with_length)
+      201    0.000    0.000    0.002    0.000 serializers.py:145(load_stream)
+      200    0.000    0.000    0.000    0.000 rdd.py:338(func)
+      200    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+      200    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+      201    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+      202    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+      400    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+      201    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+      200    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+        1    0.000    0.000    0.000    0.000 {built-in method _pickle.loads}
+        1    0.000    0.000    0.000    0.000 decoder.py:343(raw_decode)
+        1    0.000    0.000    0.000    0.000 decoder.py:332(decode)
+        1    0.000    0.000    0.000    0.000 types.py:467(__init__)
+        1    0.000    0.000    0.000    0.000 types.py:1449(__new__)
+      2/1    0.000    0.000    0.000    0.000 types.py:874(_parse_datatype_json_value)
+        1    0.000    0.000    0.000    0.000 __init__.py:299(loads)
+        1    0.000    0.000    0.000    0.000 types.py:431(fromJson)
+        1    0.000    0.000    0.000    0.000 types.py:575(fromJson)
+        1    0.000    0.000    0.000    0.000 types.py:399(__init__)
+        1    0.000    0.000    0.000    0.000 {built-in method _pickle.dumps}
+        1    0.000    0.000    0.000    0.000 serializers.py:728(write_int)
+        1    0.000    0.000    0.000    0.000 types.py:624(fromInternal)
+        1    0.000    0.000    0.000    0.000 types.py:1401(_create_row)
+        2    0.000    0.000    0.000    0.000 {method 'match' of 're.Pattern' objects}
+        1    0.000    0.000    0.000    0.000 {built-in method builtins.all}
+        4    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+        1    0.000    0.000    0.000    0.000 types.py:438(needConversion)
+        1    0.000    0.000    0.000    0.000 serializers.py:586(loads)
+        1    0.000    0.000    0.000    0.000 types.py:823(_parse_datatype_json_string)
+        1    0.000    0.000    0.000    0.000 types.py:1398(<lambda>)
+        1    0.000    0.000    0.000    0.000 types.py:577(<listcomp>)
+        1    0.000    0.000    0.000    0.000 serializers.py:582(dumps)
+        1    0.000    0.000    0.000    0.000 types.py:488(<listcomp>)
+        1    0.000    0.000    0.000    0.000 {built-in method builtins.any}
+        8    0.000    0.000    0.000    0.000 {built-in method builtins.isinstance}
+        1    0.000    0.000    0.000    0.000 {built-in method __new__ of type object at 0x55da653cc240}
+        1    0.000    0.000    0.000    0.000 {method 'keys' of 'dict' objects}
+        1    0.000    0.000    0.000    0.000 types.py:539(__iter__)
+        1    0.000    0.000    0.000    0.000 types.py:1542(__setattr__)
+        1    0.000    0.000    0.000    0.000 types.py:1397(_create_row_inbound_converter)
+        1    0.000    0.000    0.000    0.000 util.py:97(wrapper)
+        2    0.000    0.000    0.000    0.000 {method 'write' of '_io.BufferedWriter' objects}
+        2    0.000    0.000    0.000    0.000 {method 'end' of 're.Match' objects}
+        1    0.000    0.000    0.000    0.000 {method 'startswith' of 'str' objects}
+        1    0.000    0.000    0.000    0.000 types.py:484(<listcomp>)
+        2    0.000    0.000    0.000    0.000 types.py:485(<genexpr>)
+        1    0.000    0.000    0.000    0.000 metric.py:244(<lambda>)
+        1    0.000    0.000    0.000    0.000 types.py:75(needConversion)
+        1    0.000    0.000    0.000    0.000 {built-in method _struct.pack}
+
+
+============================================================
+Profile of RDD<id=765>
+============================================================
+         3000 function calls in 0.005 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      200    0.001    0.000    0.003    0.000 serializers.py:396(dump_stream)
+      200    0.001    0.000    0.005    0.000 worker.py:370(process)
+      200    0.001    0.000    0.001    0.000 serializers.py:721(read_int)
+      200    0.001    0.000    0.001    0.000 serializers.py:354(load_stream)
+      200    0.000    0.000    0.001    0.000 serializers.py:164(_read_with_length)
+      200    0.000    0.000    0.002    0.000 serializers.py:145(load_stream)
+      200    0.000    0.000    0.000    0.000 rdd.py:338(func)
+      200    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+      200    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+      200    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+      200    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+      400    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+      200    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+      200    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+
+
+============================================================
+Profile of RDD<id=790>
+============================================================
+         3062 function calls (3061 primitive calls) in 0.005 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      200    0.001    0.000    0.003    0.000 serializers.py:396(dump_stream)
+      200    0.001    0.000    0.005    0.000 worker.py:370(process)
+      201    0.001    0.000    0.001    0.000 serializers.py:721(read_int)
+      200    0.001    0.000    0.001    0.000 serializers.py:354(load_stream)
+      201    0.000    0.000    0.001    0.000 serializers.py:164(_read_with_length)
+      201    0.000    0.000    0.002    0.000 serializers.py:145(load_stream)
+      200    0.000    0.000    0.000    0.000 rdd.py:338(func)
+      200    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+      200    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+      400    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+      202    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+      201    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+      201    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+      200    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+        1    0.000    0.000    0.000    0.000 types.py:467(__init__)
+        1    0.000    0.000    0.000    0.000 {built-in method _pickle.loads}
+        1    0.000    0.000    0.000    0.000 decoder.py:343(raw_decode)
+        1    0.000    0.000    0.000    0.000 types.py:823(_parse_datatype_json_string)
+        1    0.000    0.000    0.000    0.000 decoder.py:332(decode)
+        1    0.000    0.000    0.000    0.000 types.py:575(fromJson)
+        1    0.000    0.000    0.000    0.000 __init__.py:299(loads)
+        1    0.000    0.000    0.000    0.000 serializers.py:728(write_int)
+        1    0.000    0.000    0.000    0.000 types.py:1449(__new__)
+        1    0.000    0.000    0.000    0.000 {built-in method _pickle.dumps}
+      2/1    0.000    0.000    0.000    0.000 types.py:874(_parse_datatype_json_value)
+        1    0.000    0.000    0.000    0.000 types.py:624(fromInternal)
+        1    0.000    0.000    0.000    0.000 types.py:1401(_create_row)
+        1    0.000    0.000    0.000    0.000 types.py:431(fromJson)
+        2    0.000    0.000    0.000    0.000 {method 'write' of '_io.BufferedWriter' objects}
+        1    0.000    0.000    0.000    0.000 types.py:399(__init__)
+        1    0.000    0.000    0.000    0.000 serializers.py:586(loads)
+        1    0.000    0.000    0.000    0.000 types.py:1398(<lambda>)
+        1    0.000    0.000    0.000    0.000 types.py:577(<listcomp>)
+        1    0.000    0.000    0.000    0.000 serializers.py:582(dumps)
+        2    0.000    0.000    0.000    0.000 {method 'match' of 're.Pattern' objects}
+        2    0.000    0.000    0.000    0.000 {method 'end' of 're.Match' objects}
+        1    0.000    0.000    0.000    0.000 {built-in method builtins.all}
+        1    0.000    0.000    0.000    0.000 {built-in method builtins.any}
+        1    0.000    0.000    0.000    0.000 types.py:438(needConversion)
+        1    0.000    0.000    0.000    0.000 types.py:1542(__setattr__)
+        1    0.000    0.000    0.000    0.000 types.py:1397(_create_row_inbound_converter)
+        1    0.000    0.000    0.000    0.000 util.py:97(wrapper)
+        1    0.000    0.000    0.000    0.000 types.py:488(<listcomp>)
+        8    0.000    0.000    0.000    0.000 {built-in method builtins.isinstance}
+        4    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+        1    0.000    0.000    0.000    0.000 {method 'startswith' of 'str' objects}
+        1    0.000    0.000    0.000    0.000 {built-in method __new__ of type object at 0x55da653cc240}
+        1    0.000    0.000    0.000    0.000 {method 'keys' of 'dict' objects}
+        1    0.000    0.000    0.000    0.000 types.py:484(<listcomp>)
+        2    0.000    0.000    0.000    0.000 types.py:485(<genexpr>)
+        1    0.000    0.000    0.000    0.000 types.py:539(__iter__)
+        1    0.000    0.000    0.000    0.000 metric.py:244(<lambda>)
+        1    0.000    0.000    0.000    0.000 types.py:75(needConversion)
+        1    0.000    0.000    0.000    0.000 {built-in method _struct.pack}
+
+
+============================================================
+Profile of RDD<id=815>
+============================================================
+         3000 function calls in 0.005 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      200    0.001    0.000    0.003    0.000 serializers.py:396(dump_stream)
+      200    0.001    0.000    0.005    0.000 worker.py:370(process)
+      200    0.001    0.000    0.001    0.000 serializers.py:354(load_stream)
+      200    0.001    0.000    0.001    0.000 serializers.py:721(read_int)
+      200    0.000    0.000    0.001    0.000 serializers.py:164(_read_with_length)
+      200    0.000    0.000    0.001    0.000 serializers.py:145(load_stream)
+      200    0.000    0.000    0.000    0.000 rdd.py:338(func)
+      200    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+      200    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+      200    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+      200    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+      400    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+      200    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+      200    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+
+
+============================================================
+Profile of RDD<id=840>
+============================================================
+         3062 function calls (3061 primitive calls) in 0.005 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      200    0.001    0.000    0.003    0.000 serializers.py:396(dump_stream)
+      200    0.001    0.000    0.005    0.000 worker.py:370(process)
+      201    0.001    0.000    0.001    0.000 serializers.py:721(read_int)
+      200    0.001    0.000    0.001    0.000 serializers.py:354(load_stream)
+      200    0.000    0.000    0.001    0.000 rdd.py:338(func)
+      200    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+      201    0.000    0.000    0.001    0.000 serializers.py:164(_read_with_length)
+      201    0.000    0.000    0.002    0.000 serializers.py:145(load_stream)
+      200    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+      400    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+      201    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+      202    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+      201    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+      200    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+        1    0.000    0.000    0.000    0.000 {built-in method _pickle.loads}
+        1    0.000    0.000    0.000    0.000 types.py:467(__init__)
+        1    0.000    0.000    0.000    0.000 decoder.py:332(decode)
+        1    0.000    0.000    0.000    0.000 types.py:1449(__new__)
+        1    0.000    0.000    0.000    0.000 decoder.py:343(raw_decode)
+        1    0.000    0.000    0.000    0.000 types.py:823(_parse_datatype_json_string)
+        1    0.000    0.000    0.000    0.000 __init__.py:299(loads)
+      2/1    0.000    0.000    0.000    0.000 types.py:874(_parse_datatype_json_value)
+        1    0.000    0.000    0.000    0.000 serializers.py:728(write_int)
+        1    0.000    0.000    0.000    0.000 types.py:1401(_create_row)
+        1    0.000    0.000    0.000    0.000 types.py:431(fromJson)
+        1    0.000    0.000    0.000    0.000 types.py:399(__init__)
+        1    0.000    0.000    0.000    0.000 types.py:575(fromJson)
+        1    0.000    0.000    0.000    0.000 types.py:624(fromInternal)
+        1    0.000    0.000    0.000    0.000 types.py:577(<listcomp>)
+        1    0.000    0.000    0.000    0.000 serializers.py:582(dumps)
+        4    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+        1    0.000    0.000    0.000    0.000 types.py:438(needConversion)
+        1    0.000    0.000    0.000    0.000 types.py:1542(__setattr__)
+        1    0.000    0.000    0.000    0.000 {built-in method _pickle.dumps}
+        1    0.000    0.000    0.000    0.000 serializers.py:586(loads)
+        1    0.000    0.000    0.000    0.000 types.py:1398(<lambda>)
+        1    0.000    0.000    0.000    0.000 {built-in method builtins.all}
+        2    0.000    0.000    0.000    0.000 {method 'match' of 're.Pattern' objects}
+        8    0.000    0.000    0.000    0.000 {built-in method builtins.isinstance}
+        1    0.000    0.000    0.000    0.000 {method 'keys' of 'dict' objects}
+        2    0.000    0.000    0.000    0.000 types.py:485(<genexpr>)
+        1    0.000    0.000    0.000    0.000 types.py:1397(_create_row_inbound_converter)
+        1    0.000    0.000    0.000    0.000 metric.py:244(<lambda>)
+        1    0.000    0.000    0.000    0.000 types.py:488(<listcomp>)
+        1    0.000    0.000    0.000    0.000 types.py:539(__iter__)
+        1    0.000    0.000    0.000    0.000 util.py:97(wrapper)
+        2    0.000    0.000    0.000    0.000 {method 'write' of '_io.BufferedWriter' objects}
+        2    0.000    0.000    0.000    0.000 {method 'end' of 're.Match' objects}
+        1    0.000    0.000    0.000    0.000 {built-in method builtins.any}
+        1    0.000    0.000    0.000    0.000 {method 'startswith' of 'str' objects}
+        1    0.000    0.000    0.000    0.000 {built-in method __new__ of type object at 0x55da653cc240}
+        1    0.000    0.000    0.000    0.000 types.py:484(<listcomp>)
+        1    0.000    0.000    0.000    0.000 types.py:75(needConversion)
+        1    0.000    0.000    0.000    0.000 {built-in method _struct.pack}
+
+
+============================================================
+Profile of RDD<id=865>
+============================================================
+         3062 function calls (3061 primitive calls) in 0.005 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      200    0.001    0.000    0.003    0.000 serializers.py:396(dump_stream)
+      201    0.001    0.000    0.001    0.000 serializers.py:721(read_int)
+      200    0.001    0.000    0.005    0.000 worker.py:370(process)
+      200    0.001    0.000    0.001    0.000 serializers.py:354(load_stream)
+      201    0.000    0.000    0.001    0.000 serializers.py:164(_read_with_length)
+      201    0.000    0.000    0.002    0.000 serializers.py:145(load_stream)
+      200    0.000    0.000    0.000    0.000 rdd.py:338(func)
+      200    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+      200    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+      202    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+      400    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+      201    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+      201    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+      200    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+        1    0.000    0.000    0.000    0.000 {built-in method _pickle.loads}
+        1    0.000    0.000    0.000    0.000 decoder.py:343(raw_decode)
+        1    0.000    0.000    0.000    0.000 decoder.py:332(decode)
+      2/1    0.000    0.000    0.000    0.000 types.py:874(_parse_datatype_json_value)
+        1    0.000    0.000    0.000    0.000 types.py:467(__init__)
+        1    0.000    0.000    0.000    0.000 types.py:1449(__new__)
+        1    0.000    0.000    0.000    0.000 {built-in method _pickle.dumps}
+        1    0.000    0.000    0.000    0.000 types.py:823(_parse_datatype_json_string)
+        1    0.000    0.000    0.000    0.000 types.py:575(fromJson)
+        1    0.000    0.000    0.000    0.000 __init__.py:299(loads)
+        1    0.000    0.000    0.000    0.000 types.py:1398(<lambda>)
+        1    0.000    0.000    0.000    0.000 types.py:1401(_create_row)
+        1    0.000    0.000    0.000    0.000 serializers.py:728(write_int)
+        1    0.000    0.000    0.000    0.000 types.py:399(__init__)
+        1    0.000    0.000    0.000    0.000 serializers.py:586(loads)
+        1    0.000    0.000    0.000    0.000 types.py:577(<listcomp>)
+        1    0.000    0.000    0.000    0.000 types.py:431(fromJson)
+        1    0.000    0.000    0.000    0.000 serializers.py:582(dumps)
+        2    0.000    0.000    0.000    0.000 {method 'match' of 're.Pattern' objects}
+        1    0.000    0.000    0.000    0.000 {built-in method builtins.any}
+        8    0.000    0.000    0.000    0.000 {built-in method builtins.isinstance}
+        4    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+        1    0.000    0.000    0.000    0.000 {method 'startswith' of 'str' objects}
+        1    0.000    0.000    0.000    0.000 {built-in method __new__ of type object at 0x55da653cc240}
+        1    0.000    0.000    0.000    0.000 {method 'keys' of 'dict' objects}
+        1    0.000    0.000    0.000    0.000 types.py:438(needConversion)
+        1    0.000    0.000    0.000    0.000 types.py:484(<listcomp>)
+        2    0.000    0.000    0.000    0.000 types.py:485(<genexpr>)
+        1    0.000    0.000    0.000    0.000 types.py:539(__iter__)
+        1    0.000    0.000    0.000    0.000 types.py:1397(_create_row_inbound_converter)
+        1    0.000    0.000    0.000    0.000 {built-in method _struct.pack}
+        1    0.000    0.000    0.000    0.000 types.py:624(fromInternal)
+        1    0.000    0.000    0.000    0.000 {built-in method builtins.all}
+        1    0.000    0.000    0.000    0.000 types.py:488(<listcomp>)
+        2    0.000    0.000    0.000    0.000 {method 'write' of '_io.BufferedWriter' objects}
+        2    0.000    0.000    0.000    0.000 {method 'end' of 're.Match' objects}
+        1    0.000    0.000    0.000    0.000 types.py:1542(__setattr__)
+        1    0.000    0.000    0.000    0.000 metric.py:244(<lambda>)
+        1    0.000    0.000    0.000    0.000 types.py:75(needConversion)
+        1    0.000    0.000    0.000    0.000 util.py:97(wrapper)
+
+
+============================================================
+Profile of RDD<id=890>
+============================================================
+         3124 function calls (3122 primitive calls) in 0.005 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      200    0.001    0.000    0.003    0.000 serializers.py:396(dump_stream)
+      200    0.001    0.000    0.005    0.000 worker.py:370(process)
+      202    0.001    0.000    0.001    0.000 serializers.py:721(read_int)
+      200    0.001    0.000    0.001    0.000 serializers.py:354(load_stream)
+      202    0.000    0.000    0.001    0.000 serializers.py:164(_read_with_length)
+      202    0.000    0.000    0.002    0.000 serializers.py:145(load_stream)
+      200    0.000    0.000    0.001    0.000 rdd.py:338(func)
+      200    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+      200    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+      400    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+      204    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+      202    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+      202    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+        2    0.000    0.000    0.000    0.000 {built-in method _pickle.loads}
+      200    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+        2    0.000    0.000    0.000    0.000 types.py:467(__init__)
+        2    0.000    0.000    0.000    0.000 decoder.py:332(decode)
+        2    0.000    0.000    0.000    0.000 decoder.py:343(raw_decode)
+      4/2    0.000    0.000    0.000    0.000 types.py:874(_parse_datatype_json_value)
+        2    0.000    0.000    0.000    0.000 __init__.py:299(loads)
+        2    0.000    0.000    0.000    0.000 types.py:823(_parse_datatype_json_string)
+        2    0.000    0.000    0.000    0.000 types.py:1449(__new__)
+        2    0.000    0.000    0.000    0.000 types.py:575(fromJson)
+        2    0.000    0.000    0.000    0.000 types.py:431(fromJson)
+        2    0.000    0.000    0.000    0.000 types.py:1401(_create_row)
+        2    0.000    0.000    0.000    0.000 serializers.py:728(write_int)
+        4    0.000    0.000    0.000    0.000 {method 'match' of 're.Pattern' objects}
+        2    0.000    0.000    0.000    0.000 {built-in method _pickle.dumps}
+        2    0.000    0.000    0.000    0.000 types.py:399(__init__)
+        4    0.000    0.000    0.000    0.000 {method 'write' of '_io.BufferedWriter' objects}
+        2    0.000    0.000    0.000    0.000 types.py:438(needConversion)
+        2    0.000    0.000    0.000    0.000 types.py:1398(<lambda>)
+        2    0.000    0.000    0.000    0.000 serializers.py:582(dumps)
+       16    0.000    0.000    0.000    0.000 {built-in method builtins.isinstance}
+        2    0.000    0.000    0.000    0.000 types.py:1542(__setattr__)
+        2    0.000    0.000    0.000    0.000 serializers.py:586(loads)
+        2    0.000    0.000    0.000    0.000 types.py:624(fromInternal)
+        2    0.000    0.000    0.000    0.000 types.py:577(<listcomp>)
+        2    0.000    0.000    0.000    0.000 types.py:488(<listcomp>)
+        8    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+        2    0.000    0.000    0.000    0.000 {built-in method __new__ of type object at 0x55da653cc240}
+        4    0.000    0.000    0.000    0.000 types.py:485(<genexpr>)
+        2    0.000    0.000    0.000    0.000 util.py:97(wrapper)
+        2    0.000    0.000    0.000    0.000 {built-in method builtins.all}
+        2    0.000    0.000    0.000    0.000 {built-in method builtins.any}
+        2    0.000    0.000    0.000    0.000 types.py:539(__iter__)
+        2    0.000    0.000    0.000    0.000 types.py:1397(_create_row_inbound_converter)
+        4    0.000    0.000    0.000    0.000 {method 'end' of 're.Match' objects}
+        2    0.000    0.000    0.000    0.000 {method 'startswith' of 'str' objects}
+        2    0.000    0.000    0.000    0.000 {method 'keys' of 'dict' objects}
+        2    0.000    0.000    0.000    0.000 types.py:484(<listcomp>)
+        2    0.000    0.000    0.000    0.000 metric.py:244(<lambda>)
+        2    0.000    0.000    0.000    0.000 types.py:75(needConversion)
+        2    0.000    0.000    0.000    0.000 {built-in method _struct.pack}
+
+
+============================================================
+Profile of RDD<id=915>
+============================================================
+         3124 function calls (3122 primitive calls) in 0.005 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      200    0.001    0.000    0.003    0.000 serializers.py:396(dump_stream)
+      202    0.001    0.000    0.001    0.000 serializers.py:721(read_int)
+      200    0.001    0.000    0.005    0.000 worker.py:370(process)
+      200    0.001    0.000    0.001    0.000 serializers.py:354(load_stream)
+      202    0.000    0.000    0.001    0.000 serializers.py:164(_read_with_length)
+      202    0.000    0.000    0.002    0.000 serializers.py:145(load_stream)
+      200    0.000    0.000    0.000    0.000 rdd.py:338(func)
+      200    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+      200    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+      400    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+      204    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+      202    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+      202    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+      200    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+        2    0.000    0.000    0.000    0.000 {built-in method _pickle.loads}
+      4/2    0.000    0.000    0.000    0.000 types.py:874(_parse_datatype_json_value)
+        2    0.000    0.000    0.000    0.000 decoder.py:343(raw_decode)
+        2    0.000    0.000    0.000    0.000 __init__.py:299(loads)
+        2    0.000    0.000    0.000    0.000 decoder.py:332(decode)
+        2    0.000    0.000    0.000    0.000 types.py:467(__init__)
+        2    0.000    0.000    0.000    0.000 types.py:1449(__new__)
+        2    0.000    0.000    0.000    0.000 types.py:1401(_create_row)
+        2    0.000    0.000    0.000    0.000 types.py:823(_parse_datatype_json_string)
+        2    0.000    0.000    0.000    0.000 serializers.py:728(write_int)
+        4    0.000    0.000    0.000    0.000 {method 'match' of 're.Pattern' objects}
+        2    0.000    0.000    0.000    0.000 {built-in method _pickle.dumps}
+        2    0.000    0.000    0.000    0.000 types.py:577(<listcomp>)
+        2    0.000    0.000    0.000    0.000 types.py:431(fromJson)
+        2    0.000    0.000    0.000    0.000 types.py:399(__init__)
+        2    0.000    0.000    0.000    0.000 types.py:438(needConversion)
+        2    0.000    0.000    0.000    0.000 serializers.py:586(loads)
+        2    0.000    0.000    0.000    0.000 types.py:575(fromJson)
+        2    0.000    0.000    0.000    0.000 types.py:624(fromInternal)
+        2    0.000    0.000    0.000    0.000 serializers.py:582(dumps)
+        2    0.000    0.000    0.000    0.000 types.py:488(<listcomp>)
+        2    0.000    0.000    0.000    0.000 {built-in method builtins.all}
+       16    0.000    0.000    0.000    0.000 {built-in method builtins.isinstance}
+        4    0.000    0.000    0.000    0.000 {method 'end' of 're.Match' objects}
+        2    0.000    0.000    0.000    0.000 {built-in method builtins.any}
+        8    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+        2    0.000    0.000    0.000    0.000 {built-in method __new__ of type object at 0x55da653cc240}
+        2    0.000    0.000    0.000    0.000 types.py:484(<listcomp>)
+        4    0.000    0.000    0.000    0.000 types.py:485(<genexpr>)
+        2    0.000    0.000    0.000    0.000 types.py:539(__iter__)
+        2    0.000    0.000    0.000    0.000 types.py:1542(__setattr__)
+        2    0.000    0.000    0.000    0.000 types.py:1397(_create_row_inbound_converter)
+        2    0.000    0.000    0.000    0.000 {built-in method _struct.pack}
+        2    0.000    0.000    0.000    0.000 types.py:1398(<lambda>)
+        4    0.000    0.000    0.000    0.000 {method 'write' of '_io.BufferedWriter' objects}
+        2    0.000    0.000    0.000    0.000 {method 'startswith' of 'str' objects}
+        2    0.000    0.000    0.000    0.000 {method 'keys' of 'dict' objects}
+        2    0.000    0.000    0.000    0.000 metric.py:244(<lambda>)
+        2    0.000    0.000    0.000    0.000 types.py:75(needConversion)
+        2    0.000    0.000    0.000    0.000 util.py:97(wrapper)
+
+
+============================================================
+Profile of RDD<id=940>
+============================================================
+         3062 function calls (3061 primitive calls) in 0.005 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      200    0.001    0.000    0.003    0.000 serializers.py:396(dump_stream)
+      200    0.001    0.000    0.005    0.000 worker.py:370(process)
+      201    0.001    0.000    0.001    0.000 serializers.py:721(read_int)
+      200    0.001    0.000    0.001    0.000 serializers.py:354(load_stream)
+      201    0.000    0.000    0.001    0.000 serializers.py:164(_read_with_length)
+      201    0.000    0.000    0.002    0.000 serializers.py:145(load_stream)
+      200    0.000    0.000    0.000    0.000 rdd.py:338(func)
+      200    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+      200    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+      400    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+      201    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+      202    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+      201    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+      200    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+        1    0.000    0.000    0.000    0.000 {built-in method _pickle.loads}
+        1    0.000    0.000    0.000    0.000 decoder.py:343(raw_decode)
+      2/1    0.000    0.000    0.000    0.000 types.py:874(_parse_datatype_json_value)
+        1    0.000    0.000    0.000    0.000 decoder.py:332(decode)
+        1    0.000    0.000    0.000    0.000 types.py:467(__init__)
+        1    0.000    0.000    0.000    0.000 types.py:1449(__new__)
+        1    0.000    0.000    0.000    0.000 serializers.py:728(write_int)
+        1    0.000    0.000    0.000    0.000 types.py:823(_parse_datatype_json_string)
+        1    0.000    0.000    0.000    0.000 types.py:1398(<lambda>)
+        1    0.000    0.000    0.000    0.000 types.py:1401(_create_row)
+        1    0.000    0.000    0.000    0.000 types.py:431(fromJson)
+        1    0.000    0.000    0.000    0.000 serializers.py:582(dumps)
+        1    0.000    0.000    0.000    0.000 {built-in method _pickle.dumps}
+        1    0.000    0.000    0.000    0.000 serializers.py:586(loads)
+        1    0.000    0.000    0.000    0.000 types.py:575(fromJson)
+        1    0.000    0.000    0.000    0.000 __init__.py:299(loads)
+        1    0.000    0.000    0.000    0.000 types.py:624(fromInternal)
+        1    0.000    0.000    0.000    0.000 types.py:577(<listcomp>)
+        1    0.000    0.000    0.000    0.000 types.py:488(<listcomp>)
+        2    0.000    0.000    0.000    0.000 {method 'match' of 're.Pattern' objects}
+        2    0.000    0.000    0.000    0.000 {method 'end' of 're.Match' objects}
+        1    0.000    0.000    0.000    0.000 {built-in method builtins.all}
+        1    0.000    0.000    0.000    0.000 {method 'startswith' of 'str' objects}
+        1    0.000    0.000    0.000    0.000 {built-in method __new__ of type object at 0x55da653cc240}
+        1    0.000    0.000    0.000    0.000 types.py:399(__init__)
+        1    0.000    0.000    0.000    0.000 types.py:539(__iter__)
+        1    0.000    0.000    0.000    0.000 types.py:1397(_create_row_inbound_converter)
+        1    0.000    0.000    0.000    0.000 types.py:75(needConversion)
+        1    0.000    0.000    0.000    0.000 types.py:438(needConversion)
+        2    0.000    0.000    0.000    0.000 {method 'write' of '_io.BufferedWriter' objects}
+        1    0.000    0.000    0.000    0.000 {built-in method builtins.any}
+        8    0.000    0.000    0.000    0.000 {built-in method builtins.isinstance}
+        4    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+        1    0.000    0.000    0.000    0.000 {method 'keys' of 'dict' objects}
+        1    0.000    0.000    0.000    0.000 types.py:484(<listcomp>)
+        2    0.000    0.000    0.000    0.000 types.py:485(<genexpr>)
+        1    0.000    0.000    0.000    0.000 types.py:1542(__setattr__)
+        1    0.000    0.000    0.000    0.000 metric.py:244(<lambda>)
+        1    0.000    0.000    0.000    0.000 util.py:97(wrapper)
+        1    0.000    0.000    0.000    0.000 {built-in method _struct.pack}
+
+
+============================================================
+Profile of RDD<id=965>
+============================================================
+         3124 function calls (3122 primitive calls) in 0.005 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      200    0.001    0.000    0.003    0.000 serializers.py:396(dump_stream)
+      202    0.001    0.000    0.001    0.000 serializers.py:721(read_int)
+      200    0.001    0.000    0.005    0.000 worker.py:370(process)
+      200    0.001    0.000    0.001    0.000 serializers.py:354(load_stream)
+      202    0.000    0.000    0.001    0.000 serializers.py:164(_read_with_length)
+      200    0.000    0.000    0.001    0.000 rdd.py:338(func)
+      202    0.000    0.000    0.002    0.000 serializers.py:145(load_stream)
+      200    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+      200    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+      400    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+      202    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+      204    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+      202    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+        2    0.000    0.000    0.000    0.000 {built-in method _pickle.loads}
+        2    0.000    0.000    0.000    0.000 decoder.py:332(decode)
+      200    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+        2    0.000    0.000    0.000    0.000 decoder.py:343(raw_decode)
+      4/2    0.000    0.000    0.000    0.000 types.py:874(_parse_datatype_json_value)
+        2    0.000    0.000    0.000    0.000 __init__.py:299(loads)
+        2    0.000    0.000    0.000    0.000 types.py:467(__init__)
+        2    0.000    0.000    0.000    0.000 types.py:823(_parse_datatype_json_string)
+        2    0.000    0.000    0.000    0.000 types.py:1449(__new__)
+        2    0.000    0.000    0.000    0.000 types.py:1401(_create_row)
+        2    0.000    0.000    0.000    0.000 serializers.py:728(write_int)
+        2    0.000    0.000    0.000    0.000 types.py:575(fromJson)
+        2    0.000    0.000    0.000    0.000 types.py:431(fromJson)
+        2    0.000    0.000    0.000    0.000 types.py:399(__init__)
+        2    0.000    0.000    0.000    0.000 {built-in method _pickle.dumps}
+        4    0.000    0.000    0.000    0.000 {method 'match' of 're.Pattern' objects}
+        2    0.000    0.000    0.000    0.000 types.py:1398(<lambda>)
+        2    0.000    0.000    0.000    0.000 types.py:624(fromInternal)
+        2    0.000    0.000    0.000    0.000 types.py:577(<listcomp>)
+        2    0.000    0.000    0.000    0.000 types.py:438(needConversion)
+        2    0.000    0.000    0.000    0.000 serializers.py:586(loads)
+        2    0.000    0.000    0.000    0.000 serializers.py:582(dumps)
+        2    0.000    0.000    0.000    0.000 types.py:488(<listcomp>)
+        4    0.000    0.000    0.000    0.000 {method 'write' of '_io.BufferedWriter' objects}
+       16    0.000    0.000    0.000    0.000 {built-in method builtins.isinstance}
+        2    0.000    0.000    0.000    0.000 {built-in method __new__ of type object at 0x55da653cc240}
+        2    0.000    0.000    0.000    0.000 types.py:484(<listcomp>)
+        4    0.000    0.000    0.000    0.000 types.py:485(<genexpr>)
+        2    0.000    0.000    0.000    0.000 types.py:1542(__setattr__)
+        2    0.000    0.000    0.000    0.000 types.py:539(__iter__)
+        4    0.000    0.000    0.000    0.000 {method 'end' of 're.Match' objects}
+        2    0.000    0.000    0.000    0.000 {built-in method builtins.any}
+        2    0.000    0.000    0.000    0.000 {method 'startswith' of 'str' objects}
+        2    0.000    0.000    0.000    0.000 types.py:75(needConversion)
+        2    0.000    0.000    0.000    0.000 {built-in method _struct.pack}
+        2    0.000    0.000    0.000    0.000 {built-in method builtins.all}
+        8    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+        2    0.000    0.000    0.000    0.000 {method 'keys' of 'dict' objects}
+        2    0.000    0.000    0.000    0.000 types.py:1397(_create_row_inbound_converter)
+        2    0.000    0.000    0.000    0.000 metric.py:244(<lambda>)
+        2    0.000    0.000    0.000    0.000 util.py:97(wrapper)
+
+
+============================================================
+Profile of RDD<id=990>
+============================================================
+         3000 function calls in 0.005 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      200    0.001    0.000    0.003    0.000 serializers.py:396(dump_stream)
+      200    0.001    0.000    0.005    0.000 worker.py:370(process)
+      200    0.001    0.000    0.001    0.000 serializers.py:354(load_stream)
+      200    0.001    0.000    0.001    0.000 serializers.py:721(read_int)
+      200    0.000    0.000    0.001    0.000 serializers.py:164(_read_with_length)
+      200    0.000    0.000    0.002    0.000 serializers.py:145(load_stream)
+      200    0.000    0.000    0.000    0.000 rdd.py:338(func)
+      200    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+      200    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+      400    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+      200    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+      200    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+      200    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+      200    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+
+
+============================================================
+Profile of RDD<id=1015>
+============================================================
+         3000 function calls in 0.004 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      200    0.001    0.000    0.002    0.000 serializers.py:396(dump_stream)
+      200    0.001    0.000    0.004    0.000 worker.py:370(process)
+      200    0.001    0.000    0.001    0.000 serializers.py:721(read_int)
+      200    0.001    0.000    0.001    0.000 serializers.py:354(load_stream)
+      200    0.000    0.000    0.001    0.000 serializers.py:164(_read_with_length)
+      200    0.000    0.000    0.001    0.000 serializers.py:145(load_stream)
+      200    0.000    0.000    0.000    0.000 rdd.py:338(func)
+      200    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+      200    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+      200    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+      400    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+      200    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+      200    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+      200    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+
+
+============================================================
+Profile of RDD<id=1040>
+============================================================
+         3124 function calls (3122 primitive calls) in 0.005 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      200    0.001    0.000    0.003    0.000 serializers.py:396(dump_stream)
+      200    0.001    0.000    0.005    0.000 worker.py:370(process)
+      202    0.001    0.000    0.001    0.000 serializers.py:721(read_int)
+      200    0.001    0.000    0.001    0.000 serializers.py:354(load_stream)
+      202    0.000    0.000    0.001    0.000 serializers.py:164(_read_with_length)
+      202    0.000    0.000    0.002    0.000 serializers.py:145(load_stream)
+      200    0.000    0.000    0.000    0.000 rdd.py:338(func)
+      200    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+      200    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+      400    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+      204    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+      202    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+      202    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+      200    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+        2    0.000    0.000    0.000    0.000 {built-in method _pickle.loads}
+        2    0.000    0.000    0.000    0.000 decoder.py:343(raw_decode)
+        2    0.000    0.000    0.000    0.000 types.py:467(__init__)
+      4/2    0.000    0.000    0.000    0.000 types.py:874(_parse_datatype_json_value)
+        2    0.000    0.000    0.000    0.000 __init__.py:299(loads)
+        2    0.000    0.000    0.000    0.000 types.py:1449(__new__)
+        2    0.000    0.000    0.000    0.000 decoder.py:332(decode)
+        2    0.000    0.000    0.000    0.000 serializers.py:728(write_int)
+        2    0.000    0.000    0.000    0.000 {built-in method _pickle.dumps}
+        2    0.000    0.000    0.000    0.000 types.py:823(_parse_datatype_json_string)
+        2    0.000    0.000    0.000    0.000 types.py:575(fromJson)
+        2    0.000    0.000    0.000    0.000 types.py:1401(_create_row)
+        2    0.000    0.000    0.000    0.000 types.py:431(fromJson)
+        2    0.000    0.000    0.000    0.000 types.py:488(<listcomp>)
+        2    0.000    0.000    0.000    0.000 types.py:399(__init__)
+        4    0.000    0.000    0.000    0.000 {method 'match' of 're.Pattern' objects}
+        4    0.000    0.000    0.000    0.000 {method 'end' of 're.Match' objects}
+       16    0.000    0.000    0.000    0.000 {built-in method builtins.isinstance}
+        2    0.000    0.000    0.000    0.000 serializers.py:586(loads)
+        2    0.000    0.000    0.000    0.000 types.py:624(fromInternal)
+        2    0.000    0.000    0.000    0.000 types.py:577(<listcomp>)
+        2    0.000    0.000    0.000    0.000 serializers.py:582(dumps)
+        2    0.000    0.000    0.000    0.000 {built-in method builtins.all}
+        8    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+        2    0.000    0.000    0.000    0.000 types.py:539(__iter__)
+        2    0.000    0.000    0.000    0.000 types.py:1398(<lambda>)
+        2    0.000    0.000    0.000    0.000 types.py:438(needConversion)
+        2    0.000    0.000    0.000    0.000 util.py:97(wrapper)
+        4    0.000    0.000    0.000    0.000 {method 'write' of '_io.BufferedWriter' objects}
+        2    0.000    0.000    0.000    0.000 {built-in method __new__ of type object at 0x55da653cc240}
+        4    0.000    0.000    0.000    0.000 types.py:485(<genexpr>)
+        2    0.000    0.000    0.000    0.000 types.py:1542(__setattr__)
+        2    0.000    0.000    0.000    0.000 types.py:1397(_create_row_inbound_converter)
+        2    0.000    0.000    0.000    0.000 metric.py:244(<lambda>)
+        2    0.000    0.000    0.000    0.000 types.py:75(needConversion)
+        2    0.000    0.000    0.000    0.000 {built-in method _struct.pack}
+        2    0.000    0.000    0.000    0.000 {built-in method builtins.any}
+        2    0.000    0.000    0.000    0.000 {method 'startswith' of 'str' objects}
+        2    0.000    0.000    0.000    0.000 {method 'keys' of 'dict' objects}
+        2    0.000    0.000    0.000    0.000 types.py:484(<listcomp>)
+
+
+============================================================
+Profile of RDD<id=1065>
+============================================================
+         3000 function calls in 0.005 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      200    0.001    0.000    0.003    0.000 serializers.py:396(dump_stream)
+      200    0.001    0.000    0.005    0.000 worker.py:370(process)
+      200    0.001    0.000    0.001    0.000 serializers.py:721(read_int)
+      200    0.001    0.000    0.001    0.000 serializers.py:354(load_stream)
+      200    0.000    0.000    0.001    0.000 serializers.py:164(_read_with_length)
+      200    0.000    0.000    0.002    0.000 serializers.py:145(load_stream)
+      200    0.000    0.000    0.001    0.000 rdd.py:338(func)
+      200    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+      200    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+      400    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+      200    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+      200    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+      200    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+      200    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+
+
+============================================================
+Profile of RDD<id=1081>
+============================================================
+         472 function calls in 0.001 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+       12    0.000    0.000    0.000    0.000 serializers.py:396(dump_stream)
+       28    0.000    0.000    0.000    0.000 serializers.py:164(_read_with_length)
+       28    0.000    0.000    0.000    0.000 serializers.py:721(read_int)
+       12    0.000    0.000    0.001    0.000 worker.py:370(process)
+       16    0.000    0.000    0.000    0.000 {built-in method _pickle.dumps}
+       12    0.000    0.000    0.000    0.000 serializers.py:354(load_stream)
+       16    0.000    0.000    0.000    0.000 serializers.py:728(write_int)
+       28    0.000    0.000    0.000    0.000 serializers.py:145(load_stream)
+       16    0.000    0.000    0.000    0.000 {built-in method _pickle.loads}
+       16    0.000    0.000    0.000    0.000 serializers.py:586(loads)
+       16    0.000    0.000    0.000    0.000 serializers.py:582(dumps)
+       12    0.000    0.000    0.000    0.000 rdd.py:323(func)
+       16    0.000    0.000    0.000    0.000 util.py:97(wrapper)
+       12    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+       12    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+       28    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+       44    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+       32    0.000    0.000    0.000    0.000 {method 'write' of '_io.BufferedWriter' objects}
+       16    0.000    0.000    0.000    0.000 {built-in method _struct.pack}
+       12    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+       12    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+       12    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+       48    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+       16    0.000    0.000    0.000    0.000 rdd.py:594(<lambda>)
+
+
+============================================================
+Profile of RDD<id=1098>
+============================================================
+         183 function calls (173 primitive calls) in 0.000 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    0.000    0.000 decoder.py:343(raw_decode)
+        1    0.000    0.000    0.000    0.000 serializers.py:396(dump_stream)
+        1    0.000    0.000    0.000    0.000 {built-in method _pickle.loads}
+     11/1    0.000    0.000    0.000    0.000 types.py:874(_parse_datatype_json_value)
+       10    0.000    0.000    0.000    0.000 types.py:431(fromJson)
+       10    0.000    0.000    0.000    0.000 types.py:399(__init__)
+        1    0.000    0.000    0.000    0.000 decoder.py:332(decode)
+        1    0.000    0.000    0.000    0.000 types.py:467(__init__)
+        2    0.000    0.000    0.000    0.000 serializers.py:164(_read_with_length)
+        1    0.000    0.000    0.000    0.000 __init__.py:299(loads)
+        1    0.000    0.000    0.000    0.000 types.py:1401(_create_row)
+        2    0.000    0.000    0.000    0.000 serializers.py:721(read_int)
+       53    0.000    0.000    0.000    0.000 {built-in method builtins.isinstance}
+        1    0.000    0.000    0.000    0.000 serializers.py:586(loads)
+        1    0.000    0.000    0.000    0.000 types.py:577(<listcomp>)
+        1    0.000    0.000    0.000    0.000 types.py:488(<listcomp>)
+        1    0.000    0.000    0.000    0.000 types.py:1449(__new__)
+        1    0.000    0.000    0.000    0.000 serializers.py:354(load_stream)
+        2    0.000    0.000    0.000    0.000 {method 'match' of 're.Pattern' objects}
+       10    0.000    0.000    0.000    0.000 types.py:438(needConversion)
+       11    0.000    0.000    0.000    0.000 types.py:485(<genexpr>)
+        1    0.000    0.000    0.000    0.000 worker.py:370(process)
+        1    0.000    0.000    0.000    0.000 types.py:823(_parse_datatype_json_string)
+        1    0.000    0.000    0.000    0.000 serializers.py:582(dumps)
+        1    0.000    0.000    0.000    0.000 serializers.py:728(write_int)
+       10    0.000    0.000    0.000    0.000 {method 'keys' of 'dict' objects}
+        1    0.000    0.000    0.000    0.000 rdd.py:323(func)
+        1    0.000    0.000    0.000    0.000 {built-in method _pickle.dumps}
+        2    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+        2    0.000    0.000    0.000    0.000 serializers.py:145(load_stream)
+        1    0.000    0.000    0.000    0.000 types.py:575(fromJson)
+        1    0.000    0.000    0.000    0.000 types.py:1398(<lambda>)
+        1    0.000    0.000    0.000    0.000 types.py:624(fromInternal)
+        2    0.000    0.000    0.000    0.000 {method 'write' of '_io.BufferedWriter' objects}
+        1    0.000    0.000    0.000    0.000 {method 'startswith' of 'str' objects}
+        1    0.000    0.000    0.000    0.000 {built-in method __new__ of type object at 0x55da653cc240}
+        1    0.000    0.000    0.000    0.000 types.py:484(<listcomp>)
+        1    0.000    0.000    0.000    0.000 types.py:539(__iter__)
+        1    0.000    0.000    0.000    0.000 types.py:1542(__setattr__)
+        1    0.000    0.000    0.000    0.000 types.py:1397(_create_row_inbound_converter)
+        1    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+        1    0.000    0.000    0.000    0.000 {built-in method _struct.pack}
+        1    0.000    0.000    0.000    0.000 {built-in method builtins.all}
+        3    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+        1    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+        2    0.000    0.000    0.000    0.000 {method 'end' of 're.Match' objects}
+        1    0.000    0.000    0.000    0.000 {built-in method builtins.any}
+        2    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+        4    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+        1    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+       10    0.000    0.000    0.000    0.000 types.py:75(needConversion)
+        1    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+        1    0.000    0.000    0.000    0.000 util.py:97(wrapper)
+
+
+============================================================
+Profile of RDD<id=1100>
+============================================================
+         358 function calls in 0.001 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+       12    0.000    0.000    0.000    0.000 serializers.py:396(dump_stream)
+       22    0.000    0.000    0.000    0.000 serializers.py:721(read_int)
+       22    0.000    0.000    0.000    0.000 serializers.py:164(_read_with_length)
+       12    0.000    0.000    0.001    0.000 worker.py:370(process)
+       12    0.000    0.000    0.000    0.000 serializers.py:354(load_stream)
+       10    0.000    0.000    0.000    0.000 {built-in method _pickle.dumps}
+       10    0.000    0.000    0.000    0.000 serializers.py:728(write_int)
+       22    0.000    0.000    0.000    0.000 serializers.py:145(load_stream)
+       10    0.000    0.000    0.000    0.000 serializers.py:582(dumps)
+       12    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+       12    0.000    0.000    0.000    0.000 rdd.py:323(func)
+       10    0.000    0.000    0.000    0.000 serializers.py:586(loads)
+       12    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+       10    0.000    0.000    0.000    0.000 {built-in method _pickle.loads}
+       20    0.000    0.000    0.000    0.000 {method 'write' of '_io.BufferedWriter' objects}
+       10    0.000    0.000    0.000    0.000 util.py:97(wrapper)
+       22    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+       12    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+       32    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+       10    0.000    0.000    0.000    0.000 {built-in method _struct.pack}
+       12    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+       12    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+       10    0.000    0.000    0.000    0.000 rdd.py:594(<lambda>)
+       30    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+
+
+============================================================
+Profile of RDD<id=1296>
+============================================================
+         491 function calls in 0.001 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+       12    0.000    0.000    0.001    0.000 serializers.py:396(dump_stream)
+       29    0.000    0.000    0.000    0.000 serializers.py:721(read_int)
+       29    0.000    0.000    0.000    0.000 serializers.py:164(_read_with_length)
+       17    0.000    0.000    0.000    0.000 {built-in method _pickle.dumps}
+       12    0.000    0.000    0.000    0.000 serializers.py:354(load_stream)
+       12    0.000    0.000    0.001    0.000 worker.py:370(process)
+       17    0.000    0.000    0.000    0.000 serializers.py:728(write_int)
+       29    0.000    0.000    0.000    0.000 serializers.py:145(load_stream)
+       17    0.000    0.000    0.000    0.000 {built-in method _pickle.loads}
+       17    0.000    0.000    0.000    0.000 serializers.py:582(dumps)
+       17    0.000    0.000    0.000    0.000 serializers.py:586(loads)
+       12    0.000    0.000    0.000    0.000 rdd.py:323(func)
+       17    0.000    0.000    0.000    0.000 util.py:97(wrapper)
+       34    0.000    0.000    0.000    0.000 {method 'write' of '_io.BufferedWriter' objects}
+       46    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+       12    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+       29    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+       12    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+       17    0.000    0.000    0.000    0.000 {built-in method _struct.pack}
+       12    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+       12    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+       51    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+       17    0.000    0.000    0.000    0.000 rdd.py:594(<lambda>)
+       12    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+
+
+============================================================
+Profile of RDD<id=1332>
+============================================================
+         147 function calls (140 primitive calls) in 0.000 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    0.000    0.000 serializers.py:396(dump_stream)
+        1    0.000    0.000    0.000    0.000 {built-in method _pickle.loads}
+        1    0.000    0.000    0.000    0.000 decoder.py:343(raw_decode)
+      8/1    0.000    0.000    0.000    0.000 types.py:874(_parse_datatype_json_value)
+        1    0.000    0.000    0.000    0.000 decoder.py:332(decode)
+        7    0.000    0.000    0.000    0.000 types.py:399(__init__)
+        1    0.000    0.000    0.000    0.000 types.py:467(__init__)
+        3    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+        7    0.000    0.000    0.000    0.000 types.py:431(fromJson)
+        1    0.000    0.000    0.000    0.000 types.py:1449(__new__)
+        2    0.000    0.000    0.000    0.000 serializers.py:164(_read_with_length)
+        1    0.000    0.000    0.000    0.000 types.py:823(_parse_datatype_json_string)
+        2    0.000    0.000    0.000    0.000 serializers.py:721(read_int)
+        1    0.000    0.000    0.000    0.000 worker.py:370(process)
+        1    0.000    0.000    0.000    0.000 types.py:577(<listcomp>)
+        1    0.000    0.000    0.000    0.000 __init__.py:299(loads)
+        1    0.000    0.000    0.000    0.000 serializers.py:354(load_stream)
+        1    0.000    0.000    0.000    0.000 serializers.py:728(write_int)
+       38    0.000    0.000    0.000    0.000 {built-in method builtins.isinstance}
+        7    0.000    0.000    0.000    0.000 types.py:438(needConversion)
+        1    0.000    0.000    0.000    0.000 {built-in method _pickle.dumps}
+        1    0.000    0.000    0.000    0.000 serializers.py:586(loads)
+        1    0.000    0.000    0.000    0.000 types.py:624(fromInternal)
+        1    0.000    0.000    0.000    0.000 types.py:1401(_create_row)
+        1    0.000    0.000    0.000    0.000 types.py:488(<listcomp>)
+        1    0.000    0.000    0.000    0.000 {built-in method builtins.all}
+        2    0.000    0.000    0.000    0.000 {method 'match' of 're.Pattern' objects}
+        7    0.000    0.000    0.000    0.000 {method 'keys' of 'dict' objects}
+        2    0.000    0.000    0.000    0.000 serializers.py:145(load_stream)
+        1    0.000    0.000    0.000    0.000 types.py:575(fromJson)
+        1    0.000    0.000    0.000    0.000 serializers.py:582(dumps)
+        8    0.000    0.000    0.000    0.000 types.py:485(<genexpr>)
+        1    0.000    0.000    0.000    0.000 rdd.py:323(func)
+        2    0.000    0.000    0.000    0.000 {method 'write' of '_io.BufferedWriter' objects}
+        1    0.000    0.000    0.000    0.000 {method 'startswith' of 'str' objects}
+        1    0.000    0.000    0.000    0.000 types.py:484(<listcomp>)
+        1    0.000    0.000    0.000    0.000 types.py:1542(__setattr__)
+        1    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+        1    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+        1    0.000    0.000    0.000    0.000 util.py:97(wrapper)
+        1    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+        2    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+        1    0.000    0.000    0.000    0.000 types.py:1398(<lambda>)
+        1    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+        2    0.000    0.000    0.000    0.000 {method 'end' of 're.Match' objects}
+        1    0.000    0.000    0.000    0.000 {built-in method builtins.any}
+        2    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+        4    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+        1    0.000    0.000    0.000    0.000 {built-in method __new__ of type object at 0x55da653cc240}
+        1    0.000    0.000    0.000    0.000 types.py:539(__iter__)
+        1    0.000    0.000    0.000    0.000 types.py:1397(_create_row_inbound_converter)
+        7    0.000    0.000    0.000    0.000 types.py:75(needConversion)
+        1    0.000    0.000    0.000    0.000 {built-in method _struct.pack}
+
+
+============================================================
+Profile of RDD<id=1334>
+============================================================
+         301 function calls in 0.001 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+       12    0.000    0.000    0.000    0.000 serializers.py:396(dump_stream)
+       12    0.000    0.000    0.000    0.000 serializers.py:354(load_stream)
+       19    0.000    0.000    0.000    0.000 serializers.py:164(_read_with_length)
+       19    0.000    0.000    0.000    0.000 serializers.py:721(read_int)
+       12    0.000    0.000    0.001    0.000 worker.py:370(process)
+        7    0.000    0.000    0.000    0.000 {built-in method _pickle.dumps}
+        7    0.000    0.000    0.000    0.000 serializers.py:728(write_int)
+       19    0.000    0.000    0.000    0.000 serializers.py:145(load_stream)
+       12    0.000    0.000    0.000    0.000 rdd.py:323(func)
+       12    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+       12    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+        7    0.000    0.000    0.000    0.000 serializers.py:586(loads)
+        7    0.000    0.000    0.000    0.000 serializers.py:582(dumps)
+        7    0.000    0.000    0.000    0.000 {built-in method _pickle.loads}
+        7    0.000    0.000    0.000    0.000 util.py:97(wrapper)
+       19    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+       26    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+       14    0.000    0.000    0.000    0.000 {method 'write' of '_io.BufferedWriter' objects}
+       12    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+       21    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+       12    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+       12    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+        7    0.000    0.000    0.000    0.000 {built-in method _struct.pack}
+        7    0.000    0.000    0.000    0.000 rdd.py:594(<lambda>)
+
+
+============================================================
+Profile of RDD<id=1343>
+============================================================
+         180 function calls in 0.000 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+       12    0.000    0.000    0.000    0.000 serializers.py:354(load_stream)
+       12    0.000    0.000    0.000    0.000 serializers.py:396(dump_stream)
+       12    0.000    0.000    0.000    0.000 worker.py:370(process)
+       12    0.000    0.000    0.000    0.000 serializers.py:721(read_int)
+       12    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+       12    0.000    0.000    0.000    0.000 serializers.py:145(load_stream)
+       12    0.000    0.000    0.000    0.000 rdd.py:338(func)
+       12    0.000    0.000    0.000    0.000 serializers.py:164(_read_with_length)
+       12    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+       12    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+       12    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+       24    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+       12    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+       12    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+
+
+============================================================
+Profile of RDD<id=1524>
+============================================================
+         301 function calls in 0.001 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+       12    0.000    0.000    0.000    0.000 serializers.py:396(dump_stream)
+       19    0.000    0.000    0.000    0.000 serializers.py:721(read_int)
+       12    0.000    0.000    0.000    0.000 serializers.py:354(load_stream)
+       12    0.000    0.000    0.001    0.000 worker.py:370(process)
+       19    0.000    0.000    0.000    0.000 serializers.py:164(_read_with_length)
+        7    0.000    0.000    0.000    0.000 util.py:97(wrapper)
+        7    0.000    0.000    0.000    0.000 serializers.py:728(write_int)
+        7    0.000    0.000    0.000    0.000 {built-in method _pickle.dumps}
+       19    0.000    0.000    0.000    0.000 serializers.py:145(load_stream)
+       12    0.000    0.000    0.000    0.000 rdd.py:323(func)
+       12    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+        7    0.000    0.000    0.000    0.000 serializers.py:582(dumps)
+        7    0.000    0.000    0.000    0.000 {built-in method _pickle.loads}
+       12    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+        7    0.000    0.000    0.000    0.000 serializers.py:586(loads)
+       26    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+       12    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+       19    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+       14    0.000    0.000    0.000    0.000 {method 'write' of '_io.BufferedWriter' objects}
+       21    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+        7    0.000    0.000    0.000    0.000 {built-in method _struct.pack}
+       12    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+        7    0.000    0.000    0.000    0.000 rdd.py:594(<lambda>)
+       12    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+
+
+============================================================
+Profile of RDD<id=1572>
+============================================================
+         3682 function calls (3671 primitive calls) in 0.006 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      200    0.001    0.000    0.004    0.000 serializers.py:396(dump_stream)
+      200    0.001    0.000    0.006    0.000 worker.py:370(process)
+      211    0.001    0.000    0.001    0.000 serializers.py:721(read_int)
+      200    0.001    0.000    0.001    0.000 serializers.py:354(load_stream)
+      211    0.000    0.000    0.002    0.000 serializers.py:164(_read_with_length)
+      200    0.000    0.000    0.001    0.000 rdd.py:338(func)
+      211    0.000    0.000    0.003    0.000 serializers.py:145(load_stream)
+      200    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+       11    0.000    0.000    0.001    0.000 {built-in method _pickle.loads}
+      200    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+       11    0.000    0.000    0.000    0.000 types.py:467(__init__)
+       11    0.000    0.000    0.000    0.000 decoder.py:343(raw_decode)
+    22/11    0.000    0.000    0.000    0.000 types.py:874(_parse_datatype_json_value)
+      222    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+      211    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+       11    0.000    0.000    0.000    0.000 decoder.py:332(decode)
+      400    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+       11    0.000    0.000    0.000    0.000 __init__.py:299(loads)
+       11    0.000    0.000    0.001    0.000 types.py:823(_parse_datatype_json_string)
+      211    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+       11    0.000    0.000    0.000    0.000 types.py:1401(_create_row)
+       11    0.000    0.000    0.000    0.000 types.py:1449(__new__)
+       11    0.000    0.000    0.000    0.000 serializers.py:728(write_int)
+       11    0.000    0.000    0.000    0.000 {built-in method _pickle.dumps}
+       22    0.000    0.000    0.000    0.000 {method 'match' of 're.Pattern' objects}
+       11    0.000    0.000    0.000    0.000 types.py:399(__init__)
+       11    0.000    0.000    0.000    0.000 types.py:431(fromJson)
+       11    0.000    0.000    0.000    0.000 types.py:575(fromJson)
+       11    0.000    0.000    0.000    0.000 types.py:577(<listcomp>)
+       11    0.000    0.000    0.000    0.000 types.py:1542(__setattr__)
+       11    0.000    0.000    0.000    0.000 types.py:624(fromInternal)
+       11    0.000    0.000    0.000    0.000 types.py:438(needConversion)
+      200    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+       11    0.000    0.000    0.000    0.000 types.py:488(<listcomp>)
+       11    0.000    0.000    0.001    0.000 serializers.py:586(loads)
+       11    0.000    0.000    0.000    0.000 serializers.py:582(dumps)
+       22    0.000    0.000    0.000    0.000 {method 'write' of '_io.BufferedWriter' objects}
+       11    0.000    0.000    0.000    0.000 types.py:1398(<lambda>)
+       11    0.000    0.000    0.000    0.000 {built-in method builtins.all}
+       11    0.000    0.000    0.000    0.000 types.py:1397(_create_row_inbound_converter)
+       88    0.000    0.000    0.000    0.000 {built-in method builtins.isinstance}
+       22    0.000    0.000    0.000    0.000 types.py:485(<genexpr>)
+       11    0.000    0.000    0.000    0.000 types.py:539(__iter__)
+       11    0.000    0.000    0.000    0.000 util.py:97(wrapper)
+       44    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+       11    0.000    0.000    0.000    0.000 {built-in method __new__ of type object at 0x55da653cc240}
+       11    0.000    0.000    0.000    0.000 {method 'keys' of 'dict' objects}
+       11    0.000    0.000    0.000    0.000 {built-in method _struct.pack}
+       11    0.000    0.000    0.000    0.000 {method 'startswith' of 'str' objects}
+       22    0.000    0.000    0.000    0.000 {method 'end' of 're.Match' objects}
+       11    0.000    0.000    0.000    0.000 types.py:484(<listcomp>)
+       11    0.000    0.000    0.000    0.000 {built-in method builtins.any}
+       11    0.000    0.000    0.000    0.000 metric.py:565(<lambda>)
+       11    0.000    0.000    0.000    0.000 types.py:75(needConversion)
+
+
+============================================================
+Profile of RDD<id=1722>
+============================================================
+         491 function calls in 0.001 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+       12    0.000    0.000    0.001    0.000 serializers.py:396(dump_stream)
+       29    0.000    0.000    0.000    0.000 serializers.py:164(_read_with_length)
+       17    0.000    0.000    0.000    0.000 {built-in method _pickle.dumps}
+       29    0.000    0.000    0.000    0.000 serializers.py:721(read_int)
+       12    0.000    0.000    0.001    0.000 worker.py:370(process)
+       12    0.000    0.000    0.000    0.000 serializers.py:354(load_stream)
+       17    0.000    0.000    0.000    0.000 serializers.py:728(write_int)
+       17    0.000    0.000    0.000    0.000 {built-in method _pickle.loads}
+       29    0.000    0.000    0.000    0.000 serializers.py:145(load_stream)
+       17    0.000    0.000    0.000    0.000 serializers.py:582(dumps)
+       17    0.000    0.000    0.000    0.000 serializers.py:586(loads)
+       12    0.000    0.000    0.000    0.000 rdd.py:323(func)
+       17    0.000    0.000    0.000    0.000 util.py:97(wrapper)
+       34    0.000    0.000    0.000    0.000 {method 'write' of '_io.BufferedWriter' objects}
+       12    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+       29    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+       46    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+       17    0.000    0.000    0.000    0.000 {built-in method _struct.pack}
+       12    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+       12    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+       51    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+       12    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+       17    0.000    0.000    0.000    0.000 rdd.py:594(<lambda>)
+       12    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+
+
+============================================================
+Profile of RDD<id=1758>
+============================================================
+         267 function calls (250 primitive calls) in 0.000 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    0.000    0.000 decoder.py:343(raw_decode)
+        1    0.000    0.000    0.000    0.000 {built-in method _pickle.loads}
+       17    0.000    0.000    0.000    0.000 types.py:399(__init__)
+       17    0.000    0.000    0.000    0.000 types.py:431(fromJson)
+     18/1    0.000    0.000    0.000    0.000 types.py:874(_parse_datatype_json_value)
+       88    0.000    0.000    0.000    0.000 {built-in method builtins.isinstance}
+        1    0.000    0.000    0.000    0.000 serializers.py:396(dump_stream)
+        2    0.000    0.000    0.000    0.000 serializers.py:164(_read_with_length)
+        1    0.000    0.000    0.000    0.000 types.py:577(<listcomp>)
+        1    0.000    0.000    0.000    0.000 decoder.py:332(decode)
+        1    0.000    0.000    0.000    0.000 types.py:467(__init__)
+       17    0.000    0.000    0.000    0.000 types.py:438(needConversion)
+        1    0.000    0.000    0.000    0.000 types.py:823(_parse_datatype_json_string)
+        1    0.000    0.000    0.000    0.000 worker.py:370(process)
+        1    0.000    0.000    0.000    0.000 types.py:575(fromJson)
+        1    0.000    0.000    0.000    0.000 __init__.py:299(loads)
+        1    0.000    0.000    0.000    0.000 types.py:488(<listcomp>)
+        1    0.000    0.000    0.000    0.000 types.py:1401(_create_row)
+        2    0.000    0.000    0.000    0.000 serializers.py:721(read_int)
+        1    0.000    0.000    0.000    0.000 types.py:1449(__new__)
+        1    0.000    0.000    0.000    0.000 serializers.py:354(load_stream)
+        1    0.000    0.000    0.000    0.000 {built-in method builtins.all}
+       18    0.000    0.000    0.000    0.000 types.py:485(<genexpr>)
+        1    0.000    0.000    0.000    0.000 serializers.py:728(write_int)
+        2    0.000    0.000    0.000    0.000 {method 'match' of 're.Pattern' objects}
+       17    0.000    0.000    0.000    0.000 {method 'keys' of 'dict' objects}
+       17    0.000    0.000    0.000    0.000 types.py:75(needConversion)
+        1    0.000    0.000    0.000    0.000 {built-in method _pickle.dumps}
+        1    0.000    0.000    0.000    0.000 serializers.py:582(dumps)
+        2    0.000    0.000    0.000    0.000 serializers.py:145(load_stream)
+        1    0.000    0.000    0.000    0.000 serializers.py:586(loads)
+        1    0.000    0.000    0.000    0.000 types.py:1398(<lambda>)
+        1    0.000    0.000    0.000    0.000 types.py:624(fromInternal)
+        1    0.000    0.000    0.000    0.000 rdd.py:323(func)
+        3    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+        2    0.000    0.000    0.000    0.000 {method 'write' of '_io.BufferedWriter' objects}
+        1    0.000    0.000    0.000    0.000 {method 'startswith' of 'str' objects}
+        1    0.000    0.000    0.000    0.000 {built-in method __new__ of type object at 0x55da653cc240}
+        1    0.000    0.000    0.000    0.000 types.py:484(<listcomp>)
+        1    0.000    0.000    0.000    0.000 types.py:539(__iter__)
+        1    0.000    0.000    0.000    0.000 types.py:1542(__setattr__)
+        1    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+        1    0.000    0.000    0.000    0.000 util.py:97(wrapper)
+        1    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+        1    0.000    0.000    0.000    0.000 {built-in method _struct.pack}
+        2    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+        1    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+        2    0.000    0.000    0.000    0.000 {method 'end' of 're.Match' objects}
+        1    0.000    0.000    0.000    0.000 {built-in method builtins.any}
+        2    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+        4    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+        1    0.000    0.000    0.000    0.000 types.py:1397(_create_row_inbound_converter)
+        1    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+
+
+============================================================
+Profile of RDD<id=1760>
+============================================================
+         491 function calls in 0.001 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+       12    0.000    0.000    0.001    0.000 serializers.py:396(dump_stream)
+       29    0.000    0.000    0.000    0.000 serializers.py:164(_read_with_length)
+       29    0.000    0.000    0.000    0.000 serializers.py:721(read_int)
+       12    0.000    0.000    0.000    0.000 serializers.py:354(load_stream)
+       17    0.000    0.000    0.000    0.000 {built-in method _pickle.dumps}
+       12    0.000    0.000    0.001    0.000 worker.py:370(process)
+       17    0.000    0.000    0.000    0.000 serializers.py:728(write_int)
+       29    0.000    0.000    0.000    0.000 serializers.py:145(load_stream)
+       17    0.000    0.000    0.000    0.000 {built-in method _pickle.loads}
+       17    0.000    0.000    0.000    0.000 serializers.py:582(dumps)
+       17    0.000    0.000    0.000    0.000 util.py:97(wrapper)
+       17    0.000    0.000    0.000    0.000 serializers.py:586(loads)
+       12    0.000    0.000    0.000    0.000 rdd.py:323(func)
+       12    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+       34    0.000    0.000    0.000    0.000 {method 'write' of '_io.BufferedWriter' objects}
+       29    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+       46    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+       12    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+       17    0.000    0.000    0.000    0.000 {built-in method _struct.pack}
+       12    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+       51    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+       17    0.000    0.000    0.000    0.000 rdd.py:594(<lambda>)
+       12    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+       12    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+
+
+============================================================
+Profile of RDD<id=1911>
+============================================================
+         620519 function calls (620421 primitive calls) in 0.251 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+    16281    0.103    0.000    0.149    0.000 {built-in method numpy.array}
+   130248    0.034    0.000    0.047    0.000 types.py:1529(__getattr__)
+   130262    0.013    0.000    0.013    0.000 {method 'startswith' of 'str' objects}
+    16281    0.012    0.000    0.164    0.000 __init__.py:287(__init__)
+       25    0.010    0.000    0.014    0.001 {built-in method _pickle.dumps}
+        1    0.009    0.009    0.251    0.251 serializers.py:396(dump_stream)
+    16281    0.009    0.000    0.178    0.000 __init__.py:873(dense)
+    81923    0.009    0.000    0.009    0.000 {built-in method builtins.isinstance}
+       14    0.007    0.001    0.035    0.002 {built-in method _pickle.loads}
+    16281    0.007    0.000    0.016    0.000 types.py:1401(_create_row)
+    32562    0.007    0.000    0.192    0.000 util.py:97(wrapper)
+    16281    0.005    0.000    0.022    0.000 types.py:624(fromInternal)
+    16281    0.004    0.000    0.182    0.000 metric.py:720(<lambda>)
+    16281    0.003    0.000    0.003    0.000 {built-in method __new__ of type object at 0x55da653cc240}
+    16281    0.003    0.000    0.006    0.000 types.py:1449(__new__)
+    16281    0.003    0.000    0.004    0.000 __init__.py:318(__reduce__)
+    16281    0.003    0.000    0.025    0.000 types.py:1398(<lambda>)
+    16281    0.003    0.000    0.004    0.000 __init__.py:70(_convert_to_vector)
+    16281    0.003    0.000    0.003    0.000 types.py:1542(__setattr__)
+    16281    0.002    0.000    0.002    0.000 types.py:1397(_create_row_inbound_converter)
+    16281    0.001    0.000    0.001    0.000 {method 'tostring' of 'numpy.ndarray' objects}
+    16359    0.001    0.000    0.001    0.000 {built-in method builtins.len}
+       50    0.001    0.000    0.001    0.000 {method 'write' of '_io.BufferedWriter' objects}
+       29    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+       14    0.000    0.000    0.000    0.000 decoder.py:343(raw_decode)
+       98    0.000    0.000    0.000    0.000 types.py:399(__init__)
+       98    0.000    0.000    0.000    0.000 types.py:431(fromJson)
+   112/14    0.000    0.000    0.000    0.000 types.py:874(_parse_datatype_json_value)
+       14    0.000    0.000    0.000    0.000 types.py:467(__init__)
+       25    0.000    0.000    0.000    0.000 serializers.py:728(write_int)
+       14    0.000    0.000    0.001    0.000 types.py:823(_parse_datatype_json_string)
+       14    0.000    0.000    0.000    0.000 types.py:577(<listcomp>)
+        1    0.000    0.000    0.251    0.251 worker.py:370(process)
+       98    0.000    0.000    0.000    0.000 types.py:438(needConversion)
+       28    0.000    0.000    0.000    0.000 {method 'match' of 're.Pattern' objects}
+       15    0.000    0.000    0.035    0.002 serializers.py:164(_read_with_length)
+       14    0.000    0.000    0.000    0.000 __init__.py:299(loads)
+       14    0.000    0.000    0.000    0.000 decoder.py:332(decode)
+      112    0.000    0.000    0.000    0.000 types.py:485(<genexpr>)
+       15    0.000    0.000    0.000    0.000 serializers.py:721(read_int)
+       25    0.000    0.000    0.014    0.001 serializers.py:582(dumps)
+       14    0.000    0.000    0.000    0.000 types.py:488(<listcomp>)
+       98    0.000    0.000    0.000    0.000 {method 'keys' of 'dict' objects}
+       15    0.000    0.000    0.035    0.002 serializers.py:145(load_stream)
+       14    0.000    0.000    0.000    0.000 types.py:575(fromJson)
+       25    0.000    0.000    0.000    0.000 {built-in method _struct.pack}
+       14    0.000    0.000    0.035    0.002 serializers.py:586(loads)
+       14    0.000    0.000    0.000    0.000 {built-in method builtins.all}
+       98    0.000    0.000    0.000    0.000 types.py:75(needConversion)
+       15    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+       14    0.000    0.000    0.000    0.000 types.py:484(<listcomp>)
+       14    0.000    0.000    0.000    0.000 types.py:539(__iter__)
+       28    0.000    0.000    0.000    0.000 {method 'end' of 're.Match' objects}
+       15    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+        1    0.000    0.000    0.000    0.000 serializers.py:354(load_stream)
+       14    0.000    0.000    0.000    0.000 {built-in method builtins.any}
+        1    0.000    0.000    0.000    0.000 rdd.py:2498(pipeline_func)
+        2    0.000    0.000    0.000    0.000 rdd.py:323(func)
+        1    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+        1    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+        1    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+        2    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+
+
+============================================================
+Profile of RDD<id=1915>
+============================================================
+         301 function calls in 0.000 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+       12    0.000    0.000    0.000    0.000 serializers.py:396(dump_stream)
+       12    0.000    0.000    0.000    0.000 serializers.py:354(load_stream)
+       19    0.000    0.000    0.000    0.000 serializers.py:721(read_int)
+       12    0.000    0.000    0.000    0.000 worker.py:370(process)
+       19    0.000    0.000    0.000    0.000 serializers.py:164(_read_with_length)
+       19    0.000    0.000    0.000    0.000 serializers.py:145(load_stream)
+        7    0.000    0.000    0.000    0.000 serializers.py:728(write_int)
+        7    0.000    0.000    0.000    0.000 {built-in method _pickle.dumps}
+       12    0.000    0.000    0.000    0.000 rdd.py:323(func)
+        7    0.000    0.000    0.000    0.000 serializers.py:582(dumps)
+       12    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+        7    0.000    0.000    0.000    0.000 serializers.py:586(loads)
+       12    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+        7    0.000    0.000    0.000    0.000 {built-in method _pickle.loads}
+       26    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+        7    0.000    0.000    0.000    0.000 util.py:97(wrapper)
+       12    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+       14    0.000    0.000    0.000    0.000 {method 'write' of '_io.BufferedWriter' objects}
+       19    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+        7    0.000    0.000    0.000    0.000 {built-in method _struct.pack}
+       21    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+       12    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+       12    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+        7    0.000    0.000    0.000    0.000 rdd.py:594(<lambda>)
+
+
+============================================================
+Profile of RDD<id=1996>
+============================================================
+         301 function calls in 0.000 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+       12    0.000    0.000    0.000    0.000 serializers.py:396(dump_stream)
+       19    0.000    0.000    0.000    0.000 serializers.py:721(read_int)
+       12    0.000    0.000    0.000    0.000 serializers.py:354(load_stream)
+       12    0.000    0.000    0.000    0.000 worker.py:370(process)
+       19    0.000    0.000    0.000    0.000 serializers.py:164(_read_with_length)
+       19    0.000    0.000    0.000    0.000 serializers.py:145(load_stream)
+        7    0.000    0.000    0.000    0.000 serializers.py:728(write_int)
+        7    0.000    0.000    0.000    0.000 {built-in method _pickle.dumps}
+       12    0.000    0.000    0.000    0.000 rdd.py:323(func)
+       12    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+        7    0.000    0.000    0.000    0.000 serializers.py:582(dumps)
+        7    0.000    0.000    0.000    0.000 {built-in method _pickle.loads}
+       12    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+       26    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+        7    0.000    0.000    0.000    0.000 serializers.py:586(loads)
+       14    0.000    0.000    0.000    0.000 {method 'write' of '_io.BufferedWriter' objects}
+        7    0.000    0.000    0.000    0.000 util.py:97(wrapper)
+       19    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+       12    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+       12    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+       12    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+        7    0.000    0.000    0.000    0.000 {built-in method _struct.pack}
+       21    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+        7    0.000    0.000    0.000    0.000 rdd.py:594(<lambda>)
+
+
+============================================================
+Profile of RDD<id=2010>
+============================================================
+         282 function calls in 0.000 seconds
+
+   Ordered by: internal time, cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+       12    0.000    0.000    0.000    0.000 serializers.py:396(dump_stream)
+       18    0.000    0.000    0.000    0.000 serializers.py:721(read_int)
+       12    0.000    0.000    0.000    0.000 worker.py:370(process)
+       12    0.000    0.000    0.000    0.000 serializers.py:354(load_stream)
+       18    0.000    0.000    0.000    0.000 serializers.py:164(_read_with_length)
+        6    0.000    0.000    0.000    0.000 serializers.py:728(write_int)
+       18    0.000    0.000    0.000    0.000 serializers.py:145(load_stream)
+        6    0.000    0.000    0.000    0.000 {built-in method _pickle.dumps}
+       12    0.000    0.000    0.000    0.000 rdd.py:323(func)
+       12    0.000    0.000    0.000    0.000 serializers.py:357(_load_stream_without_unbatching)
+        6    0.000    0.000    0.000    0.000 serializers.py:582(dumps)
+       12    0.000    0.000    0.000    0.000 util.py:92(fail_on_stopiteration)
+       24    0.000    0.000    0.000    0.000 {method 'read' of '_io.BufferedReader' objects}
+       18    0.000    0.000    0.000    0.000 {built-in method _struct.unpack}
+        6    0.000    0.000    0.000    0.000 serializers.py:586(loads)
+        6    0.000    0.000    0.000    0.000 {built-in method _pickle.loads}
+        6    0.000    0.000    0.000    0.000 util.py:97(wrapper)
+       12    0.000    0.000    0.000    0.000 {built-in method from_iterable}
+       12    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+       12    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+        6    0.000    0.000    0.000    0.000 {built-in method _struct.pack}
+       12    0.000    0.000    0.000    0.000 {method 'write' of '_io.BufferedWriter' objects}
+       18    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+        6    0.000    0.000    0.000    0.000 rdd.py:594(<lambda>)
+
+
