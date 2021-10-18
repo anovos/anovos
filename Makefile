@@ -42,6 +42,5 @@ build: clean
 	cd ./dist && zip -r com.zip ./com
 	cd ./dist && tar -cvzf com.tar.gz ./com
 	cp -rf ./data/income_dataset ./dist/data/income_dataset
-	pip3 install -r requirements.txt --no-cache-dir
 	cp ./bin/remove_overheads.sh ./dist
 	cp ./bin/spark-submit.sh ./dist

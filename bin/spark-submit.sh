@@ -1,6 +1,6 @@
 #!/bin/bash
 
-nohup sh remove_overheads.sh 10000 1 &
+nohup ./remove_overheads.sh 10000 1 &
 
 spark-submit \
 --deploy-mode client \
@@ -28,7 +28,7 @@ main.py \
 configs.yaml \
 local
 
-nohup sh remove_overheads.sh 10000 2 &
+nohup ./remove_overheads.sh 10000 2 &
 
 echo "Generating anovos final report.... "
 python3 com/mw/ds/data_report/report_gen_final.py
