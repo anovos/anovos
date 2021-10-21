@@ -1,8 +1,8 @@
-import pyspark
-from pyspark.sql import functions as F
-from pyspark.sql import types as T
-from com.mw.ds.shared.spark import *
 from itertools import chain
+
+from com.mw.ds.shared.spark import *
+from pyspark.sql import functions as F
+
 
 def flatten_dataframe(idf, fixed_cols):
     """
@@ -15,6 +15,7 @@ def flatten_dataframe(idf, fixed_cols):
     odf = idf.select(*fixed_cols, F.explode(key_and_val))
     return odf
 
+
 def transpose_dataframe(idf, fixed_col):
     """
     :param idf: Input Dataframe
@@ -26,6 +27,7 @@ def transpose_dataframe(idf, fixed_col):
     odf = idf_flatten.groupBy('key').pivot(fixed_col).agg(F.first('value'))
     return odf
 
+
 def attributeType_segregation(idf):
     """
     :param idf: Input Dataframe
@@ -33,18 +35,19 @@ def attributeType_segregation(idf):
     """
     cat_cols = []
     num_cols = []
-    other_cols= []
+    other_cols = []
 
     for i in idf.dtypes:
         if i[1] == 'string':
             cat_cols.append(i[0])
-        elif (i[1] in ('double', 'int', 'bigint', 'float','long')) | (i[1].startswith('decimal')):
+        elif (i[1] in ('double', 'int', 'bigint', 'float', 'long')) | (i[1].startswith('decimal')):
             num_cols.append(i[0])
         else:
             other_cols.append(i[0])
     return num_cols, cat_cols, other_cols
 
-def get_dtype(idf,col):
+
+def get_dtype(idf, col):
     """
     :param idf: Input Dataframe
     :param col: Column Name for datatype detection

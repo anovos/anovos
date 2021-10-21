@@ -1,11 +1,12 @@
-import __main__
 from os import environ
-from pyspark import SparkContext, SparkConf, SQLContext
+
+import __main__
+from pyspark import SQLContext
 from pyspark.sql import SparkSession
 
+
 def init_spark(app_name='mw_ml_ingest', master='local[*]', jar_packages=[],
-                py_files=[], spark_configs={}):
-    
+               py_files=[], spark_configs={}):
     """
     :param app_name: Name of Spark app.
     :param master: Cluster connection details (defaults to local[*])
@@ -15,9 +16,9 @@ def init_spark(app_name='mw_ml_ingest', master='local[*]', jar_packages=[],
     :param spark_config: Dictionary of config key-value pairs.
     :return: A tuple of references to the Spark Session, Spark Context & SQL Context.
     """
-    
+
     # detect execution environment
-    flag_repl = not(hasattr(__main__, '__file__'))
+    flag_repl = not (hasattr(__main__, '__file__'))
     flag_debug = 'DEBUG' in environ.keys()
 
     if not (flag_repl or flag_debug):
@@ -38,18 +39,18 @@ def init_spark(app_name='mw_ml_ingest', master='local[*]', jar_packages=[],
 
     # create spark session and contexts
     spark = spark_builder.getOrCreate()
-    sc = spark.sparkContext 
+    sc = spark.sparkContext
     sqlContext = SQLContext(sc)
-    
+
     return spark, sc, sqlContext
 
 
-configs = {'app_name': 'MW_ML_pipeline', 
-           'jar_packages': ["io.github.histogrammar:histogrammar_2.11:1.0.20",
-                            "io.github.histogrammar:histogrammar-sparksql_2.11:1.0.20",
-                            "org.apache.spark:spark-avro_2.11:2.4.0"], 
-           'py_files': [], 
+configs = {'app_name': 'MW_ML_pipeline',
+           # 'jar_packages': ["io.github.histogrammar:histogrammar_2.11:1.0.20",
+           #                  "io.github.histogrammar:histogrammar-sparksql_2.11:1.0.20",
+           #                  "org.apache.spark:spark-avro_2.11:2.4.0"],
+           'py_files': [],
            'spark_configs': {'spark.sql.session.timeZone': 'GMT',
-                            'spark.python.profile': 'true'}}
+                             'spark.python.profile': 'false'}}
 
 spark, sc, sqlContext = init_spark(**configs)

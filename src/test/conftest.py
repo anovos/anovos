@@ -1,9 +1,10 @@
+import sys
+
 import pytest
 from pyspark.sql import SparkSession
-import os
-import copy
-import sys
+
 sys.path.insert(0, './dist/com.zip')
+
 
 @pytest.fixture(scope="session")
 def spark_session():

@@ -1,12 +1,11 @@
+#Following are the list of required dependencies to run ANOVOS
+#Refer READMe file for required python, spark and Java versions
 pandas==1.1.5
 scipy
-#--upgrade --no-deps --force-reinstall scikit-learn
 scikit-learn
 joblib
 boto3
-fuzzywuzzy
-#pyarrow==0.14.1 #latest version throw module error for Cython
-pyarrow==3.0.0 
+pyarrow==3.0.0
 sparkpickle
 s3path
 statsmodels
@@ -15,6 +14,6 @@ popmon
 seaborn
 varclushi
 pytest
-datapane
+datapane==0.12.0
 numpy==1.18.1
 plotly==5.2.1
