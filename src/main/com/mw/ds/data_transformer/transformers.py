@@ -16,6 +16,7 @@ from scipy import stats
 
 
 def attribute_binning(idf, list_of_cols='all', drop_cols=[], method_type="equal_range", bin_size=10,
+                      bin_dtype="numerical",
                       pre_existing_model=False, model_path="NA", output_mode="replace", print_impact=False):
     """
     :params idf: Input Dataframe
@@ -24,6 +25,7 @@ def attribute_binning(idf, list_of_cols='all', drop_cols=[], method_type="equal_
     :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
     :params method_type: equal_frequency, equal_range
     :params bin_size: No of bins
+    :params bin_dtype: numerical, categorical - bin label as integer or range ("upperval-lowerval")
     :params pre_existing_model: True if mapping values exists already, False Otherwise. 
     :params model_path: If pre_existing_model is True, this argument is path for the pre-saved model. 
                   If pre_existing_model is False, this argument can be used for saving the model. 
@@ -91,12 +93,25 @@ def attribute_binning(idf, list_of_cols='all', drop_cols=[], method_type="equal_
             return None
         for j in range(0, len(bin_cutoffs[index])):
             if value <= bin_cutoffs[index][j]:
-                return j + 1
+                if bin_dtype == "numerical":
+                    return j + 1
+                else:
+                    if j == 0:
+                        return "<= " + str(round(bin_cutoffs[index][j], 4))
+                    else:
+                        return str(round(bin_cutoffs[index][j - 1], 4)) + "-" + str(round(bin_cutoffs[index][j], 4))
             else:
                 next
-        return len(bin_cutoffs[0]) + 1
 
-    f_bucket_label = F.udf(bucket_label, T.IntegerType())
+        if bin_dtype == "numerical":
+            return len(bin_cutoffs[0]) + 1
+        else:
+            return "> " + str(round(bin_cutoffs[index][len(bin_cutoffs[0]) - 1], 4))
+
+    if bin_dtype == "numerical":
+        f_bucket_label = F.udf(bucket_label, T.IntegerType())
+    else:
+        f_bucket_label = F.udf(bucket_label, T.StringType())
 
     odf = idf
     for idx, i in enumerate(list_of_cols):
@@ -118,8 +133,8 @@ def attribute_binning(idf, list_of_cols='all', drop_cols=[], method_type="equal_
     return odf
 
 
-def monotonic_encoding(idf, list_of_cols='all', drop_cols=[], label_col='label',
-                       event_label=1, bin_method="equal_frequency", bin_size=10):
+def monotonic_binning(idf, list_of_cols='all', drop_cols=[], label_col='label', event_label=1,
+                      bin_method="equal_range", bin_size=10, bin_dtype="numerical", output_mode="replace"):
     """
     :params idf: Input Dataframe
     :params list_of_cols: Numerical columns (in list format or string separated by |)
@@ -129,6 +144,8 @@ def monotonic_encoding(idf, list_of_cols='all', drop_cols=[], label_col='label',
     :params event_label: Value of event (binary classfication)
     :params bin_method: equal_frequency, equal_range
     :params bin_size: No of bins
+    :params bin_dtype: numerical, categorical - bin label as integer or range ("upperval-lowerval")
+    :params output_mode: replace or append
     :return: Binned Dataframe
     """
     num_cols = attributeType_segregation(idf)[0]
@@ -147,7 +164,7 @@ def monotonic_encoding(idf, list_of_cols='all', drop_cols=[], label_col='label',
     attribute_binning(idf, list_of_cols='all', drop_cols=[], method_type="equal_range", bin_size=10,
                       pre_existing_model=False, model_path="NA", output_mode="replace", print_impact=False)
 
-    idf_encoded = idf
+    odf = idf
     for col in list_of_cols:
         n = 20  # max_bin
         r = 0
@@ -160,14 +177,16 @@ def monotonic_encoding(idf, list_of_cols='all', drop_cols=[], label_col='label',
             # r = tmp.stat.corr('mean_age','mean_label')
             r, p = stats.spearmanr(tmp.toPandas()[['mean_val']], tmp.toPandas()[['mean_label']])
             if r == 1.0:
-                idf_encoded = attribute_binning(idf_encoded, [col], drop_cols=[], method_type=bin_method, bin_size=n)
+                odf = attribute_binning(odf, [col], drop_cols=[], method_type=bin_method, bin_size=n,
+                                        bin_dtype=bin_dtype, output_mode=output_mode)
                 break
             n = n - 1
             r = 0
         if r < 1.0:
-            idf_encoded = attribute_binning(idf_encoded, [col], drop_cols=[], method_type=bin_method, bin_size=bin_size)
+            odf = attribute_binning(odf, [col], drop_cols=[], method_type=bin_method, bin_size=bin_size,
+                                    bin_dtype=bin_dtype, output_mode=output_mode)
 
-    return idf_encoded
+    return odf
 
 
 def cat_to_num_unsupervised(idf, list_of_cols='all', drop_cols=[], method_type=1, index_order='frequencyDesc',

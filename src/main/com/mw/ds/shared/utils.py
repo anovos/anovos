@@ -54,3 +54,23 @@ def get_dtype(idf, col):
     :return: data type
     """
     return [dtype for name, dtype in idf.dtypes if name == col][0]
+
+def ends_with(string, end_str="/"):
+    """
+    :param string: "s3:mw-bucket"
+    :param end_str: "/"
+    :return: "s3:mw-bucket/"
+    """
+    string = str(string)
+    if string.endswith(end_str):
+        return string
+    return string + end_str
+
+
+def pairwise_reduce(op, x):
+    while len(x) > 1:
+        v = [op(i, j) for i, j in zip(x[::2], x[1::2])]
+        if len(x) > 1 and len(x) % 2 == 1:
+            v[-1] = op(v[-1], x[-1])
+        x = v
+    return x[0]
