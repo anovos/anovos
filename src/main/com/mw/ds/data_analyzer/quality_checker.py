@@ -292,6 +292,11 @@ def outlier_detection(idf, list_of_cols='all', drop_cols=[], detection_side='upp
         detection_configs['pctile_upper'] = detection_configs['pctile_upper'] or 1.0
         pctile_params = idf.approxQuantile(list_of_cols, [detection_configs['pctile_lower'],
                                                           detection_configs['pctile_upper']], 0.01)
+        skewed_cols = []
+        for i, p in zip(list_of_cols,pctile_params):
+            if p[0] == p[1]:
+                skewed_cols.append(i)
+
         detection_configs['stdev_lower'] = detection_configs['stdev_lower'] or detection_configs['stdev_upper']
         detection_configs['stdev_upper'] = detection_configs['stdev_upper'] or detection_configs['stdev_lower']
         stdev_params = []
@@ -345,18 +350,26 @@ def outlier_detection(idf, list_of_cols='all', drop_cols=[], detection_side='upp
             [i, odf.where(F.col(i + "_outliered") == -1).count(), odf.where(F.col(i + "_outliered") == 1).count()])
 
         if treatment & (treatment_method in ('value_replacement', 'null_replacement')):
-            replace_vals = {'value_replacement': [params[index][0], params[index][1]], 'null_replacement': [None, None]}
-            odf = odf.withColumn(i + "_outliered", F.when(F.col(i + "_outliered") == 1, replace_vals[treatment_method][1]) \
-                                 .otherwise(F.when(F.col(i + "_outliered") == -1, replace_vals[treatment_method][0]) \
-                                            .otherwise(F.col(i))))
-            if output_mode == 'replace':
-                odf = odf.drop(i).withColumnRenamed(i + "_outliered", i)
+            warnings.warn("Columns dropped from outlier treatment due to highly skewed distribution: " + (',').join(skewed_cols))
+            if i not in skewed_cols:
+                replace_vals = {'value_replacement': [params[index][0], params[index][1]], 'null_replacement': [None, None]}
+                odf = odf.withColumn(i + "_outliered", F.when(F.col(i + "_outliered") == 1, replace_vals[treatment_method][1]) \
+                                     .otherwise(F.when(F.col(i + "_outliered") == -1, replace_vals[treatment_method][0]) \
+                                                .otherwise(F.col(i))))
+                if output_mode == 'replace':
+                    odf = odf.drop(i).withColumnRenamed(i + "_outliered", i)
+            else:
+                odf = odf.drop(i + "_outliered")
 
     odf = odf.drop("outliered")
 
     if treatment & (treatment_method == 'row_removal'):
+        warnings.warn("Columns dropped from outlier treatment due to highly skewed distribution: " + (',').join(skewed_cols))
         for index, i in enumerate(list_of_cols):
-            odf = odf.where((F.col(i + "_outliered") == 0) | (F.col(i + "_outliered").isNull())).drop(i + "_outliered")
+            if i not in skewed_cols:
+                odf = odf.where((F.col(i + "_outliered") == 0) | (F.col(i + "_outliered").isNull())).drop(i + "_outliered")
+            else:
+                odf = odf.drop(i + "_outliered")
 
     if not (treatment):
         odf = idf

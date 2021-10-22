@@ -1,6 +1,7 @@
 from com.mw.ds.shared.spark import *
 from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
+from com.mw.ds.shared.utils import pairwise_reduce
 
 
 def read_dataset(file_path, file_type, file_configs={}):
@@ -39,15 +40,6 @@ def write_dataset(idf, file_path, file_type, file_configs={}):
             idf.repartition(req_parts).write.format(file_type).options(**file_configs).save(file_path, mode=mode)
         else:
             idf.coalesce(req_parts).write.format(file_type).options(**file_configs).save(file_path, mode=mode)
-
-
-def pairwise_reduce(op, x):
-    while len(x) > 1:
-        v = [op(i, j) for i, j in zip(x[::2], x[1::2])]
-        if len(x) > 1 and len(x) % 2 == 1:
-            v[-1] = op(v[-1], x[-1])
-        x = v
-    return x[0]
 
 
 def concatenate_dataset(*idfs, method_type='name'):
@@ -108,9 +100,9 @@ def select_column(idf, list_of_cols, print_impact=False):
     odf = idf.select(list_of_cols)
 
     if print_impact:
-        print("Before: \nNo. of Columns- ", len(idf.columns))
+        print("Before: \nNo. of Columns-", len(idf.columns))
         print(idf.columns)
-        print("After: \nNo. of Columns- ", len(odf.columns))
+        print("\nAfter: \nNo. of Columns-", len(odf.columns))
         print(odf.columns)
     return odf
 
