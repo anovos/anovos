@@ -108,15 +108,15 @@ quality_checker:
     drop_cols: ['ifa','income']
     detection_side: upper
     detection_configs:
-      pctile_lower: 0.05
-      pctile_upper: 0.95
+      pctile_lower: 0.02
+      pctile_upper: 0.98
       stdev_lower: 3.0
       stdev_upper: 3.0
       IQR_lower: 1.5
       IQR_upper: 1.5
       min_validation: 2
     treatment: True
-    treatment_type: value_replacement
+    treatment_method: value_replacement
     pre_existing_model: False
     model_path: NA
     output_mode: replace

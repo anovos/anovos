@@ -98,11 +98,10 @@ def drift_statistics(idf_target, idf_source, list_of_cols='all', drop_cols=[], m
         if pre_existing_source:
             x = spark.read.csv(source_path + "/drift_statistics/frequency_counts" + i, header=True, inferSchema=True)
         else:
-            x = source_bin.groupBy(i).agg((F.count(i) / idf_source.count()).alias('p')).fillna(-1)
-            if source_path != "NA":
-                x.coalesce(1).write.csv(source_path + "/drift_statistics/frequency_counts" + i, header=True,
-                                        mode='overwrite')
+            x = source_bin.groupBy(i).agg((F.count(i) / idf_source.count()).alias('p'))
+            x.coalesce(1).write.csv(source_path + "/drift_statistics/frequency_counts" + i, header=True, mode='overwrite')
 
+        x = x.fillna(-1)
         y = target_bin.groupBy(i).agg((F.count(i) / idf_target.count()).alias('q')).fillna(-1)
 
         xy = x.join(y, i, 'full_outer').fillna(0.0001, subset=['p', 'q']).replace(0, 0.0001).orderBy(i)
@@ -196,7 +195,6 @@ def stabilityIndex_computation(*idfs, list_of_cols='all', drop_cols=[],
 
     new_metric_df = spark.createDataFrame(metric_ls, schema=('idx', 'attribute', 'mean', 'stddev', 'kurtosis'))
     appended_metric_df = concatenate_dataset(existing_metric_df, new_metric_df)
-    appended_metric_df.show(100)
 
     if appended_metric_path:
         appended_metric_df.coalesce(1).write.csv(appended_metric_path, header=True, mode='overwrite')

@@ -4,7 +4,7 @@ import math
 import pyspark
 from com.mw.ds.data_analyzer.stats_generator import uniqueCount_computation
 from com.mw.ds.data_ingest.data_ingest import read_dataset
-from com.mw.ds.data_transformer.transformers import attribute_binning, monotonic_encoding, cat_to_num_unsupervised, \
+from com.mw.ds.data_transformer.transformers import attribute_binning, monotonic_binning, cat_to_num_unsupervised, \
     imputation_MMM
 from com.mw.ds.shared.spark import *
 from com.mw.ds.shared.utils import attributeType_segregation
@@ -156,7 +156,7 @@ def IV_calculation(idf, list_of_cols='all', drop_cols=[], label_col='label', eve
         bin_method = encoding_configs['bin_method']
         monotonicity_check = encoding_configs['monotonicity_check']
         if monotonicity_check == 1:
-            idf_encoded = monotonic_encoding(idf, num_cols, [], label_col, event_label, bin_method, bin_size)
+            idf_encoded = monotonic_binning(idf, num_cols, [], label_col, event_label, bin_method, bin_size)
         else:
             idf_encoded = attribute_binning(idf, num_cols, [], bin_method, bin_size)
 
@@ -226,7 +226,7 @@ def IG_calculation(idf, list_of_cols='all', drop_cols=[], label_col='label', eve
         bin_method = encoding_configs['bin_method']
         monotonicity_check = encoding_configs['monotonicity_check']
         if monotonicity_check == 1:
-            idf_encoded = monotonic_encoding(idf, num_cols, [], label_col, event_label, bin_method, bin_size)
+            idf_encoded = monotonic_binning(idf, num_cols, [], label_col, event_label, bin_method, bin_size)
         else:
             idf_encoded = attribute_binning(idf, num_cols, [], bin_method, bin_size)
         idf_encoded.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
