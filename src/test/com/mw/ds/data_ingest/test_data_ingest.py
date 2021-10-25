@@ -111,7 +111,7 @@ def test_delete_column(spark_session):
     assert result_df.count() == 6
     assert len(result_df.columns) == 3
     
-    listColumns = result.columns
+    listColumns = result_df.columns
     assert "income" not in listColumns
     assert "age" in listColumns
     assert "education" in listColumns
@@ -185,13 +185,13 @@ def test_recast_column(spark_session):
     ['ifa', 'age', 'income','education']
     )
     assert test_df1.where(F.col("ifa") == "27520a").count() == 1
-    assert test_df1.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['age'][0] == 51
+    assert test_df1.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['age'][0] == '51'
     assert test_df1.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['income'][0] == 9000   
     assert test_df1.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['education'][0] == 'HS-grad'
     
-    result_df3 = recast_column(test_df1,list_of_cols = ['age'],list_of_dtypes = ['Long'])
+    result_df3 = recast_column(test_df1,list_of_cols = ['age'],list_of_dtypes = ['long'])
     assert result_df3.count() == 6
     assert len(result_df3.columns) == 4
-    assert result_df3.where(F.col("id") == "27520a").toPandas().to_dict('list')['age'][0] == 51
-    assert result_df3.where(F.col("id") == "27520a").toPandas().to_dict('list')['education'][0] == 'HS-grad'
+    assert result_df3.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['age'][0] == 51
+    assert result_df3.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['education'][0] == 'HS-grad'
 
