@@ -13,58 +13,7 @@ input_dataset:
       inferSchema: True
   delete_column: ['Outlet_Identifier']
   select_column: null
-  # rename_column:
-  #   list_of_cols: ['marital-status','education-num']
-  #   list_of_newcols: ['marital_status','education_num']
-  # recast_column:
-  #   list_of_cols: ['age','education_num']
-  #   list_of_dtypes: ['float','float']
-
-# concatenate_dataset:
-#   method: name
-#   dataset1:
-#     read_dataset:
-#       file_path: "data/sales_dataset/parquet"
-#       file_type: parquet
-#     delete_column: ['logfnl']
-#     select_column: null
-#     rename_column:
-#       list_of_cols: ['marital-status','education-num']
-#       list_of_newcols: ['marital_status','education_num']
-#     recast_column:
-#       list_of_cols: ['age','education_num']
-#       list_of_dtypes: ['float','float']
-    
-#   dataset2:
-#     read_dataset:
-#       file_path: "data/sales_dataset/parquet"
-#       file_type: parquet
-#     delete_column: ['logfnl']
-#     select_column: null
-#     rename_column:
-#       list_of_cols: ['marital-status','education-num']
-#       list_of_newcols: ['marital_status','education_num']
-#     recast_column:
-#       list_of_cols: ['age','education_num']
-#       list_of_dtypes: ['float','float']
-    
-# join_dataset:
-#   join_cols: ifa
-#   join_type: inner
-#   dataset1:
-#     read_dataset:
-#       file_path: "data/sales_dataset/join"
-#       file_type: csv
-#       file_configs:
-#         header: True
-#         delimiter: ","
-#         inferSchema: True
-#     delete_column: null
-#     select_column: null
-#     rename_column:
-#       list_of_cols: age
-#       list_of_newcols: dupl-age
-#     recast_column: null
+ 
 
 stats_generator:
   metric: ['global_summary','measures_of_counts','measures_of_centralTendency','measures_of_cardinality'
@@ -186,12 +135,6 @@ drift_detector:
           inferSchema: True
       delete_column: ['Outlet_Identifier']
       select_column: null
-      # rename_column:
-      #   list_of_cols: ['marital-status','education-num','age2']
-      #   list_of_newcols: ['marital_status','education_num', 'dupl-age']
-      # recast_column:
-      #   list_of_cols: ['age','education_num']
-      #   list_of_dtypes: ['float','float']
 
   stabilityIndex_computation:
 
