@@ -16,7 +16,7 @@ def test_read_dataset():
 
 def test_write_dataset():
     df = read_dataset(sample_parquet, "parquet")
-    write_dataset(df, sample_output_path, "parquet")
+    write_dataset(df, sample_output_path, "parquet",{'mode':'overwrite'})
     assert os.path.isfile(sample_output_path + "_SUCCESS")  
 
 def test_concatenate_dataset(spark_session):
