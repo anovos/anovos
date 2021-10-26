@@ -1,0 +1,295 @@
+#input_dataset: ETL configurations of main dataset.
+#input_dataset can be renamed but need to change the name in main script as well
+#keys of input_dataset are function names (cannot be renamed) & values are function arguments (value can be null to skip except for read_dataset)
+#delete_column/select_column: arguments can be in front or under as list_of_cols
+#list_of_cols: list or string with multiple columns separated by | (refer doc string for further details)
+input_dataset:
+  read_dataset:
+    file_path: "data/sales_dataset/csv"
+    file_type: csv
+    file_configs:
+      header: True
+      delimiter: ","
+      inferSchema: True
+  delete_column: ['Outlet_Identifier']
+  select_column: null
+  # rename_column:
+  #   list_of_cols: ['marital-status','education-num']
+  #   list_of_newcols: ['marital_status','education_num']
+  # recast_column:
+  #   list_of_cols: ['age','education_num']
+  #   list_of_dtypes: ['float','float']
+
+# concatenate_dataset:
+#   method: name
+#   dataset1:
+#     read_dataset:
+#       file_path: "data/sales_dataset/parquet"
+#       file_type: parquet
+#     delete_column: ['logfnl']
+#     select_column: null
+#     rename_column:
+#       list_of_cols: ['marital-status','education-num']
+#       list_of_newcols: ['marital_status','education_num']
+#     recast_column:
+#       list_of_cols: ['age','education_num']
+#       list_of_dtypes: ['float','float']
+    
+#   dataset2:
+#     read_dataset:
+#       file_path: "data/sales_dataset/parquet"
+#       file_type: parquet
+#     delete_column: ['logfnl']
+#     select_column: null
+#     rename_column:
+#       list_of_cols: ['marital-status','education-num']
+#       list_of_newcols: ['marital_status','education_num']
+#     recast_column:
+#       list_of_cols: ['age','education_num']
+#       list_of_dtypes: ['float','float']
+    
+# join_dataset:
+#   join_cols: ifa
+#   join_type: inner
+#   dataset1:
+#     read_dataset:
+#       file_path: "data/sales_dataset/join"
+#       file_type: csv
+#       file_configs:
+#         header: True
+#         delimiter: ","
+#         inferSchema: True
+#     delete_column: null
+#     select_column: null
+#     rename_column:
+#       list_of_cols: age
+#       list_of_newcols: dupl-age
+#     recast_column: null
+
+stats_generator:
+  metric: ['global_summary','measures_of_counts','measures_of_centralTendency','measures_of_cardinality'
+            ,'measures_of_percentiles','measures_of_dispersion','measures_of_shape']
+  metric_args:
+    list_of_cols: all
+    drop_cols: ['Item_Identifier']
+
+quality_checker:
+  duplicate_detection:
+    list_of_cols: all
+    drop_cols: ['Item_Identifier']
+    treatment: True
+  
+  nullRows_detection:
+    list_of_cols: all
+    drop_cols: []
+    treatment: True
+    treatment_threshold: 0.75
+  
+  invalidEntries_detection:
+    list_of_cols: all
+    drop_cols: ['Item_Identifier']
+    treatment: True
+    output_mode: replace
+  
+  IDness_detection:
+    list_of_cols: all
+    drop_cols: ['Item_Identifier']
+    treatment: True
+    treatment_threshold: 0.9
+  
+  biasedness_detection:
+    list_of_cols: all
+    drop_cols: ['sales']
+    treatment: False
+    treatment_threshold: 0.98
+
+  outlier_detection:
+    list_of_cols: all
+    drop_cols: ['Item_Identifier','sales']
+    detection_side: upper
+    detection_configs:
+      pctile_lower: 0.05
+      pctile_upper: 0.95
+      stdev_lower: 3.0
+      stdev_upper: 3.0
+      IQR_lower: 1.5
+      IQR_upper: 1.5
+      min_validation: 2
+    treatment: True
+    treatment_type: value_replacement
+    pre_existing_model: False
+    model_path: NA
+    output_mode: replace
+
+  nullColumns_detection:
+    list_of_cols: all
+    drop_cols: ['Item_Identifier','sales']
+    treatment: True
+    treatment_method: MMM
+    treatment_configs:
+      method_type: median
+      pre_existing_model: False
+      model_path: NA
+      output_mode: replace
+
+
+association_evaluator:
+
+  correlation_matrix:
+    list_of_cols: all
+    drop_cols: ['Item_Identifier']
+  
+  IV_calculation:
+    list_of_cols: all
+    drop_cols: Item_Identifier
+    label_col: sales
+    event_label: '>2k'
+    encoding_configs:
+      bin_method: equal_frequency
+      bin_size: 10
+      monotonicity_check: 0
+
+  IG_calculation:
+    list_of_cols: all
+    drop_cols: Item_Identifier
+    label_col: sales
+    event_label: '>2k'
+    encoding_configs:
+      bin_method: equal_frequency
+      bin_size: 10
+      monotonicity_check: 0
+  
+  variable_clustering:
+    list_of_cols: all
+    drop_cols: Item_Identifier|sales
+
+
+drift_detector:
+  drift_statistics:
+    configs:
+      list_of_cols: all
+      drop_cols: ['Item_Identifier','sales']
+      method_type: all
+      threshold: 0.1
+      bin_method: equal_range
+      bin_size: 10
+      pre_existing_source: False
+      source_path: NA
+
+    source_dataset:
+      read_dataset:
+        file_path: "data/sales_dataset/source"
+        file_type: csv
+        file_configs:
+          header: True
+          delimiter: ","
+          inferSchema: True
+      delete_column: ['Outlet_Identifier']
+      select_column: null
+      # rename_column:
+      #   list_of_cols: ['marital-status','education-num','age2']
+      #   list_of_newcols: ['marital_status','education_num', 'dupl-age']
+      # recast_column:
+      #   list_of_cols: ['age','education_num']
+      #   list_of_dtypes: ['float','float']
+
+  stabilityIndex_computation:
+
+    configs:
+      metric_weightages:
+        mean: 0.5
+        stddev: 0.3
+        kurtosis: 0.2 
+      existing_metric_path: ''
+      appended_metric_path: ''
+      threshold: 2
+
+    dataset1:
+      read_dataset:
+        file_path: "data/sales_dataset/stability_index/1"
+        file_type: csv
+        file_configs:
+          header: True
+          delimiter: ","
+          inferSchema: True
+
+    dataset2:
+      read_dataset:
+        file_path: "data/sales_dataset/stability_index/2"
+        file_type: csv
+        file_configs:
+          header: True
+          delimiter: ","
+          inferSchema: 
+
+    dataset3:
+      read_dataset:
+        file_path: "data/sales_dataset/stability_index/3"
+        file_type: csv
+        file_configs:
+          header: True
+          delimiter: ","
+          inferSchema: True
+        
+
+
+report_gen_inter:
+  drop_cols_viz: ['Item_Identifier','label']
+  charts_to_objects:
+    id_col: "Item_Identifier"
+    label: "sales"
+    event_class: ">2k" 
+    chart_output_path: "./output/chart_objects/"
+    max_cat: 10
+  
+  output_pandas_df:
+    islabel: True
+    input_path: "./stats"
+    pandas_df_output_path: "./output/pandas_df/"
+    list_tabs: 'stats_generator,quality_checker,association_evaluator'
+    list_tab1: 'measures_of_counts,measures_of_centralTendency,measures_of_cardinality,measures_of_percentiles,measures_of_dispersion,measures_of_shape'
+    list_tab2: 'nullColumns_detection,outlier_detection,IDness_detection,biasedness_detection,invalidEntries_detection,duplicate_detection,nullRows_detection'
+    list_tab3: 'correlation_matrix,IV_calculation,IG_calculation,variable_clustering'
+    
+  data_drift:
+    df_source_path:
+      file_path: "./data/sales_dataset/source"
+      file_type: csv
+      file_configs:
+        header: True
+        delimiter: ","
+        inferSchema: True
+    drift_stats_path:
+      file_path: "./stats/drift_detector/drift_statistics/"
+      file_type: parquet
+    pandas_df_output_path: "./output/pandas_df/"
+    chart_output_path: "./output/chart_objects/"
+    driftcheckrequired: True
+
+report_gen_final:
+  data_dictionary_path: null
+  base_path: "./output/"
+  threshold: 0.1
+  corr_threshold : 0.4
+  iv_threshold : 0.2
+
+write_intermediate:
+  file_path: "intermediate_data"
+  file_type: csv
+  file_configs:
+    mode: overwrite
+    header: True
+    delimiter: ","
+    inferSchema: True
+
+write_main:
+  file_path: "output"
+  file_type: parquet
+  file_configs:
+    mode: overwrite
+    
+write_stats:
+  file_path: "stats"
+  file_type: parquet
+  file_configs:
+    mode: overwrite
