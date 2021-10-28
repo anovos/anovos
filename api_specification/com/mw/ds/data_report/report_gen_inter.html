@@ -1,0 +1,2125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>com.mw.ds.data_report.report_gen_inter API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>com.mw.ds.data_report.report_gen_inter</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">from pathlib import Path
+
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+import pyspark
+from com.mw.ds.data_ingest.data_ingest import *
+from com.mw.ds.data_transformer.transformers import *
+from com.mw.ds.shared.spark import *
+from com.mw.ds.shared.utils import *
+from pyspark.sql import functions as F
+from pyspark.sql import types as T
+from pyspark.sql.window import Window
+
+global_theme = px.colors.sequential.Plasma
+global_theme_r = px.colors.sequential.Plasma_r
+global_plot_bg_color = &#39;rgba(0,0,0,0)&#39;
+global_paper_bg_color = &#39;rgba(0,0,0,0)&#39;
+
+
+def ends_with(string, end_str=&#34;/&#34;):
+    &#34;&#34;&#34;
+
+    Args:
+      string: s3:mw-bucket&#34;
+      end_str: return: &#34;s3:mw-bucket/&#34; (Default value = &#34;/&#34;)
+
+    Returns:
+      s3:mw-bucket/&#34;
+
+    &#34;&#34;&#34;
+    string = str(string)
+    if string.endswith(end_str):
+        return string
+    return string + end_str
+
+
+def remove_dups(col):
+    &#34;&#34;&#34;
+
+    Args:
+      col: 
+
+    Returns:
+
+    &#34;&#34;&#34;
+    try:
+        list_col = col.split(&#34;-&#34;)
+        deduped_col = list(set(list_col))
+        if len(list_col) != len(deduped_col):
+            return deduped_col[0]
+        else:
+            return col
+    except:
+        pass
+
+
+f_remove_dups = F.udf(remove_dups, T.StringType())
+
+
+def processed_df(df, drop_cols_viz):
+    &#34;&#34;&#34;
+
+    Args:
+      df: 
+      drop_cols_viz: 
+
+    Returns:
+
+    &#34;&#34;&#34;
+    num_cols, cat_cols, other_cols = attributeType_segregation(df)
+
+    df_ = df.select(num_cols + cat_cols)
+    zero_var_col = []
+    for i in df_.columns:
+        x = df_.select(i).distinct().count()
+        if x == 1:
+            zero_var_col.append(i)
+        else:
+            pass
+    df_ = df_.drop(*zero_var_col + drop_cols_viz)
+    return df_
+
+
+def range_generator(df, col_orig, col_binned):
+    &#34;&#34;&#34;
+
+    Args:
+      df: 
+      col_orig: 
+      col_binned: 
+
+    Returns:
+
+    &#34;&#34;&#34;
+    range_table = df.groupBy(col_binned) \
+        .agg(F.round(F.min(col_orig), 2).alias(&#34;min&#34;), F.round(F.max(col_orig), 2).alias(&#34;max&#34;)) \
+        .withColumn(&#34;range&#34;, F.concat(F.col(&#34;min&#34;), F.lit(&#34;-&#34;), F.col(&#34;max&#34;))) \
+        .select(col_binned, &#34;range&#34;)
+
+    df_ = df.join(range_table, col_binned, &#34;left_outer&#34;) \
+        .withColumnRenamed(col_binned, str(col_orig + &#34;_binning_number&#34;)) \
+        .withColumnRenamed(&#34;range&#34;, col_binned)
+
+    return df_
+
+
+def feature_binning(idf, method_type, bin_size, list_of_cols, id_col=&#34;id&#34;, label_col=&#34;label&#34;, pre_existing_model=False,
+                    model_path=&#34;NA&#34;, output_mode=&#34;replace&#34;, print_impact=False, output_type=&#34;number&#34;):
+    &#34;&#34;&#34;
+
+    Args:
+      idf: Input Dataframe
+      method_type: equal_frequency, equal_range
+      bin_size: No of bins
+      list_of_cols: all numerical (except ID &amp; Label) or list of columns (in list format or string separated by |)
+      id_col: Excluding ID columns from binning (Default value = &#34;id&#34;)
+      label_col: Excluding Label columns from binning (Default value = &#34;label&#34;)
+      pre_existing_model: True if mapping values exists already, False Otherwise. (Default value = False)
+      model_path: If pre_existing_model is True, this argument is path for imputation model.\
+    If pre_existing_model is False, this argument can be used for saving the model.\
+    Default &#34;NA&#34; means there is neither pre_existing_model nor there is a need to save one.
+      output_mode: replace or append (Default value = &#34;replace&#34;)
+      print_impact:  (Default value = False)
+      output_type:  (Default value = &#34;number&#34;)
+
+    Returns:
+      Binned Dataframe
+
+    &#34;&#34;&#34;
+
+    if list_of_cols == &#39;all&#39;:
+        num_cols, cat_cols, other_cols = featureType_segregation(idf)
+        list_of_cols = [e for e in num_cols if e not in (id_col, label_col)]
+    if isinstance(list_of_cols, str):
+        list_of_cols = [x.strip() for x in list_of_cols.split(&#39;|&#39;) if
+                        ((x.strip() in idf.columns) &amp; (x.strip() not in (id_col, label_col)))]
+    if isinstance(list_of_cols, list):
+        list_of_cols = [e for e in list_of_cols if ((e in idf.columns) &amp; (e not in (id_col, label_col)))]
+
+    if method_type not in (&#34;equal_frequency&#34;, &#34;equal_range&#34;):
+        raise TypeError(&#39;Invalid input for method_type&#39;)
+    if output_mode not in (&#39;replace&#39;, &#39;append&#39;):
+        raise TypeError(&#39;Invalid input for output_mode&#39;)
+    if len(list_of_cols) == 0:
+        raise TypeError(&#39;Invalid input for Column(s)&#39;)
+
+    odf = idf
+    for col in list_of_cols:
+
+        if method_type == &#34;equal_frequency&#34;:
+            from pyspark.ml.feature import QuantileDiscretizer
+            if pre_existing_model == True:
+                discretizerModel = QuantileDiscretizer.load(model_path + &#34;/feature_binning/&#34; + col)
+            else:
+                discretizer = QuantileDiscretizer(numBuckets=bin_size, inputCol=col, outputCol=col + &#34;_binned&#34;)
+                discretizerModel = discretizer.fit(odf)
+            if output_type == &#34;number&#34;:
+                odf = discretizerModel.transform(odf)
+            else:
+                odf = range_generator(discretizerModel.transform(odf), col, col + &#34;_binned&#34;)
+
+            if (pre_existing_model == False) &amp; (model_path != &#34;NA&#34;):
+                discretizerModel.write().overwrite().save(model_path + &#34;/feature_binning/&#34; + col)
+        else:
+
+            from pyspark.ml.feature import Bucketizer
+            if pre_existing_model == True:
+                bucketizer = Bucketizer.load(model_path + &#34;/feature_binning/&#34; + col)
+            else:
+                max_val = idf.select(F.col(col)).groupBy().max().rdd.flatMap(lambda x: x).collect()[0]
+                min_val = idf.select(F.col(col)).groupBy().min().rdd.flatMap(lambda x: x).collect()[0]
+                bin_width = (max_val - min_val) / bin_size
+                bin_cutoff = [-float(&#34;inf&#34;)]
+                for i in range(1, bin_size):
+                    bin_cutoff.append(min_val + i * bin_width)
+                bin_cutoff.append(float(&#34;inf&#34;))
+                bucketizer = Bucketizer(splits=bin_cutoff, inputCol=col, outputCol=col + &#34;_binned&#34;)
+
+                if (pre_existing_model == False) &amp; (model_path != &#34;NA&#34;):
+                    bucketizer.write().overwrite().save(model_path + &#34;/feature_binning/&#34; + col)
+            if output_type == &#34;number&#34;:
+                odf = bucketizer.transform(odf)
+            else:
+                odf = range_generator(bucketizer.transform(odf), col, col + &#34;_binned&#34;)
+
+    if output_mode == &#39;replace&#39;:
+        for col in list_of_cols:
+            odf = odf.drop(col).withColumnRenamed(col + &#34;_binned&#34;, col)
+
+    if print_impact:
+        if output_mode == &#39;replace&#39;:
+            output_cols = list_of_cols
+        else:
+            output_cols = [(i + &#34;_binned&#34;) for i in list_of_cols]
+        c(odf, output_cols).show(len(output_cols))
+    return odf
+
+
+def plot_gen_hist_bar(idf, col, cov=None, max_cat=50, bin_type=None):
+    &#34;&#34;&#34;
+
+    Args:
+      idf: 
+      col: 
+      cov:  (Default value = None)
+      max_cat:  (Default value = 50)
+      bin_type:  (Default value = None)
+
+    Returns:
+
+    &#34;&#34;&#34;
+    import plotly.express as px
+    num_cols, cat_cols, other_cols = attributeType_segregation(idf)
+
+    # try:
+    if col in cat_cols:
+
+        idf = outlier_categories(idf, list_of_cols=col, coverage=cov, max_category=max_cat) \
+            .groupBy(col).count() \
+            .withColumn(&#34;count_%&#34;, 100 * (F.col(&#34;count&#34;) / F.sum(&#34;count&#34;).over(Window.partitionBy()))) \
+            .withColumn(col, f_remove_dups(col)) \
+            .orderBy(&#34;count&#34;, ascending=False) \
+            .toPandas().fillna(&#34;Missing&#34;)
+
+        fig = px.bar(idf, x=col, y=&#39;count&#39;, text=idf[&#39;count_%&#39;].apply(lambda x: &#39;{0:1.2f}%&#39;.format(x)),
+                     color_discrete_sequence=global_theme)
+        fig.update_traces(textposition=&#39;outside&#39;)
+        fig.update_layout(title_text=str(&#39;Bar Plot for &#39; + str(col.upper())))
+    #         fig.update_layout(barmode=&#39;stack&#39;, xaxis={&#39;categoryorder&#39;:&#39;total descending&#39;})
+
+    elif col in num_cols:
+
+        idf = feature_binning(idf, list_of_cols=col, method_type=bin_type, bin_size=max_cat, output_type=&#34;string&#34;) \
+            .groupBy(str(col + &#34;_binning_number&#34;), col).count() \
+            .withColumn(&#34;count_%&#34;, 100 * (F.col(&#34;count&#34;) / F.sum(&#34;count&#34;).over(Window.partitionBy()))) \
+            .withColumn(col, f_remove_dups(col)) \
+            .orderBy(str(col + &#34;_binning_number&#34;), ascending=True) \
+            .toPandas().fillna(&#34;Missing&#34;)
+
+        fig = px.bar(idf, x=col, y=&#39;count&#39;, text=idf[&#39;count_%&#39;].apply(lambda x: &#39;{0:1.2f}%&#39;.format(x)),
+                     color_discrete_sequence=global_theme)
+        fig.update_traces(textposition=&#39;outside&#39;)
+        fig.update_layout(title_text=str(&#39;Histogram for &#39; + str(col.upper())))
+        fig.update_xaxes(type=&#39;category&#39;)
+    #         fig.update_layout(barmode=&#39;stack&#39;, xaxis={&#39;categoryorder&#39;:&#39;total descending&#39;})
+
+    else:
+        pass
+
+    fig.layout.plot_bgcolor = global_plot_bg_color
+    fig.layout.paper_bgcolor = global_paper_bg_color
+
+    #       plotly.offline.plot(fig, auto_open=False, validate=False, filename=f&#34;{base_loc}/{file_name_}bar_graph.html&#34;)
+
+    return fig
+
+
+def plot_gen_boxplot(idf, cont_col, cat_col=None, color_by=None, cov=None, max_cat=50, threshold=500000):
+    &#34;&#34;&#34;
+
+    Args:
+      idf: 
+      cont_col: 
+      cat_col:  (Default value = None)
+      color_by:  (Default value = None)
+      cov:  (Default value = None)
+      max_cat:  (Default value = 50)
+      threshold:  (Default value = 500000)
+
+    Returns:
+
+    &#34;&#34;&#34;
+    import plotly.express as px
+
+    count_df = idf.count()
+
+    if (cat_col is not None) and (cont_col is not None):
+
+        if count_df &gt; threshold:
+
+            group_dist = dict(sub.values() for sub in \
+                              idf.groupBy(cat_col).count().fillna(&#34;Missing&#34;, subset=cat_col) \
+                              .withColumn(&#34;count_%&#34;, \
+                                          int(threshold) * (F.col(&#34;count&#34;) / F.sum(&#34;count&#34;) \
+                                                            .over(Window.partitionBy())) / F.col(&#34;count&#34;)) \
+                              .select(cat_col, &#34;count_%&#34;).toPandas().to_dict(&#39;r&#39;))
+
+            idf = idf.fillna(&#34;Missing&#34;, subset=cat_col).sampleBy(cat_col, fractions=group_dist, seed=common_seed)
+
+        else:
+            idf = idf.fillna(&#34;Missing&#34;, subset=cat_col)
+
+        idf = outlier_categories(idf, list_of_cols=cat_col, coverage=cov, max_category=max_cat).toPandas()
+
+        fig = px.box(idf, x=cat_col, y=cont_col, color=color_by, color_discrete_sequence=global_theme)
+        #         fig.update_traces(textposition=&#39;outside&#39;)
+        fig.update_layout(
+            title_text=str(&#39;Box Plot Analysis for &#39; + str(cont_col.upper()) + str(&#34; across : &#34; + str(cat_col.upper()))))
+
+    elif (cat_col is None) and (cont_col is not None):
+
+        if count_df &gt; threshold:
+
+            group_dist = dict(sub.values() for sub in \
+                              idf.groupBy(cont_col).count().fillna(&#34;Missing&#34;) \
+                              .withColumn(&#34;count_%&#34;, int(threshold) * (F.col(&#34;count&#34;) / F.sum(&#34;count&#34;) \
+                                                                       .over(Window.partitionBy())) / F.col(&#34;count&#34;)) \
+                              .select(cont_col, &#34;count_%&#34;).toPandas().to_dict(&#39;r&#39;))
+            idf = idf.fillna(&#34;Missing&#34;, subset=cont_col).sampleBy(cont_col, fractions=group_dist, seed=common_seed)
+
+        else:
+            pass
+
+        idf = idf.select(cont_col).toPandas()
+
+        fig = px.box(idf, y=cont_col, color=color_by, color_discrete_sequence=global_theme)
+        #         fig.update_traces(textposition=&#39;outside&#39;)
+        fig.update_layout(title_text=str(&#39;Box Plot Analysis for &#39; + str(cont_col.upper())))
+
+    else:
+        pass
+
+    fig.layout.plot_bgcolor = global_plot_bg_color
+    fig.layout.paper_bgcolor = global_paper_bg_color
+    #     plotly.offline.plot(fig, auto_open=False, validate=False, filename=f&#34;{base_loc}/{file_name_}box_plot.html&#34;)
+
+    return fig
+
+
+def plot_gen_feat_analysis_label(idf, col, label, event_class, max_cat=None, bin_type=None):
+    &#34;&#34;&#34;
+
+    Args:
+      idf: 
+      col: 
+      label: 
+      event_class: 
+      max_cat:  (Default value = None)
+      bin_type:  (Default value = None)
+
+    Returns:
+
+    &#34;&#34;&#34;
+    import plotly.express as px
+    num_cols, cat_cols, other_cols = attributeType_segregation(idf)
+
+    event_class = str(event_class)
+
+    #     file_name_ = str(col) + &#34;_&#34; + str(event_class) + &#34;_&#34; + str(max_cat) + &#34;_&#34; + str(bin_type) + &#34;_&#34;
+
+    class_cats = idf.select(label).distinct().rdd.flatMap(lambda x: x).collect()
+    if col in cat_cols:
+        idf = idf.groupBy(col).pivot(label).count() \
+            .fillna(0, subset=class_cats) \
+            .withColumn(&#34;event_rate&#34;, 100 * (F.col(event_class) / (F.col(class_cats[0]) + F.col(class_cats[1])))) \
+            .withColumn(&#34;attribute_name&#34;, F.lit(col)) \
+            .withColumn(col, f_remove_dups(col)) \
+            .orderBy(&#34;event_rate&#34;, ascending=False) \
+            .toPandas()
+
+        fig = px.bar(idf, x=col, y=&#39;event_rate&#39;, text=idf[&#39;event_rate&#39;].apply(lambda x: &#39;{0:1.2f}%&#39;.format(x)),
+                     color_discrete_sequence=global_theme)
+        fig.update_traces(textposition=&#39;outside&#39;)
+        fig.update_layout(title_text=str(&#39;Event Rate Distribution for &#39; + str(col.upper()) + str(
+            &#34; [Target Variable : &#34; + str(event_class) + str(&#34;]&#34;))))
+        fig.update_xaxes(type=&#39;category&#39;)
+
+    elif col in num_cols:
+
+        idf = feature_binning(idf, method_type=bin_type, bin_size=max_cat, list_of_cols=col, output_type=&#34;string&#34;)
+
+        odf = idf.groupBy(col).pivot(label).count() \
+            .fillna(0, subset=class_cats) \
+            .withColumn(&#34;event_rate&#34;, 100 * (F.col(event_class) / (F.col(class_cats[0]) + F.col(class_cats[1])))) \
+            .withColumn(&#34;attribute_name&#34;, F.lit(col)) \
+            .withColumn(col, f_remove_dups(col)) \
+            .orderBy(&#34;event_rate&#34;, ascending=False) \
+            .toPandas()
+
+        fig = px.bar(odf, x=col, y=&#39;event_rate&#39;, text=odf[&#39;event_rate&#39;].apply(lambda x: &#39;{0:1.2f}%&#39;.format(x)),
+                     color_discrete_sequence=global_theme)
+        fig.update_traces(textposition=&#39;outside&#39;)
+        fig.update_layout(title_text=str(&#39;Event Rate Distribution for &#39; + str(col.upper()) + str(
+            &#34; [Target Variable : &#34; + str(event_class) + str(&#34;]&#34;))))
+        fig.update_xaxes(type=&#39;category&#39;)
+
+    else:
+        pass
+
+    fig.layout.plot_bgcolor = global_plot_bg_color
+    fig.layout.paper_bgcolor = global_paper_bg_color
+    #     plotly.offline.plot(fig, auto_open=False, validate=False, filename=f&#34;{base_loc}/{file_name_}feat_analysis_label.html&#34;)
+
+    return fig
+
+
+def plot_gen_variable_clustering(idf):
+    &#34;&#34;&#34;
+
+    Args:
+      idf: 
+
+    Returns:
+
+    &#34;&#34;&#34;
+    import plotly.express as px
+
+    fig = px.sunburst(idf, path=[&#39;Cluster&#39;, &#39;Attribute&#39;], values=&#39;RS_Ratio&#39;, color_discrete_sequence=global_theme)
+    #     fig.update_layout(title_text=str(&#34;Distribution of homogenous variable across Clusters&#34;))
+
+    #     plotly.offline.plot(fig, auto_open=False, validate=False, filename=f&#34;{base_loc}/{file_name_}plot_sunburst.html&#34;)
+
+    return fig
+
+
+def plot_gen_dist(idf, col, threshold=500000, rug_chart=False):
+    &#34;&#34;&#34;
+
+    Args:
+      idf: 
+      col: 
+      threshold:  (Default value = 500000)
+      rug_chart:  (Default value = False)
+
+    Returns:
+
+    &#34;&#34;&#34;
+    import plotly.figure_factory as ff
+    #     file_name_ = str(&#34;distplot&#34;) + &#34;_&#34; + str(col) + &#34;_&#34;
+    group_label = [col]
+    count_df = idf.count()
+
+    if col in num_cols:
+
+        if count_df &gt; threshold:
+            group_dist = dict(sub.values() for sub in \
+                              idf.groupBy(col).count().fillna(&#34;Missing&#34;, subset=col) \
+                              .withColumn(&#34;count_%&#34;, \
+                                          int(threshold) * (F.col(&#34;count&#34;) / F.sum(&#34;count&#34;) \
+                                                            .over(Window.partitionBy())) / F.col(&#34;count&#34;)) \
+                              .select(col, &#34;count_%&#34;).toPandas().to_dict(&#39;r&#39;))
+
+            idf = idf.select(col).dropna().sampleBy(col, fractions=group_dist, seed=common_seed)
+
+        else:
+            idf = idf.select(col).dropna()
+
+        idf = idf.select(col).rdd.flatMap(lambda x: x).collect()
+        fig = ff.create_distplot([idf], group_labels=group_label, show_rug=rug_chart, colors=global_theme)
+
+        fig.layout.plot_bgcolor = global_plot_bg_color
+        fig.layout.paper_bgcolor = global_paper_bg_color
+        fig.update_layout(title_text=str(&#34;Distribution Plot &#34; + str(col)))
+
+        #         plotly.offline.plot(fig, auto_open=False, validate=False, filename=f&#34;{base_loc}/{file_name_}distplot.html&#34;)
+        return fig
+
+    else:
+        return 0
+
+
+def num_cols_chart_list(df, max_cat=10, bin_type=&#34;equal_range&#34;, output_path=None):
+    &#34;&#34;&#34;
+
+    Args:
+      df: 
+      max_cat:  (Default value = 10)
+      bin_type:  (Default value = &#34;equal_range&#34;)
+      output_path:  (Default value = None)
+
+    Returns:
+
+    &#34;&#34;&#34;
+    num_cols_chart = []
+    num_cols, cat_cols, other_cols = attributeType_segregation(df)
+    for index, i in enumerate(num_cols):
+        f = plot_gen_hist_bar(idf=df, col=i, max_cat=max_cat, bin_type=bin_type)
+        if output_path is None:
+            f.write_json(&#34;fig_num_f1_&#34; + str(index))
+        else:
+            f.write_json(ends_with(output_path) + &#34;fig_num_f1_&#34; + str(index))
+
+        num_cols_chart.append(f)
+
+
+def cat_cols_chart_list(df, id_col, max_cat=10, cov=0.9, output_path=None):
+    &#34;&#34;&#34;
+
+    Args:
+      df: 
+      id_col: 
+      max_cat:  (Default value = 10)
+      cov:  (Default value = 0.9)
+      output_path:  (Default value = None)
+
+    Returns:
+
+    &#34;&#34;&#34;
+    cat_cols_chart = []
+    num_cols, cat_cols, other_cols = attributeType_segregation(df)
+    for index, i in enumerate(cat_cols):
+        if i != id_col:
+            f = plot_gen_hist_bar(idf=df, col=i, max_cat=max_cat, cov=cov)
+            if output_path is None:
+                f.write_json(&#34;fig_cat_f1_&#34; + str(index))
+            else:
+                f.write_json(ends_with(output_path) + &#34;fig_cat_f1_&#34; + str(index))
+
+            cat_cols_chart.append(f)
+
+        else:
+            pass
+
+
+def num_cols_int_chart_list(df, label, event_class, bin_type=&#34;equal_range&#34;, max_cat=10, output_path=None):
+    &#34;&#34;&#34;
+
+    Args:
+      df: 
+      label: 
+      event_class: 
+      bin_type:  (Default value = &#34;equal_range&#34;)
+      max_cat:  (Default value = 10)
+      output_path:  (Default value = None)
+
+    Returns:
+
+    &#34;&#34;&#34;
+    num_cols_int_chart = []
+    num_cols, cat_cols, other_cols = attributeType_segregation(df)
+    for index, i in enumerate(num_cols):
+        f = plot_gen_feat_analysis_label(idf=df, col=i, label=label, event_class=event_class, bin_type=bin_type,
+                                         max_cat=max_cat)
+        if output_path is None:
+            f.write_json(&#34;fig_num_f2_&#34; + str(index))
+        else:
+            f.write_json(ends_with(output_path) + &#34;fig_num_f2_&#34; + str(index))
+        num_cols_int_chart.append(f)
+    return num_cols_int_chart
+
+
+def cat_cols_int_chart_list(df, id_col, label, event_class, output_path=None):
+    &#34;&#34;&#34;
+
+    Args:
+      df: 
+      id_col: 
+      label: 
+      event_class: 
+      output_path:  (Default value = None)
+
+    Returns:
+
+    &#34;&#34;&#34;
+    cat_cols_int_chart = []
+    num_cols, cat_cols, other_cols = attributeType_segregation(df)
+    cat_cols = [x for x in cat_cols if label not in x]
+    for index, i in enumerate(cat_cols):
+        if i != id_col:
+            f = plot_gen_feat_analysis_label(idf=df, col=i, label=label, event_class=event_class)
+            if output_path is None:
+
+                f.write_json(&#34;fig_cat_f2_&#34; + str(index))
+            else:
+                f.write_json(ends_with(output_path) + &#34;fig_cat_f2_&#34; + str(index))
+            cat_cols_int_chart.append(f)
+        else:
+            pass
+
+
+def plot_comparative_drift_gen(df1, df2, col):
+    &#34;&#34;&#34;
+
+    Args:
+      df1: 
+      df2: 
+      col: 
+
+    Returns:
+
+    &#34;&#34;&#34;
+    num_cols, cat_cols, other_cols = attributeType_segregation(df1)
+
+    if col in cat_cols:
+
+        xx = outlier_categories(idf=df1, list_of_cols=col, coverage=0.9, max_category=10) \
+            .groupBy(col).count() \
+            .orderBy(col, ascending=True).withColumnRenamed(&#34;count&#34;, &#34;count_source&#34;) \
+            .join(outlier_categories(idf=df2, list_of_cols=col, coverage=0.9, max_category=10) \
+                  .groupBy(col).count() \
+                  .orderBy(col, ascending=True).withColumnRenamed(&#34;count&#34;, &#34;count_target&#34;), col, &#34;left_outer&#34;) \
+            .toPandas()
+        xx.fillna({col: &#39;Missing&#39;, &#39;count_source&#39;: 0, &#39;count_target&#39;: 0}, inplace=True)
+
+    elif col in num_cols:
+
+        xx = feature_binning(df1, list_of_cols=col, method_type=&#34;equal_range&#34;, bin_size=10, output_type=&#34;number&#34;) \
+            .groupBy(col).count() \
+            .orderBy(col, ascending=True).withColumnRenamed(&#34;count&#34;, &#34;count_source&#34;) \
+            .join(feature_binning(df2, list_of_cols=col, method_type=&#34;equal_range&#34;, bin_size=10, output_type=&#34;number&#34;) \
+                  .groupBy(col).count() \
+                  .orderBy(col, ascending=True).withColumnRenamed(&#34;count&#34;, &#34;count_target&#34;), col, &#34;left_outer&#34;) \
+            .toPandas()
+        xx.fillna({col: &#39;Missing&#39;, &#39;count_source&#39;: 0, &#39;count_target&#39;: 0}, inplace=True)
+
+    else:
+        pass
+
+    xx[&#39;%_diff&#39;] = (((xx[&#39;count_target&#39;] / xx[&#39;count_source&#39;]) - 1) * 100)
+    fig = go.Figure()
+    fig.add_bar(y=list(xx.count_source.values), x=xx[col], name=&#34;source&#34;, marker=dict(color=global_theme))
+    fig.update_traces(overwrite=True, marker={&#34;opacity&#34;: 0.7})
+    fig.add_bar(y=list(xx.count_target.values), x=xx[col], name=&#34;target&#34;,
+                text=xx[&#39;%_diff&#39;].apply(lambda x: &#39;{0:0.2f}%&#39;.format(x)), marker=dict(color=global_theme))
+    fig.update_traces(textposition=&#39;outside&#39;)
+    fig.update_layout(paper_bgcolor=global_paper_bg_color, plot_bgcolor=global_plot_bg_color, showlegend=False)
+    fig.update_layout(title_text=str(&#39;Drift Comparison for &#39; + col + &#39;&lt;br&gt;&lt;sup&gt;(L-&gt;R : Source-&gt;Target)&lt;/sup&gt;&#39;))
+    fig.update_traces(marker=dict(color=global_theme))
+    fig.update_xaxes(type=&#39;category&#39;)
+    fig.add_trace(go.Scatter(x=xx[col], y=xx.count_target.values, mode=&#39;lines+markers&#39;,
+                             line=dict(color=px.colors.qualitative.Antique[10], width=3, dash=&#39;dot&#39;)))
+    fig.update_layout(xaxis_tickfont_size=14, yaxis=dict(title=&#39;frequency&#39;, titlefont_size=16, tickfont_size=14))
+
+    return fig
+
+
+def violin_plot_gen(df, col, split_var=None, threshold=500000):
+    &#34;&#34;&#34;
+
+    Args:
+      df: 
+      col: 
+      split_var:  (Default value = None)
+      threshold:  (Default value = 500000)
+
+    Returns:
+
+    &#34;&#34;&#34;
+    count_df = df.count()
+
+    if count_df &gt; threshold:
+        group_dist = dict(sub.values() for sub in \
+                          df.groupBy(col).count().fillna(&#34;Missing&#34;, subset=cat_col) \
+                          .withColumn(&#34;count_%&#34;, \
+                                      int(threshold) * (F.col(&#34;count&#34;) / F.sum(&#34;count&#34;) \
+                                                        .over(Window.partitionBy())) / F.col(&#34;count&#34;)) \
+                          .select(col, &#34;count_%&#34;).toPandas().to_dict(&#39;r&#39;))
+
+        df = df.dropna().sampleBy(col, fractions=group_dist, seed=common_seed).toPandas()
+
+    else:
+        df = df.dropna().toPandas()
+
+    fig = px.violin(df, y=col, color=split_var, box=True, points=&#34;outliers&#34;,
+                    color_discrete_sequence=[global_theme_r[8], global_theme_r[4]])
+    fig.layout.plot_bgcolor = global_plot_bg_color
+    fig.layout.paper_bgcolor = global_paper_bg_color
+    fig.update_layout(legend=dict(orientation=&#34;h&#34;, x=0.5, yanchor=&#34;bottom&#34;, xanchor=&#34;center&#34;))
+
+    return fig
+
+
+def num_cols_chart_list_outlier(idf, split_var=None, output_path=None):
+    &#34;&#34;&#34;
+
+    Args:
+      idf: 
+      split_var:  (Default value = None)
+      output_path:  (Default value = None)
+
+    Returns:
+
+    &#34;&#34;&#34;
+    num_cols, cat_cols, other_cols = attributeType_segregation(idf)
+
+    for index, i in enumerate(num_cols):
+        f = violin_plot_gen(idf, i, split_var=split_var)
+        if output_path is None:
+            f.write_json(&#34;fig_num_f3_&#34; + str(index))
+        else:
+            f.write_json(ends_with(output_path) + &#34;fig_num_f3_&#34; + str(index))
+
+
+def charts_to_objects(idf, id_col=None, max_cat=10, label=None, event_class=None, chart_output_path=None):
+    &#34;&#34;&#34;
+
+    Args:
+      idf: 
+      id_col:  (Default value = None)
+      max_cat:  (Default value = 10)
+      label:  (Default value = None)
+      event_class:  (Default value = None)
+      chart_output_path:  (Default value = None)
+
+    Returns:
+
+    &#34;&#34;&#34;
+    print(&#34;mapping chart objects&#34;)
+    Path(chart_output_path).mkdir(parents=True, exist_ok=True)
+    idf.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
+
+    num_cols_chart_list(idf, output_path=chart_output_path)
+    cat_cols_chart_list(idf, id_col=id_col, output_path=chart_output_path)
+    num_cols_chart_list_outlier(idf, split_var=label, output_path=chart_output_path)
+
+    if label is not None:
+        num_cols_int_chart_list(idf, label=label, event_class=event_class, output_path=chart_output_path)
+        cat_cols_int_chart_list(idf, id_col=id_col, label=label, event_class=event_class, output_path=chart_output_path)
+
+
+def output_pandas_df(idf, input_path, pandas_df_output_path, list_tabs, list_tab1, list_tab2, list_tab3, islabel=True):
+    &#34;&#34;&#34;
+
+    Args:
+      idf: 
+      input_path: 
+      pandas_df_output_path: 
+      list_tabs: 
+      list_tab1: 
+      list_tab2: 
+      list_tab3: 
+      islabel:  (Default value = True)
+
+    Returns:
+
+    &#34;&#34;&#34;
+    Path(pandas_df_output_path).mkdir(parents=True, exist_ok=True)
+    idf.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
+
+    pd.DataFrame(idf.dtypes, columns=[&#34;Attributes&#34;, &#34;Datatype&#34;]).to_csv(
+        ends_with(pandas_df_output_path) + &#34;data_type_df.csv&#34;, index=False)
+
+    list_tabs_arr = list_tabs.split(&#34;,&#34;)
+    list_tab1_arr = list_tab1.split(&#34;,&#34;)
+    list_tab2_arr = list_tab2.split(&#34;,&#34;)
+    list_tab3_arr = list_tab3.split(&#34;,&#34;)
+
+    remove_list = [&#39;IV_calculation&#39;, &#39;IG_calculation&#39;]
+
+    if islabel == False:
+        list_tab3_arr = [x for x in list_tab3_arr if x not in remove_list]
+    else:
+        pass
+
+    list_tabs_all = [list_tab1_arr, list_tab2_arr, list_tab3_arr]
+
+    for index, i in enumerate(list_tabs_arr):
+        for j in list_tabs_all[index]:
+            if i == &#34;stats_generator&#34;:
+                spark.read.parquet(
+                    ends_with(input_path) + ends_with(&#34;data_analyzer&#34;) + ends_with(i) + ends_with(j)).toPandas().to_csv(
+                    ends_with(pandas_df_output_path) + i + &#34;_&#34; + j + &#34;.csv&#34;, index=False)
+            else:
+                spark.read.parquet(
+                    ends_with(input_path) + ends_with(&#34;data_analyzer&#34;) + ends_with(i) + ends_with(j) + ends_with(
+                        &#34;stats&#34;)).toPandas().to_csv(ends_with(pandas_df_output_path) + i + &#34;_&#34; + j + &#34;.csv&#34;,
+                                                    index=False)
+
+    spark.read.parquet(ends_with(input_path) + ends_with(&#34;data_analyzer&#34;) + ends_with(&#34;stats_generator&#34;) + ends_with(
+        &#34;global_summary&#34;)).toPandas().to_csv(ends_with(pandas_df_output_path) + &#34;global_summary_df.csv&#34;, index=False)
+
+
+def data_drift(df2, df_source_path, drift_stats_path, chart_output_path=None, pandas_df_output_path=None,
+               driftcheckrequired=False, drop_cols_viz=None):
+    &#34;&#34;&#34;
+
+    Args:
+      df2: 
+      df_source_path: 
+      drift_stats_path: 
+      chart_output_path:  (Default value = None)
+      pandas_df_output_path:  (Default value = None)
+      driftcheckrequired:  (Default value = False)
+      drop_cols_viz:  (Default value = None)
+
+    Returns:
+
+    &#34;&#34;&#34;
+    print(&#34;preparing drift charts&#34;)
+    if bool(driftcheckrequired):
+        Path(pandas_df_output_path).mkdir(parents=True, exist_ok=True)
+        df1 = read_dataset(df_source_path.get(&#34;file_path&#34;), df_source_path.get(&#34;file_type&#34;),
+                           df_source_path.get(&#34;file_configs&#34;))
+        stats_drift = read_dataset(drift_stats_path.get(&#34;file_path&#34;), drift_stats_path.get(&#34;file_type&#34;))
+        # df1 = read_dataset(**df_source_path)
+        # df2 = read_dataset(**df_target_path)
+        # stats_drift = read_dataset(**drift_stats_path)
+        stats_drift.toPandas().to_csv(ends_with(pandas_df_output_path) + &#34;drift_statistics.csv&#34;, index=False)
+        drifted_feats = stats_drift.where(F.col(&#34;flagged&#34;) == 1).select(&#34;attribute&#34;).rdd.flatMap(lambda x: x).collect()
+        drifted_feats = [x for x in drifted_feats if x not in drop_cols_viz]
+        num_cols, cat_cols, other_cols = attributeType_segregation(df1)
+        for index, i in enumerate(drifted_feats):
+            f = plot_comparative_drift_gen(df1, df2, i)
+            if chart_output_path is None:
+                f.write_json(&#34;fig_drift_feats_&#34; + str(index))
+            else:
+                f.write_json(ends_with(chart_output_path) + &#34;fig_drift_feats_&#34; + str(index))</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="com.mw.ds.data_report.report_gen_inter.cat_cols_chart_list"><code class="name flex">
+<span>def <span class="ident">cat_cols_chart_list</span></span>(<span>df, id_col, max_cat=10, cov=0.9, output_path=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>df</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>id_col</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>max_cat</code></strong></dt>
+<dd>(Default value = 10)</dd>
+<dt><strong><code>cov</code></strong></dt>
+<dd>(Default value = 0.9)</dd>
+<dt><strong><code>output_path</code></strong></dt>
+<dd>(Default value = None)</dd>
+</dl>
+<p>Returns:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cat_cols_chart_list(df, id_col, max_cat=10, cov=0.9, output_path=None):
+    &#34;&#34;&#34;
+
+    Args:
+      df: 
+      id_col: 
+      max_cat:  (Default value = 10)
+      cov:  (Default value = 0.9)
+      output_path:  (Default value = None)
+
+    Returns:
+
+    &#34;&#34;&#34;
+    cat_cols_chart = []
+    num_cols, cat_cols, other_cols = attributeType_segregation(df)
+    for index, i in enumerate(cat_cols):
+        if i != id_col:
+            f = plot_gen_hist_bar(idf=df, col=i, max_cat=max_cat, cov=cov)
+            if output_path is None:
+                f.write_json(&#34;fig_cat_f1_&#34; + str(index))
+            else:
+                f.write_json(ends_with(output_path) + &#34;fig_cat_f1_&#34; + str(index))
+
+            cat_cols_chart.append(f)
+
+        else:
+            pass</code></pre>
+</details>
+</dd>
+<dt id="com.mw.ds.data_report.report_gen_inter.cat_cols_int_chart_list"><code class="name flex">
+<span>def <span class="ident">cat_cols_int_chart_list</span></span>(<span>df, id_col, label, event_class, output_path=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>df</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>id_col</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>label</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>event_class</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>output_path</code></strong></dt>
+<dd>(Default value = None)</dd>
+</dl>
+<p>Returns:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cat_cols_int_chart_list(df, id_col, label, event_class, output_path=None):
+    &#34;&#34;&#34;
+
+    Args:
+      df: 
+      id_col: 
+      label: 
+      event_class: 
+      output_path:  (Default value = None)
+
+    Returns:
+
+    &#34;&#34;&#34;
+    cat_cols_int_chart = []
+    num_cols, cat_cols, other_cols = attributeType_segregation(df)
+    cat_cols = [x for x in cat_cols if label not in x]
+    for index, i in enumerate(cat_cols):
+        if i != id_col:
+            f = plot_gen_feat_analysis_label(idf=df, col=i, label=label, event_class=event_class)
+            if output_path is None:
+
+                f.write_json(&#34;fig_cat_f2_&#34; + str(index))
+            else:
+                f.write_json(ends_with(output_path) + &#34;fig_cat_f2_&#34; + str(index))
+            cat_cols_int_chart.append(f)
+        else:
+            pass</code></pre>
+</details>
+</dd>
+<dt id="com.mw.ds.data_report.report_gen_inter.charts_to_objects"><code class="name flex">
+<span>def <span class="ident">charts_to_objects</span></span>(<span>idf, id_col=None, max_cat=10, label=None, event_class=None, chart_output_path=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>idf</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>id_col</code></strong></dt>
+<dd>(Default value = None)</dd>
+<dt><strong><code>max_cat</code></strong></dt>
+<dd>(Default value = 10)</dd>
+<dt><strong><code>label</code></strong></dt>
+<dd>(Default value = None)</dd>
+<dt><strong><code>event_class</code></strong></dt>
+<dd>(Default value = None)</dd>
+<dt><strong><code>chart_output_path</code></strong></dt>
+<dd>(Default value = None)</dd>
+</dl>
+<p>Returns:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def charts_to_objects(idf, id_col=None, max_cat=10, label=None, event_class=None, chart_output_path=None):
+    &#34;&#34;&#34;
+
+    Args:
+      idf: 
+      id_col:  (Default value = None)
+      max_cat:  (Default value = 10)
+      label:  (Default value = None)
+      event_class:  (Default value = None)
+      chart_output_path:  (Default value = None)
+
+    Returns:
+
+    &#34;&#34;&#34;
+    print(&#34;mapping chart objects&#34;)
+    Path(chart_output_path).mkdir(parents=True, exist_ok=True)
+    idf.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
+
+    num_cols_chart_list(idf, output_path=chart_output_path)
+    cat_cols_chart_list(idf, id_col=id_col, output_path=chart_output_path)
+    num_cols_chart_list_outlier(idf, split_var=label, output_path=chart_output_path)
+
+    if label is not None:
+        num_cols_int_chart_list(idf, label=label, event_class=event_class, output_path=chart_output_path)
+        cat_cols_int_chart_list(idf, id_col=id_col, label=label, event_class=event_class, output_path=chart_output_path)</code></pre>
+</details>
+</dd>
+<dt id="com.mw.ds.data_report.report_gen_inter.data_drift"><code class="name flex">
+<span>def <span class="ident">data_drift</span></span>(<span>df2, df_source_path, drift_stats_path, chart_output_path=None, pandas_df_output_path=None, driftcheckrequired=False, drop_cols_viz=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>df2</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>df_source_path</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>drift_stats_path</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>chart_output_path</code></strong></dt>
+<dd>(Default value = None)</dd>
+<dt><strong><code>pandas_df_output_path</code></strong></dt>
+<dd>(Default value = None)</dd>
+<dt><strong><code>driftcheckrequired</code></strong></dt>
+<dd>(Default value = False)</dd>
+<dt><strong><code>drop_cols_viz</code></strong></dt>
+<dd>(Default value = None)</dd>
+</dl>
+<p>Returns:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def data_drift(df2, df_source_path, drift_stats_path, chart_output_path=None, pandas_df_output_path=None,
+               driftcheckrequired=False, drop_cols_viz=None):
+    &#34;&#34;&#34;
+
+    Args:
+      df2: 
+      df_source_path: 
+      drift_stats_path: 
+      chart_output_path:  (Default value = None)
+      pandas_df_output_path:  (Default value = None)
+      driftcheckrequired:  (Default value = False)
+      drop_cols_viz:  (Default value = None)
+
+    Returns:
+
+    &#34;&#34;&#34;
+    print(&#34;preparing drift charts&#34;)
+    if bool(driftcheckrequired):
+        Path(pandas_df_output_path).mkdir(parents=True, exist_ok=True)
+        df1 = read_dataset(df_source_path.get(&#34;file_path&#34;), df_source_path.get(&#34;file_type&#34;),
+                           df_source_path.get(&#34;file_configs&#34;))
+        stats_drift = read_dataset(drift_stats_path.get(&#34;file_path&#34;), drift_stats_path.get(&#34;file_type&#34;))
+        # df1 = read_dataset(**df_source_path)
+        # df2 = read_dataset(**df_target_path)
+        # stats_drift = read_dataset(**drift_stats_path)
+        stats_drift.toPandas().to_csv(ends_with(pandas_df_output_path) + &#34;drift_statistics.csv&#34;, index=False)
+        drifted_feats = stats_drift.where(F.col(&#34;flagged&#34;) == 1).select(&#34;attribute&#34;).rdd.flatMap(lambda x: x).collect()
+        drifted_feats = [x for x in drifted_feats if x not in drop_cols_viz]
+        num_cols, cat_cols, other_cols = attributeType_segregation(df1)
+        for index, i in enumerate(drifted_feats):
+            f = plot_comparative_drift_gen(df1, df2, i)
+            if chart_output_path is None:
+                f.write_json(&#34;fig_drift_feats_&#34; + str(index))
+            else:
+                f.write_json(ends_with(chart_output_path) + &#34;fig_drift_feats_&#34; + str(index))</code></pre>
+</details>
+</dd>
+<dt id="com.mw.ds.data_report.report_gen_inter.ends_with"><code class="name flex">
+<span>def <span class="ident">ends_with</span></span>(<span>string, end_str='/')</span>
+</code></dt>
+<dd>
+<div class="desc"><h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>string</code></strong></dt>
+<dd>s3:mw-bucket"</dd>
+<dt><strong><code>end_str</code></strong></dt>
+<dd>return: "s3:mw-bucket/" (Default value = "/")</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>s3:mw-bucket/"</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def ends_with(string, end_str=&#34;/&#34;):
+    &#34;&#34;&#34;
+
+    Args:
+      string: s3:mw-bucket&#34;
+      end_str: return: &#34;s3:mw-bucket/&#34; (Default value = &#34;/&#34;)
+
+    Returns:
+      s3:mw-bucket/&#34;
+
+    &#34;&#34;&#34;
+    string = str(string)
+    if string.endswith(end_str):
+        return string
+    return string + end_str</code></pre>
+</details>
+</dd>
+<dt id="com.mw.ds.data_report.report_gen_inter.f_remove_dups"><code class="name flex">
+<span>def <span class="ident">f_remove_dups</span></span>(<span>col)</span>
+</code></dt>
+<dd>
+<div class="desc"><h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>col</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<p>Returns:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def remove_dups(col):
+    &#34;&#34;&#34;
+
+    Args:
+      col: 
+
+    Returns:
+
+    &#34;&#34;&#34;
+    try:
+        list_col = col.split(&#34;-&#34;)
+        deduped_col = list(set(list_col))
+        if len(list_col) != len(deduped_col):
+            return deduped_col[0]
+        else:
+            return col
+    except:
+        pass</code></pre>
+</details>
+</dd>
+<dt id="com.mw.ds.data_report.report_gen_inter.feature_binning"><code class="name flex">
+<span>def <span class="ident">feature_binning</span></span>(<span>idf, method_type, bin_size, list_of_cols, id_col='id', label_col='label', pre_existing_model=False, model_path='NA', output_mode='replace', print_impact=False, output_type='number')</span>
+</code></dt>
+<dd>
+<div class="desc"><h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>idf</code></strong></dt>
+<dd>Input Dataframe</dd>
+<dt><strong><code>method_type</code></strong></dt>
+<dd>equal_frequency, equal_range</dd>
+<dt><strong><code>bin_size</code></strong></dt>
+<dd>No of bins</dd>
+<dt><strong><code>list_of_cols</code></strong></dt>
+<dd>all numerical (except ID &amp; Label) or list of columns (in list format or string separated by |)</dd>
+<dt><strong><code>id_col</code></strong></dt>
+<dd>Excluding ID columns from binning (Default value = "id")</dd>
+<dt><strong><code>label_col</code></strong></dt>
+<dd>Excluding Label columns from binning (Default value = "label")</dd>
+<dt><strong><code>pre_existing_model</code></strong></dt>
+<dd>True if mapping values exists already, False Otherwise. (Default value = False)</dd>
+<dt><strong><code>model_path</code></strong></dt>
+<dd>If pre_existing_model is True, this argument is path for imputation model.
+If pre_existing_model is False, this argument can be used for saving the model.
+Default "NA" means there is neither pre_existing_model nor there is a need to save one.</dd>
+<dt><strong><code>output_mode</code></strong></dt>
+<dd>replace or append (Default value = "replace")</dd>
+<dt><strong><code>print_impact</code></strong></dt>
+<dd>(Default value = False)</dd>
+<dt><strong><code>output_type</code></strong></dt>
+<dd>(Default value = "number")</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Binned Dataframe</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def feature_binning(idf, method_type, bin_size, list_of_cols, id_col=&#34;id&#34;, label_col=&#34;label&#34;, pre_existing_model=False,
+                    model_path=&#34;NA&#34;, output_mode=&#34;replace&#34;, print_impact=False, output_type=&#34;number&#34;):
+    &#34;&#34;&#34;
+
+    Args:
+      idf: Input Dataframe
+      method_type: equal_frequency, equal_range
+      bin_size: No of bins
+      list_of_cols: all numerical (except ID &amp; Label) or list of columns (in list format or string separated by |)
+      id_col: Excluding ID columns from binning (Default value = &#34;id&#34;)
+      label_col: Excluding Label columns from binning (Default value = &#34;label&#34;)
+      pre_existing_model: True if mapping values exists already, False Otherwise. (Default value = False)
+      model_path: If pre_existing_model is True, this argument is path for imputation model.\
+    If pre_existing_model is False, this argument can be used for saving the model.\
+    Default &#34;NA&#34; means there is neither pre_existing_model nor there is a need to save one.
+      output_mode: replace or append (Default value = &#34;replace&#34;)
+      print_impact:  (Default value = False)
+      output_type:  (Default value = &#34;number&#34;)
+
+    Returns:
+      Binned Dataframe
+
+    &#34;&#34;&#34;
+
+    if list_of_cols == &#39;all&#39;:
+        num_cols, cat_cols, other_cols = featureType_segregation(idf)
+        list_of_cols = [e for e in num_cols if e not in (id_col, label_col)]
+    if isinstance(list_of_cols, str):
+        list_of_cols = [x.strip() for x in list_of_cols.split(&#39;|&#39;) if
+                        ((x.strip() in idf.columns) &amp; (x.strip() not in (id_col, label_col)))]
+    if isinstance(list_of_cols, list):
+        list_of_cols = [e for e in list_of_cols if ((e in idf.columns) &amp; (e not in (id_col, label_col)))]
+
+    if method_type not in (&#34;equal_frequency&#34;, &#34;equal_range&#34;):
+        raise TypeError(&#39;Invalid input for method_type&#39;)
+    if output_mode not in (&#39;replace&#39;, &#39;append&#39;):
+        raise TypeError(&#39;Invalid input for output_mode&#39;)
+    if len(list_of_cols) == 0:
+        raise TypeError(&#39;Invalid input for Column(s)&#39;)
+
+    odf = idf
+    for col in list_of_cols:
+
+        if method_type == &#34;equal_frequency&#34;:
+            from pyspark.ml.feature import QuantileDiscretizer
+            if pre_existing_model == True:
+                discretizerModel = QuantileDiscretizer.load(model_path + &#34;/feature_binning/&#34; + col)
+            else:
+                discretizer = QuantileDiscretizer(numBuckets=bin_size, inputCol=col, outputCol=col + &#34;_binned&#34;)
+                discretizerModel = discretizer.fit(odf)
+            if output_type == &#34;number&#34;:
+                odf = discretizerModel.transform(odf)
+            else:
+                odf = range_generator(discretizerModel.transform(odf), col, col + &#34;_binned&#34;)
+
+            if (pre_existing_model == False) &amp; (model_path != &#34;NA&#34;):
+                discretizerModel.write().overwrite().save(model_path + &#34;/feature_binning/&#34; + col)
+        else:
+
+            from pyspark.ml.feature import Bucketizer
+            if pre_existing_model == True:
+                bucketizer = Bucketizer.load(model_path + &#34;/feature_binning/&#34; + col)
+            else:
+                max_val = idf.select(F.col(col)).groupBy().max().rdd.flatMap(lambda x: x).collect()[0]
+                min_val = idf.select(F.col(col)).groupBy().min().rdd.flatMap(lambda x: x).collect()[0]
+                bin_width = (max_val - min_val) / bin_size
+                bin_cutoff = [-float(&#34;inf&#34;)]
+                for i in range(1, bin_size):
+                    bin_cutoff.append(min_val + i * bin_width)
+                bin_cutoff.append(float(&#34;inf&#34;))
+                bucketizer = Bucketizer(splits=bin_cutoff, inputCol=col, outputCol=col + &#34;_binned&#34;)
+
+                if (pre_existing_model == False) &amp; (model_path != &#34;NA&#34;):
+                    bucketizer.write().overwrite().save(model_path + &#34;/feature_binning/&#34; + col)
+            if output_type == &#34;number&#34;:
+                odf = bucketizer.transform(odf)
+            else:
+                odf = range_generator(bucketizer.transform(odf), col, col + &#34;_binned&#34;)
+
+    if output_mode == &#39;replace&#39;:
+        for col in list_of_cols:
+            odf = odf.drop(col).withColumnRenamed(col + &#34;_binned&#34;, col)
+
+    if print_impact:
+        if output_mode == &#39;replace&#39;:
+            output_cols = list_of_cols
+        else:
+            output_cols = [(i + &#34;_binned&#34;) for i in list_of_cols]
+        c(odf, output_cols).show(len(output_cols))
+    return odf</code></pre>
+</details>
+</dd>
+<dt id="com.mw.ds.data_report.report_gen_inter.num_cols_chart_list"><code class="name flex">
+<span>def <span class="ident">num_cols_chart_list</span></span>(<span>df, max_cat=10, bin_type='equal_range', output_path=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>df</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>max_cat</code></strong></dt>
+<dd>(Default value = 10)</dd>
+<dt><strong><code>bin_type</code></strong></dt>
+<dd>(Default value = "equal_range")</dd>
+<dt><strong><code>output_path</code></strong></dt>
+<dd>(Default value = None)</dd>
+</dl>
+<p>Returns:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def num_cols_chart_list(df, max_cat=10, bin_type=&#34;equal_range&#34;, output_path=None):
+    &#34;&#34;&#34;
+
+    Args:
+      df: 
+      max_cat:  (Default value = 10)
+      bin_type:  (Default value = &#34;equal_range&#34;)
+      output_path:  (Default value = None)
+
+    Returns:
+
+    &#34;&#34;&#34;
+    num_cols_chart = []
+    num_cols, cat_cols, other_cols = attributeType_segregation(df)
+    for index, i in enumerate(num_cols):
+        f = plot_gen_hist_bar(idf=df, col=i, max_cat=max_cat, bin_type=bin_type)
+        if output_path is None:
+            f.write_json(&#34;fig_num_f1_&#34; + str(index))
+        else:
+            f.write_json(ends_with(output_path) + &#34;fig_num_f1_&#34; + str(index))
+
+        num_cols_chart.append(f)</code></pre>
+</details>
+</dd>
+<dt id="com.mw.ds.data_report.report_gen_inter.num_cols_chart_list_outlier"><code class="name flex">
+<span>def <span class="ident">num_cols_chart_list_outlier</span></span>(<span>idf, split_var=None, output_path=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>idf</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>split_var</code></strong></dt>
+<dd>(Default value = None)</dd>
+<dt><strong><code>output_path</code></strong></dt>
+<dd>(Default value = None)</dd>
+</dl>
+<p>Returns:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def num_cols_chart_list_outlier(idf, split_var=None, output_path=None):
+    &#34;&#34;&#34;
+
+    Args:
+      idf: 
+      split_var:  (Default value = None)
+      output_path:  (Default value = None)
+
+    Returns:
+
+    &#34;&#34;&#34;
+    num_cols, cat_cols, other_cols = attributeType_segregation(idf)
+
+    for index, i in enumerate(num_cols):
+        f = violin_plot_gen(idf, i, split_var=split_var)
+        if output_path is None:
+            f.write_json(&#34;fig_num_f3_&#34; + str(index))
+        else:
+            f.write_json(ends_with(output_path) + &#34;fig_num_f3_&#34; + str(index))</code></pre>
+</details>
+</dd>
+<dt id="com.mw.ds.data_report.report_gen_inter.num_cols_int_chart_list"><code class="name flex">
+<span>def <span class="ident">num_cols_int_chart_list</span></span>(<span>df, label, event_class, bin_type='equal_range', max_cat=10, output_path=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>df</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>label</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>event_class</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>bin_type</code></strong></dt>
+<dd>(Default value = "equal_range")</dd>
+<dt><strong><code>max_cat</code></strong></dt>
+<dd>(Default value = 10)</dd>
+<dt><strong><code>output_path</code></strong></dt>
+<dd>(Default value = None)</dd>
+</dl>
+<p>Returns:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def num_cols_int_chart_list(df, label, event_class, bin_type=&#34;equal_range&#34;, max_cat=10, output_path=None):
+    &#34;&#34;&#34;
+
+    Args:
+      df: 
+      label: 
+      event_class: 
+      bin_type:  (Default value = &#34;equal_range&#34;)
+      max_cat:  (Default value = 10)
+      output_path:  (Default value = None)
+
+    Returns:
+
+    &#34;&#34;&#34;
+    num_cols_int_chart = []
+    num_cols, cat_cols, other_cols = attributeType_segregation(df)
+    for index, i in enumerate(num_cols):
+        f = plot_gen_feat_analysis_label(idf=df, col=i, label=label, event_class=event_class, bin_type=bin_type,
+                                         max_cat=max_cat)
+        if output_path is None:
+            f.write_json(&#34;fig_num_f2_&#34; + str(index))
+        else:
+            f.write_json(ends_with(output_path) + &#34;fig_num_f2_&#34; + str(index))
+        num_cols_int_chart.append(f)
+    return num_cols_int_chart</code></pre>
+</details>
+</dd>
+<dt id="com.mw.ds.data_report.report_gen_inter.output_pandas_df"><code class="name flex">
+<span>def <span class="ident">output_pandas_df</span></span>(<span>idf, input_path, pandas_df_output_path, list_tabs, list_tab1, list_tab2, list_tab3, islabel=True)</span>
+</code></dt>
+<dd>
+<div class="desc"><h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>idf</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>input_path</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>pandas_df_output_path</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>list_tabs</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>list_tab1</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>list_tab2</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>list_tab3</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>islabel</code></strong></dt>
+<dd>(Default value = True)</dd>
+</dl>
+<p>Returns:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def output_pandas_df(idf, input_path, pandas_df_output_path, list_tabs, list_tab1, list_tab2, list_tab3, islabel=True):
+    &#34;&#34;&#34;
+
+    Args:
+      idf: 
+      input_path: 
+      pandas_df_output_path: 
+      list_tabs: 
+      list_tab1: 
+      list_tab2: 
+      list_tab3: 
+      islabel:  (Default value = True)
+
+    Returns:
+
+    &#34;&#34;&#34;
+    Path(pandas_df_output_path).mkdir(parents=True, exist_ok=True)
+    idf.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
+
+    pd.DataFrame(idf.dtypes, columns=[&#34;Attributes&#34;, &#34;Datatype&#34;]).to_csv(
+        ends_with(pandas_df_output_path) + &#34;data_type_df.csv&#34;, index=False)
+
+    list_tabs_arr = list_tabs.split(&#34;,&#34;)
+    list_tab1_arr = list_tab1.split(&#34;,&#34;)
+    list_tab2_arr = list_tab2.split(&#34;,&#34;)
+    list_tab3_arr = list_tab3.split(&#34;,&#34;)
+
+    remove_list = [&#39;IV_calculation&#39;, &#39;IG_calculation&#39;]
+
+    if islabel == False:
+        list_tab3_arr = [x for x in list_tab3_arr if x not in remove_list]
+    else:
+        pass
+
+    list_tabs_all = [list_tab1_arr, list_tab2_arr, list_tab3_arr]
+
+    for index, i in enumerate(list_tabs_arr):
+        for j in list_tabs_all[index]:
+            if i == &#34;stats_generator&#34;:
+                spark.read.parquet(
+                    ends_with(input_path) + ends_with(&#34;data_analyzer&#34;) + ends_with(i) + ends_with(j)).toPandas().to_csv(
+                    ends_with(pandas_df_output_path) + i + &#34;_&#34; + j + &#34;.csv&#34;, index=False)
+            else:
+                spark.read.parquet(
+                    ends_with(input_path) + ends_with(&#34;data_analyzer&#34;) + ends_with(i) + ends_with(j) + ends_with(
+                        &#34;stats&#34;)).toPandas().to_csv(ends_with(pandas_df_output_path) + i + &#34;_&#34; + j + &#34;.csv&#34;,
+                                                    index=False)
+
+    spark.read.parquet(ends_with(input_path) + ends_with(&#34;data_analyzer&#34;) + ends_with(&#34;stats_generator&#34;) + ends_with(
+        &#34;global_summary&#34;)).toPandas().to_csv(ends_with(pandas_df_output_path) + &#34;global_summary_df.csv&#34;, index=False)</code></pre>
+</details>
+</dd>
+<dt id="com.mw.ds.data_report.report_gen_inter.plot_comparative_drift_gen"><code class="name flex">
+<span>def <span class="ident">plot_comparative_drift_gen</span></span>(<span>df1, df2, col)</span>
+</code></dt>
+<dd>
+<div class="desc"><h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>df1</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>df2</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>col</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<p>Returns:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def plot_comparative_drift_gen(df1, df2, col):
+    &#34;&#34;&#34;
+
+    Args:
+      df1: 
+      df2: 
+      col: 
+
+    Returns:
+
+    &#34;&#34;&#34;
+    num_cols, cat_cols, other_cols = attributeType_segregation(df1)
+
+    if col in cat_cols:
+
+        xx = outlier_categories(idf=df1, list_of_cols=col, coverage=0.9, max_category=10) \
+            .groupBy(col).count() \
+            .orderBy(col, ascending=True).withColumnRenamed(&#34;count&#34;, &#34;count_source&#34;) \
+            .join(outlier_categories(idf=df2, list_of_cols=col, coverage=0.9, max_category=10) \
+                  .groupBy(col).count() \
+                  .orderBy(col, ascending=True).withColumnRenamed(&#34;count&#34;, &#34;count_target&#34;), col, &#34;left_outer&#34;) \
+            .toPandas()
+        xx.fillna({col: &#39;Missing&#39;, &#39;count_source&#39;: 0, &#39;count_target&#39;: 0}, inplace=True)
+
+    elif col in num_cols:
+
+        xx = feature_binning(df1, list_of_cols=col, method_type=&#34;equal_range&#34;, bin_size=10, output_type=&#34;number&#34;) \
+            .groupBy(col).count() \
+            .orderBy(col, ascending=True).withColumnRenamed(&#34;count&#34;, &#34;count_source&#34;) \
+            .join(feature_binning(df2, list_of_cols=col, method_type=&#34;equal_range&#34;, bin_size=10, output_type=&#34;number&#34;) \
+                  .groupBy(col).count() \
+                  .orderBy(col, ascending=True).withColumnRenamed(&#34;count&#34;, &#34;count_target&#34;), col, &#34;left_outer&#34;) \
+            .toPandas()
+        xx.fillna({col: &#39;Missing&#39;, &#39;count_source&#39;: 0, &#39;count_target&#39;: 0}, inplace=True)
+
+    else:
+        pass
+
+    xx[&#39;%_diff&#39;] = (((xx[&#39;count_target&#39;] / xx[&#39;count_source&#39;]) - 1) * 100)
+    fig = go.Figure()
+    fig.add_bar(y=list(xx.count_source.values), x=xx[col], name=&#34;source&#34;, marker=dict(color=global_theme))
+    fig.update_traces(overwrite=True, marker={&#34;opacity&#34;: 0.7})
+    fig.add_bar(y=list(xx.count_target.values), x=xx[col], name=&#34;target&#34;,
+                text=xx[&#39;%_diff&#39;].apply(lambda x: &#39;{0:0.2f}%&#39;.format(x)), marker=dict(color=global_theme))
+    fig.update_traces(textposition=&#39;outside&#39;)
+    fig.update_layout(paper_bgcolor=global_paper_bg_color, plot_bgcolor=global_plot_bg_color, showlegend=False)
+    fig.update_layout(title_text=str(&#39;Drift Comparison for &#39; + col + &#39;&lt;br&gt;&lt;sup&gt;(L-&gt;R : Source-&gt;Target)&lt;/sup&gt;&#39;))
+    fig.update_traces(marker=dict(color=global_theme))
+    fig.update_xaxes(type=&#39;category&#39;)
+    fig.add_trace(go.Scatter(x=xx[col], y=xx.count_target.values, mode=&#39;lines+markers&#39;,
+                             line=dict(color=px.colors.qualitative.Antique[10], width=3, dash=&#39;dot&#39;)))
+    fig.update_layout(xaxis_tickfont_size=14, yaxis=dict(title=&#39;frequency&#39;, titlefont_size=16, tickfont_size=14))
+
+    return fig</code></pre>
+</details>
+</dd>
+<dt id="com.mw.ds.data_report.report_gen_inter.plot_gen_boxplot"><code class="name flex">
+<span>def <span class="ident">plot_gen_boxplot</span></span>(<span>idf, cont_col, cat_col=None, color_by=None, cov=None, max_cat=50, threshold=500000)</span>
+</code></dt>
+<dd>
+<div class="desc"><h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>idf</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>cont_col</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>cat_col</code></strong></dt>
+<dd>(Default value = None)</dd>
+<dt><strong><code>color_by</code></strong></dt>
+<dd>(Default value = None)</dd>
+<dt><strong><code>cov</code></strong></dt>
+<dd>(Default value = None)</dd>
+<dt><strong><code>max_cat</code></strong></dt>
+<dd>(Default value = 50)</dd>
+<dt><strong><code>threshold</code></strong></dt>
+<dd>(Default value = 500000)</dd>
+</dl>
+<p>Returns:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def plot_gen_boxplot(idf, cont_col, cat_col=None, color_by=None, cov=None, max_cat=50, threshold=500000):
+    &#34;&#34;&#34;
+
+    Args:
+      idf: 
+      cont_col: 
+      cat_col:  (Default value = None)
+      color_by:  (Default value = None)
+      cov:  (Default value = None)
+      max_cat:  (Default value = 50)
+      threshold:  (Default value = 500000)
+
+    Returns:
+
+    &#34;&#34;&#34;
+    import plotly.express as px
+
+    count_df = idf.count()
+
+    if (cat_col is not None) and (cont_col is not None):
+
+        if count_df &gt; threshold:
+
+            group_dist = dict(sub.values() for sub in \
+                              idf.groupBy(cat_col).count().fillna(&#34;Missing&#34;, subset=cat_col) \
+                              .withColumn(&#34;count_%&#34;, \
+                                          int(threshold) * (F.col(&#34;count&#34;) / F.sum(&#34;count&#34;) \
+                                                            .over(Window.partitionBy())) / F.col(&#34;count&#34;)) \
+                              .select(cat_col, &#34;count_%&#34;).toPandas().to_dict(&#39;r&#39;))
+
+            idf = idf.fillna(&#34;Missing&#34;, subset=cat_col).sampleBy(cat_col, fractions=group_dist, seed=common_seed)
+
+        else:
+            idf = idf.fillna(&#34;Missing&#34;, subset=cat_col)
+
+        idf = outlier_categories(idf, list_of_cols=cat_col, coverage=cov, max_category=max_cat).toPandas()
+
+        fig = px.box(idf, x=cat_col, y=cont_col, color=color_by, color_discrete_sequence=global_theme)
+        #         fig.update_traces(textposition=&#39;outside&#39;)
+        fig.update_layout(
+            title_text=str(&#39;Box Plot Analysis for &#39; + str(cont_col.upper()) + str(&#34; across : &#34; + str(cat_col.upper()))))
+
+    elif (cat_col is None) and (cont_col is not None):
+
+        if count_df &gt; threshold:
+
+            group_dist = dict(sub.values() for sub in \
+                              idf.groupBy(cont_col).count().fillna(&#34;Missing&#34;) \
+                              .withColumn(&#34;count_%&#34;, int(threshold) * (F.col(&#34;count&#34;) / F.sum(&#34;count&#34;) \
+                                                                       .over(Window.partitionBy())) / F.col(&#34;count&#34;)) \
+                              .select(cont_col, &#34;count_%&#34;).toPandas().to_dict(&#39;r&#39;))
+            idf = idf.fillna(&#34;Missing&#34;, subset=cont_col).sampleBy(cont_col, fractions=group_dist, seed=common_seed)
+
+        else:
+            pass
+
+        idf = idf.select(cont_col).toPandas()
+
+        fig = px.box(idf, y=cont_col, color=color_by, color_discrete_sequence=global_theme)
+        #         fig.update_traces(textposition=&#39;outside&#39;)
+        fig.update_layout(title_text=str(&#39;Box Plot Analysis for &#39; + str(cont_col.upper())))
+
+    else:
+        pass
+
+    fig.layout.plot_bgcolor = global_plot_bg_color
+    fig.layout.paper_bgcolor = global_paper_bg_color
+    #     plotly.offline.plot(fig, auto_open=False, validate=False, filename=f&#34;{base_loc}/{file_name_}box_plot.html&#34;)
+
+    return fig</code></pre>
+</details>
+</dd>
+<dt id="com.mw.ds.data_report.report_gen_inter.plot_gen_dist"><code class="name flex">
+<span>def <span class="ident">plot_gen_dist</span></span>(<span>idf, col, threshold=500000, rug_chart=False)</span>
+</code></dt>
+<dd>
+<div class="desc"><h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>idf</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>col</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>threshold</code></strong></dt>
+<dd>(Default value = 500000)</dd>
+<dt><strong><code>rug_chart</code></strong></dt>
+<dd>(Default value = False)</dd>
+</dl>
+<p>Returns:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def plot_gen_dist(idf, col, threshold=500000, rug_chart=False):
+    &#34;&#34;&#34;
+
+    Args:
+      idf: 
+      col: 
+      threshold:  (Default value = 500000)
+      rug_chart:  (Default value = False)
+
+    Returns:
+
+    &#34;&#34;&#34;
+    import plotly.figure_factory as ff
+    #     file_name_ = str(&#34;distplot&#34;) + &#34;_&#34; + str(col) + &#34;_&#34;
+    group_label = [col]
+    count_df = idf.count()
+
+    if col in num_cols:
+
+        if count_df &gt; threshold:
+            group_dist = dict(sub.values() for sub in \
+                              idf.groupBy(col).count().fillna(&#34;Missing&#34;, subset=col) \
+                              .withColumn(&#34;count_%&#34;, \
+                                          int(threshold) * (F.col(&#34;count&#34;) / F.sum(&#34;count&#34;) \
+                                                            .over(Window.partitionBy())) / F.col(&#34;count&#34;)) \
+                              .select(col, &#34;count_%&#34;).toPandas().to_dict(&#39;r&#39;))
+
+            idf = idf.select(col).dropna().sampleBy(col, fractions=group_dist, seed=common_seed)
+
+        else:
+            idf = idf.select(col).dropna()
+
+        idf = idf.select(col).rdd.flatMap(lambda x: x).collect()
+        fig = ff.create_distplot([idf], group_labels=group_label, show_rug=rug_chart, colors=global_theme)
+
+        fig.layout.plot_bgcolor = global_plot_bg_color
+        fig.layout.paper_bgcolor = global_paper_bg_color
+        fig.update_layout(title_text=str(&#34;Distribution Plot &#34; + str(col)))
+
+        #         plotly.offline.plot(fig, auto_open=False, validate=False, filename=f&#34;{base_loc}/{file_name_}distplot.html&#34;)
+        return fig
+
+    else:
+        return 0</code></pre>
+</details>
+</dd>
+<dt id="com.mw.ds.data_report.report_gen_inter.plot_gen_feat_analysis_label"><code class="name flex">
+<span>def <span class="ident">plot_gen_feat_analysis_label</span></span>(<span>idf, col, label, event_class, max_cat=None, bin_type=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>idf</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>col</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>label</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>event_class</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>max_cat</code></strong></dt>
+<dd>(Default value = None)</dd>
+<dt><strong><code>bin_type</code></strong></dt>
+<dd>(Default value = None)</dd>
+</dl>
+<p>Returns:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def plot_gen_feat_analysis_label(idf, col, label, event_class, max_cat=None, bin_type=None):
+    &#34;&#34;&#34;
+
+    Args:
+      idf: 
+      col: 
+      label: 
+      event_class: 
+      max_cat:  (Default value = None)
+      bin_type:  (Default value = None)
+
+    Returns:
+
+    &#34;&#34;&#34;
+    import plotly.express as px
+    num_cols, cat_cols, other_cols = attributeType_segregation(idf)
+
+    event_class = str(event_class)
+
+    #     file_name_ = str(col) + &#34;_&#34; + str(event_class) + &#34;_&#34; + str(max_cat) + &#34;_&#34; + str(bin_type) + &#34;_&#34;
+
+    class_cats = idf.select(label).distinct().rdd.flatMap(lambda x: x).collect()
+    if col in cat_cols:
+        idf = idf.groupBy(col).pivot(label).count() \
+            .fillna(0, subset=class_cats) \
+            .withColumn(&#34;event_rate&#34;, 100 * (F.col(event_class) / (F.col(class_cats[0]) + F.col(class_cats[1])))) \
+            .withColumn(&#34;attribute_name&#34;, F.lit(col)) \
+            .withColumn(col, f_remove_dups(col)) \
+            .orderBy(&#34;event_rate&#34;, ascending=False) \
+            .toPandas()
+
+        fig = px.bar(idf, x=col, y=&#39;event_rate&#39;, text=idf[&#39;event_rate&#39;].apply(lambda x: &#39;{0:1.2f}%&#39;.format(x)),
+                     color_discrete_sequence=global_theme)
+        fig.update_traces(textposition=&#39;outside&#39;)
+        fig.update_layout(title_text=str(&#39;Event Rate Distribution for &#39; + str(col.upper()) + str(
+            &#34; [Target Variable : &#34; + str(event_class) + str(&#34;]&#34;))))
+        fig.update_xaxes(type=&#39;category&#39;)
+
+    elif col in num_cols:
+
+        idf = feature_binning(idf, method_type=bin_type, bin_size=max_cat, list_of_cols=col, output_type=&#34;string&#34;)
+
+        odf = idf.groupBy(col).pivot(label).count() \
+            .fillna(0, subset=class_cats) \
+            .withColumn(&#34;event_rate&#34;, 100 * (F.col(event_class) / (F.col(class_cats[0]) + F.col(class_cats[1])))) \
+            .withColumn(&#34;attribute_name&#34;, F.lit(col)) \
+            .withColumn(col, f_remove_dups(col)) \
+            .orderBy(&#34;event_rate&#34;, ascending=False) \
+            .toPandas()
+
+        fig = px.bar(odf, x=col, y=&#39;event_rate&#39;, text=odf[&#39;event_rate&#39;].apply(lambda x: &#39;{0:1.2f}%&#39;.format(x)),
+                     color_discrete_sequence=global_theme)
+        fig.update_traces(textposition=&#39;outside&#39;)
+        fig.update_layout(title_text=str(&#39;Event Rate Distribution for &#39; + str(col.upper()) + str(
+            &#34; [Target Variable : &#34; + str(event_class) + str(&#34;]&#34;))))
+        fig.update_xaxes(type=&#39;category&#39;)
+
+    else:
+        pass
+
+    fig.layout.plot_bgcolor = global_plot_bg_color
+    fig.layout.paper_bgcolor = global_paper_bg_color
+    #     plotly.offline.plot(fig, auto_open=False, validate=False, filename=f&#34;{base_loc}/{file_name_}feat_analysis_label.html&#34;)
+
+    return fig</code></pre>
+</details>
+</dd>
+<dt id="com.mw.ds.data_report.report_gen_inter.plot_gen_hist_bar"><code class="name flex">
+<span>def <span class="ident">plot_gen_hist_bar</span></span>(<span>idf, col, cov=None, max_cat=50, bin_type=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>idf</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>col</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>cov</code></strong></dt>
+<dd>(Default value = None)</dd>
+<dt><strong><code>max_cat</code></strong></dt>
+<dd>(Default value = 50)</dd>
+<dt><strong><code>bin_type</code></strong></dt>
+<dd>(Default value = None)</dd>
+</dl>
+<p>Returns:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def plot_gen_hist_bar(idf, col, cov=None, max_cat=50, bin_type=None):
+    &#34;&#34;&#34;
+
+    Args:
+      idf: 
+      col: 
+      cov:  (Default value = None)
+      max_cat:  (Default value = 50)
+      bin_type:  (Default value = None)
+
+    Returns:
+
+    &#34;&#34;&#34;
+    import plotly.express as px
+    num_cols, cat_cols, other_cols = attributeType_segregation(idf)
+
+    # try:
+    if col in cat_cols:
+
+        idf = outlier_categories(idf, list_of_cols=col, coverage=cov, max_category=max_cat) \
+            .groupBy(col).count() \
+            .withColumn(&#34;count_%&#34;, 100 * (F.col(&#34;count&#34;) / F.sum(&#34;count&#34;).over(Window.partitionBy()))) \
+            .withColumn(col, f_remove_dups(col)) \
+            .orderBy(&#34;count&#34;, ascending=False) \
+            .toPandas().fillna(&#34;Missing&#34;)
+
+        fig = px.bar(idf, x=col, y=&#39;count&#39;, text=idf[&#39;count_%&#39;].apply(lambda x: &#39;{0:1.2f}%&#39;.format(x)),
+                     color_discrete_sequence=global_theme)
+        fig.update_traces(textposition=&#39;outside&#39;)
+        fig.update_layout(title_text=str(&#39;Bar Plot for &#39; + str(col.upper())))
+    #         fig.update_layout(barmode=&#39;stack&#39;, xaxis={&#39;categoryorder&#39;:&#39;total descending&#39;})
+
+    elif col in num_cols:
+
+        idf = feature_binning(idf, list_of_cols=col, method_type=bin_type, bin_size=max_cat, output_type=&#34;string&#34;) \
+            .groupBy(str(col + &#34;_binning_number&#34;), col).count() \
+            .withColumn(&#34;count_%&#34;, 100 * (F.col(&#34;count&#34;) / F.sum(&#34;count&#34;).over(Window.partitionBy()))) \
+            .withColumn(col, f_remove_dups(col)) \
+            .orderBy(str(col + &#34;_binning_number&#34;), ascending=True) \
+            .toPandas().fillna(&#34;Missing&#34;)
+
+        fig = px.bar(idf, x=col, y=&#39;count&#39;, text=idf[&#39;count_%&#39;].apply(lambda x: &#39;{0:1.2f}%&#39;.format(x)),
+                     color_discrete_sequence=global_theme)
+        fig.update_traces(textposition=&#39;outside&#39;)
+        fig.update_layout(title_text=str(&#39;Histogram for &#39; + str(col.upper())))
+        fig.update_xaxes(type=&#39;category&#39;)
+    #         fig.update_layout(barmode=&#39;stack&#39;, xaxis={&#39;categoryorder&#39;:&#39;total descending&#39;})
+
+    else:
+        pass
+
+    fig.layout.plot_bgcolor = global_plot_bg_color
+    fig.layout.paper_bgcolor = global_paper_bg_color
+
+    #       plotly.offline.plot(fig, auto_open=False, validate=False, filename=f&#34;{base_loc}/{file_name_}bar_graph.html&#34;)
+
+    return fig</code></pre>
+</details>
+</dd>
+<dt id="com.mw.ds.data_report.report_gen_inter.plot_gen_variable_clustering"><code class="name flex">
+<span>def <span class="ident">plot_gen_variable_clustering</span></span>(<span>idf)</span>
+</code></dt>
+<dd>
+<div class="desc"><h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>idf</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<p>Returns:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def plot_gen_variable_clustering(idf):
+    &#34;&#34;&#34;
+
+    Args:
+      idf: 
+
+    Returns:
+
+    &#34;&#34;&#34;
+    import plotly.express as px
+
+    fig = px.sunburst(idf, path=[&#39;Cluster&#39;, &#39;Attribute&#39;], values=&#39;RS_Ratio&#39;, color_discrete_sequence=global_theme)
+    #     fig.update_layout(title_text=str(&#34;Distribution of homogenous variable across Clusters&#34;))
+
+    #     plotly.offline.plot(fig, auto_open=False, validate=False, filename=f&#34;{base_loc}/{file_name_}plot_sunburst.html&#34;)
+
+    return fig</code></pre>
+</details>
+</dd>
+<dt id="com.mw.ds.data_report.report_gen_inter.processed_df"><code class="name flex">
+<span>def <span class="ident">processed_df</span></span>(<span>df, drop_cols_viz)</span>
+</code></dt>
+<dd>
+<div class="desc"><h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>df</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>drop_cols_viz</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<p>Returns:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def processed_df(df, drop_cols_viz):
+    &#34;&#34;&#34;
+
+    Args:
+      df: 
+      drop_cols_viz: 
+
+    Returns:
+
+    &#34;&#34;&#34;
+    num_cols, cat_cols, other_cols = attributeType_segregation(df)
+
+    df_ = df.select(num_cols + cat_cols)
+    zero_var_col = []
+    for i in df_.columns:
+        x = df_.select(i).distinct().count()
+        if x == 1:
+            zero_var_col.append(i)
+        else:
+            pass
+    df_ = df_.drop(*zero_var_col + drop_cols_viz)
+    return df_</code></pre>
+</details>
+</dd>
+<dt id="com.mw.ds.data_report.report_gen_inter.range_generator"><code class="name flex">
+<span>def <span class="ident">range_generator</span></span>(<span>df, col_orig, col_binned)</span>
+</code></dt>
+<dd>
+<div class="desc"><h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>df</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>col_orig</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>col_binned</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<p>Returns:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def range_generator(df, col_orig, col_binned):
+    &#34;&#34;&#34;
+
+    Args:
+      df: 
+      col_orig: 
+      col_binned: 
+
+    Returns:
+
+    &#34;&#34;&#34;
+    range_table = df.groupBy(col_binned) \
+        .agg(F.round(F.min(col_orig), 2).alias(&#34;min&#34;), F.round(F.max(col_orig), 2).alias(&#34;max&#34;)) \
+        .withColumn(&#34;range&#34;, F.concat(F.col(&#34;min&#34;), F.lit(&#34;-&#34;), F.col(&#34;max&#34;))) \
+        .select(col_binned, &#34;range&#34;)
+
+    df_ = df.join(range_table, col_binned, &#34;left_outer&#34;) \
+        .withColumnRenamed(col_binned, str(col_orig + &#34;_binning_number&#34;)) \
+        .withColumnRenamed(&#34;range&#34;, col_binned)
+
+    return df_</code></pre>
+</details>
+</dd>
+<dt id="com.mw.ds.data_report.report_gen_inter.remove_dups"><code class="name flex">
+<span>def <span class="ident">remove_dups</span></span>(<span>col)</span>
+</code></dt>
+<dd>
+<div class="desc"><h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>col</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<p>Returns:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def remove_dups(col):
+    &#34;&#34;&#34;
+
+    Args:
+      col: 
+
+    Returns:
+
+    &#34;&#34;&#34;
+    try:
+        list_col = col.split(&#34;-&#34;)
+        deduped_col = list(set(list_col))
+        if len(list_col) != len(deduped_col):
+            return deduped_col[0]
+        else:
+            return col
+    except:
+        pass</code></pre>
+</details>
+</dd>
+<dt id="com.mw.ds.data_report.report_gen_inter.violin_plot_gen"><code class="name flex">
+<span>def <span class="ident">violin_plot_gen</span></span>(<span>df, col, split_var=None, threshold=500000)</span>
+</code></dt>
+<dd>
+<div class="desc"><h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>df</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>col</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>split_var</code></strong></dt>
+<dd>(Default value = None)</dd>
+<dt><strong><code>threshold</code></strong></dt>
+<dd>(Default value = 500000)</dd>
+</dl>
+<p>Returns:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def violin_plot_gen(df, col, split_var=None, threshold=500000):
+    &#34;&#34;&#34;
+
+    Args:
+      df: 
+      col: 
+      split_var:  (Default value = None)
+      threshold:  (Default value = 500000)
+
+    Returns:
+
+    &#34;&#34;&#34;
+    count_df = df.count()
+
+    if count_df &gt; threshold:
+        group_dist = dict(sub.values() for sub in \
+                          df.groupBy(col).count().fillna(&#34;Missing&#34;, subset=cat_col) \
+                          .withColumn(&#34;count_%&#34;, \
+                                      int(threshold) * (F.col(&#34;count&#34;) / F.sum(&#34;count&#34;) \
+                                                        .over(Window.partitionBy())) / F.col(&#34;count&#34;)) \
+                          .select(col, &#34;count_%&#34;).toPandas().to_dict(&#39;r&#39;))
+
+        df = df.dropna().sampleBy(col, fractions=group_dist, seed=common_seed).toPandas()
+
+    else:
+        df = df.dropna().toPandas()
+
+    fig = px.violin(df, y=col, color=split_var, box=True, points=&#34;outliers&#34;,
+                    color_discrete_sequence=[global_theme_r[8], global_theme_r[4]])
+    fig.layout.plot_bgcolor = global_plot_bg_color
+    fig.layout.paper_bgcolor = global_paper_bg_color
+    fig.update_layout(legend=dict(orientation=&#34;h&#34;, x=0.5, yanchor=&#34;bottom&#34;, xanchor=&#34;center&#34;))
+
+    return fig</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="com.mw.ds.data_report" href="index.html">com.mw.ds.data_report</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="com.mw.ds.data_report.report_gen_inter.cat_cols_chart_list" href="#com.mw.ds.data_report.report_gen_inter.cat_cols_chart_list">cat_cols_chart_list</a></code></li>
+<li><code><a title="com.mw.ds.data_report.report_gen_inter.cat_cols_int_chart_list" href="#com.mw.ds.data_report.report_gen_inter.cat_cols_int_chart_list">cat_cols_int_chart_list</a></code></li>
+<li><code><a title="com.mw.ds.data_report.report_gen_inter.charts_to_objects" href="#com.mw.ds.data_report.report_gen_inter.charts_to_objects">charts_to_objects</a></code></li>
+<li><code><a title="com.mw.ds.data_report.report_gen_inter.data_drift" href="#com.mw.ds.data_report.report_gen_inter.data_drift">data_drift</a></code></li>
+<li><code><a title="com.mw.ds.data_report.report_gen_inter.ends_with" href="#com.mw.ds.data_report.report_gen_inter.ends_with">ends_with</a></code></li>
+<li><code><a title="com.mw.ds.data_report.report_gen_inter.f_remove_dups" href="#com.mw.ds.data_report.report_gen_inter.f_remove_dups">f_remove_dups</a></code></li>
+<li><code><a title="com.mw.ds.data_report.report_gen_inter.feature_binning" href="#com.mw.ds.data_report.report_gen_inter.feature_binning">feature_binning</a></code></li>
+<li><code><a title="com.mw.ds.data_report.report_gen_inter.num_cols_chart_list" href="#com.mw.ds.data_report.report_gen_inter.num_cols_chart_list">num_cols_chart_list</a></code></li>
+<li><code><a title="com.mw.ds.data_report.report_gen_inter.num_cols_chart_list_outlier" href="#com.mw.ds.data_report.report_gen_inter.num_cols_chart_list_outlier">num_cols_chart_list_outlier</a></code></li>
+<li><code><a title="com.mw.ds.data_report.report_gen_inter.num_cols_int_chart_list" href="#com.mw.ds.data_report.report_gen_inter.num_cols_int_chart_list">num_cols_int_chart_list</a></code></li>
+<li><code><a title="com.mw.ds.data_report.report_gen_inter.output_pandas_df" href="#com.mw.ds.data_report.report_gen_inter.output_pandas_df">output_pandas_df</a></code></li>
+<li><code><a title="com.mw.ds.data_report.report_gen_inter.plot_comparative_drift_gen" href="#com.mw.ds.data_report.report_gen_inter.plot_comparative_drift_gen">plot_comparative_drift_gen</a></code></li>
+<li><code><a title="com.mw.ds.data_report.report_gen_inter.plot_gen_boxplot" href="#com.mw.ds.data_report.report_gen_inter.plot_gen_boxplot">plot_gen_boxplot</a></code></li>
+<li><code><a title="com.mw.ds.data_report.report_gen_inter.plot_gen_dist" href="#com.mw.ds.data_report.report_gen_inter.plot_gen_dist">plot_gen_dist</a></code></li>
+<li><code><a title="com.mw.ds.data_report.report_gen_inter.plot_gen_feat_analysis_label" href="#com.mw.ds.data_report.report_gen_inter.plot_gen_feat_analysis_label">plot_gen_feat_analysis_label</a></code></li>
+<li><code><a title="com.mw.ds.data_report.report_gen_inter.plot_gen_hist_bar" href="#com.mw.ds.data_report.report_gen_inter.plot_gen_hist_bar">plot_gen_hist_bar</a></code></li>
+<li><code><a title="com.mw.ds.data_report.report_gen_inter.plot_gen_variable_clustering" href="#com.mw.ds.data_report.report_gen_inter.plot_gen_variable_clustering">plot_gen_variable_clustering</a></code></li>
+<li><code><a title="com.mw.ds.data_report.report_gen_inter.processed_df" href="#com.mw.ds.data_report.report_gen_inter.processed_df">processed_df</a></code></li>
+<li><code><a title="com.mw.ds.data_report.report_gen_inter.range_generator" href="#com.mw.ds.data_report.report_gen_inter.range_generator">range_generator</a></code></li>
+<li><code><a title="com.mw.ds.data_report.report_gen_inter.remove_dups" href="#com.mw.ds.data_report.report_gen_inter.remove_dups">remove_dups</a></code></li>
+<li><code><a title="com.mw.ds.data_report.report_gen_inter.violin_plot_gen" href="#com.mw.ds.data_report.report_gen_inter.violin_plot_gen">violin_plot_gen</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>
