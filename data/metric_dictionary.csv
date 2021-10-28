@@ -1,0 +1,36 @@
+﻿Section Category,Section Name,Metric Name,Metric Definitions
+Descriptor Statistics,,,Used to summarize basic and statistical infromation of the datasets
+Descriptor Statistics-Global Summary,Global Summary,,"Summarize global information about the datasets like number of rows and columns, name and number of categorical and numerical attributes"
+Descriptor Statistics-Statistics by Metric Type,Statistics by Metric Type,Measures of Shape,Describe the distribution(or pattern) of different attributes in the datasets using skewness and kurtosis
+Descriptor Statistics-Statistics by Metric Type,Statistics by Metric Type,Measures of Central Tendency,"Describe the central position of each attributes in datasets by finding basic measures like mean, median and mode"
+Descriptor Statistics-Statistics by Metric Type,Statistics by Metric Type,Measure Of Percentiles,Indicate the value below which a given percentage of data of given attribute falls
+Descriptor Statistics-Statistics by Metric Type,Statistics by Metric Type,Measures Of Dispersion,"Measure the spread of data about the mean e.g., Standard Deviation, Variance, Covariance, IQR and range of each attribute of datasets"
+Descriptor Statistics-Statistics by Metric Type,Statistics by Metric Type,Measures Of Cardinality,Measure the count of unique values present in each attribute
+Descriptor Statistics-Statistics by Metric Type,Statistics by Metric Type,Measures Of Counts,"Measure the sparsity of the datasets, e.g., fill count and percenatge, missing value count and percentage and nonzero count and percenatge"
+Descriptor Statistics-Attribute Visualization,Attribute Visualization,Numerical,Visualize the distributions of Numerical attributes using Histograms
+Descriptor Statistics-Attribute Visualization,Attribute Visualization,Categorical,Visualize the distributions of Categorical attributes using Barplot
+Quality check,,,Used to check the quality of a datasets both at column level and row level. 
+Quality check-Column Level,Column Level,IDness Detection,
+Quality check-Column Level,Column Level,Null Detection,"Detect the sparsity of the datasets, e.g., count and percentage of missing value of attributes"
+Quality check-Column Level,Column Level,Baisedness Detection,Detect the baisedness of the attributes by finding the mode and its percenatge(value that is most frequent in the data)
+Quality check-Column Level,Column Level,InvalidEntries Detection,Detect the entries and count of invalid values or noise present in the datasets
+Quality check-Column Level,Column Level,Outlier Detection,Used to detect and visualize the outlier present in numerical attributes of the datasets
+Quality check-Row Level,Row Level,Duplicate Detection,Measure number of rows in the datasets that have same value for each attribute
+Quality check-Row Level,Row Level,Rows WMissingFeats,Measure the count/percentage of rows which have missing/null attributes
+Association & Interactions,,,Used to find interesting associations and relationships among attributes of daatsets
+Association & Interactions-Association Matrix,Association Matrix,Correlation Matrix,Measure the strength of relationship among each attribute by finding correlation coefficient having range -1.0 to 1.0.
+Association & Interactions-Association Matrix,Association Matrix,IV Calculations,Information Value Calculations- Used to rank variables on the basis of their importance.Greater the value of IV higher rthe attribute importance. IV less than 0.02 is not useful for prediction
+Association & Interactions-Association Matrix,Association Matrix,IG Calculations,Information Gain- Measures the reduction in entropy by splitting a dataset according to given value of a attribute.
+Association & Interactions-Association Matrix,Association Matrix,Varibale clustering,Divides the numerical attributes into disjoint or hierarchical clusters based on linear relationship of attributes
+Association & Interactions-,,,
+Association & Interactions-Association Plot,Association Plot,Correlation Matrix,Used to Visualize the strength of relationship among attributes by ploting heat map
+Association & Interactions-Association Plot,Association Plot,IV Calculations,Used to Visualize attribute importance of in increasing or decreasing order using barplot
+Association & Interactions-Association Plot,Association Plot,IG Calculations,"Used to visualize the purity of attributes in dataset using barplot i.e., how a change to the datasets impact the distribution of data."
+Association & Interactions-Association Plot,Association Plot,Varibale clustering,Used to visualize how numerical featrures are group together into different clusters formed by variable clustering
+Association & Interactions-Attribute to Target Association,Attribute to Target Association,Numerical ,Used to Visualize the bucket-wise percentage/ditribution of data for Numerical attributes having Target Variable greater/less than or equal to given threshold value
+Association & Interactions-Attribute to Target Association,Attribute to Target Association,Categorical,Used to Visualize the Category-wise percentage/distributions of data for categorical attributes having Target Varibale greater/less than or equal to  given threshold value.
+Data Drift ,,,Used to monitor differences between target and source datasets 
+Data Drift -Data Drift Analyzer,Data Drift Analyzer,PSI,Population Stability Index- Measure how much a attribute has shifted in distribution between two sample of dataset(target and source datasets )
+Data Drift -Data Drift Analyzer,Data Drift Analyzer,JSD,Jensen-Shannon Divergence- Used to quantify the difference(or similarity) between distributions of two sample data(target and source datasets). It ranges between 0-1. smaller the score of JSD higher the similarity of two datasets. 
+Data Drift -Data Drift Analyzer,Data Drift Analyzer,HD,Hellinger Distance- Measure the similarity in distribution between two sample of dataset(target and source datasets ). Smaller the value of hellinger distance higher the similarity in distribution of two sample dataset.
+Data Drift -Data Drift Analyzer,Data Drift Analyzer,KS,kolmogorov-Smirnov Test- It quantifies a distance between distribution of two sample dataset to check the similarity between them. Greater the value of K-S test p-value higher the similarity between two dataset.

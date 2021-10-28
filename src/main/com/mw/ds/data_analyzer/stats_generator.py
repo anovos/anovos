@@ -143,7 +143,7 @@ def measures_of_counts(idf, list_of_cols='all', drop_cols=[], print_impact=False
         drop_cols = [x.strip() for x in drop_cols.split('|')]
 
     list_of_cols = [e for e in list_of_cols if e not in drop_cols]
-    num_cols = attributeType_segregation(idf)[0]
+    num_cols = attributeType_segregation(idf.select(list_of_cols))[0]
 
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError('Invalid input for Column(s)')

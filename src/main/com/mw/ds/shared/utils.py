@@ -55,6 +55,7 @@ def get_dtype(idf, col):
     """
     return [dtype for name, dtype in idf.dtypes if name == col][0]
 
+
 def ends_with(string, end_str="/"):
     """
     :param string: "s3:mw-bucket"
