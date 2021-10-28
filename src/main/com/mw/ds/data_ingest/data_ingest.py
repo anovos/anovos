@@ -19,9 +19,9 @@ def write_dataset(idf, file_path, file_type, file_configs={}):
     """
     :param idf: input dataframe
     :param file_path: Path to input data (directory or filename)
-    :param file_type: csv, parquet
+    :param file_type: csv, parquet, avro
     :param file_configs: passing arguments in dict format - header, delimiter, mode, compression, repartition
-                   compression options - uncompressed, gzip, snappy (only valid for parquet)
+                   compression options - uncompressed, gzip (doesn't work with avro), snappy (only valid for parquet)
                    mode options - error (default), overwrite, append
                    repartition - None or int (no. of part files to generate)
                    {"header":"True","delimiter":",",'compression':'snappy','mode':'overwrite','repartition':'10'}

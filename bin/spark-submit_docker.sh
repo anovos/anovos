@@ -31,6 +31,6 @@ local
 nohup ./remove_overheads.sh 10000 2 &
 
 echo "Generating anovos final report.... "
-#python3 com/mw/ds/data_report/report_gen_final.py
+#com/mw/ds/data_report/report_generation.py configs.yaml local
 
 sleep infinity

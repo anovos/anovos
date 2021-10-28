@@ -77,14 +77,17 @@ def nullRows_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, t
 
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError('Invalid input for Column(s)')
-    if (treatment_threshold < 0) | (treatment_threshold > 1):
-        raise TypeError('Invalid input for Treatment Threshold Value')
+
     if str(treatment).lower() == 'true':
         treatment = True
     elif str(treatment).lower() == 'false':
         treatment = False
     else:
         raise TypeError('Non-Boolean input for treatment')
+
+    treatment_threshold = float(treatment_threshold)
+    if (treatment_threshold < 0) | (treatment_threshold > 1):
+        raise TypeError('Invalid input for Treatment Threshold Value')
 
     def null_count(*cols):
         return cols.count(None)
@@ -95,16 +98,19 @@ def nullRows_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, t
         .withColumn('flagged', F.when(F.col("null_cols_count") > (len(list_of_cols) * treatment_threshold), 1) \
                     .otherwise(0))
 
-    if not (treatment) | (treatment_threshold == 1):
-        odf = idf
-    else:
+    if treatment_threshold == 1:
+        odf_tmp = odf_tmp.withColumn('flagged', F.when(F.col("null_cols_count") == len(list_of_cols), 1).otherwise(0))
+
+    if treatment:
         odf = odf_tmp.where(F.col("flagged") == 0).drop(*["null_cols_count", "flagged"])
+    else:
+        odf = idf
 
     odf_print = odf_tmp.groupBy("null_cols_count", "flagged").agg(F.count(F.lit(1)).alias('row_count')) \
         .withColumn('row_pct', F.round(F.col('row_count') / float(idf.count()), 4)) \
-        .select('null_cols_count', 'row_count', 'row_pct', 'flagged')
+        .select('null_cols_count', 'row_count', 'row_pct', 'flagged').orderBy('null_cols_count')
     if print_impact:
-        odf_print.orderBy('null_cols_count').show(odf.count())
+        odf_print.show(odf.count())
 
     return odf, odf_print
 
@@ -152,6 +158,12 @@ def nullColumns_detection(idf, list_of_cols='missing', drop_cols=[], treatment=F
         raise TypeError('Invalid input for Column(s)')
     if treatment_method not in ('MMM', 'row_removal', 'column_removal'):
         raise TypeError('Invalid input for method_type')
+    if treatment_method == 'column_removal':
+        treatment_threshold = treatment_configs.get('treatment_threshold', None)
+        if treatment_threshold:
+            treatment_threshold = float(treatment_threshold)
+        else:
+            raise TypeError('Invalid input for column removal threshold')
 
     odf_print = odf_print.where(F.col('attribute').isin(list_of_cols))
 
@@ -159,7 +171,7 @@ def nullColumns_detection(idf, list_of_cols='missing', drop_cols=[], treatment=F
 
         if treatment_method == 'column_removal':
             remove_cols = odf_print.where(F.col('attribute').isin(list_of_cols)) \
-                .where(F.col('missing_pct') > treatment_configs['treatment_threshold']) \
+                .where(F.col('missing_pct') > treatment_threshold) \
                 .select('attribute').rdd.flatMap(lambda x: x).collect()
             odf = idf.drop(*remove_cols)
             if print_impact:
@@ -179,7 +191,7 @@ def nullColumns_detection(idf, list_of_cols='missing', drop_cols=[], treatment=F
 
         if treatment_method == 'MMM':
             if stats_unique == {}:
-                remove_cols = uniqueCount_computation(idf_sample, list_of_cols).where(F.col('unique_values') < 2) \
+                remove_cols = uniqueCount_computation(idf, list_of_cols).where(F.col('unique_values') < 2) \
                     .select('attribute').rdd.flatMap(lambda x: x).collect()
             else:
                 remove_cols = read_dataset(**stats_unique).where(F.col('unique_values') < 2) \
@@ -287,13 +299,20 @@ def outlier_detection(idf, list_of_cols='all', drop_cols=[], detection_side='upp
             mapped_value = df_model.where(F.col('attribute') == i).select('parameters') \
                 .rdd.flatMap(lambda x: x).collect()[0]
             params.append(mapped_value)
+
+        pctile_params = idf.approxQuantile(list_of_cols, [detection_configs.get('pctile_lower', 0.05),
+                                                          detection_configs.get('pctile_upper', 0.95)], 0.01)
+        skewed_cols = []
+        for i, p in zip(list_of_cols, pctile_params):
+            if p[0] == p[1]:
+                skewed_cols.append(i)
     else:
         detection_configs['pctile_lower'] = detection_configs['pctile_lower'] or 0.0
         detection_configs['pctile_upper'] = detection_configs['pctile_upper'] or 1.0
         pctile_params = idf.approxQuantile(list_of_cols, [detection_configs['pctile_lower'],
                                                           detection_configs['pctile_upper']], 0.01)
         skewed_cols = []
-        for i, p in zip(list_of_cols,pctile_params):
+        for i, p in zip(list_of_cols, pctile_params):
             if p[0] == p[1]:
                 skewed_cols.append(i)
 
@@ -350,10 +369,13 @@ def outlier_detection(idf, list_of_cols='all', drop_cols=[], detection_side='upp
             [i, odf.where(F.col(i + "_outliered") == -1).count(), odf.where(F.col(i + "_outliered") == 1).count()])
 
         if treatment & (treatment_method in ('value_replacement', 'null_replacement')):
-            warnings.warn("Columns dropped from outlier treatment due to highly skewed distribution: " + (',').join(skewed_cols))
+            warnings.warn(
+                "Columns dropped from outlier treatment due to highly skewed distribution: " + (',').join(skewed_cols))
             if i not in skewed_cols:
-                replace_vals = {'value_replacement': [params[index][0], params[index][1]], 'null_replacement': [None, None]}
-                odf = odf.withColumn(i + "_outliered", F.when(F.col(i + "_outliered") == 1, replace_vals[treatment_method][1]) \
+                replace_vals = {'value_replacement': [params[index][0], params[index][1]],
+                                'null_replacement': [None, None]}
+                odf = odf.withColumn(i + "_outliered",
+                                     F.when(F.col(i + "_outliered") == 1, replace_vals[treatment_method][1]) \
                                      .otherwise(F.when(F.col(i + "_outliered") == -1, replace_vals[treatment_method][0]) \
                                                 .otherwise(F.col(i))))
                 if output_mode == 'replace':
@@ -364,10 +386,12 @@ def outlier_detection(idf, list_of_cols='all', drop_cols=[], detection_side='upp
     odf = odf.drop("outliered")
 
     if treatment & (treatment_method == 'row_removal'):
-        warnings.warn("Columns dropped from outlier treatment due to highly skewed distribution: " + (',').join(skewed_cols))
+        warnings.warn(
+            "Columns dropped from outlier treatment due to highly skewed distribution: " + (',').join(skewed_cols))
         for index, i in enumerate(list_of_cols):
             if i not in skewed_cols:
-                odf = odf.where((F.col(i + "_outliered") == 0) | (F.col(i + "_outliered").isNull())).drop(i + "_outliered")
+                odf = odf.where((F.col(i + "_outliered") == 0) | (F.col(i + "_outliered").isNull())).drop(
+                    i + "_outliered")
             else:
                 odf = odf.drop(i + "_outliered")
 
@@ -381,7 +405,7 @@ def outlier_detection(idf, list_of_cols='all', drop_cols=[], detection_side='upp
     return odf, odf_print
 
 
-def IDness_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, treatment_threshold=1.0, stats_unique={},
+def IDness_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, treatment_threshold=0.8, stats_unique={},
                      print_impact=False):
     """
     :params idf: Input Dataframe
@@ -415,6 +439,7 @@ def IDness_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, tre
                                T.StructField('flagged', T.StringType(), True)])
         odf_print = spark.sparkContext.emptyRDD().toDF(schema)
         return odf, odf_print
+    treatment_threshold = float(treatment_threshold)
     if (treatment_threshold < 0) | (treatment_threshold > 1):
         raise TypeError('Invalid input for Treatment Threshold Value')
     if str(treatment).lower() == 'true':
@@ -425,16 +450,15 @@ def IDness_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, tre
         raise TypeError('Non-Boolean input for treatment')
 
     if stats_unique == {}:
-        odf_print = measures_of_cardinality(idf, list_of_cols) \
-            .withColumn('flagged', F.lit("-"))
+        odf_print = measures_of_cardinality(idf, list_of_cols)
     else:
-        odf_print = read_dataset(**stats_unique).withColumn('flagged', F.lit("-"))
+        odf_print = read_dataset(**stats_unique)
+
+    odf_print = odf_print.withColumn('flagged', F.when(F.col('IDness') >= treatment_threshold, 1).otherwise(0))
 
     if treatment:
-        remove_cols = odf_print.where(F.col('IDness') >= treatment_threshold) \
-            .select('attribute').rdd.flatMap(lambda x: x).collect()
+        remove_cols = odf_print.where(F.col('flagged') == 1).select('attribute').rdd.flatMap(lambda x: x).collect()
         odf = idf.drop(*remove_cols)
-        odf_print = odf_print.withColumn('flagged', F.when(F.col('IDness') >= treatment_threshold, 1).otherwise(0))
     else:
         odf = idf
 
@@ -446,12 +470,12 @@ def IDness_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, tre
     return odf, odf_print
 
 
-def biasedness_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, treatment_threshold=1.0, stats_mode={},
+def biasedness_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, treatment_threshold=0.8, stats_mode={},
                          print_impact=False):
     """
     :params idf: Input Dataframe
-    :params list_of_cols: List of columns (in list format or string separated by |)
-                            all - to include all non-array columns (excluding drop_cols)
+    :params list_of_cols: List of Distrete (Categorical + Integer) columns (in list format or string separated by |)
+                            all - to include all valid columns (excluding drop_cols)
     :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
     :params treatment: If True, delete columns based on treatment_threshold
     :params treatment_threshold: <0-1> Remove categorical column if most freq value is in more than X% of total rows.
@@ -469,6 +493,10 @@ def biasedness_detection(idf, list_of_cols='all', drop_cols=[], treatment=False,
 
     list_of_cols = [e for e in list_of_cols if e not in drop_cols]
 
+    for i in idf.select(list_of_cols).dtypes:
+        if (i[1] not in ('string', 'int', 'bigint', 'long')):
+            list_of_cols.remove(i[0])
+
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError('Invalid input for Column(s)')
     if (treatment_threshold < 0) | (treatment_threshold > 1):
@@ -485,18 +513,20 @@ def biasedness_detection(idf, list_of_cols='all', drop_cols=[], treatment=False,
             .withColumnRenamed('key', 'attribute') \
             .join(mode_computation(idf, list_of_cols), 'attribute', 'full_outer') \
             .withColumn('mode_pct', F.round(F.col('mode_rows') / F.col('count').cast(T.DoubleType()), 4)) \
-            .select('attribute', 'mode', 'mode_pct').withColumn('flagged', F.lit("-"))
+            .select('attribute', 'mode', 'mode_pct')
     else:
-        odf_print = read_dataset(**stats_mode).select('attribute', 'mode', 'mode_pct').withColumn('flagged', F.lit("-"))
+        odf_print = read_dataset(**stats_mode).select('attribute', 'mode', 'mode_pct')
+
+    odf_print = odf_print.withColumn('flagged',
+                                     F.when(
+                                         (F.col('mode_pct') >= treatment_threshold) | (F.col('mode_pct').isNull()),
+                                         1).otherwise(0))
 
     if treatment:
         remove_cols = odf_print.where((F.col('mode_pct') >= treatment_threshold) | (F.col('mode_pct').isNull())) \
             .select('attribute').rdd.flatMap(lambda x: x).collect()
         odf = idf.drop(*remove_cols)
-        odf_print = odf_print.withColumn('flagged',
-                                         F.when(
-                                             (F.col('mode_pct') >= treatment_threshold) | (F.col('mode_pct').isNull()),
-                                             1).otherwise(0))
+
     else:
         odf = idf
 

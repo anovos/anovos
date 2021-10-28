@@ -439,10 +439,10 @@ def imputation_MMM(idf, list_of_cols="missing", drop_cols=[], method_type="media
                 .join(missingCount_computation(odf, list_of_cols) \
                       .select('attribute', F.col("missing_count").alias("missingCount_after")), 'attribute', 'inner')
         else:
-            output_cols = [(i + "_imputed") for i in (num_cols + cat_cols)]
+            output_cols = [(i + "_imputed") for i in [e for e in (num_cols + cat_cols) if e in missing_cols]]
             odf_print = missing_df.select('attribute', F.col("missing_count").alias("missingCount_before")) \
                 .join(missingCount_computation(odf, output_cols) \
-                      .withColumnRename('attribute', 'attribute_after') \
+                      .withColumnRenamed('attribute', 'attribute_after') \
                       .withColumn('attribute', F.expr("substring(attribute_after, 1, length(attribute_after)-8)")) \
                       .drop('missing_pct'), 'attribute', 'inner')
         odf_print.show(len(list_of_cols))

@@ -3,15 +3,11 @@
 pandas==1.1.5
 scipy
 scikit-learn
-joblib
 boto3
 pyarrow==3.0.0
-sparkpickle
 s3path
-statsmodels
 pybind11
 popmon
-seaborn
 varclushi
 pytest
 datapane==0.12.0
