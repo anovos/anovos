@@ -197,7 +197,7 @@ drift_detector:
         stddev: 0.3
         kurtosis: 0.2 
       existing_metric_path: ''
-      appended_metric_path: ''
+      appended_metric_path: 'si_metrics'
       threshold: 2
 
     dataset1:
