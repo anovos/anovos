@@ -43,7 +43,7 @@ def drift_statistics(idf_target, idf_source, list_of_cols='all', drop_cols=[], m
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
     
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in idf_target.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError('Invalid input for Column(s)')
@@ -161,7 +161,7 @@ def stabilityIndex_computation(*idfs, list_of_cols='all', drop_cols=[], metric_w
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in num_cols for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError('Invalid input for Column(s)')
@@ -189,7 +189,6 @@ def stabilityIndex_computation(*idfs, list_of_cols='all', drop_cols=[], metric_w
 
     new_metric_df = spark.createDataFrame(metric_ls, schema=('idx','attribute','mean','stddev','kurtosis'))
     appended_metric_df = concatenate_dataset(existing_metric_df,new_metric_df)
-    appended_metric_df.show(100)
     
     if appended_metric_path:
         appended_metric_df.coalesce(1).write.csv(appended_metric_path, header=True, mode='overwrite')

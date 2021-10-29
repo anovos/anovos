@@ -28,7 +28,7 @@ def duplicate_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, 
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError('Invalid input for Column(s)')
@@ -73,7 +73,7 @@ def nullRows_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, t
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError('Invalid input for Column(s)')
@@ -149,7 +149,7 @@ def nullColumns_detection(idf, list_of_cols='missing', drop_cols=[], treatment=F
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if len(list_of_cols) == 0:
         warnings.warn("No Action Performed - Imputation")
@@ -257,7 +257,7 @@ def outlier_detection(idf, list_of_cols='all', drop_cols=[], detection_side='upp
         remove_cols = read_dataset(**stats_unique).where(F.col('unique_values') < 2) \
             .select('attribute').rdd.flatMap(lambda x: x).collect()
 
-    list_of_cols = [e for e in list_of_cols if e not in (drop_cols + remove_cols)]
+    list_of_cols = list(set([e for e in list_of_cols if e not in (drop_cols + remove_cols)]))
 
     if any(x not in num_cols for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
@@ -426,7 +426,7 @@ def IDness_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, tre
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in cat_cols for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
@@ -491,7 +491,7 @@ def biasedness_detection(idf, list_of_cols='all', drop_cols=[], treatment=False,
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     for i in idf.select(list_of_cols).dtypes:
         if (i[1] not in ('string', 'int', 'bigint', 'long')):
@@ -560,7 +560,7 @@ def invalidEntries_detection(idf, list_of_cols='all', drop_cols=[], treatment=Fa
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError('Invalid input for Column(s)')

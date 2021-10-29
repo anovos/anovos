@@ -40,7 +40,7 @@ def correlation_matrix(idf, list_of_cols='all', drop_cols=[], stats_unique={}, p
         remove_cols = read_dataset(**stats_unique).where(F.col('unique_values') < 2) \
             .select('attribute').rdd.flatMap(lambda x: x).collect()
 
-    list_of_cols = [e for e in list_of_cols if e not in (drop_cols + remove_cols)]
+    list_of_cols = list(set([e for e in list_of_cols if e not in (drop_cols + remove_cols)]))
 
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError('Invalid input for Column(s)')
@@ -79,7 +79,7 @@ def variable_clustering(idf, list_of_cols='all', drop_cols=[], sample_size=10000
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError('Invalid input for Column(s)')
@@ -142,7 +142,7 @@ def IV_calculation(idf, list_of_cols='all', drop_cols=[], label_col='label', eve
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
 
-    list_of_cols = [e for e in list_of_cols if e not in (drop_cols + [label_col])]
+    list_of_cols = list(set([e for e in list_of_cols if e not in (drop_cols + [label_col])]))
 
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError('Invalid input for Column(s)')
@@ -212,7 +212,7 @@ def IG_calculation(idf, list_of_cols='all', drop_cols=[], label_col='label', eve
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
 
-    list_of_cols = [e for e in list_of_cols if e not in (drop_cols + [label_col])]
+    list_of_cols = list(set([e for e in list_of_cols if e not in (drop_cols + [label_col])]))
 
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError('Invalid input for Column(s)')

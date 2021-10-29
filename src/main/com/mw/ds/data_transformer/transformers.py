@@ -42,7 +42,7 @@ def attribute_binning(idf, list_of_cols='all', drop_cols=[], method_type="equal_
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in num_cols for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
@@ -156,7 +156,7 @@ def monotonic_binning(idf, list_of_cols='all', drop_cols=[], label_col='label', 
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
 
-    list_of_cols = [e for e in list_of_cols if e not in (drop_cols + [label_col])]
+    list_of_cols = list(set([e for e in list_of_cols if e not in (drop_cols + [label_col])]))
 
     if any(x not in num_cols for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
@@ -216,7 +216,7 @@ def cat_to_num_unsupervised(idf, list_of_cols='all', drop_cols=[], method_type=1
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in cat_cols for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
@@ -353,7 +353,7 @@ def imputation_MMM(idf, list_of_cols="missing", drop_cols=[], method_type="media
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if len(list_of_cols) == 0:
         warnings.warn("No Action Performed - Imputation")
@@ -475,7 +475,7 @@ def outlier_categories(idf, list_of_cols='all', drop_cols=[], coverage=1.0, max_
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in cat_cols for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')

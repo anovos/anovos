@@ -23,7 +23,7 @@ def global_summary(idf, list_of_cols='all', drop_cols=[], print_impact=True):
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError('Invalid input for Column(s)')
@@ -71,7 +71,7 @@ def missingCount_computation(idf, list_of_cols='all', drop_cols=[], print_impact
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError('Invalid input for Column(s)')
@@ -103,7 +103,7 @@ def nonzeroCount_computation(idf, list_of_cols='all', drop_cols=[], print_impact
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in num_cols for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
@@ -142,7 +142,7 @@ def measures_of_counts(idf, list_of_cols='all', drop_cols=[], print_impact=False
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
     num_cols = attributeType_segregation(idf.select(list_of_cols))[0]
 
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
@@ -177,7 +177,7 @@ def mode_computation(idf, list_of_cols='all', drop_cols=[], print_impact=False):
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
     for i in idf.select(list_of_cols).dtypes:
         if (i[1] not in ('string', 'int', 'bigint', 'long')):
             list_of_cols.remove(i[0])
@@ -214,7 +214,7 @@ def measures_of_centralTendency(idf, list_of_cols='all', drop_cols=[], print_imp
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError('Invalid input for Column(s)')
@@ -251,7 +251,7 @@ def uniqueCount_computation(idf, list_of_cols='all', drop_cols=[], print_impact=
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError('Invalid input for Column(s)')
@@ -282,7 +282,7 @@ def measures_of_cardinality(idf, list_of_cols='all', drop_cols=[], print_impact=
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError('Invalid input for Column(s)')
@@ -312,7 +312,7 @@ def measures_of_dispersion(idf, list_of_cols='all', drop_cols=[], print_impact=F
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in num_cols for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
@@ -355,7 +355,7 @@ def measures_of_percentiles(idf, list_of_cols='all', drop_cols=[], print_impact=
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in num_cols for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
@@ -405,7 +405,7 @@ def measures_of_shape(idf, list_of_cols='all', drop_cols=[], print_impact=False)
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in num_cols for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
