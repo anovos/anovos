@@ -972,9 +972,10 @@ def data_drift_stability(master_path,ds_ind,id_col,drift_threshold_model,all_dri
     else:
         return dp.Report(default_template[0],default_template[1],report).save(ends_with(master_path) + "data_drift_stability.html",open=True)
     
-def anovos_report(master_path,label_col,id_col,dataDict_path,metricDict_path,drift_threshold_model,corr_threshold,iv_threshold):
+def anovos_report(master_path , id_col, label_col ,corr_threshold ,iv_threshold,drift_threshold_model,dataDict_path,metricDict_path,local_or_emr, final_report_path):
+
+    print(local_or_emr)
     
-        
     global global_summary_df
     global numcols_name
     global catcols_name
@@ -1144,12 +1145,25 @@ def anovos_report(master_path,label_col,id_col,dataDict_path,metricDict_path,dri
         else:
             final_tabs_list.append(i)
     
-    final_report = dp.Report(default_template[0],default_template[1],\
+    
+    if local_or_emr == "local" :
+
+        final_report = dp.Report(default_template[0],default_template[1],\
+                   dp.Select(blocks=final_tabs_list,type=dp.SelectType.TABS))\
+                     .save(ends_with(final_report_path) + "ml_anovos_report.html",open=True)
+        
+        return final_report
+    
+    else:
+
+        final_report = dp.Report(default_template[0],default_template[1],\
                    dp.Select(blocks=final_tabs_list,type=dp.SelectType.TABS))\
                      .save(ends_with(master_path) + "ml_anovos_report.html",open=True)
 
-    return final_report
-
+        
+        bash_cmd = "aws s3 cp " + ends_with(master_path) + " " + ends_with(final_report_path)
+        output = subprocess.check_output(['bash', '-c', bash_cmd])
+        return "Report generated successfully at the specified location"
 
 
 if __name__ == '__main__':
@@ -1159,12 +1173,37 @@ if __name__ == '__main__':
     
     if local_or_emr == 'local':
         config_file = open(config_path, 'r')
-    else:
-        bash_cmd = "aws s3 cp " + config_path + " config.yaml"
-        output = subprocess.check_output(['bash', '-c', bash_cmd])
-        config_file = open('config.yaml', 'r')
+        all_configs = yaml.load(config_file, yaml.SafeLoader)
+        all_params = all_configs.get("report_generation")   
+        master_path = all_params.get("master_path")
+        all_params.update({'final_report_path' : master_path,'local_or_emr' : local_or_emr})
 
-    all_configs = yaml.load(config_file, yaml.SafeLoader)
-    all_params = all_configs.get("report_generation")
-    anovos_report(**all_params)
+        if "global_summary.csv" in os.listdir(all_params.get("master_path")):
+
+            anovos_report(**all_params)
+
+        else:
+
+            print("Minimum supporting data is unavailable, hence the Report could not be generated.")
+ 
+    else:
+        bash_cmd1 = "aws s3 cp " + config_path + " config.yaml"
+        output1 = subprocess.check_output(['bash', '-c', bash_cmd1])
+        config_file = open('config.yaml', 'r')
+        all_configs = yaml.load(config_file, yaml.SafeLoader)
+        all_params = all_configs.get("report_generation")
+        
+        final_report_path = all_params.get("master_path")
+        master_path = "report_stats"
+        bash_cmd2 = "aws s3 cp " + ends_with(final_report_path) + " " + ends_with(master_path)
+        output2 = subprocess.check_output(['bash', '-c', bash_cmd2])
+        all_params.update({'master_path' : master_path,'final_report_path' : final_report_path,'local_or_emr' : local_or_emr})
+
+        if "global_summary.csv" in os.listdir(all_params.get("master_path")):
+
+            anovos_report(**all_params)
+
+        else:
+
+            print("Minimum supporting data is unavailable, hence the Report could not be generated.")
 
