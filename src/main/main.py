@@ -32,7 +32,9 @@ def ETL(args):
     return df
 
 def save(data,write_configs,folder_name,reread=False):
+
     if write_configs:
+
         if 'file_path' not in write_configs:
             raise TypeError('file path missing for writing data')
             
@@ -41,13 +43,15 @@ def save(data,write_configs,folder_name,reread=False):
         data_ingest.write_dataset(data, **write)
 
         if reread:
+
             read = copy.deepcopy(write)
             if 'file_configs' in read:
                 read['file_configs'].pop('repartition', None)
                 read['file_configs'].pop('mode', None)
             data = data_ingest.read_dataset(**read)
             return data
-        
+
+
 def stats_args(all_configs,k):
     stats_configs = all_configs.get('stats_generator',None)
     write_configs = all_configs.get('write_stats',None)
@@ -88,8 +92,8 @@ def stats_args(all_configs,k):
           
         return output
     
-def main(all_configs):
-    
+def main(all_configs,local_or_emr):
+
     start_main = timeit.default_timer()
     
     # reading main dataset
@@ -108,7 +112,7 @@ def main(all_configs):
             report_inputPath = report_configs.get('master_path')
 
     for key, args in all_configs.items():
-        
+
         if (key == 'concatenate_dataset') & (args != None):
             start = timeit.default_timer()
             idfs = [df]
@@ -138,7 +142,7 @@ def main(all_configs):
                 f = getattr(stats_generator, m)
                 df_stats = f(df,**args['metric_args'], print_impact=False)
                 if report_inputPath:
-                    save_stats(df_stats,report_inputPath,m, reread=True).show(100)
+                    save_stats(df_stats,report_inputPath,m, reread=True,run_type = local_or_emr).show(100)
                 else:
                     save(df_stats,write_stats,folder_name="data_analyzer/stats_generator/" + m, reread=True).show(100)
                 
@@ -156,7 +160,7 @@ def main(all_configs):
                     df = save(df,write_intermediate,folder_name="data_analyzer/quality_checker/" + 
                                               subkey +"/dataset",reread=True)
                     if report_inputPath:
-                        save_stats(df_stats,report_inputPath,subkey,reread=True).show(100)
+                        save_stats(df_stats,report_inputPath,subkey,reread=True,run_type=local_or_emr).show(100)
                     else:
                         save(df_stats,write_stats,folder_name="data_analyzer/quality_checker/" + 
                                               subkey,reread=True).show(100)
@@ -173,7 +177,7 @@ def main(all_configs):
                     extra_args = stats_args(all_configs,subkey)
                     df_stats = f(df,**value, **extra_args, print_impact=False)
                     if report_inputPath:
-                        save_stats(df_stats,report_inputPath,subkey,reread=True).show(100)
+                        save_stats(df_stats,report_inputPath,subkey,reread=True,run_type=local_or_emr).show(100)
                     else:
                         save(df_stats,write_stats,folder_name="data_analyzer/association_evaluator/" + 
                                                      subkey,reread=True).show(100)
@@ -190,7 +194,7 @@ def main(all_configs):
                         source = None
                     df_stats = drift_detector.drift_statistics(df,source,**value['configs'],print_impact=False)
                     if report_inputPath:
-                        save_stats(df_stats,report_inputPath,subkey,reread=True).show(100)
+                        save_stats(df_stats,report_inputPath,subkey,reread=True,run_type=local_or_emr).show(100)
                     else:
                         save(df_stats,write_stats,folder_name="drift_detector/drift_statistics",reread=True).show(100)
                     end = timeit.default_timer()
@@ -204,12 +208,7 @@ def main(all_configs):
                         idfs.append(tmp)
                     df_stats = drift_detector.stabilityIndex_computation(*idfs,**value['configs'],print_impact=False)
                     if report_inputPath:
-                        save_stats(df_stats,report_inputPath,subkey,reread=True).show(100)
-                        if value['configs'].get("appended_metric_pat",""):
-                            df_metrics = data_ingest.read_dataset(file_path=appended_metric_path, 
-                                                                  file_type="csv", file_configs = {
-                                                                  "header":True, "mode":'overwrite'})
-                            save_stats(df_metrics,report_inputPath,"stabilityIndex_metrics",reread=True).show(100)
+                        save_stats(df_stats,report_inputPath,subkey,reread=True,run_type=local_or_emr).show(100)
                     else:
                         save(df_stats,write_stats,folder_name="drift_detector/stability_index",reread=True).show(100)
                     end = timeit.default_timer()
@@ -222,22 +221,24 @@ def main(all_configs):
                 if (subkey == 'charts_to_objects') & (value != None):
                     start = timeit.default_timer()
                     f = getattr(report_preprocessing, subkey)
-                    f(df, **value, master_path=report_inputPath)
+                    f(df, **value, master_path=report_inputPath,run_type=local_or_emr)
                     end = timeit.default_timer()
                     print(key, subkey, ", execution time (in secs) =",round(end-start,4))
                     
     save(df,write_main,folder_name="final_dataset",reread=False)
-    
+
 if __name__ == '__main__':
     config_path = sys.argv[1]
     local_or_emr = sys.argv[2]
     
     if local_or_emr == 'local':
         config_file = open(config_path, 'r')
+        
     else:
         bash_cmd = "aws s3 cp " + config_path + " config.yaml"
         output = subprocess.check_output(['bash', '-c', bash_cmd])
         config_file = open('config.yaml', 'r')
+    
 
     all_configs = yaml.load(config_file, yaml.SafeLoader)
-    main(all_configs)
+    main(all_configs,local_or_emr)
