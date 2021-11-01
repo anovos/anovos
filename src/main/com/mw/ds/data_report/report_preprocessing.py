@@ -15,6 +15,8 @@ from plotly.io import write_json
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.figure_factory import create_distplot
+from io import StringIO,BytesIO 
+import boto3
 
 global_theme = px.colors.sequential.Plasma
 global_theme_r = px.colors.sequential.Plasma_r
@@ -35,15 +37,27 @@ def ends_with(string, end_str="/"):
     return string + end_str
 
 
-def save_stats(idf, master_path, function_name, reread=False):
+def save_stats(idf, master_path, function_name, reread=False,run_type="local"):
     """
     :param idf: input dataframe
     :param master_path: Path to master folder under which all statistics will be saved in a csv file format.
     :param function_name: Function Name for which statistics need to be saved. file name will be saved as csv
     :return: None, dataframe saved
     """
-    Path(master_path).mkdir(parents=True, exist_ok=True)
-    idf.toPandas().to_csv(ends_with(master_path) + function_name + ".csv",index=False)
+
+    if run_type == "local":
+
+        Path(master_path).mkdir(parents=True, exist_ok=True)
+        idf.toPandas().to_csv(ends_with(master_path) + function_name + ".csv",index=False)
+
+    else:
+
+        bucket_name = master_path.split("//")[1].split("/")[0]
+        path_name = master_path.replace(master_path.split("//")[0]+"//"+master_path.split("//")[1].split("/")[0],"")[1:]
+        s3_resource = boto3.resource("s3")
+        csv_buffer = BytesIO()
+        idf.to_csv(csv_buffer,index=False)
+        s3_resource.Object(bucket_name, ends_with(path_name) + function_name + ".csv").put(Body=csv_buffer.getvalue())
 
     if reread:
         odf = spark.read.csv(ends_with(master_path) + function_name + ".csv", header=True, inferSchema=True)
@@ -88,11 +102,14 @@ def plot_frequency(idf, col, cutoffs_path):
 
     if col in cat_cols:
         odf_pd = odf.orderBy("count", ascending=False).toPandas().fillna("Missing")
+        odf_pd.loc[odf_pd[col] == "others", col] = "others*"
 
     if col in num_cols:
         mapping = binRange_to_binIdx(col, cutoffs_path)
         odf_pd = odf.join(mapping, col, 'left_outer').orderBy('bin_idx').toPandas().fillna("Missing")
 
+
+    
     fig = px.bar(odf_pd, x=col, y='count', text=odf_pd['count_%'].apply(lambda x: '{0:1.2f}%'.format(x)),
                  color_discrete_sequence=global_theme)
     fig.update_traces(textposition='outside')
@@ -132,10 +149,13 @@ def plot_eventRate(idf, col, label_col, event_label, cutoffs_path):
 
     if col in cat_cols:
         odf_pd = odf.orderBy("event_rate", ascending=False).toPandas()
+        odf_pd.loc[odf_pd[col] == "others", col] = "others*"
 
     if col in num_cols:
         mapping = binRange_to_binIdx(col, cutoffs_path)
         odf_pd = odf.join(mapping, col, 'left_outer').orderBy('bin_idx').toPandas()
+
+    
 
     fig = px.bar(odf_pd, x=col, y='event_rate', text=odf_pd['event_rate'].apply(lambda x: '{0:1.2f}%'.format(x)),
                  color_discrete_sequence=global_theme)
@@ -166,6 +186,7 @@ def plot_comparative_drift(idf, source, col, cutoffs_path):
                   "full_outer") \
             .orderBy('bin_idx').toPandas()
 
+
     odf_pd.fillna({col: 'Missing', 'countpct_source': 0, 'countpct_target': 0}, inplace=True)
     odf_pd['%_diff'] = (((odf_pd['countpct_target'] / odf_pd['countpct_source']) - 1) * 100)
     fig = go.Figure()
@@ -187,10 +208,12 @@ def plot_comparative_drift(idf, source, col, cutoffs_path):
 
 def charts_to_objects(idf, list_of_cols='all', drop_cols=[], label_col=None, event_label=1,
                       bin_method="equal_range", bin_size=10, coverage=1.0,
-                      drift_detector=False, source_path="NA", master_path=''):
+                      drift_detector=False, source_path="NA", master_path='',run_type="local"):
     global num_cols
     global cat_cols
     import timeit
+    
+    
     start = timeit.default_timer()
     
     if list_of_cols == 'all':
@@ -201,7 +224,7 @@ def charts_to_objects(idf, list_of_cols='all', drop_cols=[], label_col=None, eve
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
     
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError('Invalid input for Column(s)')
@@ -221,37 +244,85 @@ def charts_to_objects(idf, list_of_cols='all', drop_cols=[], label_col=None, eve
     cutoffs_path = source_path+"/drift_statistics/attribute_binning"
     idf_encoded.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
     
-    Path(master_path).mkdir(parents=True, exist_ok=True)
-    for idx, col in enumerate(list_of_cols):
-        
-        if col in cat_cols:
-            f = plot_frequency(idf_encoded,col,cutoffs_path)
-            f.write_json(ends_with(master_path) + "freqDist_" + col)
+    
+    if run_type == "local":
 
-            if label_col:
-                f = plot_eventRate(idf_encoded,col,label_col,event_label,cutoffs_path)
-                f.write_json(ends_with(master_path) + "eventRist_" + col)
+        Path(master_path).mkdir(parents=True, exist_ok=True)
+        for idx, col in enumerate(list_of_cols):
+            
+            if col in cat_cols:
+                f = plot_frequency(idf_encoded,col,cutoffs_path)
+                f.write_json(ends_with(master_path) + "freqDist_" + col)
 
-            if drift_detector:
-                frequency_path = source_path+"/drift_statistics/frequency_counts/" + col
-                idf_source = spark.read.csv(frequency_path, header=True, inferSchema=True)
-                f = plot_comparative_drift(idf_encoded,idf_source,col,cutoffs_path)
-                f.write_json(ends_with(master_path) + "drift_" + col)
-        
-        if col in num_cols:
-            f = plot_outlier(idf,col,split_var=None)
-            f.write_json(ends_with(master_path) + "outlier_" + col)
-            f = plot_frequency(idf_encoded.drop(col).withColumnRenamed(col+"_binned",col),col,cutoffs_path)
-            f.write_json(ends_with(master_path) + "freqDist_" + col)
+                if label_col:
+                    f = plot_eventRate(idf_encoded,col,label_col,event_label,cutoffs_path)
+                    f.write_json(ends_with(master_path) + "eventDist_" + col)
 
-            if label_col:
-                f = plot_eventRate(idf_encoded.drop(col).withColumnRenamed(col+"_binned",col),col,label_col,event_label,cutoffs_path)
-                f.write_json(ends_with(master_path) + "eventDist_" + col)
+                if drift_detector:
+                    frequency_path = source_path+"/drift_statistics/frequency_counts/" + col
+                    idf_source = spark.read.csv(frequency_path, header=True, inferSchema=True)
+                    f = plot_comparative_drift(idf_encoded,idf_source,col,cutoffs_path)
+                    f.write_json(ends_with(master_path) + "drift_" + col)
+            
+            if col in num_cols:
+                f = plot_outlier(idf,col,split_var=None)
+                f.write_json(ends_with(master_path) + "outlier_" + col)
+                f = plot_frequency(idf_encoded.drop(col).withColumnRenamed(col+"_binned",col),col,cutoffs_path)
+                f.write_json(ends_with(master_path) + "freqDist_" + col)
 
-            if drift_detector:
-                frequency_path = source_path+"/drift_statistics/frequency_counts/" + col
-                idf_source = spark.read.csv(frequency_path, header=True, inferSchema=True)
-                f = plot_comparative_drift(idf_encoded.drop(col).withColumnRenamed(col+"_binned",col),idf_source,col,cutoffs_path)
-                f.write_json(ends_with(master_path) + "drift_" + col)
+                if label_col:
+                    f = plot_eventRate(idf_encoded.drop(col).withColumnRenamed(col+"_binned",col),col,label_col,event_label,cutoffs_path)
+                    f.write_json(ends_with(master_path) + "eventDist_" + col)
 
-    pd.DataFrame(idf.dtypes,columns=["attribute","data_type"]).to_csv(ends_with(master_path) + "data_type.csv",index=False)
+                if drift_detector:
+                    frequency_path = source_path+"/drift_statistics/frequency_counts/" + col
+                    idf_source = spark.read.csv(frequency_path, header=True, inferSchema=True)
+                    f = plot_comparative_drift(idf_encoded.drop(col).withColumnRenamed(col+"_binned",col),idf_source,col,cutoffs_path)
+                    f.write_json(ends_with(master_path) + "drift_" + col)
+
+        pd.DataFrame(idf.dtypes,columns=["attribute","data_type"]).to_csv(ends_with(master_path) + "data_type.csv",index=False)
+
+    else:
+
+        bucket_name = master_path.split("//")[1].split("/")[0]
+        path_name = master_path.replace(master_path.split("//")[0]+"//"+master_path.split("//")[1].split("/")[0],"")[1:]
+        s3_resource = boto3.resource("s3")
+
+        x = pd.DataFrame(idf.dtypes).reset_index()
+        x = x.rename(columns = {'index' : 'attribute', 0:'data_type'})
+        csv_buffer = BytesIO()
+        x.to_csv(csv_buffer,index=False)
+        s3_resource.Object(bucket_name, ends_with(path_name) + "data_type.csv").put(Body=csv_buffer.getvalue())
+
+        for idx, col in enumerate(list_of_cols):
+            
+            if col in cat_cols:
+                f = plot_frequency(idf_encoded,col,cutoffs_path)
+                s3_resource.Object(bucket_name, ends_with(path_name) + "freqDist_" + col).put(Body=(bytes(json.dumps(f.to_json()).encode("UTF-8"))))
+
+                if label_col:
+                    f = plot_eventRate(idf_encoded,col,label_col,event_label,cutoffs_path)
+                    s3_resource.Object(bucket_name, ends_with(path_name) + "eventDist_" + col).put(Body=(bytes(json.dumps(f.to_json()).encode("UTF-8"))))
+
+                if drift_detector:
+                    frequency_path = source_path+"/drift_statistics/frequency_counts/" + col
+                    idf_source = spark.read.csv(frequency_path, header=True, inferSchema=True)
+                    f = plot_comparative_drift(idf_encoded,idf_source,col,cutoffs_path)
+                    s3_resource.Object(bucket_name, ends_with(path_name) + "drift_" + col).put(Body=(bytes(json.dumps(f.to_json()).encode("UTF-8"))))
+            
+            if col in num_cols:
+                f = plot_outlier(idf,col,split_var=None)
+                s3_resource.Object(bucket_name, ends_with(path_name) + "outlier_" + col).put(Body=(bytes(json.dumps(f.to_json()).encode("UTF-8"))))
+                f = plot_frequency(idf_encoded.drop(col).withColumnRenamed(col+"_binned",col),col,cutoffs_path)
+                s3_resource.Object(bucket_name, ends_with(path_name) + "freqDist_" + col).put(Body=(bytes(json.dumps(f.to_json()).encode("UTF-8"))))
+
+                if label_col:
+                    f = plot_eventRate(idf_encoded.drop(col).withColumnRenamed(col+"_binned",col),col,label_col,event_label,cutoffs_path)
+                    s3_resource.Object(bucket_name, ends_with(path_name) + "eventDist_" + col).put(Body=(bytes(json.dumps(f.to_json()).encode("UTF-8"))))
+
+                if drift_detector:
+                    frequency_path = source_path+"/drift_statistics/frequency_counts/" + col
+                    idf_source = spark.read.csv(frequency_path, header=True, inferSchema=True)
+                    f = plot_comparative_drift(idf_encoded.drop(col).withColumnRenamed(col+"_binned",col),idf_source,col,cutoffs_path)
+                    s3_resource.Object(bucket_name, ends_with(path_name) + "drift_" + col).put(Body=(bytes(json.dumps(f.to_json()).encode("UTF-8"))))
+
