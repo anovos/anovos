@@ -56,7 +56,7 @@ def save_stats(idf, master_path, function_name, reread=False,run_type="local"):
         path_name = master_path.replace(master_path.split("//")[0]+"//"+master_path.split("//")[1].split("/")[0],"")[1:]
         s3_resource = boto3.resource("s3")
         csv_buffer = BytesIO()
-        idf.to_csv(csv_buffer,index=False)
+        idf.toPandas().to_csv(csv_buffer,index=False)
         s3_resource.Object(bucket_name, ends_with(path_name) + function_name + ".csv").put(Body=csv_buffer.getvalue())
 
     if reread:
