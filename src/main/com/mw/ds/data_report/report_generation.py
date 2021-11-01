@@ -1161,7 +1161,7 @@ def anovos_report(master_path , id_col, label_col ,corr_threshold ,iv_threshold,
                      .save(ends_with(master_path) + "ml_anovos_report.html",open=True)
 
         
-        bash_cmd = "aws s3 cp " + ends_with(master_path) + " " + ends_with(final_report_path)
+        bash_cmd = "aws s3 cp --recursive " + ends_with(master_path) + " " + ends_with(final_report_path)
         output = subprocess.check_output(['bash', '-c', bash_cmd])
         return "Report generated successfully at the specified location"
 
@@ -1195,7 +1195,7 @@ if __name__ == '__main__':
         
         final_report_path = all_params.get("master_path")
         master_path = "report_stats"
-        bash_cmd2 = "aws s3 cp " + ends_with(final_report_path) + " " + ends_with(master_path)
+        bash_cmd2 = "aws s3 cp --recursive " + ends_with(final_report_path) + " " + ends_with(master_path)
         output2 = subprocess.check_output(['bash', '-c', bash_cmd2])
         all_params.update({'master_path' : master_path,'final_report_path' : final_report_path,'local_or_emr' : local_or_emr})
 
