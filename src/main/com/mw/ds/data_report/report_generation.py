@@ -217,7 +217,7 @@ def chart_gen_list(master_path,chart_type,type_col=None):
     plot_list=[]
         
     for i in chart_type:
-        col_name = i.split("_")[1]
+        col_name = i[i.find("_")+1:]
         if type_col == "numerical":
             if col_name in numcols_name.replace(" ","").split(","):
                 plot_list.append(dp.Plot(go.Figure(json.load(open(ends_with(master_path) + i))),label=col_name))
