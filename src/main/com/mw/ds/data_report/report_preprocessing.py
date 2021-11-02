@@ -178,8 +178,8 @@ def plot_comparative_drift(idf, source, col, cutoffs_path):
     fig.update_layout(title_text=str('Drift Comparison for ' + col + '<br><sup>(L->R : Source->Target)</sup>'))
     fig.update_traces(marker=dict(color=global_theme))
     fig.update_xaxes(type='category')
-    fig.add_trace(go.Scatter(x=odf_pd[col], y=odf_pd.countpct_target.values, mode='lines+markers',
-                             line=dict(color=px.colors.qualitative.Antique[10], width=3, dash='dot')))
+    #fig.add_trace(go.Scatter(x=odf_pd[col], y=odf_pd.countpct_target.values, mode='lines+markers',
+    #                         line=dict(color=px.colors.qualitative.Antique[10], width=3, dash='dot')))
     fig.update_layout(xaxis_tickfont_size=14, yaxis=dict(title='frequency', titlefont_size=16, tickfont_size=14))
 
     return fig
@@ -233,10 +233,13 @@ def charts_to_objects(idf, list_of_cols='all', drop_cols=[], label_col=None, eve
                 f.write_json(ends_with(master_path) + "eventDist_" + col)
 
             if drift_detector:
-                frequency_path = source_path+"/drift_statistics/frequency_counts/" + col
-                idf_source = spark.read.csv(frequency_path, header=True, inferSchema=True)
-                f = plot_comparative_drift(idf_encoded,idf_source,col,cutoffs_path)
-                f.write_json(ends_with(master_path) + "drift_" + col)
+                try:
+                    frequency_path = source_path+"/drift_statistics/frequency_counts/" + col
+                    idf_source = spark.read.csv(frequency_path, header=True, inferSchema=True)
+                    f = plot_comparative_drift(idf_encoded,idf_source,col,cutoffs_path)
+                    f.write_json(ends_with(master_path) + "drift_" + col)
+                except:
+                    pass
         
         if col in num_cols:
             f = plot_outlier(idf,col,split_var=None)
@@ -249,9 +252,12 @@ def charts_to_objects(idf, list_of_cols='all', drop_cols=[], label_col=None, eve
                 f.write_json(ends_with(master_path) + "eventDist_" + col)
 
             if drift_detector:
-                frequency_path = source_path+"/drift_statistics/frequency_counts/" + col
-                idf_source = spark.read.csv(frequency_path, header=True, inferSchema=True)
-                f = plot_comparative_drift(idf_encoded.drop(col).withColumnRenamed(col+"_binned",col),idf_source,col,cutoffs_path)
-                f.write_json(ends_with(master_path) + "drift_" + col)
+                try:
+                    frequency_path = source_path+"/drift_statistics/frequency_counts/" + col
+                    idf_source = spark.read.csv(frequency_path, header=True, inferSchema=True)
+                    f = plot_comparative_drift(idf_encoded.drop(col).withColumnRenamed(col+"_binned",col),idf_source,col,cutoffs_path)
+                    f.write_json(ends_with(master_path) + "drift_" + col)
+                except:
+                    pass
 
     pd.DataFrame(idf.dtypes,columns=["attribute","data_type"]).to_csv(ends_with(master_path) + "data_type.csv",index=False)

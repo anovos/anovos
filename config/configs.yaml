@@ -164,7 +164,7 @@ drift_detector:
   drift_statistics:
     configs:
       list_of_cols: all
-      drop_cols: ['ifa']
+      drop_cols: ['ifa','income']
       method_type: all
       threshold: 0.1
       bin_method: equal_range
@@ -226,6 +226,61 @@ drift_detector:
           header: True
           delimiter: ","
           inferSchema: True
+
+    dataset4:
+      read_dataset:
+        file_path: "data/income_dataset/stability_index/3"
+        file_type: csv
+        file_configs:
+          header: True
+          delimiter: ","
+          inferSchema: True
+
+    dataset5:
+      read_dataset:
+        file_path: "data/income_dataset/stability_index/4"
+        file_type: csv
+        file_configs:
+          header: True
+          delimiter: ","
+          inferSchema: True
+
+    dataset6:
+      read_dataset:
+        file_path: "data/income_dataset/stability_index/5"
+        file_type: csv
+        file_configs:
+          header: True
+          delimiter: ","
+          inferSchema: True
+
+    dataset7:
+      read_dataset:
+        file_path: "data/income_dataset/stability_index/6"
+        file_type: csv
+        file_configs:
+          header: True
+          delimiter: ","
+          inferSchema: True
+
+    dataset8:
+      read_dataset:
+        file_path: "data/income_dataset/stability_index/7"
+        file_type: csv
+        file_configs:
+          header: True
+          delimiter: ","
+          inferSchema: True
+
+    dataset9:
+      read_dataset:
+        file_path: "data/income_dataset/stability_index/8"
+        file_type: csv
+        file_configs:
+          header: True
+          delimiter: ","
+          inferSchema: True
+
         
 report_preprocessing:
   master_path: 'report_stats'

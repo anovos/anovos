@@ -205,7 +205,8 @@ def main(all_configs):
                     df_stats = drift_detector.stabilityIndex_computation(*idfs,**value['configs'],print_impact=False)
                     if report_inputPath:
                         save_stats(df_stats,report_inputPath,subkey,reread=True).show(100)
-                        if value['configs'].get("appended_metric_pat",""):
+                        appended_metric_path = value['configs'].get("appended_metric_path","")
+                        if appended_metric_path:
                             df_metrics = data_ingest.read_dataset(file_path=appended_metric_path, 
                                                                   file_type="csv", file_configs = {
                                                                   "header":True, "mode":'overwrite'})
