@@ -230,7 +230,7 @@ def charts_to_objects(idf, list_of_cols='all', drop_cols=[], label_col=None, eve
 
             if label_col:
                 f = plot_eventRate(idf_encoded,col,label_col,event_label,cutoffs_path)
-                f.write_json(ends_with(master_path) + "eventRist_" + col)
+                f.write_json(ends_with(master_path) + "eventDist_" + col)
 
             if drift_detector:
                 frequency_path = source_path+"/drift_statistics/frequency_counts/" + col

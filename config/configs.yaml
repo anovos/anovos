@@ -231,12 +231,12 @@ report_preprocessing:
   master_path: 'report_stats'
   charts_to_objects:
     list_of_cols: all
-    drop_cols: ifa|income
+    drop_cols: ifa
     label_col: income
     event_label: '>50K'
     bin_method: equal_frequency
     bin_size: 10
-    drift_detector: False
+    drift_detector: True
     source_path: "NA"
 
 report_generation:
