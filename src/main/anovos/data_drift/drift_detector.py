@@ -3,7 +3,6 @@ from __future__ import division,print_function
 import pyspark
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
-from anovos.shared.spark import *
 from anovos.shared.utils import attributeType_segregation
 from anovos.data_transformer.transformers import attribute_binning
 from anovos.data_ingest.data_ingest import concatenate_dataset
@@ -16,9 +15,10 @@ from itertools import chain
 from scipy.stats import variation
 
 
-def drift_statistics(idf_target, idf_source, list_of_cols='all', drop_cols=[], method_type='PSI', bin_method='equal_range', 
+def drift_statistics(spark, idf_target, idf_source, list_of_cols='all', drop_cols=[], method_type='PSI', bin_method='equal_range', 
                      bin_size=10, threshold=0.1, pre_existing_source=False, source_path="NA", print_impact=False):
     """
+    :param spark: Spark Session
     :param idf_target: Input Dataframe
     :param idf_source: Baseline/Source Dataframe. This argument is ignored if pre_existing_source is True.
     :param list_of_cols: List of columns to check drift e.g., ["col1","col2"].
@@ -72,11 +72,11 @@ def drift_statistics(idf_target, idf_source, list_of_cols='all', drop_cols=[], m
     num_cols = attributeType_segregation(idf_target.select(list_of_cols))[0]
     
     if not pre_existing_source:
-        source_bin = attribute_binning(idf_source, list_of_cols=num_cols, method_type=bin_method, bin_size=bin_size, 
+        source_bin = attribute_binning(spark, idf_source, list_of_cols=num_cols, method_type=bin_method, bin_size=bin_size, 
                                pre_existing_model=False, model_path=source_path+"/drift_statistics")
         source_bin.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
     
-    target_bin = attribute_binning(idf_target, list_of_cols=num_cols, method_type=bin_method, bin_size=bin_size,  
+    target_bin = attribute_binning(spark, idf_target, list_of_cols=num_cols, method_type=bin_method, bin_size=bin_size,  
                                pre_existing_model=True, model_path=source_path+"/drift_statistics")
     target_bin.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
     
@@ -147,10 +147,11 @@ def drift_statistics(idf_target, idf_source, list_of_cols='all', drop_cols=[], m
     return odf
 
 
-def stabilityIndex_computation(*idfs, list_of_cols='all', drop_cols=[], metric_weightages = {'mean':0.5,'stddev':0.3,'kurtosis':0.2}, 
+def stabilityIndex_computation(spark, *idfs, list_of_cols='all', drop_cols=[], metric_weightages = {'mean':0.5,'stddev':0.3,'kurtosis':0.2}, 
                                existing_metric_path='', appended_metric_path='', threshold=None, print_impact=False):
 
     """
+    :param spark: Spark Session
     :param idfs: Variable number of input dataframes
     :param list_of_cols: List of numerical columns to check stability e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,

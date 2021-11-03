@@ -1,12 +1,12 @@
 # coding=utf-8
-from anovos.shared.spark import *
 from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
 from anovos.shared.utils import pairwise_reduce
 
 
-def read_dataset(file_path, file_type, file_configs={}):
+def read_dataset(spark, file_path, file_type, file_configs={}):
     """
+    :param spark: Spark Session
     :param file_path: Path to input data (directory or filename).
                       Compatible with local path and s3 path (when running in AWS environment).
     :param file_type: "csv", "parquet", "avro".

@@ -17,7 +17,7 @@ def ETL(args):
     f = getattr(data_ingest, 'read_dataset')
     read_args = args.get('read_dataset', None)
     if read_args:
-        df = f(**read_args)
+        df = f(spark,**read_args)
     else:
         raise TypeError('Invalid input for reading dataset')
 
@@ -45,7 +45,7 @@ def save(data,write_configs,folder_name,reread=False):
             if 'file_configs' in read:
                 read['file_configs'].pop('repartition', None)
                 read['file_configs'].pop('mode', None)
-            data = data_ingest.read_dataset(**read)
+            data = data_ingest.read_dataset(spark,**read)
             return data
         
 def stats_args(all_configs,k):
@@ -136,9 +136,9 @@ def main(all_configs):
                 start = timeit.default_timer()
                 print("\n" + m + ": \n")
                 f = getattr(stats_generator, m)
-                df_stats = f(df,**args['metric_args'], print_impact=False)
+                df_stats = f(spark,df,**args['metric_args'], print_impact=False)
                 if report_inputPath:
-                    save_stats(df_stats,report_inputPath,m, reread=True).show(100)
+                    save_stats(spark,df_stats,report_inputPath,m, reread=True).show(100)
                 else:
                     save(df_stats,write_stats,folder_name="data_analyzer/stats_generator/" + m, reread=True).show(100)
                 
@@ -152,11 +152,11 @@ def main(all_configs):
                     print("\n" + subkey + ": \n")
                     f = getattr(quality_checker, subkey)
                     extra_args = stats_args(all_configs,subkey)
-                    df,df_stats = f(df,**value, **extra_args, print_impact=False)
+                    df,df_stats = f(spark,df,**value, **extra_args, print_impact=False)
                     df = save(df,write_intermediate,folder_name="data_analyzer/quality_checker/" + 
                                               subkey +"/dataset",reread=True)
                     if report_inputPath:
-                        save_stats(df_stats,report_inputPath,subkey,reread=True).show(100)
+                        save_stats(spark,df_stats,report_inputPath,subkey,reread=True).show(100)
                     else:
                         save(df_stats,write_stats,folder_name="data_analyzer/quality_checker/" + 
                                               subkey,reread=True).show(100)
@@ -171,9 +171,9 @@ def main(all_configs):
                     print("\n" + subkey + ": \n")
                     f = getattr(association_evaluator, subkey)
                     extra_args = stats_args(all_configs,subkey)
-                    df_stats = f(df,**value, **extra_args, print_impact=False)
+                    df_stats = f(spark,df,**value, **extra_args, print_impact=False)
                     if report_inputPath:
-                        save_stats(df_stats,report_inputPath,subkey,reread=True).show(100)
+                        save_stats(spark,df_stats,report_inputPath,subkey,reread=True).show(100)
                     else:
                         save(df_stats,write_stats,folder_name="data_analyzer/association_evaluator/" + 
                                                      subkey,reread=True).show(100)
@@ -189,9 +189,9 @@ def main(all_configs):
                         source = ETL(value.get('source_dataset'))
                     else:
                         source = None
-                    df_stats = drift_detector.drift_statistics(df,source,**value['configs'],print_impact=False)
+                    df_stats = drift_detector.drift_statistics(spark,df,source,**value['configs'],print_impact=False)
                     if report_inputPath:
-                        save_stats(df_stats,report_inputPath,subkey,reread=True).show(100)
+                        save_stats(spark, df_stats,report_inputPath,subkey,reread=True).show(100)
                     else:
                         save(df_stats,write_stats,folder_name="drift_detector/drift_statistics",reread=True).show(100)
                     end = timeit.default_timer()
@@ -203,16 +203,15 @@ def main(all_configs):
                     for k in [e for e in value.keys() if e not in ('configs')]:
                         tmp = ETL(value.get(k))
                         idfs.append(tmp)
-                    df_stats = drift_detector.stabilityIndex_computation(*idfs,**value['configs'],print_impact=False)
-                    print(report_inputPath, "xyz")
+                    df_stats = drift_detector.stabilityIndex_computation(spark,*idfs,**value['configs'],print_impact=False)
                     if report_inputPath:
-                        save_stats(df_stats,report_inputPath,subkey,reread=True).show(100)
+                        save_stats(spark, df_stats,report_inputPath,subkey,reread=True).show(100)
                         appended_metric_path = value['configs'].get("appended_metric_path","")
                         if appended_metric_path:
-                            df_metrics = data_ingest.read_dataset(file_path=appended_metric_path, 
+                            df_metrics = data_ingest.read_dataset(spark, file_path=appended_metric_path, 
                                                                   file_type="csv", file_configs = {
                                                                   "header":True, "mode":'overwrite'})
-                            save_stats(df_metrics,report_inputPath,"stabilityIndex_metrics",reread=True).show(100)
+                            save_stats(spark, df_metrics,report_inputPath,"stabilityIndex_metrics",reread=True).show(100)
                     else:
                         save(df_stats,write_stats,folder_name="drift_detector/stability_index",reread=True).show(100)
                     end = timeit.default_timer()
@@ -225,7 +224,7 @@ def main(all_configs):
                 if (subkey == 'charts_to_objects') & (value != None):
                     start = timeit.default_timer()
                     f = getattr(report_preprocessing, subkey)
-                    f(df, **value, master_path=report_inputPath)
+                    f(spark,df, **value, master_path=report_inputPath)
                     end = timeit.default_timer()
                     print(key, subkey, ", execution time (in secs) =",round(end-start,4))         
                     

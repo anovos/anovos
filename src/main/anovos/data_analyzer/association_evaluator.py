@@ -7,7 +7,6 @@ from anovos.data_analyzer.stats_generator import uniqueCount_computation
 from anovos.data_ingest.data_ingest import read_dataset
 from anovos.data_transformer.transformers import attribute_binning, monotonic_binning, cat_to_num_unsupervised, \
     imputation_MMM
-from anovos.shared.spark import *
 from anovos.shared.utils import attributeType_segregation
 from phik.phik import spark_phik_matrix_from_hist2d_dict
 from popmon.analysis.hist_numpy import get_2dgrid
@@ -16,8 +15,9 @@ from pyspark.sql import functions as F
 from varclushi import VarClusHi
 
 
-def correlation_matrix(idf, list_of_cols='all', drop_cols=[], stats_unique={}, print_impact=False):
+def correlation_matrix(spark, idf, list_of_cols='all', drop_cols=[], stats_unique={}, print_impact=False):
     """
+    :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_cols: List of columns to analyse e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
@@ -46,10 +46,10 @@ def correlation_matrix(idf, list_of_cols='all', drop_cols=[], stats_unique={}, p
         drop_cols = [x.strip() for x in drop_cols.split('|')]
 
     if stats_unique == {}:
-        remove_cols = uniqueCount_computation(idf, list_of_cols).where(F.col('unique_values') < 2) \
+        remove_cols = uniqueCount_computation(spark, idf, list_of_cols).where(F.col('unique_values') < 2) \
             .select('attribute').rdd.flatMap(lambda x: x).collect()
     else:
-        remove_cols = read_dataset(**stats_unique).where(F.col('unique_values') < 2) \
+        remove_cols = read_dataset(spark, **stats_unique).where(F.col('unique_values') < 2) \
             .select('attribute').rdd.flatMap(lambda x: x).collect()
 
     list_of_cols = list(set([e for e in list_of_cols if e not in (drop_cols + remove_cols)]))
@@ -60,9 +60,9 @@ def correlation_matrix(idf, list_of_cols='all', drop_cols=[], stats_unique={}, p
     combis = [list(c) for c in itertools.combinations_with_replacement(list_of_cols, 2)]
     hists = idf.select(list_of_cols).pm_make_histograms(combis)
     grids = {k: get_2dgrid(h) for k, h in hists.items()}
-    odf_pd = spark_phik_matrix_from_hist2d_dict(sc, grids)
+    odf_pd = spark_phik_matrix_from_hist2d_dict(spark.sparkContext, grids)
     odf_pd['attribute'] = odf_pd.index
-    odf = sqlContext.createDataFrame(odf_pd)
+    odf = spark.createDataFrame(odf_pd)
 
     if print_impact:
         odf.show(odf.count())
@@ -70,9 +70,10 @@ def correlation_matrix(idf, list_of_cols='all', drop_cols=[], stats_unique={}, p
     return odf
 
 
-def variable_clustering(idf, list_of_cols='all', drop_cols=[], sample_size=100000, stats_unique={}, stats_mode={},
+def variable_clustering(spark, idf, list_of_cols='all', drop_cols=[], sample_size=100000, stats_unique={}, stats_mode={},
                         print_impact=False):
     """
+    :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_cols: List of columns to analyse e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
@@ -112,10 +113,10 @@ def variable_clustering(idf, list_of_cols='all', drop_cols=[], sample_size=10000
     idf_sample = idf.sample(False, min(1.0, float(sample_size) / idf.count()), 0)
     idf_sample.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
     if stats_unique == {}:
-        remove_cols = uniqueCount_computation(idf_sample, list_of_cols).where(F.col('unique_values') < 2) \
+        remove_cols = uniqueCount_computation(spark, idf_sample, list_of_cols).where(F.col('unique_values') < 2) \
             .select('attribute').rdd.flatMap(lambda x: x).collect()
     else:
-        remove_cols = read_dataset(**stats_unique).where(F.col('unique_values') < 2) \
+        remove_cols = read_dataset(spark, **stats_unique).where(F.col('unique_values') < 2) \
             .select('attribute').rdd.flatMap(lambda x: x).collect()
 
     list_of_cols = [e for e in list_of_cols if e not in remove_cols]
@@ -125,25 +126,26 @@ def variable_clustering(idf, list_of_cols='all', drop_cols=[], sample_size=10000
     for i in idf_sample.dtypes:
         if i[1].startswith('decimal'):
             idf_sample = idf_sample.withColumn(i[0], F.col(i[0]).cast('double'))
-    idf_encoded = cat_to_num_unsupervised(idf_sample, list_of_cols=cat_cols, method_type=1)
-    idf_imputed = imputation_MMM(idf_encoded, stats_mode=stats_mode)
+    idf_encoded = cat_to_num_unsupervised(spark, idf_sample, list_of_cols=cat_cols, method_type=1)
+    idf_imputed = imputation_MMM(spark, idf_encoded, stats_mode=stats_mode)
     idf_imputed.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
     idf_sample.unpersist()
     idf_pd = idf_imputed.toPandas()
     vc = VarClusHi(idf_pd, maxeigval2=1, maxclus=None)
     vc.varclus()
     odf_pd = vc.rsquare
-    odf = sqlContext.createDataFrame(odf_pd).select('Cluster', F.col('Variable').alias('Attribute'),
+    odf = spark.createDataFrame(odf_pd).select('Cluster', F.col('Variable').alias('Attribute'),
                                                     F.round(F.col('RS_Ratio'), 4).alias('RS_Ratio'))
     if print_impact:
         odf.show(odf.count())
     return odf
 
 
-def IV_calculation(idf, list_of_cols='all', drop_cols=[], label_col='label', event_label=1,
+def IV_calculation(spark, idf, list_of_cols='all', drop_cols=[], label_col='label', event_label=1,
                    encoding_configs={'bin_method': 'equal_frequency', 'bin_size': 10, 'monotonicity_check': 0},
                    print_impact=False):
     """
+    :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_cols: List of columns to analyse e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
@@ -190,9 +192,9 @@ def IV_calculation(idf, list_of_cols='all', drop_cols=[], label_col='label', eve
         bin_method = encoding_configs['bin_method']
         monotonicity_check = encoding_configs['monotonicity_check']
         if monotonicity_check == 1:
-            idf_encoded = monotonic_binning(idf, num_cols, [], label_col, event_label, bin_method, bin_size)
+            idf_encoded = monotonic_binning(spark, idf, num_cols, [], label_col, event_label, bin_method, bin_size)
         else:
-            idf_encoded = attribute_binning(idf, num_cols, [], bin_method, bin_size)
+            idf_encoded = attribute_binning(spark, idf, num_cols, [], bin_method, bin_size)
 
         idf_encoded.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
     else:
@@ -219,10 +221,11 @@ def IV_calculation(idf, list_of_cols='all', drop_cols=[], label_col='label', eve
     return odf
 
 
-def IG_calculation(idf, list_of_cols='all', drop_cols=[], label_col='label', event_label=1,
+def IG_calculation(spark, idf, list_of_cols='all', drop_cols=[], label_col='label', event_label=1,
                    encoding_configs={'bin_method': 'equal_frequency', 'bin_size': 10, 'monotonicity_check': 0},
                    print_impact=False):
     """
+    :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_cols: List of columns to analyse e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
@@ -269,9 +272,9 @@ def IG_calculation(idf, list_of_cols='all', drop_cols=[], label_col='label', eve
         bin_method = encoding_configs['bin_method']
         monotonicity_check = encoding_configs['monotonicity_check']
         if monotonicity_check == 1:
-            idf_encoded = monotonic_binning(idf, num_cols, [], label_col, event_label, bin_method, bin_size)
+            idf_encoded = monotonic_binning(spark, idf, num_cols, [], label_col, event_label, bin_method, bin_size)
         else:
-            idf_encoded = attribute_binning(idf, num_cols, [], bin_method, bin_size)
+            idf_encoded = attribute_binning(spark, idf, num_cols, [], bin_method, bin_size)
         idf_encoded.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
     else:
         idf_encoded = idf
@@ -292,7 +295,7 @@ def IG_calculation(idf, list_of_cols='all', drop_cols=[], label_col='label', eve
         ig_value = total_entropy - entropy if entropy else None
         output.append([col, ig_value])
 
-    odf = sqlContext.createDataFrame(output, ["attribute", "ig"]) \
+    odf = spark.createDataFrame(output, ["attribute", "ig"]) \
         .withColumn('ig', F.round(F.col('ig'), 4)).orderBy(F.desc('ig'))
     if print_impact:
         odf.show(odf.count())

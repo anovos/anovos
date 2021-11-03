@@ -6,14 +6,14 @@ from anovos.data_analyzer.stats_generator import uniqueCount_computation, missin
     measures_of_cardinality
 from anovos.data_ingest.data_ingest import read_dataset
 from anovos.data_transformer.transformers import imputation_MMM
-from anovos.shared.spark import *
 from anovos.shared.utils import attributeType_segregation, transpose_dataframe, get_dtype
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
 
 
-def duplicate_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, print_impact=False):
+def duplicate_detection(spark, idf, list_of_cols='all', drop_cols=[], treatment=False, print_impact=False):
     """
+    :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_cols: List of columns to inspect e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
@@ -61,9 +61,10 @@ def duplicate_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, 
     return odf, odf_print
 
 
-def nullRows_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, treatment_threshold=0.8,
+def nullRows_detection(spark, idf, list_of_cols='all', drop_cols=[], treatment=False, treatment_threshold=0.8,
                        print_impact=False):
     """
+    :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_cols: List of columns to inspect e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
@@ -138,9 +139,10 @@ def nullRows_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, t
     return odf, odf_print
 
 
-def nullColumns_detection(idf, list_of_cols='missing', drop_cols=[], treatment=False, treatment_method='row_removal',
+def nullColumns_detection(spark, idf, list_of_cols='missing', drop_cols=[], treatment=False, treatment_method='row_removal',
                           treatment_configs={}, stats_missing={}, stats_unique={}, stats_mode={}, print_impact=False):
     """
+    :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_cols: List of columns to inspect e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
@@ -184,7 +186,7 @@ def nullColumns_detection(idf, list_of_cols='missing', drop_cols=[], treatment=F
     if stats_missing == {}:
         odf_print = missingCount_computation(idf)
     else:
-        odf_print = read_dataset(**stats_missing).select('attribute', 'missing_count', 'missing_pct')
+        odf_print = read_dataset(spark, **stats_missing).select('attribute', 'missing_count', 'missing_pct')
 
     missing_cols = odf_print.where(F.col('missing_count') > 0).select('attribute').rdd.flatMap(lambda x: x).collect()
 
@@ -247,13 +249,13 @@ def nullColumns_detection(idf, list_of_cols='missing', drop_cols=[], treatment=F
 
         if treatment_method == 'MMM':
             if stats_unique == {}:
-                remove_cols = uniqueCount_computation(idf, list_of_cols).where(F.col('unique_values') < 2) \
+                remove_cols = uniqueCount_computation(spark, idf, list_of_cols).where(F.col('unique_values') < 2) \
                     .select('attribute').rdd.flatMap(lambda x: x).collect()
             else:
-                remove_cols = read_dataset(**stats_unique).where(F.col('unique_values') < 2) \
+                remove_cols = read_dataset(spark, **stats_unique).where(F.col('unique_values') < 2) \
                     .select('attribute').rdd.flatMap(lambda x: x).collect()
             list_of_cols = [e for e in list_of_cols if e not in remove_cols]
-            odf = imputation_MMM(idf, list_of_cols, **treatment_configs, stats_missing=stats_missing,
+            odf = imputation_MMM(spark, idf, list_of_cols, **treatment_configs, stats_missing=stats_missing,
                                  stats_mode=stats_mode, print_impact=print_impact)
     else:
         odf = idf
@@ -261,7 +263,7 @@ def nullColumns_detection(idf, list_of_cols='missing', drop_cols=[], treatment=F
     return odf, odf_print
 
 
-def outlier_detection(idf, list_of_cols='all', drop_cols=[], detection_side='upper',
+def outlier_detection(spark, idf, list_of_cols='all', drop_cols=[], detection_side='upper',
                       detection_configs={'pctile_lower': 0.05, 'pctile_upper': 0.95,
                                          'stdev_lower': 3.0, 'stdev_upper': 3.0,
                                          'IQR_lower': 1.5, 'IQR_upper': 1.5,
@@ -269,6 +271,7 @@ def outlier_detection(idf, list_of_cols='all', drop_cols=[], detection_side='upp
                       treatment=False, treatment_method='value_replacement', pre_existing_model=False,
                       model_path="NA", output_mode='replace', stats_unique={}, print_impact=False):
     """
+    :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_cols: List of numerical columns to inspect e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
@@ -336,10 +339,10 @@ def outlier_detection(idf, list_of_cols='all', drop_cols=[], detection_side='upp
         drop_cols = [x.strip() for x in drop_cols.split('|')]
 
     if stats_unique == {}:
-        remove_cols = uniqueCount_computation(idf, list_of_cols).where(F.col('unique_values') < 2) \
+        remove_cols = uniqueCount_computation(spark, idf, list_of_cols).where(F.col('unique_values') < 2) \
             .select('attribute').rdd.flatMap(lambda x: x).collect()
     else:
-        remove_cols = read_dataset(**stats_unique).where(F.col('unique_values') < 2) \
+        remove_cols = read_dataset(spark, **stats_unique).where(F.col('unique_values') < 2) \
             .select('attribute').rdd.flatMap(lambda x: x).collect()
 
     list_of_cols = list(set([e for e in list_of_cols if e not in (drop_cols + remove_cols)]))
@@ -490,9 +493,10 @@ def outlier_detection(idf, list_of_cols='all', drop_cols=[], detection_side='upp
     return odf, odf_print
 
 
-def IDness_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, treatment_threshold=0.8, stats_unique={},
+def IDness_detection(spark, idf, list_of_cols='all', drop_cols=[], treatment=False, treatment_threshold=0.8, stats_unique={},
                      print_impact=False):
     """
+    :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_cols: List of categorical columns to inspect e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
@@ -551,9 +555,9 @@ def IDness_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, tre
         raise TypeError('Non-Boolean input for treatment')
 
     if stats_unique == {}:
-        odf_print = measures_of_cardinality(idf, list_of_cols)
+        odf_print = measures_of_cardinality(spark, idf, list_of_cols)
     else:
-        odf_print = read_dataset(**stats_unique).where(F.col('attribute').isin(list_of_cols))
+        odf_print = read_dataset(spark, **stats_unique).where(F.col('attribute').isin(list_of_cols))
 
     odf_print = odf_print.withColumn('flagged', F.when(F.col('IDness') >= treatment_threshold, 1).otherwise(0))
 
@@ -571,9 +575,10 @@ def IDness_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, tre
     return odf, odf_print
 
 
-def biasedness_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, treatment_threshold=0.8, stats_mode={},
+def biasedness_detection(spark, idf, list_of_cols='all', drop_cols=[], treatment=False, treatment_threshold=0.8, stats_mode={},
                          print_impact=False):
     """
+    :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_cols: List of Discrete (Categorical + Integer) columns to inspect e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
@@ -628,11 +633,11 @@ def biasedness_detection(idf, list_of_cols='all', drop_cols=[], treatment=False,
     if stats_mode == {}:
         odf_print = transpose_dataframe(idf.select(list_of_cols).summary("count"), 'summary') \
             .withColumnRenamed('key', 'attribute') \
-            .join(mode_computation(idf, list_of_cols), 'attribute', 'full_outer') \
+            .join(mode_computation(spark, idf, list_of_cols), 'attribute', 'full_outer') \
             .withColumn('mode_pct', F.round(F.col('mode_rows') / F.col('count').cast(T.DoubleType()), 4)) \
             .select('attribute', 'mode', 'mode_pct')
     else:
-        odf_print = read_dataset(**stats_mode).select('attribute', 'mode', 'mode_pct')\
+        odf_print = read_dataset(spark, **stats_mode).select('attribute', 'mode', 'mode_pct')\
                         .where(F.col('attribute').isin(list_of_cols))
 
     odf_print = odf_print.withColumn('flagged',
@@ -656,9 +661,10 @@ def biasedness_detection(idf, list_of_cols='all', drop_cols=[], treatment=False,
     return odf, odf_print
 
 
-def invalidEntries_detection(idf, list_of_cols='all', drop_cols=[], treatment=False,
+def invalidEntries_detection(spark, idf, list_of_cols='all', drop_cols=[], treatment=False,
                              output_mode='replace', print_impact=False):
     """
+    :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_cols: List of Discrete (Categorical + Integer) columns to inspect e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
@@ -684,7 +690,7 @@ def invalidEntries_detection(idf, list_of_cols='all', drop_cols=[], treatment=Fa
         for i in idf.dtypes:
             if (i[1] in ('string', 'int', 'bigint', 'long')):
                 list_of_cols.append(i[0])
-    if isinstance(list_of_cols, str):
+    if isinstance(list_of_cols , str):
         list_of_cols = [x.strip() for x in list_of_cols.split('|')]
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]

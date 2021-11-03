@@ -1,7 +1,6 @@
 # coding=utf-8
 import warnings
 
-from anovos.shared.spark import *
 from anovos.shared.utils import transpose_dataframe, attributeType_segregation
 from pyspark.mllib.linalg import Vectors
 from pyspark.mllib.stat import Statistics
@@ -9,8 +8,9 @@ from pyspark.sql import functions as F
 from pyspark.sql import types as T
 
 
-def global_summary(idf, list_of_cols='all', drop_cols=[], print_impact=True):
+def global_summary(spark, idf, list_of_cols='all', drop_cols=[], print_impact=True):
     '''
+    :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_cols: List of columns to analyse e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
@@ -62,8 +62,9 @@ def global_summary(idf, list_of_cols='all', drop_cols=[], print_impact=True):
     return odf
 
 
-def missingCount_computation(idf, list_of_cols='all', drop_cols=[], print_impact=False):
+def missingCount_computation(spark, idf, list_of_cols='all', drop_cols=[], print_impact=False):
     """
+    :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_cols: List of columns to analyse e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
@@ -99,8 +100,9 @@ def missingCount_computation(idf, list_of_cols='all', drop_cols=[], print_impact
     return odf
 
 
-def nonzeroCount_computation(idf, list_of_cols='all', drop_cols=[], print_impact=False):
+def nonzeroCount_computation(spark, idf, list_of_cols='all', drop_cols=[], print_impact=False):
     """
+    :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_cols: List of numerical columns to analyse e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
@@ -144,8 +146,9 @@ def nonzeroCount_computation(idf, list_of_cols='all', drop_cols=[], print_impact
     return odf
 
 
-def measures_of_counts(idf, list_of_cols='all', drop_cols=[], print_impact=False):
+def measures_of_counts(spark, idf, list_of_cols='all', drop_cols=[], print_impact=False):
     """
+    :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_cols: List of columns to analyse e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
@@ -177,15 +180,16 @@ def measures_of_counts(idf, list_of_cols='all', drop_cols=[], print_impact=False
         .withColumn('fill_pct', F.round(F.col('fill_count') / F.lit(idf.count()), 4)) \
         .withColumn('missing_count', F.lit(idf.count()) - F.col('fill_count').cast(T.LongType())) \
         .withColumn('missing_pct', F.round(1 - F.col('fill_pct'), 4)) \
-        .join(nonzeroCount_computation(idf, num_cols), "attribute", "full_outer")
+        .join(nonzeroCount_computation(spark, idf, num_cols), "attribute", "full_outer")
 
     if print_impact:
         odf.show(len(list_of_cols))
     return odf
 
 
-def mode_computation(idf, list_of_cols='all', drop_cols=[], print_impact=False):
+def mode_computation(spark, idf, list_of_cols='all', drop_cols=[], print_impact=False):
     """
+    :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_cols: List of Discrete (Categorical + Integer) columns to analyse e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
@@ -228,8 +232,9 @@ def mode_computation(idf, list_of_cols='all', drop_cols=[], print_impact=False):
     return odf
 
 
-def measures_of_centralTendency(idf, list_of_cols='all', drop_cols=[], print_impact=False):
+def measures_of_centralTendency(spark, idf, list_of_cols='all', drop_cols=[], print_impact=False):
     """
+    :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_cols: List of columns to analyse e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
@@ -259,7 +264,7 @@ def measures_of_centralTendency(idf, list_of_cols='all', drop_cols=[], print_imp
         .withColumn('mean', F.round(F.col('mean').cast(T.DoubleType()), 4)) \
         .withColumn('median', F.round(F.col('50%').cast(T.DoubleType()), 4)) \
         .withColumnRenamed('key', 'attribute') \
-        .join(mode_computation(idf, list_of_cols), 'attribute', 'full_outer') \
+        .join(mode_computation(spark, idf, list_of_cols), 'attribute', 'full_outer') \
         .withColumn('mode_pct', F.round(F.col('mode_rows') / F.col('count').cast(T.DoubleType()), 4)) \
         .select('attribute', 'mean', 'median', 'mode', 'mode_pct')
 
@@ -268,8 +273,9 @@ def measures_of_centralTendency(idf, list_of_cols='all', drop_cols=[], print_imp
     return odf
 
 
-def uniqueCount_computation(idf, list_of_cols='all', drop_cols=[], print_impact=False):
+def uniqueCount_computation(spark, idf, list_of_cols='all', drop_cols=[], print_impact=False):
     """
+    :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_cols: List of Discrete (Categorical + Integer) columns to analyse e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
@@ -305,8 +311,9 @@ def uniqueCount_computation(idf, list_of_cols='all', drop_cols=[], print_impact=
     return odf
 
 
-def measures_of_cardinality(idf, list_of_cols='all', drop_cols=[], print_impact=False):
+def measures_of_cardinality(spark, idf, list_of_cols='all', drop_cols=[], print_impact=False):
     """
+    :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_cols: List of Discrete (Categorical + Integer) columns to analyse e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
@@ -334,8 +341,8 @@ def measures_of_cardinality(idf, list_of_cols='all', drop_cols=[], print_impact=
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError('Invalid input for Column(s)')
 
-    odf = uniqueCount_computation(idf, list_of_cols) \
-        .join(missingCount_computation(idf, list_of_cols), 'attribute', 'full_outer') \
+    odf = uniqueCount_computation(spark, idf, list_of_cols) \
+        .join(missingCount_computation(spark, idf, list_of_cols), 'attribute', 'full_outer') \
         .withColumn('IDness', F.round(F.col('unique_values') / (F.lit(idf.count()) - F.col('missing_count')), 4)) \
         .select('attribute', 'unique_values', 'IDness')
     if print_impact:
@@ -343,8 +350,9 @@ def measures_of_cardinality(idf, list_of_cols='all', drop_cols=[], print_impact=
     return odf
 
 
-def measures_of_dispersion(idf, list_of_cols='all', drop_cols=[], print_impact=False):
+def measures_of_dispersion(spark, idf, list_of_cols='all', drop_cols=[], print_impact=False):
     """
+    :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_cols: List of numerical columns to analyse e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
@@ -392,8 +400,9 @@ def measures_of_dispersion(idf, list_of_cols='all', drop_cols=[], print_impact=F
     return odf
 
 
-def measures_of_percentiles(idf, list_of_cols='all', drop_cols=[], print_impact=False):
+def measures_of_percentiles(spark, idf, list_of_cols='all', drop_cols=[], print_impact=False):
     """
+    :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_cols: List of numerical columns to analyse e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
@@ -447,7 +456,7 @@ def measures_of_percentiles(idf, list_of_cols='all', drop_cols=[], print_impact=
     return odf
 
 
-def measures_of_shape(idf, list_of_cols='all', drop_cols=[], print_impact=False):
+def measures_of_shape(spark, idf, list_of_cols='all', drop_cols=[], print_impact=False):
     """
     :param idf: Input Dataframe
     :param list_of_cols: List of numerical columns to analyse e.g., ["col1","col2"].

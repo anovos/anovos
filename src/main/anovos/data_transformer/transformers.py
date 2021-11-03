@@ -4,7 +4,6 @@ import warnings
 import pyspark
 from anovos.data_analyzer.stats_generator import missingCount_computation, uniqueCount_computation
 from anovos.data_ingest.data_ingest import read_dataset
-from anovos.shared.spark import *
 from anovos.shared.utils import attributeType_segregation, get_dtype
 from pyspark.ml import Pipeline, PipelineModel
 from pyspark.ml.feature import Imputer, ImputerModel
@@ -16,10 +15,11 @@ from pyspark.sql.window import Window
 from scipy import stats
 
 
-def attribute_binning(idf, list_of_cols='all', drop_cols=[], method_type="equal_range", bin_size=10,
+def attribute_binning(spark, idf, list_of_cols='all', drop_cols=[], method_type="equal_range", bin_size=10,
                       bin_dtype="numerical",
                       pre_existing_model=False, model_path="NA", output_mode="replace", print_impact=False):
     """
+    :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_cols: List of numerical columns to transform e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
@@ -72,7 +72,7 @@ def attribute_binning(idf, list_of_cols='all', drop_cols=[], method_type="equal_
         raise TypeError('Invalid input for output_mode')
 
     if pre_existing_model:
-        df_model = sqlContext.read.parquet(model_path + "/attribute_binning")
+        df_model = spark.read.parquet(model_path + "/attribute_binning")
         bin_cutoffs = []
         for i in list_of_cols:
             mapped_value = df_model.where(F.col('attribute') == i).select('parameters') \
@@ -147,9 +147,10 @@ def attribute_binning(idf, list_of_cols='all', drop_cols=[], method_type="equal_
     return odf
 
 
-def monotonic_binning(idf, list_of_cols='all', drop_cols=[], label_col='label', event_label=1,
+def monotonic_binning(spark, idf, list_of_cols='all', drop_cols=[], label_col='label', event_label=1,
                       bin_method="equal_range", bin_size=10, bin_dtype="numerical", output_mode="replace"):
     """
+    :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_cols: List of numerical columns to transform e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
@@ -188,7 +189,7 @@ def monotonic_binning(idf, list_of_cols='all', drop_cols=[], label_col='label', 
     if any(x not in num_cols for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
 
-    attribute_binning(idf, list_of_cols='all', drop_cols=[], method_type="equal_range", bin_size=10,
+    attribute_binning(spark, idf, list_of_cols='all', drop_cols=[], method_type="equal_range", bin_size=10,
                       pre_existing_model=False, model_path="NA", output_mode="replace", print_impact=False)
 
     odf = idf
@@ -196,7 +197,7 @@ def monotonic_binning(idf, list_of_cols='all', drop_cols=[], label_col='label', 
         n = 20  # max_bin
         r = 0
         while n > 2:
-            tmp = attribute_binning(idf, [col], drop_cols=[], method_type=bin_method, bin_size=n, output_mode='append') \
+            tmp = attribute_binning(spark, idf, [col], drop_cols=[], method_type=bin_method, bin_size=n, output_mode='append') \
                 .select(label_col, col, col + '_binned') \
                 .withColumn(label_col, F.when(F.col(label_col) == event_label, 1).otherwise(0)) \
                 .groupBy(col + '_binned').agg(F.avg(col).alias('mean_val'),
@@ -204,21 +205,22 @@ def monotonic_binning(idf, list_of_cols='all', drop_cols=[], label_col='label', 
             # r = tmp.stat.corr('mean_age','mean_label')
             r, p = stats.spearmanr(tmp.toPandas()[['mean_val']], tmp.toPandas()[['mean_label']])
             if r == 1.0:
-                odf = attribute_binning(odf, [col], drop_cols=[], method_type=bin_method, bin_size=n,
+                odf = attribute_binning(spark, odf, [col], drop_cols=[], method_type=bin_method, bin_size=n,
                                         bin_dtype=bin_dtype, output_mode=output_mode)
                 break
             n = n - 1
             r = 0
         if r < 1.0:
-            odf = attribute_binning(odf, [col], drop_cols=[], method_type=bin_method, bin_size=bin_size,
+            odf = attribute_binning(spark, odf, [col], drop_cols=[], method_type=bin_method, bin_size=bin_size,
                                     bin_dtype=bin_dtype, output_mode=output_mode)
 
     return odf
 
 
-def cat_to_num_unsupervised(idf, list_of_cols='all', drop_cols=[], method_type=1, index_order='frequencyDesc',
+def cat_to_num_unsupervised(spark, idf, list_of_cols='all', drop_cols=[], method_type=1, index_order='frequencyDesc',
                             pre_existing_model=False, model_path="NA", output_mode='replace', print_impact=False):
     """
+    :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_cols: List of categorical columns to transform e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
@@ -345,10 +347,11 @@ def cat_to_num_unsupervised(idf, list_of_cols='all', drop_cols=[], method_type=1
     return odf
 
 
-def imputation_MMM(idf, list_of_cols="missing", drop_cols=[], method_type="median", pre_existing_model=False,
+def imputation_MMM(spark, idf, list_of_cols="missing", drop_cols=[], method_type="median", pre_existing_model=False,
                    model_path="NA",
                    output_mode="replace", stats_missing={}, stats_mode={}, print_impact=False):
     """
+    :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_cols: List of columns to impute e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
@@ -381,9 +384,9 @@ def imputation_MMM(idf, list_of_cols="missing", drop_cols=[], method_type="media
     :return: Imputed Dataframe
     """
     if stats_missing == {}:
-        missing_df = missingCount_computation(idf)
+        missing_df = missingCount_computation(spark, idf)
     else:
-        missing_df = read_dataset(**stats_missing).select('attribute', 'missing_count', 'missing_pct')
+        missing_df = read_dataset(spark, **stats_missing).select('attribute', 'missing_count', 'missing_pct')
 
     missing_cols = missing_df.where(F.col('missing_count') > 0).select('attribute').rdd.flatMap(lambda x: x).collect()
 
@@ -453,7 +456,7 @@ def imputation_MMM(idf, list_of_cols="missing", drop_cols=[], method_type="media
 
     if len(cat_cols) > 0:
         if pre_existing_model:
-            df_model = sqlContext.read.csv(model_path + "/imputation_MMM/cat_imputer", header=True, inferSchema=True)
+            df_model = spark.read.csv(model_path + "/imputation_MMM/cat_imputer", header=True, inferSchema=True)
             parameters = []
             for i in cat_cols:
                 mapped_value = \
@@ -467,7 +470,7 @@ def imputation_MMM(idf, list_of_cols="missing", drop_cols=[], method_type="media
                 # imputer = Imputer(strategy='mode', inputCols=cat_cols, outputCols=[(e + "_imputed") for e in cat_cols]) #spark 3.X
                 # imputerModel = imputer.fit(odf) #spark 3.X
             else:
-                mode_df = read_dataset(**stats_mode).replace('None', None)
+                mode_df = read_dataset(spark, **stats_mode).replace('None', None)
                 parameters = [mode_df.where(F.col('attribute') == i).select('mode').rdd.flatMap(list).collect()[0] for i
                               in cat_cols]
 
@@ -477,7 +480,7 @@ def imputation_MMM(idf, list_of_cols="missing", drop_cols=[], method_type="media
 
         # Saving model File if required
         if (pre_existing_model == False) & (model_path != "NA"):
-            df_model = sqlContext.createDataFrame(zip(cat_cols, parameters), schema=['attribute', 'parameters'])
+            df_model = spark.createDataFrame(zip(cat_cols, parameters), schema=['attribute', 'parameters'])
             df_model.repartition(1).write.csv(model_path + "/imputation_MMM/cat_imputer", header=True, mode='overwrite')
             # imputerModel.write().overwrite().save(model_path + "/imputation_MMM/num_imputer-model") #spark 3.X
 
@@ -503,9 +506,10 @@ def imputation_MMM(idf, list_of_cols="missing", drop_cols=[], method_type="media
     return odf
 
 
-def outlier_categories(idf, list_of_cols='all', drop_cols=[], coverage=1.0, max_category=50,
+def outlier_categories(spark, idf, list_of_cols='all', drop_cols=[], coverage=1.0, max_category=50,
                        pre_existing_model=False, model_path="NA", output_mode='replace', print_impact=False):
     """
+    :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_cols: List of categorical columns to transform e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
@@ -556,7 +560,7 @@ def outlier_categories(idf, list_of_cols='all', drop_cols=[], coverage=1.0, max_
         raise TypeError('Invalid input for output_mode')
 
     if pre_existing_model == True:
-        df_model = sqlContext.read.csv(model_path + "/outlier_categories", header=True, inferSchema=True)
+        df_model = spark.read.csv(model_path + "/outlier_categories", header=True, inferSchema=True)
     else:
         for index, i in enumerate(list_of_cols):
             window = Window.partitionBy().orderBy(F.desc('count_pct'))

@@ -1,6 +1,5 @@
 from itertools import chain
 
-from anovos.shared.spark import *
 from pyspark.sql import functions as F
 
 
