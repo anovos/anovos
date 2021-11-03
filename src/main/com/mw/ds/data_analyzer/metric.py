@@ -1,5 +1,7 @@
 import pyspark
 import warnings
+import json
+
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
 from com.mw.ds.shared.utils import transpose_dataframe, attributeType_segregation,get_dtype
@@ -16,7 +18,7 @@ class DataMetric:
        return list(map(lambda row: row.asDict(), df.collect()))
 
 
-    def generate_all_metric(self, idf):
+    def generate_all_metric_in_json(self, idf):
         # missiong_count = self.__convertToDict(self.__missingCount_computation(idf))
         # unique_count = self.__convertToDict(self.__uniqueCount_computation(idf))
         # nonzero_count = self.__convertToDict(self.__nonzeroCount_computation(idf))
@@ -51,7 +53,7 @@ class DataMetric:
         shape = self.__convertToDict(self.__measures_of_shape(idf))
         global_summary = self.__convertToDict(self.__global_summary(idf))
 
-        return {"invalidEntry" : invalidEntry,
+        return json.dumps ({"invalidEntry" : invalidEntry,
                 "idNess" : idNess,
                 "biasedness" : biasedness,
                 "outlier" : outlier,
@@ -65,7 +67,8 @@ class DataMetric:
                 "count": count,
                 "shape": shape,
                 "global_summary": global_summary
-                }
+                })
+                
 
     def __nullRows_detection(self, idf, list_of_cols='all', drop_cols=[], treatment=False, treatment_threshold=0.8, print_impact=False):
         """

@@ -5,7 +5,7 @@ from pyspark.sql import types as T
 from com.mw.ds.shared.spark import *
 
 
-def read_dataset(file_path:List[str], file_type: str, file_configs={}):
+def read_dataset(file_path: List[str], file_type: str, file_configs={}):
     """
     :param file_path: Path to input data (directory or filename)
     :param file_type: csv, parquet
@@ -188,18 +188,15 @@ class DataIngestion:
             **file_configs).load(file_path)
         return odf
 
-    def infer_schema(self, paths:List[str], file_type: str, file_configs={}):
+    def infer_schema(self, paths: List[str], file_type: str, file_configs={}):
         return self.read_dataset(paths, file_type, file_configs).schema
 
-
-    def generate_data(self, inputDf, selectColumns: List[str], castColumns:List[Tuple[str,str]], renameColumns:List[Tuple[str,str]]):
+    def generate_data(self, inputDf, selectColumns: List[str], castColumns: List[Tuple[str, str]], renameColumns: List[Tuple[str, str]]):
         df = inputDf
-        df = self.select_column(df,selectColumns)
-        df = self.__recast_column(df,castColumns)
-        df = self.rename_column(df,renameColumns)
+        df = self.select_column(df, selectColumns)
+        df = self.__recast_column(df, castColumns)
+        df = self.rename_column(df, renameColumns)
         return df
-
-
 
     def write_dataset(self, idf, file_path, file_type, file_configs={}):
         """
@@ -215,7 +212,7 @@ class DataIngestion:
         """
         mode = file_configs['mode'] if 'mode' in file_configs else 'error'
         repartition = int(file_configs['repartition']
-                        ) if 'repartition' in file_configs else None
+                          ) if 'repartition' in file_configs else None
 
         if repartition is None:
             idf.write.format(file_type).options(
@@ -228,9 +225,9 @@ class DataIngestion:
                     **file_configs).save(file_path, mode=mode)
             else:
                 idf.coalesce(req_parts).write.format(file_type).options(
-                    **file_configs).save(file_path, mode=mode) 
-    
-    def rename_column(self, idf, list_of_cols : List[Tuple[str,str]]):
+                    **file_configs).save(file_path, mode=mode)
+
+    def rename_column(self, idf, list_of_cols: List[Tuple[str, str]]):
         """
         :param idf: Input Dataframe
         :param list_of_cols: List of tupple of  old column names and new columns
@@ -243,10 +240,9 @@ class DataIngestion:
         return odf
 
         # odf = idf.select([F.col(column_name).alias(new_column_name) for column_name, new_column_name in list_of_cols])
-        # return odf  
+        # return odf
 
-
-    def __recast_column(self, df, list_of_cols : List[Tuple[str,str]]):
+    def __recast_column(self, df, list_of_cols: List[Tuple[str, str]]):
         """
         :param idf: Input Dataframe
         :param list_of_cols: List of column to cast (list or string of col names separated by |)
@@ -257,11 +253,35 @@ class DataIngestion:
 
         odf = df
         for column_name, new_data_type in (list_of_cols):
-            odf = odf.withColumn(column_name, F.col(column_name).cast(new_data_type))
+            odf = odf.withColumn(column_name, F.col(
+                column_name).cast(new_data_type))
         return odf
 
+    def create_replace_hive_table(self,table_name: str ,idf, file_path, file_type, file_configs={}):
+        self.write_dataset(self, idf, file_path, file_type, file_configs)
+        ddl = spark.sparkContext._jvm.org.apache.spark.sql.types.DataType.fromJson(idf.schema.json()).toDDL()
+        spark.sql("DROP TABLE IF EXISTS %s".format(table_name))
+        if file_type == "csv" and ( "header" not in file_configs or file_configs['header'] == "False"):
+            spark.sql("CREATE EXTERNAL TABLE %s(%s) LOCATION '%s'".format(table_name, ddl, file_path))
+        if file_type == "csv" and ( "header" not in file_configs and file_configs['header'] == "True"):
+            spark.sql("""CREATE EXTERNAL TABLE %s(%s) 
+            LOCATION '%s' TBLPROPERTIES ("skip.header.line.count"="1");"""
+            .format(table_name, ddl, file_path))
+        if file_type == "parquet":
+            spark.sql("CREATE EXTERNAL TABLE %s(%s) STORED AS PARQUET LOCATION '%s'"
+            .format(table_name, ddl, file_path))
+        if file_type == "json":
+            spark.sql("""CREATE EXTERNAL TABLE %s(%s) 
+            STORED AS AVRO' 
+            LOCATION '%s'"""
+            .format(table_name, ddl, file_path))
 
-    def select_column(self, idf, list_of_cols:List[str]):
+
+
+
+
+
+    def select_column(self, idf, list_of_cols: List[str]):
         """
         :param idf: Input Dataframe
         :param list_of_cols: List of columns to select (list or string of col names separated by |)

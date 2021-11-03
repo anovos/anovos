@@ -18,8 +18,8 @@ def test_calc_metrics_for_csv():
     df = data_ingest.read_dataset(
         ["data/test_dataset/csv"], "csv", {"header": "True"})
     data_metric = DataMetric(spark)
-    all_metric = data_metric.generate_all_metric(df)
-    print(json.dumps(all_metric))
+    all_metric = data_metric.generate_all_metric_in_json(df)
+    print(all_metric)
     
     # print(all_metric)
 
@@ -41,8 +41,8 @@ def test_calc_metrics_for_parquet():
     df = data_ingest.read_dataset(
         ["data/test_dataset/part-00000-3eb0f7bb-05c2-46ec-8913-23ba231d2734-c000.snappy.parquet"], "parquet", {"header": "True"})
     data_metric = DataMetric(spark)
-    all_metric = data_metric.generate_all_metric(df)
-    print(json.dumps(all_metric))
+    all_metric = data_metric.generate_all_metric_in_json(df)
+    print(all_metric)
 
     # for key, value in all_metric.items():
     #     print(key)
