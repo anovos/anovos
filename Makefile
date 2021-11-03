@@ -37,10 +37,10 @@ build: clean
 	rm -rf ./dist && mkdir ./dist && mkdir ./dist/data && mkdir ./dist/output
 	cp ./src/main/main.py ./dist
 	cp ./config/configs.yaml ./dist
-	cp -rf ./src/main/com ./dist/com
+	cp -rf ./src/main/anovos ./dist/anovos
 	cp -rf ./data/data_report/stability/ ./dist/output/stability/
-	cd ./dist && zip -r com.zip ./com
-	cd ./dist && tar -cvzf com.tar.gz ./com
+	cd ./dist && zip -r anovos.zip ./anovos
+	cd ./dist && tar -cvzf anovos.tar.gz ./anovos
 	cp -rf ./data/income_dataset ./dist/data/income_dataset
 	cp -rf ./data/metric_dictionary.csv ./dist/data/metric_dictionary.csv
 	cp ./bin/remove_overheads.sh ./dist

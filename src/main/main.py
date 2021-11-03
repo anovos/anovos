@@ -2,15 +2,15 @@ import yaml
 import subprocess
 import copy
 import sys
-from com.mw.ds.shared.spark import *
-from com.mw.ds.data_ingest import data_ingest
-from com.mw.ds.data_analyzer import stats_generator
-from com.mw.ds.data_analyzer import quality_checker
-from com.mw.ds.data_analyzer import association_evaluator
-from com.mw.ds.data_drift import drift_detector
-from com.mw.ds.data_report import report_preprocessing
-from com.mw.ds.data_report.report_preprocessing import save_stats
-from com.mw.ds.data_report.report_generation import anovos_report
+from anovos.shared.spark import *
+from anovos.data_ingest import data_ingest
+from anovos.data_analyzer import stats_generator
+from anovos.data_analyzer import quality_checker
+from anovos.data_analyzer import association_evaluator
+from anovos.data_drift import drift_detector
+from anovos.data_report import report_preprocessing
+from anovos.data_report.report_preprocessing import save_stats
+from anovos.data_report.report_generation import anovos_report
 import timeit
 
 def ETL(args):
