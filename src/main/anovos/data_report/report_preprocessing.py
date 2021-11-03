@@ -43,6 +43,8 @@ def save_stats(idf, master_path, function_name, reread=False,run_type="local"):
     :param master_path: Path to master folder under which all statistics will be saved in a csv file format.
     :param function_name: Function Name for which statistics need to be saved. file name will be saved as csv
     :return: None, dataframe saved
+    :run_type: local or emr based on the mode of execution. Default value is kept as local
+    :reread: option to reread. Default value is kept as False
     """
 
     if run_type == "local":
@@ -65,6 +67,9 @@ def save_stats(idf, master_path, function_name, reread=False,run_type="local"):
 
 
 def edit_binRange(col):
+    """
+    :param col: The column which is passed as input and needs to be treated. The generated output will not contain any range whose value at either side is the same.
+    """
     try:
         list_col = col.split("-")
         deduped_col = list(set(list_col))
@@ -80,6 +85,11 @@ f_edit_binRange = F.udf(edit_binRange, T.StringType())
 
 
 def binRange_to_binIdx(col, cutoffs_path):
+    """
+	:param col: The input column which is needed to by mapped with respective index
+	:param cutoffs_path: paths containing the range cutoffs applicable for each index
+
+	"""
     bin_cutoffs = sqlContext.read.parquet(cutoffs_path).where(F.col('attribute') == col).select('parameters') \
         .rdd.flatMap(lambda x: x).collect()[0]
     bin_ranges = []
@@ -96,6 +106,11 @@ def binRange_to_binIdx(col, cutoffs_path):
 
 
 def plot_frequency(idf, col, cutoffs_path):
+    """
+	:param idf: Input dataframe which would be referred for producing the frequency charts in form of bar plots / histograms
+	:param col: Analysis column
+	:param cutoffs_path: Path containing the range cut offs details for the analysis column
+	"""
     odf = idf.groupBy(col).count() \
         .withColumn("count_%", 100 * (F.col("count") / F.sum("count").over(Window.partitionBy()))) \
         .withColumn(col, f_edit_binRange(col))
@@ -124,6 +139,12 @@ def plot_frequency(idf, col, cutoffs_path):
 
 
 def plot_outlier(idf, col, split_var=None, sample_size=500000):
+    """
+	:param idf: Input dataframe which would be referred for capturing the outliers in form of violin charts
+	:param col: Analysis column
+	:param split_var: Column which is needed. Default value is kept as None
+	:param sample_size: Maximum Sample size. Default value is kept as 500000
+	"""
     idf_sample = idf.select(col).sample(False, min(1.0, float(sample_size) / idf.count()), 0)
     idf_sample.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
     idf_imputed = imputation_MMM(idf_sample)
@@ -138,6 +159,13 @@ def plot_outlier(idf, col, split_var=None, sample_size=500000):
 
 
 def plot_eventRate(idf, col, label_col, event_label, cutoffs_path):
+    """
+	:param idf: Input dataframe which would be referred for producing the frequency charts in form of bar plots / histogram
+	:param col: Analysis column
+	:param label_col: Label column 
+	:param event_label: Event label
+	:param cutoffs_path: Path containing the range cut offs details for the analysis column
+	"""
     event_label = str(event_label)
     class_cats = idf.select(label_col).distinct().rdd.flatMap(lambda x: x).collect()
 
@@ -171,6 +199,13 @@ def plot_eventRate(idf, col, label_col, event_label, cutoffs_path):
 
 
 def plot_comparative_drift(idf, source, col, cutoffs_path):
+    """
+	param idf: Target dataframe which would be referred for producing the frequency charts in form of bar plots / histogram
+	param source: Source dataframe of comparison
+	param col: Analysis column
+	param sourcecutoffs_path: Path containing the range cut offs details for the analysis column
+	"""
+
     odf = idf.groupBy(col).agg((F.count(col) / idf.count()).alias('countpct_target')).fillna(np.nan, subset=[col])
 
     if col in cat_cols:
@@ -209,6 +244,22 @@ def plot_comparative_drift(idf, source, col, cutoffs_path):
 def charts_to_objects(idf, list_of_cols='all', drop_cols=[], label_col=None, event_label=1,
                       bin_method="equal_range", bin_size=10, coverage=1.0,
                       drift_detector=False, source_path="NA", master_path='',run_type="local"):
+
+    """
+	param idf: Input dataframe
+	param list_of_cols: List of columns passed for analysis
+	param drop_cols: List of columns dropped from analysis
+	param label_col: Label column
+	param event_label: Event label
+	param bin_method: Binning method equal_range or equal_frequency
+	param bin_size: Maximum bin size categories. Default value is kept as 10
+	param coverage: Maximum coverage of categories. Default value is kept as 1.0 (which is 100%)
+	param drift_detector: True or False as per the availability. Default value is kept as False
+	param source_path: Source data path. Default value is kept as "NA"
+	param master_path: Path where the output needs to be saved, ideally the same path where the analyzed data output is also saved
+	param run_type: local or emr run type. Default value is kept as local
+	"""
+    
     global num_cols
     global cat_cols
     import timeit
