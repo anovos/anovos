@@ -2,15 +2,15 @@ import yaml
 import subprocess
 import copy
 import sys
-from com.mw.ds.shared.spark import *
-from com.mw.ds.data_ingest import data_ingest
-from com.mw.ds.data_analyzer import stats_generator
-from com.mw.ds.data_analyzer import quality_checker
-from com.mw.ds.data_analyzer import association_evaluator
-from com.mw.ds.data_drift import drift_detector
-from com.mw.ds.data_report import report_preprocessing
-from com.mw.ds.data_report.report_preprocessing import save_stats
-from com.mw.ds.data_report.report_generation import anovos_report
+from anovos.shared.spark import *
+from anovos.data_ingest import data_ingest
+from anovos.data_analyzer import stats_generator
+from anovos.data_analyzer import quality_checker
+from anovos.data_analyzer import association_evaluator
+from anovos.data_drift import drift_detector
+from anovos.data_report import report_preprocessing
+from anovos.data_report.report_preprocessing import save_stats
+from anovos.data_report.report_generation import anovos_report
 import timeit
 
 def ETL(args):
@@ -130,7 +130,7 @@ def main(all_configs):
             df = save(df,write_intermediate,folder_name="data_ingest/join_dataset",reread=True)
             end = timeit.default_timer()
             print(key, ", execution time (in secs) =",round(end-start,4))
-
+        
         if (key == 'stats_generator') & (args != None):
             for m in args['metric']:
                 start = timeit.default_timer()
@@ -179,9 +179,10 @@ def main(all_configs):
                                                      subkey,reread=True).show(100)
                     end = timeit.default_timer()
                     print(key, subkey, ", execution time (in secs) =",round(end-start,4))
-
+        
         if (key == 'drift_detector') & (args != None):
             for subkey, value in args.items():
+                
                 if (subkey == 'drift_statistics') & (value != None):
                     start = timeit.default_timer()
                     if not value['configs']['pre_existing_source']:
@@ -195,7 +196,7 @@ def main(all_configs):
                         save(df_stats,write_stats,folder_name="drift_detector/drift_statistics",reread=True).show(100)
                     end = timeit.default_timer()
                     print(key, subkey, ", execution time (in secs) =",round(end-start,4))
-                    
+                
                 if (subkey == 'stabilityIndex_computation') & (value != None):
                     start = timeit.default_timer()
                     idfs = []
@@ -203,6 +204,7 @@ def main(all_configs):
                         tmp = ETL(value.get(k))
                         idfs.append(tmp)
                     df_stats = drift_detector.stabilityIndex_computation(*idfs,**value['configs'],print_impact=False)
+                    print(report_inputPath, "xyz")
                     if report_inputPath:
                         save_stats(df_stats,report_inputPath,subkey,reread=True).show(100)
                         appended_metric_path = value['configs'].get("appended_metric_path","")
@@ -217,7 +219,7 @@ def main(all_configs):
                     print(key, subkey, ", execution time (in secs) =",round(end-start,4))
                     
             print("execution time w/o report (in sec) =", round(end-start_main,4))
-        
+           
         if (key == 'report_preprocessing') & (args != None):
             for subkey, value in args.items():
                 if (subkey == 'charts_to_objects') & (value != None):
@@ -225,7 +227,7 @@ def main(all_configs):
                     f = getattr(report_preprocessing, subkey)
                     f(df, **value, master_path=report_inputPath)
                     end = timeit.default_timer()
-                    print(key, subkey, ", execution time (in secs) =",round(end-start,4))
+                    print(key, subkey, ", execution time (in secs) =",round(end-start,4))         
                     
     save(df,write_main,folder_name="final_dataset",reread=False)
     

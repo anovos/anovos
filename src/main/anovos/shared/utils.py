@@ -1,6 +1,6 @@
 from itertools import chain
 
-from com.mw.ds.shared.spark import *
+from anovos.shared.spark import *
 from pyspark.sql import functions as F
 
 
@@ -31,7 +31,8 @@ def transpose_dataframe(idf, fixed_col):
 def attributeType_segregation(idf):
     """
     :param idf: Input Dataframe
-    :return: 3 lists - numerical, categorical, others columns
+    :return: (list1, list2, list3)
+             3 lists - each corresponding to numerical, categorical, and others columns
     """
     cat_cols = []
     num_cols = []

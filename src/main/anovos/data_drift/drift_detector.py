@@ -1,11 +1,12 @@
+# coding=utf-8
 from __future__ import division,print_function
 import pyspark
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
-from com.mw.ds.shared.spark import *
-from com.mw.ds.shared.utils import attributeType_segregation
-from com.mw.ds.data_transformer.transformers import attribute_binning
-from com.mw.ds.data_ingest.data_ingest import concatenate_dataset
+from anovos.shared.spark import *
+from anovos.shared.utils import attributeType_segregation
+from anovos.data_transformer.transformers import attribute_binning
+from anovos.data_ingest.data_ingest import concatenate_dataset
 import warnings
 import numpy as np
 import pandas as pd
@@ -17,23 +18,36 @@ from scipy.stats import variation
 
 def drift_statistics(idf_target, idf_source, list_of_cols='all', drop_cols=[], method_type='PSI', bin_method='equal_range', 
                      bin_size=10, threshold=0.1, pre_existing_source=False, source_path="NA", print_impact=False):
-    '''
-    :params idf_target, idf_source: Input Dataframes
-    :params list_of_cols: List of columns to check drift (list or string of col names separated by |)
-                          all - to include all non-array columns (excluding drop_cols)
-    :params drop_cols: List of columns to be dropped (list or string of col names separated by |)  
-    :params method: PSI, JSD, HD, KS (list or string of methods separated by |)
-                    all - to calculate all metrics 
-    :params bin_method: equal_frequency, equal_range
-    :params bin_size: 10 - 20 (recommended for PSI), >100 (other method types)
-    :params threshold: To flag attributes meeting drift threshold
-    :params pre_existing_source: True if binning model & frequency counts per attribute exists already, False Otherwise. 
-    :params source_path: If pre_existing_source is True, this argument is path for the source dataset details - drift_statistics folder.
-                  drift_statistics folder must contain attribute_binning & frequency_counts folders
-                  If pre_existing_source is False, this argument can be used for saving the details. 
-                  Default "NA" for temporarily saving source dataset attribute_binning folder 
-    :return: Output Dataframe <attribute, <metric>>
-    '''
+    """
+    :param idf_target: Input Dataframe
+    :param idf_source: Baseline/Source Dataframe. This argument is ignored if pre_existing_source is True.
+    :param list_of_cols: List of columns to check drift e.g., ["col1","col2"].
+                         Alternatively, columns can be specified in a string format,
+                         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+                         "all" can be passed to include all (non-array) columns for analysis.
+                         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
+                         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
+    :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
+                      Alternatively, columns can be specified in a string format,
+                      where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+    :param method: "PSI", "JSD", "HD", "KS","all".
+                   "all" can be passed to calculate all drift metrics.
+                    One or more methods can be passed in a form of list or string where different metrics are separated
+                    by pipe delimiter “|” e.g. ["PSI", "JSD"] or "PSI|JSD"
+    :param bin_method: "equal_frequency", "equal_range".
+                        In "equal_range" method, each bin is of equal size/width and in "equal_frequency", each bin
+                        has equal no. of rows, though the width of bins may vary.
+    :param bin_size: Number of bins for creating histogram
+    :param threshold: A column is flagged if any drift metric is above the threshold.
+    :param pre_existing_source: Boolean argument – True or False. True if the drift_statistics folder (binning model &
+                                frequency counts for each attribute) exists already, False Otherwise.
+    :param source_path: If pre_existing_source is False, this argument can be used for saving the drift_statistics folder.
+                        The drift_statistics folder will have attribute_binning (binning model) & frequency_counts sub-folders.
+                        If pre_existing_source is True, this argument is path for referring the drift_statistics folder.
+                        Default "NA" for temporarily saving source dataset attribute_binning folder.
+    :return: Output Dataframe [attribute, *metric, flagged]
+             Number of columns will be dependent on method argument. There will be one column for each drift method/metric.
+    """
     
     if list_of_cols == 'all':
         num_cols, cat_cols, other_cols = attributeType_segregation(idf_target)
@@ -137,19 +151,27 @@ def stabilityIndex_computation(*idfs, list_of_cols='all', drop_cols=[], metric_w
                                existing_metric_path='', appended_metric_path='', threshold=None, print_impact=False):
 
     """
-    :params idfs: Input Dataframes (flexible)
-    :params list_of_cols: Numerical columns (in list format or string separated by |)
-                         all - to include all numerical columns (excluding drop_cols)
-    :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
-    :params metric_weightages: A dictionary with key being the metric name (mean,stdev,kurtosis) 
-                              and value being the weightage of the metric (between 0 and 1). 
-                              Sum of all weightages must be 1.
-    :params existing_metric_path: this argument is path for pre-existing metrics of historical datasets 
-                                 <idx,attribute,mean,stdev,kurtosis>. 
-                                 idx is index number of historical datasets assigned in chronological order
-    :params appended_metric_path: this argument is path for saving input dataframes metrics after appending to the historical datasets' metrics. 
-    :params threshold: To flag unstable attributes meeting the threshold
-    :return: Stability Index Dataframe <attribute, *metric_cv, *metric_si, stability_index>
+    :param idfs: Variable number of input dataframes
+    :param list_of_cols: List of numerical columns to check stability e.g., ["col1","col2"].
+                         Alternatively, columns can be specified in a string format,
+                         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+                         "all" can be passed to include all numerical columns for analysis.
+                         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
+                         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
+    :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
+                      Alternatively, columns can be specified in a string format,
+                      where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+    :param metric_weightages: Takes input in dictionary format with keys being the metric name - "mean","stdev","kurtosis"
+                              and value being the weightage of the metric (between 0 and 1). Sum of all weightages must be 1.
+    :param existing_metric_path: This argument is path for referring pre-existing metrics of historical datasets and is
+                                 of schema [idx, attribute, mean, stdev, kurtosis].
+                                 idx is index number of historical datasets assigned in chronological order.
+    :param appended_metric_path: This argument is path for saving input dataframes metrics after appending to the
+                                 historical datasets' metrics.
+    :param threshold: A column is flagged if the stability index is below the threshold, which varies between 0 to 4.
+    :return: Dataframe [attribute, mean_si, stddev_si, kurtosis_si, mean_cv, stddev_cv, kurtosis_cv, stability_index].
+             *_cv is coefficient of variation for each metric. *_si is stability index for each metric.
+             stability_index is net weighted stability index based on the individual metrics' stability index.
     """
     
     num_cols = attributeType_segregation(idfs[0])[0]

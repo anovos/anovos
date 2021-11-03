@@ -23,7 +23,7 @@ spark-submit \
 --packages org.apache.spark:spark-avro_2.11:2.4.0 \
 --conf spark.yarn.maxAppAttempts=1 \
 --jars ../jars/histogrammar_2.11-1.0.20.jar,../jars/histogrammar-sparksql_2.11-1.0.20.jar \
---py-files com.zip \
+--py-files anovos.zip \
 main.py \
 configs.yaml \
 local
@@ -31,4 +31,4 @@ local
 nohup ./remove_overheads.sh 10000 2 &
 
 echo "Generating anovos final report.... "
-python3 com/mw/ds/data_report/report_generation.py configs.yaml local
+python3 anovos/data_report/report_generation.py configs.yaml local

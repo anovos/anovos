@@ -1,10 +1,11 @@
+# coding=utf-8
 import warnings
 
 import pyspark
-from com.mw.ds.data_analyzer.stats_generator import missingCount_computation, uniqueCount_computation
-from com.mw.ds.data_ingest.data_ingest import read_dataset
-from com.mw.ds.shared.spark import *
-from com.mw.ds.shared.utils import attributeType_segregation, get_dtype
+from anovos.data_analyzer.stats_generator import missingCount_computation, uniqueCount_computation
+from anovos.data_ingest.data_ingest import read_dataset
+from anovos.shared.spark import *
+from anovos.shared.utils import attributeType_segregation, get_dtype
 from pyspark.ml import Pipeline, PipelineModel
 from pyspark.ml.feature import Imputer, ImputerModel
 from pyspark.ml.feature import StringIndexer, OneHotEncoderEstimator
@@ -19,18 +20,31 @@ def attribute_binning(idf, list_of_cols='all', drop_cols=[], method_type="equal_
                       bin_dtype="numerical",
                       pre_existing_model=False, model_path="NA", output_mode="replace", print_impact=False):
     """
-    :params idf: Input Dataframe
-    :params list_of_cols: Numerical columns (in list format or string separated by |)
-                         all - to include all numerical columns (excluding drop_cols)
-    :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
-    :params method_type: equal_frequency, equal_range
-    :params bin_size: No of bins
-    :params bin_dtype: numerical, categorical - bin label as integer or range ("upperval-lowerval")
-    :params pre_existing_model: True if mapping values exists already, False Otherwise. 
-    :params model_path: If pre_existing_model is True, this argument is path for the pre-saved model. 
-                  If pre_existing_model is False, this argument can be used for saving the model. 
-                  Default "NA" means there is neither pre_existing_model nor there is a need to save one.
-    :params output_mode: replace or append
+    :param idf: Input Dataframe
+    :param list_of_cols: List of numerical columns to transform e.g., ["col1","col2"].
+                         Alternatively, columns can be specified in a string format,
+                         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+                         "all" can be passed to include all numerical columns for analysis.
+                         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
+                         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
+    :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
+                      Alternatively, columns can be specified in a string format,
+                      where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+    :param bin_method: "equal_frequency", "equal_range".
+                        In "equal_range" method, each bin is of equal size/width and in "equal_frequency", each bin has
+                        equal no. of rows, though the width of bins may vary.
+    :param bin_size: Number of bins.
+    :param bin_dtype: "numerical", "categorical".
+                      With "numerical" option, original value is replaced with an Integer (1,2,…) and
+                      with "categorical" option, original replaced with a string describing min and max value allowed
+                      in the bin ("minval-maxval").
+    :param pre_existing_model: Boolean argument – True or False. True if binning model exists already, False Otherwise.
+    :param model_path: If pre_existing_model is True, this argument is path for referring the pre-saved model.
+                       If pre_existing_model is False, this argument can be used for saving the model.
+                       Default "NA" means there is neither pre-existing model nor there is a need to save one.
+    :param output_mode: "replace", "append".
+                        “replace” option replaces original columns with transformed column. “append” option append transformed
+                        column to the input dataset with a postfix "_binned" e.g. column X is appended as X_binned.
     :return: Binned Dataframe
     """
 
@@ -136,16 +150,29 @@ def attribute_binning(idf, list_of_cols='all', drop_cols=[], method_type="equal_
 def monotonic_binning(idf, list_of_cols='all', drop_cols=[], label_col='label', event_label=1,
                       bin_method="equal_range", bin_size=10, bin_dtype="numerical", output_mode="replace"):
     """
-    :params idf: Input Dataframe
-    :params list_of_cols: Numerical columns (in list format or string separated by |)
-                         all - to include all numerical columns (excluding drop_cols)
-    :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
-    :params label_col: Label column
-    :params event_label: Value of event (binary classfication)
-    :params bin_method: equal_frequency, equal_range
-    :params bin_size: No of bins
-    :params bin_dtype: numerical, categorical - bin label as integer or range ("upperval-lowerval")
-    :params output_mode: replace or append
+    :param idf: Input Dataframe
+    :param list_of_cols: List of numerical columns to transform e.g., ["col1","col2"].
+                         Alternatively, columns can be specified in a string format,
+                         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+                         "all" can be passed to include all numerical columns for analysis.
+                         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
+                         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
+    :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
+                      Alternatively, columns can be specified in a string format,
+                      where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+    :param label_col: Label/Target column
+    :param event_label: Value of (positive) event (i.e label 1)
+    :param bin_method: "equal_frequency", "equal_range".
+                        In "equal_range" method, each bin is of equal size/width and in "equal_frequency", each bin has
+                        equal no. of rows, though the width of bins may vary.
+    :param bin_size: Default number of bins in case monotonicity is not achieved.
+    :param bin_dtype: "numerical", "categorical".
+                      With "numerical" option, original value is replaced with an Integer (1,2,…) and
+                      with "categorical" option, original replaced with a string describing min and max value allowed
+                      in the bin ("minval-maxval").
+    :param output_mode: "replace", "append".
+                        “replace” option replaces original columns with transformed column. “append” option append transformed
+                        column to the input dataset with a postfix "_binned" e.g. column X is appended as X_binned.
     :return: Binned Dataframe
     """
     num_cols = attributeType_segregation(idf)[0]
@@ -190,23 +217,34 @@ def monotonic_binning(idf, list_of_cols='all', drop_cols=[], label_col='label', 
 
 
 def cat_to_num_unsupervised(idf, list_of_cols='all', drop_cols=[], method_type=1, index_order='frequencyDesc',
-                            onehot_dropLast=False,
                             pre_existing_model=False, model_path="NA", output_mode='replace', print_impact=False):
-    '''
-    :params idf: Input Dataframe
-    :params list_of_cols: Categorical columns (in list format or string separated by |)
-                         all - to include all categorical columns (excluding drop_cols)
-    :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
-    :params method_type: 1 (Label Encoding) or 0 (One hot encoding)
-    :params index_order: Valid only for Label Encoding - frequencyDesc, frequencyAsc, alphabetDesc, alphabetAsc
-    :params onehot_dropLast= True or False (Dropping last column in one hot encoding)
-    :params pre_existing_model: True if the models exist already, False Otherwise
-    :params model_path: If pre_existing_model is True, this argument is path for the pre-saved models. If pre_existing_model is False, 
-                this argument can be used for saving the normalization model (value other than NA). 
-                Default ("NA") means there is neither pre_existing_model nor there is a need to save one.
-    :params output_mode: replace or append
-    :return: Dataframe with transformed categorical attributes
-    '''
+    """
+    :param idf: Input Dataframe
+    :param list_of_cols: List of categorical columns to transform e.g., ["col1","col2"].
+                         Alternatively, columns can be specified in a string format,
+                         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+                         "all" can be passed to include all categorical columns for analysis.
+                         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
+                         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
+    :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
+                      Alternatively, columns can be specified in a string format,
+                      where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+    :param method_type: 1 for Label Encoding or 0 for One hot encoding.
+                        In label encoding, each categorical value is assigned a unique integer based on alphabetical
+                        or frequency ordering (both ascending & descending options are available that can be selected by
+                        index_order argument).
+                        In one-hot encoding, every unique value in the column will be added in a form of dummy/binary column.
+    :param index_order: "frequencyDesc", "frequencyAsc", "alphabetDesc", "alphabetAsc".
+                        Valid only for Label Encoding method_type.
+    :param pre_existing_model: Boolean argument – True or False. True if encoding model exists already, False Otherwise.
+    :param model_path: If pre_existing_model is True, this argument is path for referring the pre-saved model.
+                       If pre_existing_model is False, this argument can be used for saving the model.
+                       Default "NA" means there is neither pre existing model nor there is a need to save one.
+    :param output_mode: "replace", "append".
+                        “replace” option replaces original columns with transformed column. “append” option append transformed
+                        column to the input dataset with a postfix "_index" e.g. column X is appended as X_index.
+    :return: Encoded Dataframe
+    """
 
     cat_cols = attributeType_segregation(idf)[1]
     if list_of_cols == 'all':
@@ -255,7 +293,7 @@ def cat_to_num_unsupervised(idf, list_of_cols='all', drop_cols=[], method_type=1
             encoder = OneHotEncoderEstimator.load(model_path + "/cat_to_num_unsupervised/encoder")
         else:
             encoder = OneHotEncoderEstimator(inputCols=list_of_cols_idx, outputCols=list_of_cols_vec,
-                                             dropLast=onehot_dropLast, handleInvalid='keep')
+                                              handleInvalid='keep')
 
         odf_encoded = encoder.fit(odf_indexed).transform(odf_indexed)
 
@@ -311,19 +349,35 @@ def imputation_MMM(idf, list_of_cols="missing", drop_cols=[], method_type="media
                    model_path="NA",
                    output_mode="replace", stats_missing={}, stats_mode={}, print_impact=False):
     """
-    :params idf: Pyspark Dataframe
-    :params list_of_cols: list of columns (in list format or string separated by |)
-                                 all - to include all non-array columns (excluding drop_cols)
-                                 missing - all feautures with missing values (excluding drop_cols)
-    :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
-    :params method_type: median (default), mean for Numerical attributes. Mode is only option for categorical attributes
-    :params pre_existing_model: True if median/mean/mode values exists already, False Otherwise.
-    :params model_path: If pre_existing_model is True, this argument is path for pre-saved imputation model.
-                  If pre_existing_model is False, this argument can be used for saving the imputation model.
-                  Default "NA" means there is neither pre_existing_model nor there is a need to save one.
-    :params output_mode: replace or append
-    :params stats_missing: read_dataset arguments to read pre-saved statistics on missing count/pct (dictionary format)
-    :params stats_mode: read_dataset arguments to read pre-saved statistics on mode (dictionary format)
+    :param idf: Input Dataframe
+    :param list_of_cols: List of columns to impute e.g., ["col1","col2"].
+                         Alternatively, columns can be specified in a string format,
+                         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+                         "all" can be passed to include all (non-array) columns for analysis.
+                         "missing" (default) can be passed to include only those columns with missing values.
+                         One of the usecases where "all" may be preferable over "missing" is when the user wants to save
+                         the imputation model for the future use e.g. a column may not have missing value in the training
+                         dataset but missing values may possibly appear in the prediction dataset.
+                         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
+                         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
+    :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
+                      Alternatively, columns can be specified in a string format,
+                      where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+    :param method_type: "median", "mean" (valid only for for numerical columns attributes).
+                         Mode is only option for categorical columns.
+    :param pre_existing_model: Boolean argument – True or False. True if imputation model exists already, False otherwise.
+    :param model_path: If pre_existing_model is True, this argument is path for referring the pre-saved model.
+                       If pre_existing_model is False, this argument can be used for saving the model.
+                       Default "NA" means there is neither pre-existing model nor there is a need to save one.
+    :param output_mode: "replace", "append".
+                         “replace” option replaces original columns with transformed column. “append” option append transformed
+                         column to the input dataset with a postfix "_imputed" e.g. column X is appended as X_imputed.
+    :param stats_missing: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
+                          to read pre-saved statistics on missing count/pct i.e. if measures_of_counts or
+                          missingCount_computation (data_analyzer.stats_generator module) has been computed & saved before.
+    :param stats_mode: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
+                       to read pre-saved statistics on most frequently seen values i.e. if measures_of_centralTendency or
+                       mode_computation (data_analyzer.stats_generator module) has been computed & saved before.
     :return: Imputed Dataframe
     """
     if stats_missing == {}:
@@ -451,21 +505,32 @@ def imputation_MMM(idf, list_of_cols="missing", drop_cols=[], method_type="media
 
 def outlier_categories(idf, list_of_cols='all', drop_cols=[], coverage=1.0, max_category=50,
                        pre_existing_model=False, model_path="NA", output_mode='replace', print_impact=False):
-    '''
-    :params idf: Input Dataframe
-    :params list_of_cols: Categorical columns (in list format or string separated by |)
-                         all - to include all categorical columns (excluding drop_cols)
-    :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
-    :params coverage: Minimum % of rows mapped to actual category name and rest will be mapped to others
-    :params max_category: Even if coverage is less, only (max_category - 1) categories will be mapped to actual name and rest to others.
-                            Caveat is when multiple categories have same rank. Then #categories can be more than max_category
-    :params pre_existing_model: outlier value for each attribute. True if model files exists already, False Otherwise
-    :params model_path: If pre_existing_model is True, this argument is path for pre-saved model file. 
-                  If pre_existing_model is False, this field can be used for saving the model file. 
-                  param NA means there is neither pre_existing_model nor there is a need to save one.
-    :params output_mode: replace or append
-    "return: Dataframe after outlier treatment
-    '''
+    """
+    :param idf: Input Dataframe
+    :param list_of_cols: List of categorical columns to transform e.g., ["col1","col2"].
+                         Alternatively, columns can be specified in a string format,
+                         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+                         "all" can be passed to include all categorical columns for analysis.
+                         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
+                         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
+    :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
+                      Alternatively, columns can be specified in a string format,
+                      where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+    :param coverage: Defines the minimum % of rows that will be mapped to actual category name and the rest to be mapped
+                     to others and takes value between 0 to 1. Coverage of 0.8 can be interpreted as top frequently seen
+                     categories are considered till it covers minimum 80% of rows and rest lesser seen values are mapped to others.
+    :param max_category: Even if coverage is less, only (max_category - 1) categories will be mapped to actual name and rest to others.
+                         Caveat is when multiple categories have same rank, then #categories can be more than max_category.
+    :param pre_existing_model: Boolean argument – True or False. True if the model with the outlier/other values
+                               for each attribute exists already to be used, False Otherwise.
+    :param model_path: If pre_existing_model is True, this argument is path for the pre-saved model.
+                       If pre_existing_model is False, this field can be used for saving the model.
+                       Default "NA" means there is neither pre-existing model nor there is a need to save one.
+    :param output_mode: "replace", "append".
+                        “replace” option replaces original columns with transformed column. “append” option append transformed
+                        column to the input dataset with a postfix "_outliered" e.g. column X is appended as X_outliered.
+    :return: Dataframe after outlier treatment
+    """
 
     cat_cols = attributeType_segregation(idf)[1]
     if list_of_cols == 'all':

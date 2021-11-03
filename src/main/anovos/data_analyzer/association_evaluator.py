@@ -1,13 +1,14 @@
+# coding=utf-8
 import itertools
 import math
 
 import pyspark
-from com.mw.ds.data_analyzer.stats_generator import uniqueCount_computation
-from com.mw.ds.data_ingest.data_ingest import read_dataset
-from com.mw.ds.data_transformer.transformers import attribute_binning, monotonic_binning, cat_to_num_unsupervised, \
+from anovos.data_analyzer.stats_generator import uniqueCount_computation
+from anovos.data_ingest.data_ingest import read_dataset
+from anovos.data_transformer.transformers import attribute_binning, monotonic_binning, cat_to_num_unsupervised, \
     imputation_MMM
-from com.mw.ds.shared.spark import *
-from com.mw.ds.shared.utils import attributeType_segregation
+from anovos.shared.spark import *
+from anovos.shared.utils import attributeType_segregation
 from phik.phik import spark_phik_matrix_from_hist2d_dict
 from popmon.analysis.hist_numpy import get_2dgrid
 from pyspark.sql import Window
@@ -17,12 +18,23 @@ from varclushi import VarClusHi
 
 def correlation_matrix(idf, list_of_cols='all', drop_cols=[], stats_unique={}, print_impact=False):
     """
-    :params idf: Input Dataframe
-    :params list_of_cols: list of columns (in list format or string separated by |)
-                         all - to include all non-array columns (excluding drop_cols)
-    :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
-    :params stats_unique: read_dataset arguments to read pre-saved statistics on unique value count (dictionary format)
-    :return: Correlation Dataframe <attribute,<col_names>>
+    :param idf: Input Dataframe
+    :param list_of_cols: List of columns to analyse e.g., ["col1","col2"].
+                         Alternatively, columns can be specified in a string format,
+                         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+                         "all" can be passed to include all columns for analysis.
+                         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
+                         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
+    :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
+                      Alternatively, columns can be specified in a string format,
+                      where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+    :param stats_unique: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
+                         to read pre-saved statistics on unique value count i.e. if measures_of_cardinality or
+                         uniqueCount_computation (data_analyzer.stats_generator module) has been computed & saved before.
+    :return: Dataframe [attribute,*col_names]
+             Correlation between attribute X and Y can be found at an intersection of
+             a) row with value X in ‘attribute’ column and column ‘Y’, or
+             b) row with value Y in ‘attribute’ column and column ‘X’.
     """
 
     if list_of_cols == 'all':
@@ -61,14 +73,27 @@ def correlation_matrix(idf, list_of_cols='all', drop_cols=[], stats_unique={}, p
 def variable_clustering(idf, list_of_cols='all', drop_cols=[], sample_size=100000, stats_unique={}, stats_mode={},
                         print_impact=False):
     """
-    :params idf: Input Dataframe
-    :params list_of_cols: list of columns (in list format or string separated by |)
-                         all - to include all non-array columns (excluding drop_cols)
-    :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
-    :params sample_size: maximum sample size for computation
-    :params stats_unique: read_dataset arguments to read pre-saved statistics on unique value count (dictionary format)
-    :params stats_mode: read_dataset arguments to read pre-saved statistics on mode (dictionary format)
-    :return: Dataframe <Cluster, attribute, RS_Ratio>
+    :param idf: Input Dataframe
+    :param list_of_cols: List of columns to analyse e.g., ["col1","col2"].
+                         Alternatively, columns can be specified in a string format,
+                         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+                         "all" can be passed to include all columns for analysis.
+                         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
+                         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
+    :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
+                      Alternatively, columns can be specified in a string format,
+                      where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+    :param sample_size: Maximum sample size (in terms of number of rows) taken for the computation.
+                        Sample dataset is extracted using random sampling.
+    :param stats_unique: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
+                         to read pre-saved statistics on unique value count i.e. if measures_of_cardinality or
+                         uniqueCount_computation (data_analyzer.stats_generator module) has been computed & saved before.
+    :param stats_mode: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
+                       to read pre-saved statistics on most frequently seen values i.e. if measures_of_centralTendency or
+                       mode_computation (data_analyzer.stats_generator module) has been computed & saved before.
+    :return: Dataframe [Cluster, Attribute, RS_Ratio]
+             Attributes similar to each other are grouped together with the same cluster id.
+             Attribute with the lowest (1 — RS_Ratio) can be chosen as a representative of the cluster.
     """
 
     if list_of_cols == 'all':
@@ -119,16 +144,25 @@ def IV_calculation(idf, list_of_cols='all', drop_cols=[], label_col='label', eve
                    encoding_configs={'bin_method': 'equal_frequency', 'bin_size': 10, 'monotonicity_check': 0},
                    print_impact=False):
     """
-    :params idf: Input Dataframe
-    :params list_of_cols: list of columns (in list format or string separated by |)
-                         all - to include all non-array columns (excluding drop_cols)
-    :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
-    :params label_col: Label column
-    :params event_label: Value of (positive) event (binary classfication)
-    :params encoding_configs: dict format, {} empty dict for no encoding
-                            bin_size: No. of bins, bin_method: equal_frequency, equal_range, 
-                            monotonicity_check = 1 for monotonicity encoding else 0
-    :return: Dataframe <attribute, iv>
+    :param idf: Input Dataframe
+    :param list_of_cols: List of columns to analyse e.g., ["col1","col2"].
+                         Alternatively, columns can be specified in a string format,
+                         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+                         "all" can be passed to include all columns for analysis.
+                         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
+                         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
+    :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
+                      Alternatively, columns can be specified in a string format,
+                      where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+    :param label_col: Label/Target column
+    :param event_label: Value of (positive) event (i.e label 1)
+    :param encoding_configs: Takes input in dictionary format. Default {} i.e. empty dict means no encoding is required.
+                             In case numerical columns are present and encoding is required, following keys shall be
+                             provided - "bin_size" i.e. no. of bins for converting the numerical columns to categorical,
+                             "bin_method" i.e. method of binning - "equal_frequency" or "equal_range" and
+                             "monotonicity_check" 1 for monotonic binning else 0. monotonicity_check of 1 will
+                             dynamically calculate the bin_size ensuring monotonic nature but can be expensive operation.
+    :return: Dataframe [attribute, iv]
     """
 
     if label_col not in idf.columns:
@@ -189,16 +223,25 @@ def IG_calculation(idf, list_of_cols='all', drop_cols=[], label_col='label', eve
                    encoding_configs={'bin_method': 'equal_frequency', 'bin_size': 10, 'monotonicity_check': 0},
                    print_impact=False):
     """
-    :params idf: Input Dataframe
-    :params list_of_cols: list of columns (in list format or string separated by |)
-                         all - to include all non-array columns (excluding drop_cols)
-    :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
-    :params label_col: Label column
-    :params event_label: Value of (positive) event (binary classfication)
-    :params encoding_configs: dict format, {} empty dict for no encoding
-                            bin_size: No. of bins, bin_method: equal_frequency, equal_range, 
-                            monotonicity_check = 1 for monotonicity encoding else 0
-    :return: Dataframe <attribute, ig>
+    :param idf: Input Dataframe
+    :param list_of_cols: List of columns to analyse e.g., ["col1","col2"].
+                         Alternatively, columns can be specified in a string format,
+                         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+                         "all" can be passed to include all columns for analysis.
+                         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
+                         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
+    :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
+                      Alternatively, columns can be specified in a string format,
+                      where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+    :param label_col: Label/Target column
+    :param event_label: Value of (positive) event (i.e label 1)
+    :param encoding_configs: Takes input in dictionary format. Default {} i.e. empty dict means no encoding is required.
+                             In case numerical columns are present and encoding is required, following keys shall be
+                             provided - "bin_size" i.e. no. of bins for converting the numerical columns to categorical,
+                             "bin_method" i.e. method of binning - "equal_frequency" or "equal_range" and
+                             "monotonicity_check" 1 for monotonic binning else 0. monotonicity_check of 1 will
+                             dynamically calculate the bin_size ensuring monotonic nature but can be expensive operation.
+    :return: Dataframe [attribute, ig]
     """
 
     if label_col not in idf.columns:

@@ -1,24 +1,33 @@
+# coding=utf-8
 import re
 import warnings
 
-from com.mw.ds.data_analyzer.stats_generator import uniqueCount_computation, missingCount_computation, mode_computation, \
+from anovos.data_analyzer.stats_generator import uniqueCount_computation, missingCount_computation, mode_computation, \
     measures_of_cardinality
-from com.mw.ds.data_ingest.data_ingest import read_dataset
-from com.mw.ds.data_transformer.transformers import imputation_MMM
-from com.mw.ds.shared.spark import *
-from com.mw.ds.shared.utils import attributeType_segregation, transpose_dataframe, get_dtype
+from anovos.data_ingest.data_ingest import read_dataset
+from anovos.data_transformer.transformers import imputation_MMM
+from anovos.shared.spark import *
+from anovos.shared.utils import attributeType_segregation, transpose_dataframe, get_dtype
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
 
 
 def duplicate_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, print_impact=False):
     """
-    :params idf: Input Dataframe
-    :params list_of_cols: list or string of col names separated by |
-                         all - to include all non-array columns (excluding drop_cols)
-    :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
-    :params treatment: True if rows to be removed else False
-    :return: Filtered Dataframe, Analysis Dataframe
+    :param idf: Input Dataframe
+    :param list_of_cols: List of columns to inspect e.g., ["col1","col2"].
+                         Alternatively, columns can be specified in a string format,
+                         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+                         "all" can be passed to include all columns for analysis.
+                         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
+                         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
+    :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
+                      Alternatively, columns can be specified in a string format,
+                      where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+    :param treatment: Boolean argument – True or False. If True, duplicate rows are removed from the input dataframe.
+    :return: (Output Dataframe, Metric Dataframe)
+              Output Dataframe is de-duplicated dataframe if treated, else original input dataframe.
+              Metric Dataframe is of schema [metric, value] and contains metrics - number of rows & number of unique rows.
     """
     if list_of_cols == 'all':
         num_cols, cat_cols, other_cols = attributeType_segregation(idf)
@@ -55,14 +64,28 @@ def duplicate_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, 
 def nullRows_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, treatment_threshold=0.8,
                        print_impact=False):
     """
-    :params idf: Input Dataframe
-    :params list_of_cols: list or string of col names separated by |
-                         all - to include all non-array columns (excluding drop_cols)
-    :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
-    :params treatment: True if rows to be removed else False
-    :params treatment_threshold: % of columns allowed to be Null per row, No row removal if treatment_threshold = 1
-    :return: Output Dataframe (after row removal),
-             Analysis Dataframe <null_cols_count,row_count,row_pct>
+    :param idf: Input Dataframe
+    :param list_of_cols: List of columns to inspect e.g., ["col1","col2"].
+                         Alternatively, columns can be specified in a string format,
+                         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+                         "all" can be passed to include all columns for analysis.
+                         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
+                         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
+    :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
+                      Alternatively, columns can be specified in a string format,
+                      where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+    :param treatment: Boolean argument – True or False. If True, rows with high no. of null columns (defined by
+                      treatment_threshold argument) are removed from the input dataframe.
+    :param treatment_threshold: Defines % of columns allowed to be Null per row and takes value between 0 to 1.
+                                If % of null columns is above the threshold for a row, it is removed from the dataframe.
+                                There is no row removal if the threshold is 1.0. And if the threshold is 0, all rows with
+                                null value are removed.
+    :return: (Output Dataframe, Metric Dataframe)
+              Output Dataframe is the dataframe after row removal if treated, else original input dataframe.
+              Metric Dataframe is of schema [null_cols_count, row_count, row_pct, flagged]. null_cols_count is defined as
+              no. of missing columns in a row. row_count is no. of rows with null_cols_count missing columns.
+              row_pct is row_count divided by number of rows. flagged is 1 if null_cols_count is more than
+              (threshold  X Number of Columns), else 0.
     """
 
     if list_of_cols == 'all':
@@ -118,19 +141,45 @@ def nullRows_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, t
 def nullColumns_detection(idf, list_of_cols='missing', drop_cols=[], treatment=False, treatment_method='row_removal',
                           treatment_configs={}, stats_missing={}, stats_unique={}, stats_mode={}, print_impact=False):
     """
-    :params idf: Input Dataframe
-    :params list_of_cols: list of columns (in list format or string separated by |)
-                            all - to include all non-array columns (excluding drop_cols)
-                            missing - all feautures with missing values (excluding drop_cols)
-    :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
-    :params treatment: If True, Imputation/Dropna/Drop Column based on treatment_method
-    :params treatment_method: MMM, row_removal or column_removal (more methods to be added soon)
-    :params treatment_configs: All arguments of treatment_method functions in dictionary format
-    :params stats_missing: read_dataset arguments to read pre-saved statistics on missing count/pct (dictionary format)
-    :params stats_unique: read_dataset arguments to read pre-saved statistics on unique value count (dictionary format)
-    :params stats_mode: read_dataset arguments to read pre-saved statistics on mode (dictionary format)
-    :return: Imputed Dataframe
-             Analysis Dataframe <attribute,missing_count,missing_pct>
+    :param idf: Input Dataframe
+    :param list_of_cols: List of columns to inspect e.g., ["col1","col2"].
+                         Alternatively, columns can be specified in a string format,
+                         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+                         "all" can be passed to include all (non-array) columns for analysis.
+                         "missing" (default) can be passed to include only those columns with missing values.
+                         One of the usecases where "all" may be preferable over "missing" is when the user wants to save
+                         the imputation model for the future use e.g. a column may not have missing value in the training
+                         dataset but missing values may possibly appear in the prediction dataset.
+                         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
+                         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
+    :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
+                      Alternatively, columns can be specified in a string format,
+                      where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+    :param treatment: Boolean argument – True or False. If True, missing values are treated as per treatment_method argument.
+    :param treatment_method: "MMM", "row_removal", "column_removal" (more methods to be added soon).
+                             MMM (Mean Median Mode) replaces null value by the measure of central tendency (mode for
+                             categorical features and mean or median for numerical features).
+                             row_removal removes all rows with any missing value.
+                             column_removal remove a column if % of rows with missing value is above a threshold (defined
+                             by key "treatment_threshold" under treatment_configs argument).
+    :param treatment_configs: Takes input in dictionary format.
+                              For column_removal treatment, key ‘treatment_threshold’ is provided with a value between 0 to 1.
+                              For MMM, arguments corresponding to imputation_MMM function (transformer module) are provided,
+                              where each key is an argument from imputation_MMM function.
+                              For row_removal, this argument can be skipped.
+    :param stats_missing: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
+                          to read pre-saved statistics on missing count/pct i.e. if measures_of_counts or
+                          missingCount_computation (data_analyzer.stats_generator module) has been computed & saved before.
+    :param stats_unique: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
+                         to read pre-saved statistics on unique value count i.e. if measures_of_cardinality or
+                         uniqueCount_computation (data_analyzer.stats_generator module) has been computed & saved before.
+    :param stats_mode: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
+                       to read pre-saved statistics on most frequently seen values i.e. if measures_of_centralTendency or
+                       mode_computation (data_analyzer.stats_generator module) has been computed & saved before.
+    :return: (Output Dataframe, Metric Dataframe)
+              Output Dataframe is the imputed dataframe if treated, else original input dataframe.
+              Metric Dataframe is of schema [attribute, missing_count, missing_pct]. missing_count is number of rows
+              with null values for an attribute and missing_pct is missing_count divided by number of rows.
     """
     if stats_missing == {}:
         odf_print = missingCount_computation(idf)
@@ -156,6 +205,13 @@ def nullColumns_detection(idf, list_of_cols='missing', drop_cols=[], treatment=F
         return idf
     if any(x not in idf.columns for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
+
+    if str(treatment).lower() == 'true':
+        treatment = True
+    elif str(treatment).lower() == 'false':
+        treatment = False
+    else:
+        raise TypeError('Non-Boolean input for treatment')
     if treatment_method not in ('MMM', 'row_removal', 'column_removal'):
         raise TypeError('Invalid input for method_type')
     if treatment_method == 'column_removal':
@@ -213,25 +269,54 @@ def outlier_detection(idf, list_of_cols='all', drop_cols=[], detection_side='upp
                       treatment=False, treatment_method='value_replacement', pre_existing_model=False,
                       model_path="NA", output_mode='replace', stats_unique={}, print_impact=False):
     """
-    :params idf: Input Dataframe
-    :params list_of_cols: Numerical Columns (list or string of col names separated by |)
-                         all - to include all numerical columns (excluding drop_cols)
-    :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
-    :params detection_side: upper, lower, both
-    :params detection_configs: dictionary format - upper & lower bound for each methodology. 
-                        If an attribute value is less (more) than its derived lower (upper) bound value, 
-                        it is considered as outlier by a methodology.
-                        A attribute value is outliered if it is declared as oultlier by atleast 'min_validation' methodologies.
-    :params treatment: if True, cleaning based on treatment_method
-    :params treatment_method: null_replacement, row_removal, value_replacement
-    :params pre_existing_model: outlier value for each attribute. True if model files exists already, False Otherwise
-    :params model_path: If pre_existing_model is True, this argument is path for presaved model file.
-                  If pre_existing_model is False, this field can be used for saving the model file.
-                  param NA means there is neither pre_existing_model nor there is a need to save one.
-    :params output_mode: replace or append
-    :params stats_unique: read_dataset arguments to read pre-saved statistics on unique value count (dictionary format)
-    :return: Output Dataframe (after outlier treatment),
-             Analysis Dataframe <attribute,lower_outliers,upper_outliers>
+    :param idf: Input Dataframe
+    :param list_of_cols: List of numerical columns to inspect e.g., ["col1","col2"].
+                         Alternatively, columns can be specified in a string format,
+                         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+                         "all" can be passed to include all numerical columns for analysis.
+                         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
+                         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
+    :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
+                      Alternatively, columns can be specified in a string format,
+                      where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+    :param detection_side: "upper", "lower", "both".
+                           "lower" detects outliers in the lower spectrum of the column range, whereas "upper" detects
+                           in the upper spectrum. "Both" detects in both upper and lower end of the spectrum.
+    :param detection_configs: Takes input in dictionary format with keys representing upper & lower parameter for
+                              three outlier detection methodologies.
+                              a) Percentile Method: In this methodology, a value higher than a certain (default 0.95)
+                              percentile value is considered as an outlier. Similarly, a value lower than a certain
+                              (default 0.05) percentile value is considered as an outlier.
+                              b) Standard Deviation Method: In this methodology, if a value is certain number of
+                              standard deviations (default 3.0) away from the mean, then it is identified as an outlier.
+                              c) Interquartile Range (IQR) Method: A value which is below Q1 – k * IQR or
+                              above Q3 + k * IQR (default k is 1.5) are identified as outliers, where Q1 is first quartile/
+                              25th percentile, Q3 is third quartile/75th percentile and IQR is difference between
+                              third quartile & first quartile.
+                              If an attribute value is less (more) than its derived lower (upper) bound value,
+                              it is considered as outlier by a methodology. A attribute value is considered as outlier
+                              if it is declared as outlier by atleast 'min_validation' methodologies (default 2).
+    :param treatment: Boolean argument – True or False. If True, outliers are treated as per treatment_method argument.
+    :param treatment_method: "null_replacement", "row_removal", "value_replacement".
+                             In "null_replacement", outlier values are replaced by null so that it can be imputed by a
+                             reliable imputation methodology. In "value_replacement", outlier values are replaced by
+                             maximum or minimum permissible value by above methodologies. Lastly in "row_removal", rows
+                             are removed if it is found with any outlier.
+    :param pre_existing_model: Boolean argument – True or False. True if the model with upper/lower permissible values
+                               for each attribute exists already to be used, False otherwise.
+    :param model_path: If pre_existing_model is True, this argument is path for the pre-saved model.
+                       If pre_existing_model is False, this field can be used for saving the model.
+                       Default "NA" means there is neither pre-existing model nor there is a need to save one.
+    :param output_mode: "replace", "append".
+                        “replace” option replaces original columns with treated column. “append” option append treated
+                        column to the input dataset with a postfix "_outliered" e.g. column X is appended as X_outliered.
+    :param stats_unique: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
+                         to read pre-saved statistics on unique value count i.e. if measures_of_cardinality or
+                         uniqueCount_computation (data_analyzer.stats_generator module) has been computed & saved before.
+    :return: (Output Dataframe, Metric Dataframe)
+              Output Dataframe is the imputed dataframe if treated, else original input dataframe.
+              Metric Dataframe is of schema [attribute, lower_outliers, upper_outliers]. lower_outliers is no. of outliers
+              found in the lower spectrum of the attribute range and upper_outliers is outlier count in the upper spectrum.
     """
 
     num_cols = attributeType_segregation(idf)[0]
@@ -408,14 +493,30 @@ def outlier_detection(idf, list_of_cols='all', drop_cols=[], detection_side='upp
 def IDness_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, treatment_threshold=0.8, stats_unique={},
                      print_impact=False):
     """
-    :params idf: Input Dataframe
-    :params list_of_cols: Categorical Columns (list or string of col names separated by |)
-                         all - to include all categorical columns (excluding drop_cols)
-    :params drop_cols: List of columns to be dropped (list or string of col names separated by |)                  
-    :params treatment: If True, delete columns based on treatment_threshold
-    :params treatment_threshold: <0-1> Remove categorical column if no. of unique values is more than X% of total rows.
-    :params stats_unique: read_dataset arguments to read pre-saved statistics on unique value count (dictionary format)
-    :return: Filtered Dataframe (if treated), Analysis Dataframe <attribute, unique_values, IDness>
+    :param idf: Input Dataframe
+    :param list_of_cols: List of categorical columns to inspect e.g., ["col1","col2"].
+                         Alternatively, columns can be specified in a string format,
+                         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+                         "all" can be passed to include all categorical columns for analysis.
+                         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
+                         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
+    :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
+                      Alternatively, columns can be specified in a string format,
+                      where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+    :param treatment: Boolean argument – True or False. If True, columns with high IDness (defined by
+                      treatment_threshold argument) are removed from the input dataframe.
+    :param treatment_threshold: Defines acceptable level of IDness (calculated as no. of unique values divided by no. of
+                                non-null values) for a column and takes value between 0 to 1. Default threshold
+                                of 0.8 can be interpreted as remove column if its unique values count is more than
+                                80% of total rows (after excluding null values).
+    :param stats_unique: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
+                         to read pre-saved statistics on unique value count i.e. if measures_of_cardinality or
+                         uniqueCount_computation (data_analyzer.stats_generator module) has been computed & saved before.
+    :return: (Output Dataframe, Metric Dataframe)
+              Output Dataframe is the dataframe after column removal if treated, else original input dataframe.
+              Metric Dataframe is of schema [attribute, unique_values, IDness, flagged]. unique_values is no. of distinct
+              values in a column, IDness is unique_values divided by no. of non-null values. A column is flagged 1
+              if IDness is above the threshold, else 0.
     """
 
     cat_cols = attributeType_segregation(idf)[1]
@@ -473,14 +574,30 @@ def IDness_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, tre
 def biasedness_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, treatment_threshold=0.8, stats_mode={},
                          print_impact=False):
     """
-    :params idf: Input Dataframe
-    :params list_of_cols: List of Distrete (Categorical + Integer) columns (in list format or string separated by |)
-                            all - to include all valid columns (excluding drop_cols)
-    :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
-    :params treatment: If True, delete columns based on treatment_threshold
-    :params treatment_threshold: <0-1> Remove categorical column if most freq value is in more than X% of total rows.
-    :params stats_mode: read_dataset arguments to read pre-saved statistics on mode (dictionary format)
-    :return: Filtered Dataframe (if treated), Analysis Dataframe <attribute,mode,mode_pct>
+    :param idf: Input Dataframe
+    :param list_of_cols: List of Discrete (Categorical + Integer) columns to inspect e.g., ["col1","col2"].
+                         Alternatively, columns can be specified in a string format,
+                         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+                         "all" can be passed to include all discrete columns for analysis.
+                         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
+                         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
+    :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
+                      Alternatively, columns can be specified in a string format,
+                      where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+    :param treatment: Boolean argument – True or False. If True, columns with high biasedness (defined by
+                      treatment_threshold argument) are removed from the input dataframe.
+    :param treatment_threshold: Defines acceptable level of biasedness (frequency of most-frequently seen value)for
+                                a column and takes value between 0 to 1. Default threshold of 0.8 can be interpreted as
+                                remove column if the number of rows with most-frequently seen value is more than 80%
+                                of total rows (after excluding null values).
+    :param stats_mode: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
+                       to read pre-saved statistics on most frequently seen values i.e. if measures_of_centralTendency or
+                       mode_computation (data_analyzer.stats_generator module) has been computed & saved before.
+    :return: (Output Dataframe, Metric Dataframe)
+              Output Dataframe is the dataframe after column removal if treated, else original input dataframe.
+              Metric Dataframe is of schema [attribute, mode, mode_pct, flagged]. mode is the most frequently seen value
+              and mode_pct is number of rows with mode value divided by non-null values. A column is flagged 1 if
+              mode_pct is above the threshold else 0.
     """
 
     if list_of_cols == 'all':
@@ -515,7 +632,8 @@ def biasedness_detection(idf, list_of_cols='all', drop_cols=[], treatment=False,
             .withColumn('mode_pct', F.round(F.col('mode_rows') / F.col('count').cast(T.DoubleType()), 4)) \
             .select('attribute', 'mode', 'mode_pct')
     else:
-        odf_print = read_dataset(**stats_mode).select('attribute', 'mode', 'mode_pct').where(F.col('attribute').isin(list_of_cols))
+        odf_print = read_dataset(**stats_mode).select('attribute', 'mode', 'mode_pct')\
+                        .where(F.col('attribute').isin(list_of_cols))
 
     odf_print = odf_print.withColumn('flagged',
                                      F.when(
@@ -541,14 +659,25 @@ def biasedness_detection(idf, list_of_cols='all', drop_cols=[], treatment=False,
 def invalidEntries_detection(idf, list_of_cols='all', drop_cols=[], treatment=False,
                              output_mode='replace', print_impact=False):
     """
-    :params idf: Input Dataframe
-    :params list_of_cols: List of Distrete (Categorical + Integer) columns (list or string of col names separated by |)
-                         all - to include all valid columns (excluding drop_cols)
-    :params drop_cols: List of columns to be dropped (list or string of col names separated by |)
-    :params treatment: If True, replace invalid values by Null (false positives possible)
-    :params output: replace or append
-    :return: Output Dataframe (if treated) else Input Dataframe,
-            Analysis Dataframe <attribute,invalid_entries,invalid_count,invalid_pct>
+    :param idf: Input Dataframe
+    :param list_of_cols: List of Discrete (Categorical + Integer) columns to inspect e.g., ["col1","col2"].
+                         Alternatively, columns can be specified in a string format,
+                         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+                         "all" can be passed to include all discrete columns for analysis.
+                         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
+                         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
+    :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
+                      Alternatively, columns can be specified in a string format,
+                      where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+    :param treatment: Boolean argument – True or False. If True, invalid values are replaced by Null.
+    :param output_mode: "replace", "append".
+                        “replace” option replaces original columns with treated column. “append” option append treated
+                        column to the input dataset with a postfix "_invalid" e.g. column X is appended as X_invalid.
+    :return: (Output Dataframe, Metric Dataframe)
+              Output Dataframe is the dataframe after treatment if applicable, else original input dataframe.
+              Metric Dataframe is of schema [attribute, invalid_entries, invalid_count, invalid_pct].
+              invalid_entries are all potential invalid values (separated by delimiter pipe “|”), invalid_count	is no.
+              of rows which are impacted by invalid entries and invalid_pct is invalid_count divided by no of rows.
     """
     if list_of_cols == 'all':
         list_of_cols = []
