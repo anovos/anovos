@@ -99,8 +99,7 @@ def drift_statistics(idf_target, idf_source, list_of_cols='all', drop_cols=[], m
             x = spark.read.csv(source_path+"/drift_statistics/frequency_counts" + i, header=True, inferSchema=True)
         else:
             x = source_bin.groupBy(i).agg((F.count(i)/idf_source.count()).alias('p')).fillna(-1)
-            if source_path != "NA":
-                x.coalesce(1).write.csv(source_path+"/drift_statistics/frequency_counts" + i, header=True, mode='overwrite')
+            x.coalesce(1).write.csv(source_path+"/drift_statistics/frequency_counts/" + i, header=True, mode='overwrite')
             
         y = target_bin.groupBy(i).agg((F.count(i)/idf_target.count()).alias('q')).fillna(-1)
         

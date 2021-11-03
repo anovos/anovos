@@ -452,7 +452,7 @@ def IDness_detection(idf, list_of_cols='all', drop_cols=[], treatment=False, tre
     if stats_unique == {}:
         odf_print = measures_of_cardinality(idf, list_of_cols)
     else:
-        odf_print = read_dataset(**stats_unique)
+        odf_print = read_dataset(**stats_unique).where(F.col('attribute').isin(list_of_cols))
 
     odf_print = odf_print.withColumn('flagged', F.when(F.col('IDness') >= treatment_threshold, 1).otherwise(0))
 
@@ -515,7 +515,7 @@ def biasedness_detection(idf, list_of_cols='all', drop_cols=[], treatment=False,
             .withColumn('mode_pct', F.round(F.col('mode_rows') / F.col('count').cast(T.DoubleType()), 4)) \
             .select('attribute', 'mode', 'mode_pct')
     else:
-        odf_print = read_dataset(**stats_mode).select('attribute', 'mode', 'mode_pct')
+        odf_print = read_dataset(**stats_mode).select('attribute', 'mode', 'mode_pct').where(F.col('attribute').isin(list_of_cols))
 
     odf_print = odf_print.withColumn('flagged',
                                      F.when(

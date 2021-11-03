@@ -226,17 +226,72 @@ drift_detector:
           header: True
           delimiter: ","
           inferSchema: True
+
+    dataset4:
+      read_dataset:
+        file_path: "data/income_dataset/stability_index/3"
+        file_type: csv
+        file_configs:
+          header: True
+          delimiter: ","
+          inferSchema: True
+
+    dataset5:
+      read_dataset:
+        file_path: "data/income_dataset/stability_index/4"
+        file_type: csv
+        file_configs:
+          header: True
+          delimiter: ","
+          inferSchema: True
+
+    dataset6:
+      read_dataset:
+        file_path: "data/income_dataset/stability_index/5"
+        file_type: csv
+        file_configs:
+          header: True
+          delimiter: ","
+          inferSchema: True
+
+    dataset7:
+      read_dataset:
+        file_path: "data/income_dataset/stability_index/6"
+        file_type: csv
+        file_configs:
+          header: True
+          delimiter: ","
+          inferSchema: True
+
+    dataset8:
+      read_dataset:
+        file_path: "data/income_dataset/stability_index/7"
+        file_type: csv
+        file_configs:
+          header: True
+          delimiter: ","
+          inferSchema: True
+
+    dataset9:
+      read_dataset:
+        file_path: "data/income_dataset/stability_index/8"
+        file_type: csv
+        file_configs:
+          header: True
+          delimiter: ","
+          inferSchema: True
+
         
 report_preprocessing:
   master_path: 'report_stats'
   charts_to_objects:
     list_of_cols: all
-    drop_cols: ifa|income
+    drop_cols: ifa
     label_col: income
     event_label: '>50K'
     bin_method: equal_frequency
     bin_size: 10
-    drift_detector: False
+    drift_detector: True
     source_path: "NA"
 
 report_generation:
