@@ -184,7 +184,7 @@ def nullColumns_detection(spark, idf, list_of_cols='missing', drop_cols=[], trea
               with null values for an attribute and missing_pct is missing_count divided by number of rows.
     """
     if stats_missing == {}:
-        odf_print = missingCount_computation(idf)
+        odf_print = missingCount_computation(spark, idf)
     else:
         odf_print = read_dataset(spark, **stats_missing).select('attribute', 'missing_count', 'missing_pct')
 
@@ -381,7 +381,7 @@ def outlier_detection(spark, idf, list_of_cols='all', drop_cols=[], detection_si
             recast_type.append(get_dtype(idf, i))
 
     if pre_existing_model:
-        df_model = sqlContext.read.parquet(model_path + "/outlier_numcols")
+        df_model = spark.read.parquet(model_path + "/outlier_numcols")
         params = []
         for i in list_of_cols:
             mapped_value = df_model.where(F.col('attribute') == i).select('parameters') \

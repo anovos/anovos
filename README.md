@@ -1,4 +1,3 @@
-
 <p align="center">
   <img src="https://mobilewalla-anovos.s3.amazonaws.com/anovos.png" width="800" title="Anovos Logo">
 </p>
@@ -43,7 +42,7 @@ After checking out via Git clone, please follow the below instructions to run th
 
 ## A. Running via User's local environment
 
-1. Check the pre-requisites - ANOVOS requires Spark (2.4.x), Python (3.7+), Java(8). Check version using the following commands: 
+1. Check the pre-requisites - ANOVOS requires Spark (2.4.x), Python (3.7.*), Java(8). Check version using the following commands: 
 
 	`spark-submit --version`<br/>
 	`python --version`<br/>

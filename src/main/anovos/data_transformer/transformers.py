@@ -143,7 +143,7 @@ def attribute_binning(spark, idf, list_of_cols='all', drop_cols=[], method_type=
             output_cols = list_of_cols
         else:
             output_cols = [(i + "_binned") for i in list_of_cols]
-        uniqueCount_computation(odf, output_cols).show(len(output_cols))
+        uniqueCount_computation(spark, odf, output_cols).show(len(output_cols))
     return odf
 
 
@@ -493,12 +493,12 @@ def imputation_MMM(spark, idf, list_of_cols="missing", drop_cols=[], method_type
     if print_impact:
         if output_mode == 'replace':
             odf_print = missing_df.select('attribute', F.col("missing_count").alias("missingCount_before")) \
-                .join(missingCount_computation(odf, list_of_cols) \
+                .join(missingCount_computation(spark, odf, list_of_cols) \
                       .select('attribute', F.col("missing_count").alias("missingCount_after")), 'attribute', 'inner')
         else:
             output_cols = [(i + "_imputed") for i in [e for e in (num_cols + cat_cols) if e in missing_cols]]
             odf_print = missing_df.select('attribute', F.col("missing_count").alias("missingCount_before")) \
-                .join(missingCount_computation(odf, output_cols) \
+                .join(missingCount_computation(spark, odf, output_cols) \
                       .withColumnRenamed('attribute', 'attribute_after') \
                       .withColumn('attribute', F.expr("substring(attribute_after, 1, length(attribute_after)-8)")) \
                       .drop('missing_pct'), 'attribute', 'inner')
@@ -597,10 +597,10 @@ def outlier_categories(spark, idf, list_of_cols='all', drop_cols=[], coverage=1.
             output_cols = list_of_cols
         else:
             output_cols = [(i + "_outliered") for i in list_of_cols]
-        uniqueCount_computation(idf, list_of_cols).select('attribute',
+        uniqueCount_computation(spark, idf, list_of_cols).select('attribute',
                                                           F.col("unique_values").alias("uniqueValues_before")).show(
             len(list_of_cols))
-        uniqueCount_computation(odf, output_cols).select('attribute',
+        uniqueCount_computation(spark, odf, output_cols).select('attribute',
                                                          F.col("unique_values").alias("uniqueValues_after")).show(
             len(list_of_cols))
 
