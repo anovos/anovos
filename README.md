@@ -15,7 +15,7 @@ To install ANOVOS package via pypi, please execute the following commands:
 
 To install ANOVOS package via git, please execute the following commands:  
 
-`pip3 install "git+https://gitlab.com/mwengr/mw_ds_feature_machine.git"`
+`pip3 install "git+https://github.com/anovos/anovos.git"`
 
 
 # Get Started
