@@ -194,7 +194,7 @@ def monotonic_binning(spark, idf, list_of_cols='all', drop_cols=[], label_col='l
 
     odf = idf
     for col in list_of_cols:
-        n = 20  # max_bin
+        n = 20 
         r = 0
         while n > 2:
             tmp = attribute_binning(spark, idf, [col], drop_cols=[], method_type=bin_method, bin_size=n, output_mode='append') \
@@ -202,7 +202,6 @@ def monotonic_binning(spark, idf, list_of_cols='all', drop_cols=[], label_col='l
                 .withColumn(label_col, F.when(F.col(label_col) == event_label, 1).otherwise(0)) \
                 .groupBy(col + '_binned').agg(F.avg(col).alias('mean_val'),
                                               F.avg(label_col).alias('mean_label')).dropna()
-            # r = tmp.stat.corr('mean_age','mean_label')
             r, p = stats.spearmanr(tmp.toPandas()[['mean_val']], tmp.toPandas()[['mean_label']])
             if r == 1.0:
                 odf = attribute_binning(spark, odf, [col], drop_cols=[], method_type=bin_method, bin_size=n,
@@ -275,7 +274,6 @@ def cat_to_num_unsupervised(spark, idf, list_of_cols='all', drop_cols=[], method
         pipelineModel = PipelineModel.load(model_path + "/cat_to_num_unsupervised/indexer")
     else:
         stages = []
-        # Multiple columns are allowed in StringIndexer from spark3.X
         for i in list_of_cols:
             stringIndexer = StringIndexer(inputCol=i, outputCol=i + '_index',
                                           stringOrderType=index_order, handleInvalid='keep')
@@ -291,7 +289,7 @@ def cat_to_num_unsupervised(spark, idf, list_of_cols='all', drop_cols=[], method
         for i in list_of_cols:
             list_of_cols_vec.append(i + "_vec")
             list_of_cols_idx.append(i + "_index")
-        if pre_existing_model == True:
+        if pre_existing_model:
             encoder = OneHotEncoderEstimator.load(model_path + "/cat_to_num_unsupervised/encoder")
         else:
             encoder = OneHotEncoderEstimator(inputCols=list_of_cols_idx, outputCols=list_of_cols_vec,
@@ -426,7 +424,6 @@ def imputation_MMM(spark, idf, list_of_cols="missing", drop_cols=[], method_type
 
     odf = idf
     if len(num_cols) > 0:
-
         # Checking for Integer/Decimal Type Columns & Converting them into Float/Double Type
         recast_cols = []
         recast_type = []
@@ -462,13 +459,10 @@ def imputation_MMM(spark, idf, list_of_cols="missing", drop_cols=[], method_type
                 mapped_value = \
                     df_model.where(F.col('attribute') == i).select('parameters').rdd.flatMap(lambda x: x).collect()[0]
                 parameters.append(mapped_value)
-            # imputerModel = ImputerModel.load(model_path + "/imputation_MMM/cat_imputer-model") #spark 3.X
         else:
             if stats_mode == {}:
                 parameters = [str((idf.select(i).dropna().groupby(i).count().orderBy("count", ascending=False).first()
                                    or [None])[0]) for i in cat_cols]
-                # imputer = Imputer(strategy='mode', inputCols=cat_cols, outputCols=[(e + "_imputed") for e in cat_cols]) #spark 3.X
-                # imputerModel = imputer.fit(odf) #spark 3.X
             else:
                 mode_df = read_dataset(spark, **stats_mode).replace('None', None)
                 parameters = [mode_df.where(F.col('attribute') == i).select('mode').rdd.flatMap(list).collect()[0] for i
@@ -476,13 +470,11 @@ def imputation_MMM(spark, idf, list_of_cols="missing", drop_cols=[], method_type
 
         for index, i in enumerate(cat_cols):
             odf = odf.withColumn(i + "_imputed", F.when(F.col(i).isNull(), parameters[index]).otherwise(F.col(i)))
-        # odf = imputerModel.transform(odf) #spark 3.X
 
         # Saving model File if required
         if (pre_existing_model == False) & (model_path != "NA"):
             df_model = spark.createDataFrame(zip(cat_cols, parameters), schema=['attribute', 'parameters'])
             df_model.repartition(1).write.csv(model_path + "/imputation_MMM/cat_imputer", header=True, mode='overwrite')
-            # imputerModel.write().overwrite().save(model_path + "/imputation_MMM/num_imputer-model") #spark 3.X
 
     for i in (num_cols + cat_cols):
         if i not in missing_cols:

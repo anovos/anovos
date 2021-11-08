@@ -62,7 +62,9 @@ def correlation_matrix(spark, idf, list_of_cols='all', drop_cols=[], stats_uniqu
     grids = {k: get_2dgrid(h) for k, h in hists.items()}
     odf_pd = spark_phik_matrix_from_hist2d_dict(spark.sparkContext, grids)
     odf_pd['attribute'] = odf_pd.index
-    odf = spark.createDataFrame(odf_pd)
+    list_of_cols.sort()
+    odf = spark.createDataFrame(odf_pd)\
+            .select(['attribute'] + list_of_cols).orderBy('attribute')
 
     if print_impact:
         odf.show(odf.count())

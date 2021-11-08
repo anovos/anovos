@@ -204,7 +204,13 @@ def nullColumns_detection(spark, idf, list_of_cols='missing', drop_cols=[], trea
 
     if len(list_of_cols) == 0:
         warnings.warn("No Action Performed - Imputation")
-        return idf
+        odf = idf
+        schema = T.StructType([T.StructField('attribute', T.StringType(), True),
+                               T.StructField('missing_count', T.StringType(), True),
+                               T.StructField('missing_pct', T.StringType(), True)])
+        odf_print = spark.sparkContext.emptyRDD().toDF(schema)
+        return odf, odf_print
+
     if any(x not in idf.columns for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
 
