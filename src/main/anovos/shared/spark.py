@@ -5,12 +5,12 @@ from pyspark import SQLContext
 from pyspark.sql import SparkSession
 
 
-def init_spark(app_name='mw_ml_ingest', master='local[*]', jar_packages=[],
+def init_spark(app_name='anovos', master='local[*]', jar_packages=[],
                py_files=[], spark_configs={}):
     """
     :param app_name: Name of Spark app.
-    :param master: Cluster connection details (defaults to local[*])
-                    local[*] - Run Spark locally with as many worker threads as logical cores on your machine.
+    :param master: Cluster connection details
+                   Defaults to local[*] which means to run Spark locally with as many worker threads as logical cores on the machine.
     :param jar_packages: List of Spark JAR package names.
     :param files: List of files to send to Spark cluster (master and workers).
     :param spark_config: Dictionary of config key-value pairs.
@@ -46,9 +46,9 @@ def init_spark(app_name='mw_ml_ingest', master='local[*]', jar_packages=[],
 
 
 configs = {'app_name': 'MW_ML_pipeline',
-           # 'jar_packages': ["io.github.histogrammar:histogrammar_2.11:1.0.20",
-           #                  "io.github.histogrammar:histogrammar-sparksql_2.11:1.0.20",
-           #                  "org.apache.spark:spark-avro_2.11:2.4.0"],
+           'jar_packages': ["io.github.histogrammar:histogrammar_2.11:1.0.20",
+                            "io.github.histogrammar:histogrammar-sparksql_2.11:1.0.20",
+                            "org.apache.spark:spark-avro_2.11:2.4.0"],
            'py_files': [],
            'spark_configs': {'spark.sql.session.timeZone': 'GMT',
                              'spark.python.profile': 'false'}}

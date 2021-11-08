@@ -1,0 +1,67 @@
+﻿Section Category,Section Name,Metric Name,Column Name,Definitions
+Descriptor Statistics,,,,Summarizes the dataset with key statistical metrics and distribution plots.
+Descriptor Statistics,Global Summary,,,Summarize the dataset dimensions and the attribute datatype
+Descriptor Statistics,Statistics by Metric Type,Measures Of Counts,fill_count,Number of rows with non-null values in an attribute
+Descriptor Statistics,Statistics by Metric Type,Measures Of Counts,fill_pct,fill_count divided by number of rows
+Descriptor Statistics,Statistics by Metric Type,Measures Of Counts,missing_count,Number of rows with null values in an attribute
+Descriptor Statistics,Statistics by Metric Type,Measures Of Counts,missing_pct,missing_count divided by number of rows
+Descriptor Statistics,Statistics by Metric Type,Measures Of Counts,nonzero_count,Number of rows with non-zero values in an attribute (numerical)
+Descriptor Statistics,Statistics by Metric Type,Measures Of Counts,nonzero_pct,nonzero_count divided by number of rows (numerical)
+Descriptor Statistics,Statistics by Metric Type,Measures Of CentralTendency,,Represents the centre point or most likely value of an attribute
+Descriptor Statistics,Statistics by Metric Type,Measures Of CentralTendency,mean,Arithmetic average of an attribute (numerical)
+Descriptor Statistics,Statistics by Metric Type,Measures Of CentralTendency,median,50th percentile or middle value of an attribute (numerical)
+Descriptor Statistics,Statistics by Metric Type,Measures Of CentralTendency,mode,Most frequently seen value of an attribute (Discrete = Categorical + Integer)
+Descriptor Statistics,Statistics by Metric Type,Measures Of CentralTendency,mode_pct,mode divided by non-null values seen in an attribute (Discrete = Categorical + Integer)
+Descriptor Statistics,Statistics by Metric Type,Measures Of Cardinality,unique_values,No. of distinct values in an attribute
+Descriptor Statistics,Statistics by Metric Type,Measures Of Cardinality,IDness,Unique Values divided by non-null values seen in an attribute
+Descriptor Statistics,Statistics by Metric Type,Measures Of Dispersion,,Describe the spread of a numerical attribute
+Descriptor Statistics,Statistics by Metric Type,Measures Of Dispersion,stddev,Measures how concentrated an attribute is around the mean or average.
+Descriptor Statistics,Statistics by Metric Type,Measures Of Dispersion,variance,Squared value of Standard Deviation
+Descriptor Statistics,Statistics by Metric Type,Measures Of Dispersion,cov,Ratio of Standard Deviation & Mean
+Descriptor Statistics,Statistics by Metric Type,Measures Of Dispersion,IQR,"Difference between the third quartile (75th percentile) and the first quartile (25th percentile), telling us about the range where middle half values are seen"
+Descriptor Statistics,Statistics by Metric Type,Measures Of Dispersion,range,Difference between the maximum value and the minimum value
+Descriptor Statistics,Statistics by Metric Type,Measures of Shape,,Provides statistics related to the shape of (numerical) attribute’s distribution.
+Descriptor Statistics,Statistics by Metric Type,Measures of Shape,skewness,"Describes how much skewed values are, relative to a perfect bell curve that is observed in normal distribution, and also the direction of skew. "
+Descriptor Statistics,Statistics by Metric Type,Measures of Shape,kurtosis,"Describes how tall and sharp the central peak is, relative to a perfect bell curve that is observed in normal distribution."
+Descriptor Statistics,Statistics by Metric Type,Measure Of Percentiles,,Indicate the value below which a given percentage of data of given attribute falls. Nth percentile can be interpreted as N% of rows have value lesser than or equal to Nth percentile value.
+Quality check,,,,Identifies the data quality issues at both row and column level.
+Quality check,Column Level,Null Detection,,Identifies missing values in an attribute
+Quality check,Column Level,Null Detection,missing_count,Number of rows with null values in an attribute
+Quality check,Column Level,Null Detection,missing_pct,missing_count divided by number of rows
+Quality check,Column Level,IDness Detection,unique_values,No. of distinct values in an attribute
+Quality check,Column Level,IDness Detection,IDness,Unique Values divided by non-null values seen in an attribute
+Quality check,Column Level,IDness Detection,flagged,"1 if IDness is above the threshold (default 0.8), else 0."
+Quality check,Column Level,Baisedness Detection,,Identifies attributes which are biased or skewed towards one specific value 
+Quality check,Column Level,Baisedness Detection,mode,Most frequently seen value of an attribute (Discrete = Categorical + Integer)
+Quality check,Column Level,Baisedness Detection,mode_pct,mode divided by non-null values seen in an attribute (Discrete = Categorical + Integer)
+Quality check,Column Level,Baisedness Detection,flagged,"1 if mode_pct is above the threshold (default 0.8), else 0."
+Quality check,Column Level,InvalidEntries Detection,,"Detects suspicious patterns in attributes’ values such as  alternative values of null, repetitive characters like XXX, 9999, consecutive characters like abc, 1234 etc (Discrete = Categorical + Integer)"
+Quality check,Column Level,InvalidEntries Detection,invalid_entries,All potential invalid values (separated by delimiter pipe “|”) in an attribute (Discrete = Categorical + Integer)
+Quality check,Column Level,InvalidEntries Detection,invalid_count,Total number of rows impacted by invalid entries in an attribute (Discrete = Categorical + Integer)
+Quality check,Column Level,InvalidEntries Detection,invalid_pct,invalid_count divided by number of rows  (Discrete = Categorical + Integer)
+Quality check,Column Level,Outlier Detection,,Identifies values that deviates drastically from the rest of the attribute values. 
+Quality check,Column Level,Outlier Detection,lower_outliers,Number of outliers found in lower spectrum of the attribute range (numerical)
+Quality check,Column Level,Outlier Detection,upper_outliers,Number of outliers found in higher spectrum of the attribute range (numerical)
+Quality check,Row Level,Duplicate Detection,,Detects duplicate rows in the dataset
+Quality check,Row Level,Null Detection,,Identifies missing attributes in a row
+Quality check,Row Level,Null Detection,null_cols_count,Number of missing attributes
+Quality check,Row Level,Null Detection,row_count,Number of rows with null_cols_count missing attributes
+Quality check,Row Level,Null Detection,row_pct,row_count divided by number of rows
+Quality check,Row Level,Null Detection,flagged,"1 if null_cols_count is more than (threshold  X Number of Columns) , else 0."
+Association & Interactions,,,,Analyzes the interaction between different attributes and/or the relationship between an attribute & the binary target variable.
+Association & Interactions,Association Matrix,Correlation Matrix,,Measures the strength of the relationship between the relative movements of two attributes by finding phik correlation coefficient.
+Association & Interactions,Association Matrix,IV Calculations,,Information Value measures how well an attribute is able to distinguish between a binary target variable i.e. label 0 from label 1. Greater the value of IV higher rthe attribute importance. IV less than 0.02 is not useful for prediction
+Association & Interactions,Association Matrix,IG Calculations,,Information Gain measures the reduction in entropy by splitting a dataset as peran attribute values
+Association & Interactions,Association Matrix,Varibale clustering,,Groups attributes that are as correlated as possible among themselves within a cluster and as uncorrelated as possible with attribute in other clusters. 
+Drift & Stability,,,,Examines the dataset stability wrt the baseline dataset (via computing drift statistics) and/or wrt the historical datasets (via computing stability index).
+Drift & Stability,Data Drift Analysis,,,Distance metrics between source and target distribution of an attribute.
+Drift & Stability,Data Drift Analysis,Population Stability Index,PSI,"PSI < 0.10 means ""little shift"", .10<PSI<.25 means ""moderate shift"", and PSI>0.25 means ""significant shift, action required"""
+Drift & Stability,Data Drift Analysis,Jensen-Shannon Divergence,JSD,"Ranges between 0 and 1. Smaller the JSD, lesser the drift of an atrribute between two datasets"
+Drift & Stability,Data Drift Analysis,Hellinger Distance,HD,"Ranges between 0 and 1. Smaller theHD, lesser the drift of an atrribute between two datasets"
+Drift & Stability,Data Drift Analysis,kolmogorov-Smirnov Test,KS,"Computes the maximum difference between the two cumulative distributions. Ranges between 0 and 1. Smaller the KS, lesser the drift."
+Drift & Stability,Data Drift Analysis,,flagged,1 if any distance metric is above the threshold (default 0.1) else 0.
+Drift & Stability,Data Stability Analysis,,,"Summarise the stability of an attribute over multiple time periods. Interpretation of Stability Index >> 0-1: Very Unstable, 1-2: Unstable, 2-3: Marginally Stable, 3-3.5: Stable, 3.5-4: Very Stable"
+Drift & Stability,Data Stability Analysis,,mean_si,Stability Index by metric - mean i.e. analyzing the stability of attribute mean over multiple timeperiod
+Drift & Stability,Data Stability Analysis,,stddev_si,Stability Index by metric - Standard Deviation i.e. analyzing the stability of attribute standard deviation over multiple timeperiod
+Drift & Stability,Data Stability Analysis,,kurtosis_si,Stability Index by metric - Kurtosis i.e. analyzing the stability of attribute kurtosis over multiple timeperiod
+Drift & Stability,Data Stability Analysis,,stability_index,"Weighted average of stability index from all 3 metrics - mean, standard deviation and kurtosis"
