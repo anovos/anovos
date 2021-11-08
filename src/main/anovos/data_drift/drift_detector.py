@@ -148,7 +148,7 @@ def drift_statistics(spark, idf_target, idf_source, list_of_cols='all', drop_col
 
 
 def stabilityIndex_computation(spark, *idfs, list_of_cols='all', drop_cols=[], metric_weightages = {'mean':0.5,'stddev':0.3,'kurtosis':0.2}, 
-                               existing_metric_path='', appended_metric_path='', threshold=None, print_impact=False):
+                               existing_metric_path='', appended_metric_path='', threshold=1, print_impact=False):
 
     """
     :param spark: Spark Session
@@ -249,16 +249,16 @@ def stabilityIndex_computation(spark, *idfs, list_of_cols='all', drop_cols=[], m
         .withColumn('kurtosis_si', f_score_cv(F.col('kurtosis_cv')))\
         .withColumn('stability_index', F.round((F.col('mean_si') * metric_weightages.get('mean',0) +
                                        F.col('stddev_si') * metric_weightages.get('stddev',0) + 
-                                       F.col('kurtosis_si') * metric_weightages.get('kurtosis',0)),4))\
-        .withColumn('flagged', F.when(F.lit(threshold).isNull(),"-")\
-                    .otherwise(F.when((F.col('stability_index') < threshold) | (F.col('stability_index').isNull()),1).otherwise(0)))
+                                       F.col('kurtosis_si') * metric_weightages.get('kurtosis',0)),4)) \
+        .withColumn('flagged',
+                    F.when((F.col('stability_index') < threshold) | (F.col('stability_index').isNull()), 1).otherwise(
+                        0))
 
     if print_impact:
         print("All Attributes:")
         odf.show(len(list_of_cols))
-        if threshold != None:
-            print("Potential Unstable Attributes:")
-            unstable = odf.where(F.col('flagged')  == 1)
-            unstable.show(unstable.count())
+        print("Potential Unstable Attributes:")
+        unstable = odf.where(F.col('flagged')  == 1)
+        unstable.show(unstable.count())
 
     return odf
