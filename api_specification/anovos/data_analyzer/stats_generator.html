@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
-<title>com.mw.ds.data_analyzer.stats_generator API documentation</title>
+<title>anovos.data_analyzer.stats_generator API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -19,35 +19,42 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>com.mw.ds.data_analyzer.stats_generator</code></h1>
+<h1 class="title">Module <code>anovos.data_analyzer.stats_generator</code></h1>
 </header>
 <section id="section-intro">
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">import warnings
+<pre><code class="python"># coding=utf-8
+import warnings
 
-from com.mw.ds.shared.spark import *
-from com.mw.ds.shared.utils import transpose_dataframe, attributeType_segregation
+from anovos.shared.utils import transpose_dataframe, attributeType_segregation
 from pyspark.mllib.linalg import Vectors
 from pyspark.mllib.stat import Statistics
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
 
 
-def global_summary(idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=True):
+def global_summary(spark, idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=True):
     &#34;&#34;&#34;
 
     Args:
+      spark: Spark Session
       idf: Input Dataframe
-      list_of_cols: list or string of col names separated by |),\
-    all - to include all columns (excluding drop_cols) (Default value = &#39;all&#39;)
-      drop_cols: List of columns to be dropped (list or string of col names separated by |) (Default value = [])
+      list_of_cols: List of columns to analyse e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. &lt;br&gt;\
+    &#34;all&#34; can be passed to include all columns for analysis. &lt;br&gt;\
+    Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in &lt;br&gt;\
+    drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = &#39;all&#39;)
+      drop_cols: List of columns to be dropped e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. (Default value = [])
       print_impact:  (Default value = True)
 
     Returns:
-      Analysis Dataframe
+      Dataframe [metric, value]
 
     &#34;&#34;&#34;
     if list_of_cols == &#39;all&#39;:
@@ -57,7 +64,7 @@ def global_summary(idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=T
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split(&#39;|&#39;)]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError(&#39;Invalid input for Column(s)&#39;)
@@ -89,14 +96,21 @@ def global_summary(idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=T
     return odf
 
 
-def missingCount_computation(idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
+def missingCount_computation(spark, idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
     &#34;&#34;&#34;
 
     Args:
+      spark: Spark Session
       idf: Input Dataframe
-      list_of_cols: List of columns for missing stats computation (list or string of col names separated by |),\
-    all - to include all non-array columns (excluding drop_cols) (Default value = &#39;all&#39;)
-      drop_cols: List of columns to be dropped (list or string of col names separated by |) (Default value = [])
+      list_of_cols: List of columns to analyse e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. &lt;br&gt;\
+    &#34;all&#34; can be passed to include all columns for analysis. &lt;br&gt;\
+    Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in &lt;br&gt;\
+    drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = &#39;all&#39;)
+      drop_cols: List of columns to be dropped e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. (Default value = []) 
       print_impact:  (Default value = False)
 
     Returns:
@@ -111,7 +125,7 @@ def missingCount_computation(idf, list_of_cols=&#39;all&#39;, drop_cols=[], prin
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split(&#39;|&#39;)]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError(&#39;Invalid input for Column(s)&#39;)
@@ -126,15 +140,21 @@ def missingCount_computation(idf, list_of_cols=&#39;all&#39;, drop_cols=[], prin
     return odf
 
 
-def nonzeroCount_computation(idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
+def nonzeroCount_computation(spark, idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
     &#34;&#34;&#34;
 
     Args:
+      spark: Spark Session
       idf: Input Dataframe
-      list_of_cols: List of Numerical columns for computing nonZero rows.\
-    (List or string of col names separated by |),\
-    all - to include all numerical columns (excluding drop_cols) (Default value = &#39;all&#39;)
-      drop_cols: List of columns to be dropped (list or string of col names separated by |) (Default value = [])
+      list_of_cols: List of numerical columns to analyse e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. &lt;br&gt;\
+    &#34;all&#34; can be passed to include all numerical columns for analysis. &lt;br&gt;\
+    Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in &lt;br&gt;\
+    drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = &#39;all&#39;)
+      drop_cols: List of columns to be dropped e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. (Default value = [])
       print_impact:  (Default value = False)
 
     Returns:
@@ -149,7 +169,7 @@ def nonzeroCount_computation(idf, list_of_cols=&#39;all&#39;, drop_cols=[], prin
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split(&#39;|&#39;)]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in num_cols for x in list_of_cols):
         raise TypeError(&#39;Invalid input for Column(s)&#39;)
@@ -172,14 +192,21 @@ def nonzeroCount_computation(idf, list_of_cols=&#39;all&#39;, drop_cols=[], prin
     return odf
 
 
-def measures_of_counts(idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
+def measures_of_counts(spark, idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
     &#34;&#34;&#34;
 
     Args:
+      spark: Spark Session
       idf: Input Dataframe
-      list_of_cols: list or string of col names separated by |),\
-    all - to include all non-array columns (excluding drop_cols) (Default value = &#39;all&#39;)
-      drop_cols: List of columns to be dropped (list or string of col names separated by |) (Default value = [])
+      list_of_cols: List of columns to analyse e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. &lt;br&gt;\
+    &#34;all&#34; can be passed to include all columns for analysis. &lt;br&gt;\
+    Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in &lt;br&gt;\
+    drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = &#39;all&#39;)
+      drop_cols: List of columns to be dropped e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. (Default value = [])
       print_impact:  (Default value = False)
 
     Returns:
@@ -194,8 +221,8 @@ def measures_of_counts(idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impa
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split(&#39;|&#39;)]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
-    num_cols = attributeType_segregation(idf)[0]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
+    num_cols = attributeType_segregation(idf.select(list_of_cols))[0]
 
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError(&#39;Invalid input for Column(s)&#39;)
@@ -205,26 +232,33 @@ def measures_of_counts(idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impa
         .withColumn(&#39;fill_pct&#39;, F.round(F.col(&#39;fill_count&#39;) / F.lit(idf.count()), 4)) \
         .withColumn(&#39;missing_count&#39;, F.lit(idf.count()) - F.col(&#39;fill_count&#39;).cast(T.LongType())) \
         .withColumn(&#39;missing_pct&#39;, F.round(1 - F.col(&#39;fill_pct&#39;), 4)) \
-        .join(nonzeroCount_computation(idf, num_cols), &#34;attribute&#34;, &#34;full_outer&#34;)
+        .join(nonzeroCount_computation(spark, idf, num_cols), &#34;attribute&#34;, &#34;full_outer&#34;)
 
     if print_impact:
         odf.show(len(list_of_cols))
     return odf
 
 
-def mode_computation(idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
+def mode_computation(spark, idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
     &#34;&#34;&#34;
 
     Args:
+      spark: Spark Session
       idf: Input Dataframe
-      list_of_cols: List of Distrete (Categorical + Integer) columns for mode (most frequently seen value) computation.\
-    List or string of col names separated by |. In case of tie, one value is randomly picked as mode.\
-    all - to include all valid columns (excluding drop_cols) (Default value = &#39;all&#39;)
-      drop_cols: List of columns to be dropped (list or string of col names separated by |) (Default value = [])
+      list_of_cols: List of Discrete (Categorical + Integer) columns to analyse e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. &lt;br&gt;\
+    &#34;all&#34; can be passed to include all discrete columns for analysis. &lt;br&gt;\
+    Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in &lt;br&gt;\
+    drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = &#39;all&#39;)
+      drop_cols: List of columns to be dropped e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. (Default value = [])
       print_impact:  (Default value = False)
 
     Returns:
-      Dataframe [attribute, mode, mode_rows]
+      Dataframe [attribute, mode, mode_rows] &lt;br&gt;\
+      In case there is tie between multiple values, one value is randomly picked as mode.
 
     &#34;&#34;&#34;
     if list_of_cols == &#39;all&#39;:
@@ -235,7 +269,7 @@ def mode_computation(idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split(&#39;|&#39;)]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
     for i in idf.select(list_of_cols).dtypes:
         if (i[1] not in (&#39;string&#39;, &#39;int&#39;, &#39;bigint&#39;, &#39;long&#39;)):
             list_of_cols.remove(i[0])
@@ -256,14 +290,21 @@ def mode_computation(idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact
     return odf
 
 
-def measures_of_centralTendency(idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
+def measures_of_centralTendency(spark, idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
     &#34;&#34;&#34;
 
     Args:
+      spark: Spark Session
       idf: Input Dataframe
-      list_of_cols: list or string of col names separated by |),\
-    all - to include all non-array columns (excluding drop_cols) (Default value = &#39;all&#39;)
-      drop_cols: List of columns to be dropped (list or string of col names separated by |) (Default value = [])
+      list_of_cols: List of columns to analyse e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. &lt;br&gt;\
+    &#34;all&#34; can be passed to include all columns for analysis. &lt;br&gt;\
+    Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in &lt;br&gt;\
+    drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = &#39;all&#39;)
+      drop_cols: List of columns to be dropped e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. (Default value = [])
       print_impact:  (Default value = False)
 
     Returns:
@@ -278,7 +319,7 @@ def measures_of_centralTendency(idf, list_of_cols=&#39;all&#39;, drop_cols=[], p
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split(&#39;|&#39;)]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError(&#39;Invalid input for Column(s)&#39;)
@@ -287,7 +328,7 @@ def measures_of_centralTendency(idf, list_of_cols=&#39;all&#39;, drop_cols=[], p
         .withColumn(&#39;mean&#39;, F.round(F.col(&#39;mean&#39;).cast(T.DoubleType()), 4)) \
         .withColumn(&#39;median&#39;, F.round(F.col(&#39;50%&#39;).cast(T.DoubleType()), 4)) \
         .withColumnRenamed(&#39;key&#39;, &#39;attribute&#39;) \
-        .join(mode_computation(idf, list_of_cols), &#39;attribute&#39;, &#39;full_outer&#39;) \
+        .join(mode_computation(spark, idf, list_of_cols), &#39;attribute&#39;, &#39;full_outer&#39;) \
         .withColumn(&#39;mode_pct&#39;, F.round(F.col(&#39;mode_rows&#39;) / F.col(&#39;count&#39;).cast(T.DoubleType()), 4)) \
         .select(&#39;attribute&#39;, &#39;mean&#39;, &#39;median&#39;, &#39;mode&#39;, &#39;mode_pct&#39;)
 
@@ -296,15 +337,21 @@ def measures_of_centralTendency(idf, list_of_cols=&#39;all&#39;, drop_cols=[], p
     return odf
 
 
-def uniqueCount_computation(idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
+def uniqueCount_computation(spark, idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
     &#34;&#34;&#34;
 
     Args:
+      spark: Spark Session
       idf: Input Dataframe
-      list_of_cols: List of Distrete (Categorical + Integer) column for cardinality computation.\
-    List or string of col names separated by |.\
-    all - to include all valid columns (excluding drop_cols) (Default value = &#39;all&#39;)
-      drop_cols: List of columns to be dropped (list or string of col names separated by |) (Default value = [])
+      list_of_cols: List of Discrete (Categorical + Integer) columns to analyse e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. &lt;br&gt;\
+    &#34;all&#34; can be passed to include all discrete columns for analysis. &lt;br&gt;\
+    Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in &lt;br&gt;\
+    drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = &#39;all&#39;)
+      drop_cols: List of columns to be dropped e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. (Default value = [])
       print_impact:  (Default value = False)
 
     Returns:
@@ -321,7 +368,7 @@ def uniqueCount_computation(idf, list_of_cols=&#39;all&#39;, drop_cols=[], print
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split(&#39;|&#39;)]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError(&#39;Invalid input for Column(s)&#39;)
@@ -334,14 +381,21 @@ def uniqueCount_computation(idf, list_of_cols=&#39;all&#39;, drop_cols=[], print
     return odf
 
 
-def measures_of_cardinality(idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
+def measures_of_cardinality(spark, idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
     &#34;&#34;&#34;
 
     Args:
+      spark: Spark Session
       idf: Input Dataframe
-      list_of_cols: Ideally Distrete (Categorical + Integer) Columns (list or string of col names separated by |).\
-    all - to include all valid columns (excluding drop_cols) (Default value = &#39;all&#39;)
-      drop_cols: List of columns to be dropped (list or string of col names separated by |) (Default value = [])
+      list_of_cols: List of Discrete (Categorical + Integer) columns to analyse e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. &lt;br&gt;\
+    &#34;all&#34; can be passed to include all discrete columns for analysis. &lt;br&gt;\
+    Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in &lt;br&gt;\
+    drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = &#39;all&#39;) 
+      drop_cols: List of columns to be dropped e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. (Default value = [])
       print_impact:  (Default value = False)
 
     Returns:
@@ -358,13 +412,13 @@ def measures_of_cardinality(idf, list_of_cols=&#39;all&#39;, drop_cols=[], print
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split(&#39;|&#39;)]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError(&#39;Invalid input for Column(s)&#39;)
 
-    odf = uniqueCount_computation(idf, list_of_cols) \
-        .join(missingCount_computation(idf, list_of_cols), &#39;attribute&#39;, &#39;full_outer&#39;) \
+    odf = uniqueCount_computation(spark, idf, list_of_cols) \
+        .join(missingCount_computation(spark, idf, list_of_cols), &#39;attribute&#39;, &#39;full_outer&#39;) \
         .withColumn(&#39;IDness&#39;, F.round(F.col(&#39;unique_values&#39;) / (F.lit(idf.count()) - F.col(&#39;missing_count&#39;)), 4)) \
         .select(&#39;attribute&#39;, &#39;unique_values&#39;, &#39;IDness&#39;)
     if print_impact:
@@ -372,14 +426,21 @@ def measures_of_cardinality(idf, list_of_cols=&#39;all&#39;, drop_cols=[], print
     return odf
 
 
-def measures_of_dispersion(idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
+def measures_of_dispersion(spark, idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
     &#34;&#34;&#34;
 
     Args:
+      spark: Spark Session
       idf: Input Dataframe
-      list_of_cols: Numerical Columns (list or string of col names separated by |),\
-    all - to include all numerical columns (excluding drop_cols) (Default value = &#39;all&#39;)
-      drop_cols: List of columns to be dropped (list or string of col names separated by |) (Default value = [])
+      list_of_cols: List of numerical columns to analyse e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. &lt;br&gt;\
+    &#34;all&#34; can be passed to include all numerical columns for analysis. &lt;br&gt;\
+    Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in &lt;br&gt;\
+    drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = &#39;all&#39;)
+      drop_cols: List of columns to be dropped e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. (Default value = [])
       print_impact:  (Default value = False)
 
     Returns:
@@ -394,7 +455,7 @@ def measures_of_dispersion(idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split(&#39;|&#39;)]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in num_cols for x in list_of_cols):
         raise TypeError(&#39;Invalid input for Column(s)&#39;)
@@ -421,14 +482,21 @@ def measures_of_dispersion(idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_
     return odf
 
 
-def measures_of_percentiles(idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
+def measures_of_percentiles(spark, idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
     &#34;&#34;&#34;
 
     Args:
+      spark: Spark Session
       idf: Input Dataframe
-      list_of_cols: Numerical Columns (list or string of col names separated by |),\
-    all - to include all numerical columns (excluding drop_cols) (Default value = &#39;all&#39;)
-      drop_cols: List of columns to be dropped (list or string of col names separated by |) (Default value = [])
+      list_of_cols: List of numerical columns to analyse e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. &lt;br&gt;\
+    &#34;all&#34; can be passed to include all numerical columns for analysis. &lt;br&gt;\
+    Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in &lt;br&gt;\
+    drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = &#39;all&#39;)
+      drop_cols: List of columns to be dropped e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. (Default value = [])
       print_impact:  (Default value = False)
 
     Returns:
@@ -443,7 +511,7 @@ def measures_of_percentiles(idf, list_of_cols=&#39;all&#39;, drop_cols=[], print
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split(&#39;|&#39;)]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in num_cols for x in list_of_cols):
         raise TypeError(&#39;Invalid input for Column(s)&#39;)
@@ -476,14 +544,21 @@ def measures_of_percentiles(idf, list_of_cols=&#39;all&#39;, drop_cols=[], print
     return odf
 
 
-def measures_of_shape(idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
+def measures_of_shape(spark, idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
     &#34;&#34;&#34;
 
     Args:
+      spark: Spark Session
       idf: Input Dataframe
-      list_of_cols: Numerical Columns (list or string of col names separated by |),\
-    all - to include all numerical columns (excluding drop_cols) (Default value = &#39;all&#39;)
-      drop_cols: List of columns to be dropped (list or string of col names separated by |) (Default value = [])
+      list_of_cols: List of numerical columns to analyse e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. &lt;br&gt;\
+    &#34;all&#34; can be passed to include all numerical columns for analysis. &lt;br&gt;\
+    Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in &lt;br&gt;\
+    drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = &#39;all&#39;)
+      drop_cols: List of columns to be dropped e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. (Default value = [])
       print_impact:  (Default value = False)
 
     Returns:
@@ -499,7 +574,7 @@ def measures_of_shape(idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impac
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split(&#39;|&#39;)]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in num_cols for x in list_of_cols):
         raise TypeError(&#39;Invalid input for Column(s)&#39;)
@@ -530,40 +605,55 @@ def measures_of_shape(idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impac
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="com.mw.ds.data_analyzer.stats_generator.global_summary"><code class="name flex">
-<span>def <span class="ident">global_summary</span></span>(<span>idf, list_of_cols='all', drop_cols=[], print_impact=True)</span>
+<dt id="anovos.data_analyzer.stats_generator.global_summary"><code class="name flex">
+<span>def <span class="ident">global_summary</span></span>(<span>spark, idf, list_of_cols='all', drop_cols=[], print_impact=True)</span>
 </code></dt>
 <dd>
 <div class="desc"><h2 id="args">Args</h2>
 <dl>
+<dt><strong><code>spark</code></strong></dt>
+<dd>Spark Session</dd>
 <dt><strong><code>idf</code></strong></dt>
 <dd>Input Dataframe</dd>
 <dt><strong><code>list_of_cols</code></strong></dt>
-<dd>list or string of col names separated by |),
-all - to include all columns (excluding drop_cols) (Default value = 'all')</dd>
+<dd>List of columns to analyse e.g., ["col1","col2"]. <br>
+Alternatively, columns can be specified in a string format, <br>
+where different column names are separated by pipe delimiter “|” e.g., "col1|col2". <br>
+"all" can be passed to include all columns for analysis. <br>
+Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in <br>
+drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = 'all')</dd>
 <dt><strong><code>drop_cols</code></strong></dt>
-<dd>List of columns to be dropped (list or string of col names separated by |) (Default value = [])</dd>
+<dd>List of columns to be dropped e.g., ["col1","col2"]. <br>
+Alternatively, columns can be specified in a string format, <br>
+where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])</dd>
 <dt><strong><code>print_impact</code></strong></dt>
 <dd>(Default value = True)</dd>
 </dl>
 <h2 id="returns">Returns</h2>
-<p>Analysis Dataframe</p></div>
+<p>Dataframe [metric, value]</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def global_summary(idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=True):
+<pre><code class="python">def global_summary(spark, idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=True):
     &#34;&#34;&#34;
 
     Args:
+      spark: Spark Session
       idf: Input Dataframe
-      list_of_cols: list or string of col names separated by |),\
-    all - to include all columns (excluding drop_cols) (Default value = &#39;all&#39;)
-      drop_cols: List of columns to be dropped (list or string of col names separated by |) (Default value = [])
+      list_of_cols: List of columns to analyse e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. &lt;br&gt;\
+    &#34;all&#34; can be passed to include all columns for analysis. &lt;br&gt;\
+    Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in &lt;br&gt;\
+    drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = &#39;all&#39;)
+      drop_cols: List of columns to be dropped e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. (Default value = [])
       print_impact:  (Default value = True)
 
     Returns:
-      Analysis Dataframe
+      Dataframe [metric, value]
 
     &#34;&#34;&#34;
     if list_of_cols == &#39;all&#39;:
@@ -573,7 +663,7 @@ all - to include all columns (excluding drop_cols) (Default value = 'all')</dd>
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split(&#39;|&#39;)]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError(&#39;Invalid input for Column(s)&#39;)
@@ -605,19 +695,27 @@ all - to include all columns (excluding drop_cols) (Default value = 'all')</dd>
     return odf</code></pre>
 </details>
 </dd>
-<dt id="com.mw.ds.data_analyzer.stats_generator.measures_of_cardinality"><code class="name flex">
-<span>def <span class="ident">measures_of_cardinality</span></span>(<span>idf, list_of_cols='all', drop_cols=[], print_impact=False)</span>
+<dt id="anovos.data_analyzer.stats_generator.measures_of_cardinality"><code class="name flex">
+<span>def <span class="ident">measures_of_cardinality</span></span>(<span>spark, idf, list_of_cols='all', drop_cols=[], print_impact=False)</span>
 </code></dt>
 <dd>
 <div class="desc"><h2 id="args">Args</h2>
 <dl>
+<dt><strong><code>spark</code></strong></dt>
+<dd>Spark Session</dd>
 <dt><strong><code>idf</code></strong></dt>
 <dd>Input Dataframe</dd>
 <dt><strong><code>list_of_cols</code></strong></dt>
-<dd>Ideally Distrete (Categorical + Integer) Columns (list or string of col names separated by |).
-all - to include all valid columns (excluding drop_cols) (Default value = 'all')</dd>
+<dd>List of Discrete (Categorical + Integer) columns to analyse e.g., ["col1","col2"]. <br>
+Alternatively, columns can be specified in a string format, <br>
+where different column names are separated by pipe delimiter “|” e.g., "col1|col2". <br>
+"all" can be passed to include all discrete columns for analysis. <br>
+Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in <br>
+drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = 'all') </dd>
 <dt><strong><code>drop_cols</code></strong></dt>
-<dd>List of columns to be dropped (list or string of col names separated by |) (Default value = [])</dd>
+<dd>List of columns to be dropped e.g., ["col1","col2"]. <br>
+Alternatively, columns can be specified in a string format, <br>
+where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])</dd>
 <dt><strong><code>print_impact</code></strong></dt>
 <dd>(Default value = False)</dd>
 </dl>
@@ -627,14 +725,21 @@ all - to include all valid columns (excluding drop_cols) (Default value = 'all')
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def measures_of_cardinality(idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
+<pre><code class="python">def measures_of_cardinality(spark, idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
     &#34;&#34;&#34;
 
     Args:
+      spark: Spark Session
       idf: Input Dataframe
-      list_of_cols: Ideally Distrete (Categorical + Integer) Columns (list or string of col names separated by |).\
-    all - to include all valid columns (excluding drop_cols) (Default value = &#39;all&#39;)
-      drop_cols: List of columns to be dropped (list or string of col names separated by |) (Default value = [])
+      list_of_cols: List of Discrete (Categorical + Integer) columns to analyse e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. &lt;br&gt;\
+    &#34;all&#34; can be passed to include all discrete columns for analysis. &lt;br&gt;\
+    Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in &lt;br&gt;\
+    drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = &#39;all&#39;) 
+      drop_cols: List of columns to be dropped e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. (Default value = [])
       print_impact:  (Default value = False)
 
     Returns:
@@ -651,13 +756,13 @@ all - to include all valid columns (excluding drop_cols) (Default value = 'all')
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split(&#39;|&#39;)]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError(&#39;Invalid input for Column(s)&#39;)
 
-    odf = uniqueCount_computation(idf, list_of_cols) \
-        .join(missingCount_computation(idf, list_of_cols), &#39;attribute&#39;, &#39;full_outer&#39;) \
+    odf = uniqueCount_computation(spark, idf, list_of_cols) \
+        .join(missingCount_computation(spark, idf, list_of_cols), &#39;attribute&#39;, &#39;full_outer&#39;) \
         .withColumn(&#39;IDness&#39;, F.round(F.col(&#39;unique_values&#39;) / (F.lit(idf.count()) - F.col(&#39;missing_count&#39;)), 4)) \
         .select(&#39;attribute&#39;, &#39;unique_values&#39;, &#39;IDness&#39;)
     if print_impact:
@@ -665,19 +770,27 @@ all - to include all valid columns (excluding drop_cols) (Default value = 'all')
     return odf</code></pre>
 </details>
 </dd>
-<dt id="com.mw.ds.data_analyzer.stats_generator.measures_of_centralTendency"><code class="name flex">
-<span>def <span class="ident">measures_of_centralTendency</span></span>(<span>idf, list_of_cols='all', drop_cols=[], print_impact=False)</span>
+<dt id="anovos.data_analyzer.stats_generator.measures_of_centralTendency"><code class="name flex">
+<span>def <span class="ident">measures_of_centralTendency</span></span>(<span>spark, idf, list_of_cols='all', drop_cols=[], print_impact=False)</span>
 </code></dt>
 <dd>
 <div class="desc"><h2 id="args">Args</h2>
 <dl>
+<dt><strong><code>spark</code></strong></dt>
+<dd>Spark Session</dd>
 <dt><strong><code>idf</code></strong></dt>
 <dd>Input Dataframe</dd>
 <dt><strong><code>list_of_cols</code></strong></dt>
-<dd>list or string of col names separated by |),
-all - to include all non-array columns (excluding drop_cols) (Default value = 'all')</dd>
+<dd>List of columns to analyse e.g., ["col1","col2"]. <br>
+Alternatively, columns can be specified in a string format, <br>
+where different column names are separated by pipe delimiter “|” e.g., "col1|col2". <br>
+"all" can be passed to include all columns for analysis. <br>
+Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in <br>
+drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = 'all')</dd>
 <dt><strong><code>drop_cols</code></strong></dt>
-<dd>List of columns to be dropped (list or string of col names separated by |) (Default value = [])</dd>
+<dd>List of columns to be dropped e.g., ["col1","col2"]. <br>
+Alternatively, columns can be specified in a string format, <br>
+where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])</dd>
 <dt><strong><code>print_impact</code></strong></dt>
 <dd>(Default value = False)</dd>
 </dl>
@@ -687,14 +800,21 @@ all - to include all non-array columns (excluding drop_cols) (Default value = 'a
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def measures_of_centralTendency(idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
+<pre><code class="python">def measures_of_centralTendency(spark, idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
     &#34;&#34;&#34;
 
     Args:
+      spark: Spark Session
       idf: Input Dataframe
-      list_of_cols: list or string of col names separated by |),\
-    all - to include all non-array columns (excluding drop_cols) (Default value = &#39;all&#39;)
-      drop_cols: List of columns to be dropped (list or string of col names separated by |) (Default value = [])
+      list_of_cols: List of columns to analyse e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. &lt;br&gt;\
+    &#34;all&#34; can be passed to include all columns for analysis. &lt;br&gt;\
+    Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in &lt;br&gt;\
+    drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = &#39;all&#39;)
+      drop_cols: List of columns to be dropped e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. (Default value = [])
       print_impact:  (Default value = False)
 
     Returns:
@@ -709,7 +829,7 @@ all - to include all non-array columns (excluding drop_cols) (Default value = 'a
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split(&#39;|&#39;)]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError(&#39;Invalid input for Column(s)&#39;)
@@ -718,7 +838,7 @@ all - to include all non-array columns (excluding drop_cols) (Default value = 'a
         .withColumn(&#39;mean&#39;, F.round(F.col(&#39;mean&#39;).cast(T.DoubleType()), 4)) \
         .withColumn(&#39;median&#39;, F.round(F.col(&#39;50%&#39;).cast(T.DoubleType()), 4)) \
         .withColumnRenamed(&#39;key&#39;, &#39;attribute&#39;) \
-        .join(mode_computation(idf, list_of_cols), &#39;attribute&#39;, &#39;full_outer&#39;) \
+        .join(mode_computation(spark, idf, list_of_cols), &#39;attribute&#39;, &#39;full_outer&#39;) \
         .withColumn(&#39;mode_pct&#39;, F.round(F.col(&#39;mode_rows&#39;) / F.col(&#39;count&#39;).cast(T.DoubleType()), 4)) \
         .select(&#39;attribute&#39;, &#39;mean&#39;, &#39;median&#39;, &#39;mode&#39;, &#39;mode_pct&#39;)
 
@@ -727,19 +847,27 @@ all - to include all non-array columns (excluding drop_cols) (Default value = 'a
     return odf</code></pre>
 </details>
 </dd>
-<dt id="com.mw.ds.data_analyzer.stats_generator.measures_of_counts"><code class="name flex">
-<span>def <span class="ident">measures_of_counts</span></span>(<span>idf, list_of_cols='all', drop_cols=[], print_impact=False)</span>
+<dt id="anovos.data_analyzer.stats_generator.measures_of_counts"><code class="name flex">
+<span>def <span class="ident">measures_of_counts</span></span>(<span>spark, idf, list_of_cols='all', drop_cols=[], print_impact=False)</span>
 </code></dt>
 <dd>
 <div class="desc"><h2 id="args">Args</h2>
 <dl>
+<dt><strong><code>spark</code></strong></dt>
+<dd>Spark Session</dd>
 <dt><strong><code>idf</code></strong></dt>
 <dd>Input Dataframe</dd>
 <dt><strong><code>list_of_cols</code></strong></dt>
-<dd>list or string of col names separated by |),
-all - to include all non-array columns (excluding drop_cols) (Default value = 'all')</dd>
+<dd>List of columns to analyse e.g., ["col1","col2"]. <br>
+Alternatively, columns can be specified in a string format, <br>
+where different column names are separated by pipe delimiter “|” e.g., "col1|col2". <br>
+"all" can be passed to include all columns for analysis. <br>
+Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in <br>
+drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = 'all')</dd>
 <dt><strong><code>drop_cols</code></strong></dt>
-<dd>List of columns to be dropped (list or string of col names separated by |) (Default value = [])</dd>
+<dd>List of columns to be dropped e.g., ["col1","col2"]. <br>
+Alternatively, columns can be specified in a string format, <br>
+where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])</dd>
 <dt><strong><code>print_impact</code></strong></dt>
 <dd>(Default value = False)</dd>
 </dl>
@@ -749,14 +877,21 @@ all - to include all non-array columns (excluding drop_cols) (Default value = 'a
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def measures_of_counts(idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
+<pre><code class="python">def measures_of_counts(spark, idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
     &#34;&#34;&#34;
 
     Args:
+      spark: Spark Session
       idf: Input Dataframe
-      list_of_cols: list or string of col names separated by |),\
-    all - to include all non-array columns (excluding drop_cols) (Default value = &#39;all&#39;)
-      drop_cols: List of columns to be dropped (list or string of col names separated by |) (Default value = [])
+      list_of_cols: List of columns to analyse e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. &lt;br&gt;\
+    &#34;all&#34; can be passed to include all columns for analysis. &lt;br&gt;\
+    Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in &lt;br&gt;\
+    drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = &#39;all&#39;)
+      drop_cols: List of columns to be dropped e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. (Default value = [])
       print_impact:  (Default value = False)
 
     Returns:
@@ -771,8 +906,8 @@ all - to include all non-array columns (excluding drop_cols) (Default value = 'a
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split(&#39;|&#39;)]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
-    num_cols = attributeType_segregation(idf)[0]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
+    num_cols = attributeType_segregation(idf.select(list_of_cols))[0]
 
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError(&#39;Invalid input for Column(s)&#39;)
@@ -782,26 +917,34 @@ all - to include all non-array columns (excluding drop_cols) (Default value = 'a
         .withColumn(&#39;fill_pct&#39;, F.round(F.col(&#39;fill_count&#39;) / F.lit(idf.count()), 4)) \
         .withColumn(&#39;missing_count&#39;, F.lit(idf.count()) - F.col(&#39;fill_count&#39;).cast(T.LongType())) \
         .withColumn(&#39;missing_pct&#39;, F.round(1 - F.col(&#39;fill_pct&#39;), 4)) \
-        .join(nonzeroCount_computation(idf, num_cols), &#34;attribute&#34;, &#34;full_outer&#34;)
+        .join(nonzeroCount_computation(spark, idf, num_cols), &#34;attribute&#34;, &#34;full_outer&#34;)
 
     if print_impact:
         odf.show(len(list_of_cols))
     return odf</code></pre>
 </details>
 </dd>
-<dt id="com.mw.ds.data_analyzer.stats_generator.measures_of_dispersion"><code class="name flex">
-<span>def <span class="ident">measures_of_dispersion</span></span>(<span>idf, list_of_cols='all', drop_cols=[], print_impact=False)</span>
+<dt id="anovos.data_analyzer.stats_generator.measures_of_dispersion"><code class="name flex">
+<span>def <span class="ident">measures_of_dispersion</span></span>(<span>spark, idf, list_of_cols='all', drop_cols=[], print_impact=False)</span>
 </code></dt>
 <dd>
 <div class="desc"><h2 id="args">Args</h2>
 <dl>
+<dt><strong><code>spark</code></strong></dt>
+<dd>Spark Session</dd>
 <dt><strong><code>idf</code></strong></dt>
 <dd>Input Dataframe</dd>
 <dt><strong><code>list_of_cols</code></strong></dt>
-<dd>Numerical Columns (list or string of col names separated by |),
-all - to include all numerical columns (excluding drop_cols) (Default value = 'all')</dd>
+<dd>List of numerical columns to analyse e.g., ["col1","col2"]. <br>
+Alternatively, columns can be specified in a string format, <br>
+where different column names are separated by pipe delimiter “|” e.g., "col1|col2". <br>
+"all" can be passed to include all numerical columns for analysis. <br>
+Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in <br>
+drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = 'all')</dd>
 <dt><strong><code>drop_cols</code></strong></dt>
-<dd>List of columns to be dropped (list or string of col names separated by |) (Default value = [])</dd>
+<dd>List of columns to be dropped e.g., ["col1","col2"]. <br>
+Alternatively, columns can be specified in a string format, <br>
+where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])</dd>
 <dt><strong><code>print_impact</code></strong></dt>
 <dd>(Default value = False)</dd>
 </dl>
@@ -811,14 +954,21 @@ all - to include all numerical columns (excluding drop_cols) (Default value = 'a
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def measures_of_dispersion(idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
+<pre><code class="python">def measures_of_dispersion(spark, idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
     &#34;&#34;&#34;
 
     Args:
+      spark: Spark Session
       idf: Input Dataframe
-      list_of_cols: Numerical Columns (list or string of col names separated by |),\
-    all - to include all numerical columns (excluding drop_cols) (Default value = &#39;all&#39;)
-      drop_cols: List of columns to be dropped (list or string of col names separated by |) (Default value = [])
+      list_of_cols: List of numerical columns to analyse e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. &lt;br&gt;\
+    &#34;all&#34; can be passed to include all numerical columns for analysis. &lt;br&gt;\
+    Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in &lt;br&gt;\
+    drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = &#39;all&#39;)
+      drop_cols: List of columns to be dropped e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. (Default value = [])
       print_impact:  (Default value = False)
 
     Returns:
@@ -833,7 +983,7 @@ all - to include all numerical columns (excluding drop_cols) (Default value = 'a
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split(&#39;|&#39;)]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in num_cols for x in list_of_cols):
         raise TypeError(&#39;Invalid input for Column(s)&#39;)
@@ -860,19 +1010,27 @@ all - to include all numerical columns (excluding drop_cols) (Default value = 'a
     return odf</code></pre>
 </details>
 </dd>
-<dt id="com.mw.ds.data_analyzer.stats_generator.measures_of_percentiles"><code class="name flex">
-<span>def <span class="ident">measures_of_percentiles</span></span>(<span>idf, list_of_cols='all', drop_cols=[], print_impact=False)</span>
+<dt id="anovos.data_analyzer.stats_generator.measures_of_percentiles"><code class="name flex">
+<span>def <span class="ident">measures_of_percentiles</span></span>(<span>spark, idf, list_of_cols='all', drop_cols=[], print_impact=False)</span>
 </code></dt>
 <dd>
 <div class="desc"><h2 id="args">Args</h2>
 <dl>
+<dt><strong><code>spark</code></strong></dt>
+<dd>Spark Session</dd>
 <dt><strong><code>idf</code></strong></dt>
 <dd>Input Dataframe</dd>
 <dt><strong><code>list_of_cols</code></strong></dt>
-<dd>Numerical Columns (list or string of col names separated by |),
-all - to include all numerical columns (excluding drop_cols) (Default value = 'all')</dd>
+<dd>List of numerical columns to analyse e.g., ["col1","col2"]. <br>
+Alternatively, columns can be specified in a string format, <br>
+where different column names are separated by pipe delimiter “|” e.g., "col1|col2". <br>
+"all" can be passed to include all numerical columns for analysis. <br>
+Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in <br>
+drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = 'all')</dd>
 <dt><strong><code>drop_cols</code></strong></dt>
-<dd>List of columns to be dropped (list or string of col names separated by |) (Default value = [])</dd>
+<dd>List of columns to be dropped e.g., ["col1","col2"]. <br>
+Alternatively, columns can be specified in a string format, <br>
+where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])</dd>
 <dt><strong><code>print_impact</code></strong></dt>
 <dd>(Default value = False)</dd>
 </dl>
@@ -882,14 +1040,21 @@ all - to include all numerical columns (excluding drop_cols) (Default value = 'a
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def measures_of_percentiles(idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
+<pre><code class="python">def measures_of_percentiles(spark, idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
     &#34;&#34;&#34;
 
     Args:
+      spark: Spark Session
       idf: Input Dataframe
-      list_of_cols: Numerical Columns (list or string of col names separated by |),\
-    all - to include all numerical columns (excluding drop_cols) (Default value = &#39;all&#39;)
-      drop_cols: List of columns to be dropped (list or string of col names separated by |) (Default value = [])
+      list_of_cols: List of numerical columns to analyse e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. &lt;br&gt;\
+    &#34;all&#34; can be passed to include all numerical columns for analysis. &lt;br&gt;\
+    Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in &lt;br&gt;\
+    drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = &#39;all&#39;)
+      drop_cols: List of columns to be dropped e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. (Default value = [])
       print_impact:  (Default value = False)
 
     Returns:
@@ -904,7 +1069,7 @@ all - to include all numerical columns (excluding drop_cols) (Default value = 'a
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split(&#39;|&#39;)]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in num_cols for x in list_of_cols):
         raise TypeError(&#39;Invalid input for Column(s)&#39;)
@@ -937,19 +1102,27 @@ all - to include all numerical columns (excluding drop_cols) (Default value = 'a
     return odf</code></pre>
 </details>
 </dd>
-<dt id="com.mw.ds.data_analyzer.stats_generator.measures_of_shape"><code class="name flex">
-<span>def <span class="ident">measures_of_shape</span></span>(<span>idf, list_of_cols='all', drop_cols=[], print_impact=False)</span>
+<dt id="anovos.data_analyzer.stats_generator.measures_of_shape"><code class="name flex">
+<span>def <span class="ident">measures_of_shape</span></span>(<span>spark, idf, list_of_cols='all', drop_cols=[], print_impact=False)</span>
 </code></dt>
 <dd>
 <div class="desc"><h2 id="args">Args</h2>
 <dl>
+<dt><strong><code>spark</code></strong></dt>
+<dd>Spark Session</dd>
 <dt><strong><code>idf</code></strong></dt>
 <dd>Input Dataframe</dd>
 <dt><strong><code>list_of_cols</code></strong></dt>
-<dd>Numerical Columns (list or string of col names separated by |),
-all - to include all numerical columns (excluding drop_cols) (Default value = 'all')</dd>
+<dd>List of numerical columns to analyse e.g., ["col1","col2"]. <br>
+Alternatively, columns can be specified in a string format, <br>
+where different column names are separated by pipe delimiter “|” e.g., "col1|col2". <br>
+"all" can be passed to include all numerical columns for analysis. <br>
+Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in <br>
+drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = 'all')</dd>
 <dt><strong><code>drop_cols</code></strong></dt>
-<dd>List of columns to be dropped (list or string of col names separated by |) (Default value = [])</dd>
+<dd>List of columns to be dropped e.g., ["col1","col2"]. <br>
+Alternatively, columns can be specified in a string format, <br>
+where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])</dd>
 <dt><strong><code>print_impact</code></strong></dt>
 <dd>(Default value = False)</dd>
 </dl>
@@ -959,14 +1132,21 @@ all - to include all numerical columns (excluding drop_cols) (Default value = 'a
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def measures_of_shape(idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
+<pre><code class="python">def measures_of_shape(spark, idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
     &#34;&#34;&#34;
 
     Args:
+      spark: Spark Session
       idf: Input Dataframe
-      list_of_cols: Numerical Columns (list or string of col names separated by |),\
-    all - to include all numerical columns (excluding drop_cols) (Default value = &#39;all&#39;)
-      drop_cols: List of columns to be dropped (list or string of col names separated by |) (Default value = [])
+      list_of_cols: List of numerical columns to analyse e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. &lt;br&gt;\
+    &#34;all&#34; can be passed to include all numerical columns for analysis. &lt;br&gt;\
+    Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in &lt;br&gt;\
+    drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = &#39;all&#39;)
+      drop_cols: List of columns to be dropped e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. (Default value = [])
       print_impact:  (Default value = False)
 
     Returns:
@@ -982,7 +1162,7 @@ all - to include all numerical columns (excluding drop_cols) (Default value = 'a
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split(&#39;|&#39;)]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in num_cols for x in list_of_cols):
         raise TypeError(&#39;Invalid input for Column(s)&#39;)
@@ -1006,19 +1186,27 @@ all - to include all numerical columns (excluding drop_cols) (Default value = 'a
     return odf</code></pre>
 </details>
 </dd>
-<dt id="com.mw.ds.data_analyzer.stats_generator.missingCount_computation"><code class="name flex">
-<span>def <span class="ident">missingCount_computation</span></span>(<span>idf, list_of_cols='all', drop_cols=[], print_impact=False)</span>
+<dt id="anovos.data_analyzer.stats_generator.missingCount_computation"><code class="name flex">
+<span>def <span class="ident">missingCount_computation</span></span>(<span>spark, idf, list_of_cols='all', drop_cols=[], print_impact=False)</span>
 </code></dt>
 <dd>
 <div class="desc"><h2 id="args">Args</h2>
 <dl>
+<dt><strong><code>spark</code></strong></dt>
+<dd>Spark Session</dd>
 <dt><strong><code>idf</code></strong></dt>
 <dd>Input Dataframe</dd>
 <dt><strong><code>list_of_cols</code></strong></dt>
-<dd>List of columns for missing stats computation (list or string of col names separated by |),
-all - to include all non-array columns (excluding drop_cols) (Default value = 'all')</dd>
+<dd>List of columns to analyse e.g., ["col1","col2"]. <br>
+Alternatively, columns can be specified in a string format, <br>
+where different column names are separated by pipe delimiter “|” e.g., "col1|col2". <br>
+"all" can be passed to include all columns for analysis. <br>
+Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in <br>
+drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = 'all')</dd>
 <dt><strong><code>drop_cols</code></strong></dt>
-<dd>List of columns to be dropped (list or string of col names separated by |) (Default value = [])</dd>
+<dd>List of columns to be dropped e.g., ["col1","col2"]. <br>
+Alternatively, columns can be specified in a string format, <br>
+where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = []) </dd>
 <dt><strong><code>print_impact</code></strong></dt>
 <dd>(Default value = False)</dd>
 </dl>
@@ -1028,14 +1216,21 @@ all - to include all non-array columns (excluding drop_cols) (Default value = 'a
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def missingCount_computation(idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
+<pre><code class="python">def missingCount_computation(spark, idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
     &#34;&#34;&#34;
 
     Args:
+      spark: Spark Session
       idf: Input Dataframe
-      list_of_cols: List of columns for missing stats computation (list or string of col names separated by |),\
-    all - to include all non-array columns (excluding drop_cols) (Default value = &#39;all&#39;)
-      drop_cols: List of columns to be dropped (list or string of col names separated by |) (Default value = [])
+      list_of_cols: List of columns to analyse e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. &lt;br&gt;\
+    &#34;all&#34; can be passed to include all columns for analysis. &lt;br&gt;\
+    Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in &lt;br&gt;\
+    drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = &#39;all&#39;)
+      drop_cols: List of columns to be dropped e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. (Default value = []) 
       print_impact:  (Default value = False)
 
     Returns:
@@ -1050,7 +1245,7 @@ all - to include all non-array columns (excluding drop_cols) (Default value = 'a
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split(&#39;|&#39;)]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError(&#39;Invalid input for Column(s)&#39;)
@@ -1065,42 +1260,57 @@ all - to include all non-array columns (excluding drop_cols) (Default value = 'a
     return odf</code></pre>
 </details>
 </dd>
-<dt id="com.mw.ds.data_analyzer.stats_generator.mode_computation"><code class="name flex">
-<span>def <span class="ident">mode_computation</span></span>(<span>idf, list_of_cols='all', drop_cols=[], print_impact=False)</span>
+<dt id="anovos.data_analyzer.stats_generator.mode_computation"><code class="name flex">
+<span>def <span class="ident">mode_computation</span></span>(<span>spark, idf, list_of_cols='all', drop_cols=[], print_impact=False)</span>
 </code></dt>
 <dd>
 <div class="desc"><h2 id="args">Args</h2>
 <dl>
+<dt><strong><code>spark</code></strong></dt>
+<dd>Spark Session</dd>
 <dt><strong><code>idf</code></strong></dt>
 <dd>Input Dataframe</dd>
 <dt><strong><code>list_of_cols</code></strong></dt>
-<dd>List of Distrete (Categorical + Integer) columns for mode (most frequently seen value) computation.
-List or string of col names separated by |. In case of tie, one value is randomly picked as mode.
-all - to include all valid columns (excluding drop_cols) (Default value = 'all')</dd>
+<dd>List of Discrete (Categorical + Integer) columns to analyse e.g., ["col1","col2"]. <br>
+Alternatively, columns can be specified in a string format, <br>
+where different column names are separated by pipe delimiter “|” e.g., "col1|col2". <br>
+"all" can be passed to include all discrete columns for analysis. <br>
+Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in <br>
+drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = 'all')</dd>
 <dt><strong><code>drop_cols</code></strong></dt>
-<dd>List of columns to be dropped (list or string of col names separated by |) (Default value = [])</dd>
+<dd>List of columns to be dropped e.g., ["col1","col2"]. <br>
+Alternatively, columns can be specified in a string format, <br>
+where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])</dd>
 <dt><strong><code>print_impact</code></strong></dt>
 <dd>(Default value = False)</dd>
 </dl>
 <h2 id="returns">Returns</h2>
-<p>Dataframe [attribute, mode, mode_rows]</p></div>
+<p>Dataframe [attribute, mode, mode_rows] <br>
+In case there is tie between multiple values, one value is randomly picked as mode.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def mode_computation(idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
+<pre><code class="python">def mode_computation(spark, idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
     &#34;&#34;&#34;
 
     Args:
+      spark: Spark Session
       idf: Input Dataframe
-      list_of_cols: List of Distrete (Categorical + Integer) columns for mode (most frequently seen value) computation.\
-    List or string of col names separated by |. In case of tie, one value is randomly picked as mode.\
-    all - to include all valid columns (excluding drop_cols) (Default value = &#39;all&#39;)
-      drop_cols: List of columns to be dropped (list or string of col names separated by |) (Default value = [])
+      list_of_cols: List of Discrete (Categorical + Integer) columns to analyse e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. &lt;br&gt;\
+    &#34;all&#34; can be passed to include all discrete columns for analysis. &lt;br&gt;\
+    Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in &lt;br&gt;\
+    drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = &#39;all&#39;)
+      drop_cols: List of columns to be dropped e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. (Default value = [])
       print_impact:  (Default value = False)
 
     Returns:
-      Dataframe [attribute, mode, mode_rows]
+      Dataframe [attribute, mode, mode_rows] &lt;br&gt;\
+      In case there is tie between multiple values, one value is randomly picked as mode.
 
     &#34;&#34;&#34;
     if list_of_cols == &#39;all&#39;:
@@ -1111,7 +1321,7 @@ all - to include all valid columns (excluding drop_cols) (Default value = 'all')
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split(&#39;|&#39;)]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
     for i in idf.select(list_of_cols).dtypes:
         if (i[1] not in (&#39;string&#39;, &#39;int&#39;, &#39;bigint&#39;, &#39;long&#39;)):
             list_of_cols.remove(i[0])
@@ -1132,20 +1342,27 @@ all - to include all valid columns (excluding drop_cols) (Default value = 'all')
     return odf</code></pre>
 </details>
 </dd>
-<dt id="com.mw.ds.data_analyzer.stats_generator.nonzeroCount_computation"><code class="name flex">
-<span>def <span class="ident">nonzeroCount_computation</span></span>(<span>idf, list_of_cols='all', drop_cols=[], print_impact=False)</span>
+<dt id="anovos.data_analyzer.stats_generator.nonzeroCount_computation"><code class="name flex">
+<span>def <span class="ident">nonzeroCount_computation</span></span>(<span>spark, idf, list_of_cols='all', drop_cols=[], print_impact=False)</span>
 </code></dt>
 <dd>
 <div class="desc"><h2 id="args">Args</h2>
 <dl>
+<dt><strong><code>spark</code></strong></dt>
+<dd>Spark Session</dd>
 <dt><strong><code>idf</code></strong></dt>
 <dd>Input Dataframe</dd>
 <dt><strong><code>list_of_cols</code></strong></dt>
-<dd>List of Numerical columns for computing nonZero rows.
-(List or string of col names separated by |),
-all - to include all numerical columns (excluding drop_cols) (Default value = 'all')</dd>
+<dd>List of numerical columns to analyse e.g., ["col1","col2"]. <br>
+Alternatively, columns can be specified in a string format, <br>
+where different column names are separated by pipe delimiter “|” e.g., "col1|col2". <br>
+"all" can be passed to include all numerical columns for analysis. <br>
+Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in <br>
+drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = 'all')</dd>
 <dt><strong><code>drop_cols</code></strong></dt>
-<dd>List of columns to be dropped (list or string of col names separated by |) (Default value = [])</dd>
+<dd>List of columns to be dropped e.g., ["col1","col2"]. <br>
+Alternatively, columns can be specified in a string format, <br>
+where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])</dd>
 <dt><strong><code>print_impact</code></strong></dt>
 <dd>(Default value = False)</dd>
 </dl>
@@ -1155,15 +1372,21 @@ all - to include all numerical columns (excluding drop_cols) (Default value = 'a
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def nonzeroCount_computation(idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
+<pre><code class="python">def nonzeroCount_computation(spark, idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
     &#34;&#34;&#34;
 
     Args:
+      spark: Spark Session
       idf: Input Dataframe
-      list_of_cols: List of Numerical columns for computing nonZero rows.\
-    (List or string of col names separated by |),\
-    all - to include all numerical columns (excluding drop_cols) (Default value = &#39;all&#39;)
-      drop_cols: List of columns to be dropped (list or string of col names separated by |) (Default value = [])
+      list_of_cols: List of numerical columns to analyse e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. &lt;br&gt;\
+    &#34;all&#34; can be passed to include all numerical columns for analysis. &lt;br&gt;\
+    Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in &lt;br&gt;\
+    drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = &#39;all&#39;)
+      drop_cols: List of columns to be dropped e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. (Default value = [])
       print_impact:  (Default value = False)
 
     Returns:
@@ -1178,7 +1401,7 @@ all - to include all numerical columns (excluding drop_cols) (Default value = 'a
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split(&#39;|&#39;)]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in num_cols for x in list_of_cols):
         raise TypeError(&#39;Invalid input for Column(s)&#39;)
@@ -1201,20 +1424,27 @@ all - to include all numerical columns (excluding drop_cols) (Default value = 'a
     return odf</code></pre>
 </details>
 </dd>
-<dt id="com.mw.ds.data_analyzer.stats_generator.uniqueCount_computation"><code class="name flex">
-<span>def <span class="ident">uniqueCount_computation</span></span>(<span>idf, list_of_cols='all', drop_cols=[], print_impact=False)</span>
+<dt id="anovos.data_analyzer.stats_generator.uniqueCount_computation"><code class="name flex">
+<span>def <span class="ident">uniqueCount_computation</span></span>(<span>spark, idf, list_of_cols='all', drop_cols=[], print_impact=False)</span>
 </code></dt>
 <dd>
 <div class="desc"><h2 id="args">Args</h2>
 <dl>
+<dt><strong><code>spark</code></strong></dt>
+<dd>Spark Session</dd>
 <dt><strong><code>idf</code></strong></dt>
 <dd>Input Dataframe</dd>
 <dt><strong><code>list_of_cols</code></strong></dt>
-<dd>List of Distrete (Categorical + Integer) column for cardinality computation.
-List or string of col names separated by |.
-all - to include all valid columns (excluding drop_cols) (Default value = 'all')</dd>
+<dd>List of Discrete (Categorical + Integer) columns to analyse e.g., ["col1","col2"]. <br>
+Alternatively, columns can be specified in a string format, <br>
+where different column names are separated by pipe delimiter “|” e.g., "col1|col2". <br>
+"all" can be passed to include all discrete columns for analysis. <br>
+Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in <br>
+drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = 'all')</dd>
 <dt><strong><code>drop_cols</code></strong></dt>
-<dd>List of columns to be dropped (list or string of col names separated by |) (Default value = [])</dd>
+<dd>List of columns to be dropped e.g., ["col1","col2"]. <br>
+Alternatively, columns can be specified in a string format, <br>
+where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])</dd>
 <dt><strong><code>print_impact</code></strong></dt>
 <dd>(Default value = False)</dd>
 </dl>
@@ -1224,15 +1454,21 @@ all - to include all valid columns (excluding drop_cols) (Default value = 'all')
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def uniqueCount_computation(idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
+<pre><code class="python">def uniqueCount_computation(spark, idf, list_of_cols=&#39;all&#39;, drop_cols=[], print_impact=False):
     &#34;&#34;&#34;
 
     Args:
+      spark: Spark Session
       idf: Input Dataframe
-      list_of_cols: List of Distrete (Categorical + Integer) column for cardinality computation.\
-    List or string of col names separated by |.\
-    all - to include all valid columns (excluding drop_cols) (Default value = &#39;all&#39;)
-      drop_cols: List of columns to be dropped (list or string of col names separated by |) (Default value = [])
+      list_of_cols: List of Discrete (Categorical + Integer) columns to analyse e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. &lt;br&gt;\
+    &#34;all&#34; can be passed to include all discrete columns for analysis. &lt;br&gt;\
+    Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in &lt;br&gt;\
+    drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = &#39;all&#39;)
+      drop_cols: List of columns to be dropped e.g., [&#34;col1&#34;,&#34;col2&#34;]. &lt;br&gt;\
+    Alternatively, columns can be specified in a string format, &lt;br&gt;\
+    where different column names are separated by pipe delimiter “|” e.g., &#34;col1|col2&#34;. (Default value = [])
       print_impact:  (Default value = False)
 
     Returns:
@@ -1249,7 +1485,7 @@ all - to include all valid columns (excluding drop_cols) (Default value = 'all')
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split(&#39;|&#39;)]
 
-    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError(&#39;Invalid input for Column(s)&#39;)
@@ -1275,22 +1511,22 @@ all - to include all valid columns (excluding drop_cols) (Default value = 'all')
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="com.mw.ds.data_analyzer" href="index.html">com.mw.ds.data_analyzer</a></code></li>
+<li><code><a title="anovos.data_analyzer" href="index.html">anovos.data_analyzer</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="com.mw.ds.data_analyzer.stats_generator.global_summary" href="#com.mw.ds.data_analyzer.stats_generator.global_summary">global_summary</a></code></li>
-<li><code><a title="com.mw.ds.data_analyzer.stats_generator.measures_of_cardinality" href="#com.mw.ds.data_analyzer.stats_generator.measures_of_cardinality">measures_of_cardinality</a></code></li>
-<li><code><a title="com.mw.ds.data_analyzer.stats_generator.measures_of_centralTendency" href="#com.mw.ds.data_analyzer.stats_generator.measures_of_centralTendency">measures_of_centralTendency</a></code></li>
-<li><code><a title="com.mw.ds.data_analyzer.stats_generator.measures_of_counts" href="#com.mw.ds.data_analyzer.stats_generator.measures_of_counts">measures_of_counts</a></code></li>
-<li><code><a title="com.mw.ds.data_analyzer.stats_generator.measures_of_dispersion" href="#com.mw.ds.data_analyzer.stats_generator.measures_of_dispersion">measures_of_dispersion</a></code></li>
-<li><code><a title="com.mw.ds.data_analyzer.stats_generator.measures_of_percentiles" href="#com.mw.ds.data_analyzer.stats_generator.measures_of_percentiles">measures_of_percentiles</a></code></li>
-<li><code><a title="com.mw.ds.data_analyzer.stats_generator.measures_of_shape" href="#com.mw.ds.data_analyzer.stats_generator.measures_of_shape">measures_of_shape</a></code></li>
-<li><code><a title="com.mw.ds.data_analyzer.stats_generator.missingCount_computation" href="#com.mw.ds.data_analyzer.stats_generator.missingCount_computation">missingCount_computation</a></code></li>
-<li><code><a title="com.mw.ds.data_analyzer.stats_generator.mode_computation" href="#com.mw.ds.data_analyzer.stats_generator.mode_computation">mode_computation</a></code></li>
-<li><code><a title="com.mw.ds.data_analyzer.stats_generator.nonzeroCount_computation" href="#com.mw.ds.data_analyzer.stats_generator.nonzeroCount_computation">nonzeroCount_computation</a></code></li>
-<li><code><a title="com.mw.ds.data_analyzer.stats_generator.uniqueCount_computation" href="#com.mw.ds.data_analyzer.stats_generator.uniqueCount_computation">uniqueCount_computation</a></code></li>
+<li><code><a title="anovos.data_analyzer.stats_generator.global_summary" href="#anovos.data_analyzer.stats_generator.global_summary">global_summary</a></code></li>
+<li><code><a title="anovos.data_analyzer.stats_generator.measures_of_cardinality" href="#anovos.data_analyzer.stats_generator.measures_of_cardinality">measures_of_cardinality</a></code></li>
+<li><code><a title="anovos.data_analyzer.stats_generator.measures_of_centralTendency" href="#anovos.data_analyzer.stats_generator.measures_of_centralTendency">measures_of_centralTendency</a></code></li>
+<li><code><a title="anovos.data_analyzer.stats_generator.measures_of_counts" href="#anovos.data_analyzer.stats_generator.measures_of_counts">measures_of_counts</a></code></li>
+<li><code><a title="anovos.data_analyzer.stats_generator.measures_of_dispersion" href="#anovos.data_analyzer.stats_generator.measures_of_dispersion">measures_of_dispersion</a></code></li>
+<li><code><a title="anovos.data_analyzer.stats_generator.measures_of_percentiles" href="#anovos.data_analyzer.stats_generator.measures_of_percentiles">measures_of_percentiles</a></code></li>
+<li><code><a title="anovos.data_analyzer.stats_generator.measures_of_shape" href="#anovos.data_analyzer.stats_generator.measures_of_shape">measures_of_shape</a></code></li>
+<li><code><a title="anovos.data_analyzer.stats_generator.missingCount_computation" href="#anovos.data_analyzer.stats_generator.missingCount_computation">missingCount_computation</a></code></li>
+<li><code><a title="anovos.data_analyzer.stats_generator.mode_computation" href="#anovos.data_analyzer.stats_generator.mode_computation">mode_computation</a></code></li>
+<li><code><a title="anovos.data_analyzer.stats_generator.nonzeroCount_computation" href="#anovos.data_analyzer.stats_generator.nonzeroCount_computation">nonzeroCount_computation</a></code></li>
+<li><code><a title="anovos.data_analyzer.stats_generator.uniqueCount_computation" href="#anovos.data_analyzer.stats_generator.uniqueCount_computation">uniqueCount_computation</a></code></li>
 </ul>
 </li>
 </ul>

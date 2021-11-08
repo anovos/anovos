@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
-<title>com.mw.ds.shared.utils API documentation</title>
+<title>anovos.shared.utils API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -19,7 +19,7 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>com.mw.ds.shared.utils</code></h1>
+<h1 class="title">Module <code>anovos.shared.utils</code></h1>
 </header>
 <section id="section-intro">
 <details class="source">
@@ -28,7 +28,6 @@
 </summary>
 <pre><code class="python">from itertools import chain
 
-from com.mw.ds.shared.spark import *
 from pyspark.sql import functions as F
 
 
@@ -54,7 +53,7 @@ def transpose_dataframe(idf, fixed_col):
 
     Args:
       idf: Input Dataframe
-      fixed_col: Values in this column will be converted into columns as header.\
+      fixed_col: Values in this column will be converted into columns as header.&lt;br&gt;\
     Ideally all values should be unique
 
     Returns:
@@ -73,7 +72,8 @@ def attributeType_segregation(idf):
       idf: Input Dataframe
 
     Returns:
-      3 lists - numerical, categorical, others columns
+      (list1, list2, list3) &lt;br&gt;\
+      3 lists - each corresponding to numerical, categorical, and others columns
 
     &#34;&#34;&#34;
     cat_cols = []
@@ -101,7 +101,42 @@ def get_dtype(idf, col):
       data type
 
     &#34;&#34;&#34;
-    return [dtype for name, dtype in idf.dtypes if name == col][0]</code></pre>
+    return [dtype for name, dtype in idf.dtypes if name == col][0]
+
+
+def ends_with(string, end_str=&#34;/&#34;):
+    &#34;&#34;&#34;
+
+    Args:
+      string: s3:mw-bucket&#34;
+      end_str: return: &#34;s3:mw-bucket/&#34; (Default value = &#34;/&#34;)
+
+    Returns:
+      s3:mw-bucket/&#34;
+
+    &#34;&#34;&#34;
+    string = str(string)
+    if string.endswith(end_str):
+        return string
+    return string + end_str
+
+
+def pairwise_reduce(op, x):
+    &#34;&#34;&#34;
+
+    Args:
+      op: 
+      x: 
+
+    Returns:
+
+    &#34;&#34;&#34;
+    while len(x) &gt; 1:
+        v = [op(i, j) for i, j in zip(x[::2], x[1::2])]
+        if len(x) &gt; 1 and len(x) % 2 == 1:
+            v[-1] = op(v[-1], x[-1])
+        x = v
+    return x[0]</code></pre>
 </details>
 </section>
 <section>
@@ -111,7 +146,7 @@ def get_dtype(idf, col):
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="com.mw.ds.shared.utils.attributeType_segregation"><code class="name flex">
+<dt id="anovos.shared.utils.attributeType_segregation"><code class="name flex">
 <span>def <span class="ident">attributeType_segregation</span></span>(<span>idf)</span>
 </code></dt>
 <dd>
@@ -121,7 +156,8 @@ def get_dtype(idf, col):
 <dd>Input Dataframe</dd>
 </dl>
 <h2 id="returns">Returns</h2>
-<p>3 lists - numerical, categorical, others columns</p></div>
+<p>(list1, list2, list3) <br>
+3 lists - each corresponding to numerical, categorical, and others columns</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -133,7 +169,8 @@ def get_dtype(idf, col):
       idf: Input Dataframe
 
     Returns:
-      3 lists - numerical, categorical, others columns
+      (list1, list2, list3) &lt;br&gt;\
+      3 lists - each corresponding to numerical, categorical, and others columns
 
     &#34;&#34;&#34;
     cat_cols = []
@@ -150,7 +187,41 @@ def get_dtype(idf, col):
     return num_cols, cat_cols, other_cols</code></pre>
 </details>
 </dd>
-<dt id="com.mw.ds.shared.utils.flatten_dataframe"><code class="name flex">
+<dt id="anovos.shared.utils.ends_with"><code class="name flex">
+<span>def <span class="ident">ends_with</span></span>(<span>string, end_str='/')</span>
+</code></dt>
+<dd>
+<div class="desc"><h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>string</code></strong></dt>
+<dd>s3:mw-bucket"</dd>
+<dt><strong><code>end_str</code></strong></dt>
+<dd>return: "s3:mw-bucket/" (Default value = "/")</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>s3:mw-bucket/"</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def ends_with(string, end_str=&#34;/&#34;):
+    &#34;&#34;&#34;
+
+    Args:
+      string: s3:mw-bucket&#34;
+      end_str: return: &#34;s3:mw-bucket/&#34; (Default value = &#34;/&#34;)
+
+    Returns:
+      s3:mw-bucket/&#34;
+
+    &#34;&#34;&#34;
+    string = str(string)
+    if string.endswith(end_str):
+        return string
+    return string + end_str</code></pre>
+</details>
+</dd>
+<dt id="anovos.shared.utils.flatten_dataframe"><code class="name flex">
 <span>def <span class="ident">flatten_dataframe</span></span>(<span>idf, fixed_cols)</span>
 </code></dt>
 <dd>
@@ -184,7 +255,7 @@ def get_dtype(idf, col):
     return odf</code></pre>
 </details>
 </dd>
-<dt id="com.mw.ds.shared.utils.get_dtype"><code class="name flex">
+<dt id="anovos.shared.utils.get_dtype"><code class="name flex">
 <span>def <span class="ident">get_dtype</span></span>(<span>idf, col)</span>
 </code></dt>
 <dd>
@@ -215,7 +286,41 @@ def get_dtype(idf, col):
     return [dtype for name, dtype in idf.dtypes if name == col][0]</code></pre>
 </details>
 </dd>
-<dt id="com.mw.ds.shared.utils.transpose_dataframe"><code class="name flex">
+<dt id="anovos.shared.utils.pairwise_reduce"><code class="name flex">
+<span>def <span class="ident">pairwise_reduce</span></span>(<span>op, x)</span>
+</code></dt>
+<dd>
+<div class="desc"><h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>op</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>x</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<p>Returns:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def pairwise_reduce(op, x):
+    &#34;&#34;&#34;
+
+    Args:
+      op: 
+      x: 
+
+    Returns:
+
+    &#34;&#34;&#34;
+    while len(x) &gt; 1:
+        v = [op(i, j) for i, j in zip(x[::2], x[1::2])]
+        if len(x) &gt; 1 and len(x) % 2 == 1:
+            v[-1] = op(v[-1], x[-1])
+        x = v
+    return x[0]</code></pre>
+</details>
+</dd>
+<dt id="anovos.shared.utils.transpose_dataframe"><code class="name flex">
 <span>def <span class="ident">transpose_dataframe</span></span>(<span>idf, fixed_col)</span>
 </code></dt>
 <dd>
@@ -224,7 +329,7 @@ def get_dtype(idf, col):
 <dt><strong><code>idf</code></strong></dt>
 <dd>Input Dataframe</dd>
 <dt><strong><code>fixed_col</code></strong></dt>
-<dd>Values in this column will be converted into columns as header.
+<dd>Values in this column will be converted into columns as header.<br>
 Ideally all values should be unique</dd>
 </dl>
 <h2 id="returns">Returns</h2>
@@ -238,7 +343,7 @@ Ideally all values should be unique</dd>
 
     Args:
       idf: Input Dataframe
-      fixed_col: Values in this column will be converted into columns as header.\
+      fixed_col: Values in this column will be converted into columns as header.&lt;br&gt;\
     Ideally all values should be unique
 
     Returns:
@@ -263,15 +368,17 @@ Ideally all values should be unique</dd>
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="com.mw.ds.shared" href="index.html">com.mw.ds.shared</a></code></li>
+<li><code><a title="anovos.shared" href="index.html">anovos.shared</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="com.mw.ds.shared.utils.attributeType_segregation" href="#com.mw.ds.shared.utils.attributeType_segregation">attributeType_segregation</a></code></li>
-<li><code><a title="com.mw.ds.shared.utils.flatten_dataframe" href="#com.mw.ds.shared.utils.flatten_dataframe">flatten_dataframe</a></code></li>
-<li><code><a title="com.mw.ds.shared.utils.get_dtype" href="#com.mw.ds.shared.utils.get_dtype">get_dtype</a></code></li>
-<li><code><a title="com.mw.ds.shared.utils.transpose_dataframe" href="#com.mw.ds.shared.utils.transpose_dataframe">transpose_dataframe</a></code></li>
+<li><code><a title="anovos.shared.utils.attributeType_segregation" href="#anovos.shared.utils.attributeType_segregation">attributeType_segregation</a></code></li>
+<li><code><a title="anovos.shared.utils.ends_with" href="#anovos.shared.utils.ends_with">ends_with</a></code></li>
+<li><code><a title="anovos.shared.utils.flatten_dataframe" href="#anovos.shared.utils.flatten_dataframe">flatten_dataframe</a></code></li>
+<li><code><a title="anovos.shared.utils.get_dtype" href="#anovos.shared.utils.get_dtype">get_dtype</a></code></li>
+<li><code><a title="anovos.shared.utils.pairwise_reduce" href="#anovos.shared.utils.pairwise_reduce">pairwise_reduce</a></code></li>
+<li><code><a title="anovos.shared.utils.transpose_dataframe" href="#anovos.shared.utils.transpose_dataframe">transpose_dataframe</a></code></li>
 </ul>
 </li>
 </ul>
