@@ -63,7 +63,7 @@ def correlation_matrix(spark, idf, list_of_cols='all', drop_cols=[], stats_uniqu
     odf_pd = spark_phik_matrix_from_hist2d_dict(spark.sparkContext, grids)
     odf_pd['attribute'] = odf_pd.index
     list_of_cols.sort()
-    odf = sqlContext.createDataFrame(odf_pd)\
+    odf = spark.createDataFrame(odf_pd)\
             .select(['attribute'] + list_of_cols).orderBy('attribute')
 
     if print_impact:
