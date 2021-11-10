@@ -46,7 +46,7 @@ def save_stats(spark, idf, master_path, function_name, reread=False, run_type="l
         output = subprocess.check_output(['bash', '-c', bash_cmd])
 
     if reread:
-        odf = spark.read.csv(ends_with(local_path) + function_name + ".csv", header=True, inferSchema=True)
+        odf = spark.read.csv(ends_with(master_path) + function_name + ".csv", header=True, inferSchema=True)
         return odf
 
 
