@@ -15,6 +15,7 @@ clean: clean-build clean-pyc clean-test
 
 clean-build:
 	rm -rf Dockerfile
+	rm -rf build_run_docker.sh
 	rm -fr dist/
 
 clean-pyc:
@@ -36,6 +37,7 @@ test:
 
 build: clean
 	cp ./docker_build/Dockerfile ./Dockerfile
+	cp ./docker_build/build_run_docker.sh ./build_run_docker.sh
 	rm -rf ./dist && mkdir ./dist && mkdir ./dist/data && mkdir ./dist/output
 	cp ./src/main/main.py ./dist
 	cp ./config/configs.yaml ./dist
