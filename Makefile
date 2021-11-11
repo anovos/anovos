@@ -43,5 +43,4 @@ build: clean
 	cd ./dist && tar -cvzf anovos.tar.gz ./anovos
 	cp -rf ./data/income_dataset ./dist/data/income_dataset
 	cp -rf ./data/metric_dictionary.csv ./dist/data/metric_dictionary.csv
-	cp ./bin/remove_overheads.sh ./dist
 	cp ./bin/spark-submit.sh ./dist
