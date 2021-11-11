@@ -52,31 +52,33 @@ def save(data, write_configs, folder_name, reread=False):
             return data
 
 
-def stats_args(all_configs, func):
-    stats_configs = all_configs.get('stats_generator', None)
-    write_configs = all_configs.get('write_stats', None)
+def stats_args(all_configs,func):
+    
+    stats_configs = all_configs.get('stats_generator',None)
+    write_configs = all_configs.get('write_stats',None)
     report_inputPath = ''
-    report_configs = all_configs.get('report_preprocessing', None)
+    report_configs = all_configs.get('report_preprocessing',None)
     if report_configs != None:
         if 'master_path' not in report_configs:
             raise TypeError('Master path missing for saving report statistics')
         else:
             report_inputPath = report_configs.get('master_path')
-
+    
+    output = {}
     if stats_configs:
         mainfunc_to_args = {'biasedness_detection': ['stats_mode'],
-                            'IDness_detection': ['stats_unique'],
-                            'outlier_detection': ['stats_unique'],
-                            'correlation_matrix': ['stats_unique'],
-                            'nullColumns_detection': ['stats_unique', 'stats_mode', 'stats_missing'],
-                            'variable_clustering': ['stats_unique', 'stats_mode']}
-        args_to_statsfunc = {'stats_unique': 'measures_of_cardinality', 'stats_mode': 'measures_of_centralTendency',
-                             'stats_missing': 'measures_of_counts'}
-        output = {}
-        for arg in mainfunc_to_args.get(func, []):
+                     'IDness_detection': ['stats_unique'],
+                     'outlier_detection': ['stats_unique'],
+                     'correlation_matrix': ['stats_unique'],
+                     'nullColumns_detection': ['stats_unique','stats_mode','stats_missing'],
+                     'variable_clustering':['stats_unique','stats_mode']}
+        args_to_statsfunc = {'stats_unique':'measures_of_cardinality','stats_mode': 'measures_of_centralTendency', 
+                             'stats_missing':'measures_of_counts'}
+        
+        for arg in mainfunc_to_args.get(func,[]):
             if report_inputPath:
-                output[arg] = {'file_path': (report_inputPath + "/" + args_to_statsfunc[arg] + ".csv"),
-                               'file_type': 'csv', 'file_configs': {'header': True, 'inferSchema': True}}
+                output[arg]= {'file_path': (report_inputPath + "/" + args_to_statsfunc[arg] + ".csv"),
+                              'file_type': 'csv', 'file_configs': {'header':True, 'inferSchema':True}}
             else:
                 if write_configs:
                     read = copy.deepcopy(write_configs)
@@ -86,11 +88,11 @@ def stats_args(all_configs, func):
 
                     if read['file_type'] == 'csv':
                         read['file_configs']['inferSchema'] = True
-
+            
                     read['file_path'] = read['file_path'] + "/data_analyzer/stats_generator/" + args_to_statsfunc[arg]
-                    output[arg] = read
-
-        return output
+                    output[arg]= read
+                    
+    return output
 
 
 def main(all_configs, local_or_emr):
