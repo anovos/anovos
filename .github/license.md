@@ -194,6 +194,10 @@ The Anovos project is licensed under the terms of the [Apache 2.0 License](http:
 
 However, Anovos includes several third-party Open-Source libraries, which are licensed under their own respective Open-Source licenses.
 
+### Spark
+License: Apache 2.0 License
+    [https://github.com/apache/spark/blob/master/LICENSE](https://github.com/apache/spark/blob/master/LICENSE)
+
 ### Pandas
 
 License: BSD 3-Clause License [https://github.com/pandas-dev/pandas/blob/master/LICENSE](https://github.com/pandas-dev/pandas/blob/master/LICENSE)
