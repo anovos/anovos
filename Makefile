@@ -14,10 +14,13 @@ default: clean dev_deps deps build test
 clean: clean-build clean-pyc clean-test
 
 clean-build:
-	rm -rf Dockerfile
-	rm -rf build_run_docker.sh
+	rm -rf Dockerfile*
+	rm -rf create_anovos*
 	rm -rf dist/
 	rm -rf ml_anovos_report.html
+	rm -rf ./*.whl
+	rm -rf ./docker-stacks
+
 clean-pyc:
 	find . -name '*.pyc' -exec rm -f {} +
 	find . -name '*.pyo' -exec rm -f {} +
@@ -36,8 +39,8 @@ test:
 	coverage html
 
 build: clean
-	cp ./docker_build/Dockerfile ./Dockerfile
-	cp ./docker_build/build_run_docker.sh ./build_run_docker.sh
+	cp ./docker_build/* ./
+	cp ./bin/*.whl ./
 	rm -rf ./dist && mkdir ./dist && mkdir ./dist/data && mkdir ./dist/output
 	cp ./src/main/main.py ./dist
 	cp ./config/configs.yaml ./dist
