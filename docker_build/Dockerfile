@@ -38,7 +38,6 @@ ADD dist/anovos.tar.gz .
 ADD dist/main.py .
 ADD config/configs.yaml .
 ADD data/income_dataset ./data/income_dataset
-ADD data/data_report/stability ./output/stability
+ADD data/metric_dictionary.csv ./data/metric_dictionary.csv
 ADD bin/spark-submit_docker.sh .
-ADD bin/remove_overheads.sh .
 CMD ["./spark-submit_docker.sh"]

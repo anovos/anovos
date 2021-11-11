@@ -16,18 +16,18 @@ clean: clean-build clean-pyc clean-test
 clean-build:
 	rm -rf Dockerfile
 	rm -rf build_run_docker.sh
-	rm -fr dist/
-
+	rm -rf dist/
+	rm -rf ml_anovos_report.html
 clean-pyc:
 	find . -name '*.pyc' -exec rm -f {} +
 	find . -name '*.pyo' -exec rm -f {} +
 	find . -name '*~' -exec rm -f {} +
-	find . -name '__pycache__' -exec rm -fr {} +
+	find . -name '__pycache__' -exec rm -rf {} +
 
 clean-test:
-	rm -fr .tox/
+	rm -rf .tox/
 	rm -f .coverage
-	rm -fr htmlcov/
+	rm -rf htmlcov/
 	rm -rf ./data/tmp/output 
 
 test:
@@ -42,7 +42,6 @@ build: clean
 	cp ./src/main/main.py ./dist
 	cp ./config/configs.yaml ./dist
 	cp -rf ./src/main/anovos ./dist/anovos
-	cp -rf ./data/data_report/stability/ ./dist/output/stability/
 	cd ./dist && zip -r anovos.zip ./anovos
 	cd ./dist && tar -cvzf anovos.tar.gz ./anovos
 	cp -rf ./data/income_dataset ./dist/data/income_dataset
