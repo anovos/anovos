@@ -1,7 +1,0 @@
-metric,value
-catcols_name,"workclass, education, marital_status, occupation, relationship, race, sex, native-country, income"
-numcols_name,"age, fnlwgt, education_num, capital-gain, capital-loss, hours-per-week, age2"
-rows_count,81404
-columns_count,16
-catcols_count,9
-numcols_count,7
