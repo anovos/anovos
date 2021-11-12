@@ -2,7 +2,9 @@ import pyspark
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
 from anovos.data_transformer.transformers import outlier_categories, imputation_MMM, attribute_binning
+from anovos.data_analyzer.stats_generator import uniqueCount_computation
 from anovos.shared.utils import attributeType_segregation, ends_with
+from anovos.data_ingest.data_ingest import read_dataset
 from pyspark.sql.window import Window
 import warnings
 from pathlib import Path
@@ -227,7 +229,7 @@ def plot_comparative_drift(spark, idf, source, col, cutoffs_path):
 
 def charts_to_objects(spark, idf, list_of_cols='all', drop_cols=[], label_col=None, event_label=1,
                       bin_method="equal_range", bin_size=10, coverage=1.0,
-                      drift_detector=False, source_path="NA", master_path='.', run_type="local"):
+                      drift_detector=False, source_path="NA", master_path='.', stats_unique={}, run_type="local"):
     """
     :param spark: Spark Session
     :param idf: Input dataframe
@@ -255,7 +257,14 @@ def charts_to_objects(spark, idf, list_of_cols='all', drop_cols=[], label_col=No
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
 
-    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
+    if stats_unique == {}:
+        remove_cols = uniqueCount_computation(spark, idf, list_of_cols).where(F.col('unique_values') < 2) \
+            .select('attribute').rdd.flatMap(lambda x: x).collect()
+    else:
+        remove_cols = read_dataset(spark, **stats_unique).where(F.col('unique_values') < 2) \
+            .select('attribute').rdd.flatMap(lambda x: x).collect()
+
+    list_of_cols = list(set([e for e in list_of_cols if e not in (drop_cols + remove_cols)]))
 
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError('Invalid input for Column(s)')

@@ -52,33 +52,33 @@ def save(data, write_configs, folder_name, reread=False):
             return data
 
 
-def stats_args(all_configs,func):
-    
-    stats_configs = all_configs.get('stats_generator',None)
-    write_configs = all_configs.get('write_stats',None)
+def stats_args(all_configs, func):
+    stats_configs = all_configs.get('stats_generator', None)
+    write_configs = all_configs.get('write_stats', None)
     report_inputPath = ''
-    report_configs = all_configs.get('report_preprocessing',None)
+    report_configs = all_configs.get('report_preprocessing', None)
     if report_configs != None:
         if 'master_path' not in report_configs:
             raise TypeError('Master path missing for saving report statistics')
         else:
             report_inputPath = report_configs.get('master_path')
-    
+
     output = {}
     if stats_configs:
         mainfunc_to_args = {'biasedness_detection': ['stats_mode'],
-                     'IDness_detection': ['stats_unique'],
-                     'outlier_detection': ['stats_unique'],
-                     'correlation_matrix': ['stats_unique'],
-                     'nullColumns_detection': ['stats_unique','stats_mode','stats_missing'],
-                     'variable_clustering':['stats_unique','stats_mode']}
-        args_to_statsfunc = {'stats_unique':'measures_of_cardinality','stats_mode': 'measures_of_centralTendency', 
-                             'stats_missing':'measures_of_counts'}
-        
-        for arg in mainfunc_to_args.get(func,[]):
+                            'IDness_detection': ['stats_unique'],
+                            'outlier_detection': ['stats_unique'],
+                            'correlation_matrix': ['stats_unique'],
+                            'nullColumns_detection': ['stats_unique', 'stats_mode', 'stats_missing'],
+                            'variable_clustering': ['stats_unique', 'stats_mode'],
+                            'charts_to_objects': ['stats_unique']}
+        args_to_statsfunc = {'stats_unique': 'measures_of_cardinality', 'stats_mode': 'measures_of_centralTendency',
+                             'stats_missing': 'measures_of_counts'}
+
+        for arg in mainfunc_to_args.get(func, []):
             if report_inputPath:
-                output[arg]= {'file_path': (report_inputPath + "/" + args_to_statsfunc[arg] + ".csv"),
-                              'file_type': 'csv', 'file_configs': {'header':True, 'inferSchema':True}}
+                output[arg] = {'file_path': (report_inputPath + "/" + args_to_statsfunc[arg] + ".csv"),
+                               'file_type': 'csv', 'file_configs': {'header': True, 'inferSchema': True}}
             else:
                 if write_configs:
                     read = copy.deepcopy(write_configs)
@@ -88,16 +88,15 @@ def stats_args(all_configs,func):
 
                     if read['file_type'] == 'csv':
                         read['file_configs']['inferSchema'] = True
-            
+
                     read['file_path'] = read['file_path'] + "/data_analyzer/stats_generator/" + args_to_statsfunc[arg]
-                    output[arg]= read
-                    
+                    output[arg] = read
+
     return output
 
 
 def main(all_configs, local_or_emr):
     start_main = timeit.default_timer()
-
     df = ETL(all_configs.get('input_dataset'))
 
     write_main = all_configs.get('write_main', None)
@@ -248,7 +247,8 @@ def main(all_configs, local_or_emr):
                     if (subkey == 'charts_to_objects') & (value != None):
                         start = timeit.default_timer()
                         f = getattr(report_preprocessing, subkey)
-                        f(spark, df, **value, master_path=report_inputPath, run_type=local_or_emr)
+                        extra_args = stats_args(all_configs, subkey)
+                        f(spark, df, **value, **extra_args, master_path=report_inputPath, run_type=local_or_emr)
                         end = timeit.default_timer()
                         print(key, subkey, ", execution time (in secs) =", round(end - start, 4))
 

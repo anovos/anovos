@@ -1118,8 +1118,8 @@ def data_drift_stability(master_path, ds_ind, id_col, drift_threshold_model, all
     return report
 
 
-def anovos_report(master_path, id_col, label_col, corr_threshold, iv_threshold, drift_threshold_model, dataDict_path,
-                  metricDict_path, run_type, final_report_path):
+def anovos_report(master_path, id_col='', label_col='', corr_threshold=0.4, iv_threshold=0.02, drift_threshold_model=0.1, dataDict_path=".",
+                  metricDict_path=".", run_type="local", final_report_path="."):
     """
 	:param master_path: Path containing the input files.
 	:param id_col: ID column
