@@ -1,8 +1,0 @@
-feature,skewness,kurtosis
-hours-per-week,-0.0616,1.9973
-education_num,-0.3132,0.6278
-capital-gain,11.8008,149.9328
-capital-loss,4.5441,19.9418
-fnlwgt,1.4355,5.9168
-age2,0.5149,-0.344
-age,0.5149,-0.344
