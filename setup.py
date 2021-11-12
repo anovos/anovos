@@ -17,9 +17,9 @@ setup(
     install_requires=INSTALL_PACKAGES,
     version='0.1',
     url='https://github.com/anovos/anovos.git',
-    author='mobilewalla',
-    author_email='hello@anovos.ai',
-    keywords=['machine learning','open source','feature engineering'],
+    author='Team Anovos',
+    author_email='info@anovos.ai',
+    keywords=['machine learning','open source','feature engineering','analytics'],
     tests_require=[
         'pytest',
         'coverage'
