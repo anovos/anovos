@@ -1,7 +1,6 @@
 <p align="center">
-  <img src="https://mobilewalla-anovos.s3.amazonaws.com/anovos.png" width="400px" alt="Anovos">
+  <img src="https://mobilewalla-anovos.s3.amazonaws.com/images/anovos.png" width="300px" alt="Anovos">
 </p>
-
 
 <!--
 [![Build Status](https://travis-ci.org/mara/mara-pipelines.svg?branch=master)](https://travis-ci.org/mara/mara-pipelines)
@@ -32,6 +31,12 @@ To install ANOVOS package via git, please execute the following command:
 pip3 install "git+https://github.com/anovos/anovos.git"
 ```
 
+# Architecture
+
+<p align="center">
+  <img src="https://mobilewalla-anovos.s3.amazonaws.com/images/anovos_architecture.png" width="800px" alt="Anovos Architecture Diagram">
+</p>
+
 # Getting Started
 
 Once installed, packages can be imported and the required functionality can be called in the user flow in any application or notebook. <br/>
@@ -39,7 +44,8 @@ Refer to the following links to get started:
 
 - [quick-start guide](https://github.com/anovos/anovos/blob/main/notebooks/anovos_quickstart_guide.ipynb)
 - [example notebooks](https://github.com/anovos/anovos/tree/main/notebooks)
-- [documentation]()
+- [documentation](https://docs.anovos.ai)
+
 
 # ANOVOS Demo
 
@@ -88,7 +94,7 @@ Note: Kindly ensure the machine has ~15 GB free space atleast when running using
 2. Set docker settings to use atleast 8GB memory and 4+ cores. Below image shows setting docker settings on Docker Desktop:
 
 <p align="center">
-  <img src="figures/docker_desktop_settings.png" width="600px" title="Docker Desktop Settings">
+  <img src="https://mobilewalla-anovos.s3.amazonaws.com/images/docker_desktop_settings.png" width="800px" title="Docker Desktop Settings">
 </p>
 
 3. Ensure dockers is successfully installed by executing the following commands to check docker image and docker container respectively:
@@ -120,7 +126,7 @@ To run ANOVOS in notebooks via docker,
 (Note: As it is running inside container, URL has to be copied and opened in browser manually)
 
 <p align="center">
-  <img src="figures/docker_notebook_URL.png" width="600px" title="Docker Notebook URL">
+  <img src="https://mobilewalla-anovos.s3.amazonaws.com/images/docker_notebook_URL.png" width="800px" title="Docker Notebook URL">
 </p>
 
 # Running on Custom Dataset
@@ -133,7 +139,7 @@ Kindly refer config files created for the [sales dataset](https://github.com/ano
 
 # Documentation
 
-Please find the detailed documentation of ANOVOS [here]().
+Please find the detailed documentation of ANOVOS [here](https://docs.anovos.ai).
 
 # Reference Links
 
