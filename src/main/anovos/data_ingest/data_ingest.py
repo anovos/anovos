@@ -1,7 +1,7 @@
 # coding=utf-8
+from anovos.shared.utils import pairwise_reduce
 from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
-from anovos.shared.utils import pairwise_reduce
 
 
 def read_dataset(spark, file_path, file_type, file_configs={}):
@@ -150,7 +150,7 @@ def rename_column(idf, list_of_cols, list_of_newcols, print_impact=False):
         list_of_cols = [x.strip() for x in list_of_cols.split('|')]
     if isinstance(list_of_newcols, str):
         list_of_newcols = [x.strip() for x in list_of_newcols.split('|')]
-    
+
     mapping = dict(zip(list_of_cols, list_of_newcols))
     odf = idf.select([F.col(i).alias(mapping.get(i, i)) for i in idf.columns])
 

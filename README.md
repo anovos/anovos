@@ -9,7 +9,7 @@
 [![Slack Status](https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&style=social)](https://communityinviter.com/apps/mara-users/public-invite)
 -->
 
-Anovos is a an open source project, built by data scientist for the data science community, that brings automation to the feature engineering process. 
+Anovos is a an open source project, built by data scientists for the data science community, that brings automation to the feature engineering process. 
 
 By rethinking ingestion and transformation, and including deeper analytics, drift identification, and stability analysis, Anovos improves productivity and helps data scientists build more resilient, higher performing models.
 
@@ -32,6 +32,8 @@ pip3 install "git+https://github.com/anovos/anovos.git"
 ```
 
 # Architecture
+
+Following diagram shows End to end workflow of ANOVOS. 
 
 <p align="center">
   <img src="https://mobilewalla-anovos.s3.amazonaws.com/images/anovos_architecture.png" width="800px" alt="Anovos Architecture Diagram">

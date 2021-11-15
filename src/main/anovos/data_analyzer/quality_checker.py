@@ -139,7 +139,8 @@ def nullRows_detection(spark, idf, list_of_cols='all', drop_cols=[], treatment=F
     return odf, odf_print
 
 
-def nullColumns_detection(spark, idf, list_of_cols='missing', drop_cols=[], treatment=False, treatment_method='row_removal',
+def nullColumns_detection(spark, idf, list_of_cols='missing', drop_cols=[], treatment=False,
+                          treatment_method='row_removal',
                           treatment_configs={}, stats_missing={}, stats_unique={}, stats_mode={}, print_impact=False):
     """
     :param spark: Spark Session
@@ -465,7 +466,8 @@ def outlier_detection(spark, idf, list_of_cols='all', drop_cols=[], detection_si
         if treatment & (treatment_method in ('value_replacement', 'null_replacement')):
             if len(skewed_cols) > 0:
                 warnings.warn(
-                  "Columns dropped from outlier treatment due to highly skewed distribution: " + (',').join(skewed_cols))
+                    "Columns dropped from outlier treatment due to highly skewed distribution: " + (',').join(
+                        skewed_cols))
             if i not in skewed_cols:
                 replace_vals = {'value_replacement': [params[index][0], params[index][1]],
                                 'null_replacement': [None, None]}
@@ -500,7 +502,8 @@ def outlier_detection(spark, idf, list_of_cols='all', drop_cols=[], detection_si
     return odf, odf_print
 
 
-def IDness_detection(spark, idf, list_of_cols='all', drop_cols=[], treatment=False, treatment_threshold=0.8, stats_unique={},
+def IDness_detection(spark, idf, list_of_cols='all', drop_cols=[], treatment=False, treatment_threshold=0.8,
+                     stats_unique={},
                      print_impact=False):
     """
     :param spark: Spark Session
@@ -582,7 +585,8 @@ def IDness_detection(spark, idf, list_of_cols='all', drop_cols=[], treatment=Fal
     return odf, odf_print
 
 
-def biasedness_detection(spark, idf, list_of_cols='all', drop_cols=[], treatment=False, treatment_threshold=0.8, stats_mode={},
+def biasedness_detection(spark, idf, list_of_cols='all', drop_cols=[], treatment=False, treatment_threshold=0.8,
+                         stats_mode={},
                          print_impact=False):
     """
     :param spark: Spark Session
@@ -644,8 +648,8 @@ def biasedness_detection(spark, idf, list_of_cols='all', drop_cols=[], treatment
             .withColumn('mode_pct', F.round(F.col('mode_rows') / F.col('count').cast(T.DoubleType()), 4)) \
             .select('attribute', 'mode', 'mode_pct')
     else:
-        odf_print = read_dataset(spark, **stats_mode).select('attribute', 'mode', 'mode_pct')\
-                        .where(F.col('attribute').isin(list_of_cols))
+        odf_print = read_dataset(spark, **stats_mode).select('attribute', 'mode', 'mode_pct') \
+            .where(F.col('attribute').isin(list_of_cols))
 
     odf_print = odf_print.withColumn('flagged',
                                      F.when(
@@ -697,7 +701,7 @@ def invalidEntries_detection(spark, idf, list_of_cols='all', drop_cols=[], treat
         for i in idf.dtypes:
             if (i[1] in ('string', 'int', 'bigint', 'long')):
                 list_of_cols.append(i[0])
-    if isinstance(list_of_cols , str):
+    if isinstance(list_of_cols, str):
         list_of_cols = [x.strip() for x in list_of_cols.split('|')]
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
