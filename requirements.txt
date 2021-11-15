@@ -9,7 +9,8 @@ s3path
 pybind11
 popmon
 varclushi
-pytest
 datapane==0.12.0
 numpy==1.18.1
 plotly==5.2.1
+pytest
+coverage
