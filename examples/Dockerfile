@@ -5,8 +5,8 @@ USER root
 
 # As soon as anovos is available through PyPI, the following two lines can be replaced by "RUN pip install anovos"
 # or anovos can be added to the requirements.txt file
-COPY anovos-0.1-py3-none-any.whl .
-RUN pip install anovos-0.1-py3-none-any.whl
+RUN pip install git+https://github.com/anovos/anovos.git
+
 
 # Install additional requirements for provided Jupyter notebooks
 COPY requirements.txt /
