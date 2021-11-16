@@ -21,6 +21,7 @@ htmlcov/
 dist/
 *.egg-info/
 *.egg
+*.whl
 
 # Pycharm
 .idea
