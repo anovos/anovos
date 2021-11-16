@@ -1,6 +1,4 @@
-# ANOVOS Demo
-
-### Running ANOVOS with Spark Submit
+# Anovos Spark Demo: Running workloads with Spark Submit
 
 After checking out via Git clone, please follow the below instructions to run the E2E Anovos Package on the sample income dataset: 
 
@@ -57,7 +55,7 @@ docker ps
 4. Create docker image and run E2E via Spark using the following command: (Note: Step #1 should have copied a "Dockerfile_spark_demo" and "create_anovos_spark_demo_image.sh" to the base directory)
 	
 ```
-./create_anovos_spark_demo_image.sh
+./run_anovos_demo.sh
 ```
 
 5. Once the run has completed, the script will automatically open the final generated report `ml_anovos_report.html` on the browser.
