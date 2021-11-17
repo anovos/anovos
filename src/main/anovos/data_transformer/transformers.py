@@ -194,10 +194,11 @@ def monotonic_binning(spark, idf, list_of_cols='all', drop_cols=[], label_col='l
 
     odf = idf
     for col in list_of_cols:
-        n = 20 
+        n = 20
         r = 0
         while n > 2:
-            tmp = attribute_binning(spark, idf, [col], drop_cols=[], method_type=bin_method, bin_size=n, output_mode='append') \
+            tmp = attribute_binning(spark, idf, [col], drop_cols=[], method_type=bin_method, bin_size=n,
+                                    output_mode='append') \
                 .select(label_col, col, col + '_binned') \
                 .withColumn(label_col, F.when(F.col(label_col) == event_label, 1).otherwise(0)) \
                 .groupBy(col + '_binned').agg(F.avg(col).alias('mean_val'),
@@ -293,7 +294,7 @@ def cat_to_num_unsupervised(spark, idf, list_of_cols='all', drop_cols=[], method
             encoder = OneHotEncoderEstimator.load(model_path + "/cat_to_num_unsupervised/encoder")
         else:
             encoder = OneHotEncoderEstimator(inputCols=list_of_cols_idx, outputCols=list_of_cols_vec,
-                                              handleInvalid='keep')
+                                             handleInvalid='keep')
 
         odf_encoded = encoder.fit(odf_indexed).transform(odf_indexed)
 
@@ -590,10 +591,12 @@ def outlier_categories(spark, idf, list_of_cols='all', drop_cols=[], coverage=1.
         else:
             output_cols = [(i + "_outliered") for i in list_of_cols]
         uniqueCount_computation(spark, idf, list_of_cols).select('attribute',
-                                                          F.col("unique_values").alias("uniqueValues_before")).show(
+                                                                 F.col("unique_values").alias(
+                                                                     "uniqueValues_before")).show(
             len(list_of_cols))
         uniqueCount_computation(spark, odf, output_cols).select('attribute',
-                                                         F.col("unique_values").alias("uniqueValues_after")).show(
+                                                                F.col("unique_values").alias(
+                                                                    "uniqueValues_after")).show(
             len(list_of_cols))
 
     return odf
