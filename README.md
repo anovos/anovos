@@ -1,6 +1,19 @@
 <p align="center">
-<img src="https://mobilewalla-anovos.s3.amazonaws.com/images/anovos.png" alt="Anovos Logo" width="200" />
+<a href="https://ibb.co/d0QF0wD"><img src="https://i.ibb.co/7JGPJdK/anovos-dark-horizontal.png" alt="anovos-dark-horizontal" border="0"></a>
 </p>
+
+<!--
+[![Build Status](https://travis-ci.org/mara/mara-pipelines.svg?branch=master)](https://travis-ci.org/mara/mara-pipelines)
+[![PyPI - License](https://img.shields.io/pypi/l/mara-pipelines.svg)](https://github.com/mara/mara-pipelines/blob/master/LICENSE)
+[![PyPI version](https://badge.fury.io/py/mara-pipelines.svg)](https://badge.fury.io/py/mara-pipelines)
+[![Slack Status](https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&style=social)](https://communityinviter.com/apps/mara-users/public-invite)
+-->
+![release](https://img.shields.io/badge/release-alpha%200.1-yellowgreen?style=plastic)
+[![License](https://img.shields.io/badge/License-Apache_2.0-red.svg?style=plastic)](https://opensource.org/licenses/Apache-2.0)
+[![Docs Latest](https://img.shields.io/badge/docs-latest-blue.svg?style=plastic)](https://anovos.ai/)
+
+[![twitter](https://img.shields.io/badge/Twitter-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white)](https://twitter.com/ml_anovos)
+[![Docs Latest](https://img.shields.io/badge/Slack-4A154B?style=for-the-badge&logo=slack&logoColor=white?style=plastic)](https://anovos.ai/)
 
 _Anovos_ is an open source library for feature engineering at scale.
 Built by data scientist for the data science community, it provides all capabilities required for data ingestion and transformation.
