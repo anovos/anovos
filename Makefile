@@ -40,7 +40,8 @@ test:
 
 build: clean
 	cp ./bin/*.whl ./
-	cp ./demo/* ./
+	cp ./demo/Dockerfile* ./
+	cp ./demo/run_anovos* ./
 	rm -rf ./dist && mkdir ./dist && mkdir ./dist/data && mkdir ./dist/output
 	cp ./src/main/main.py ./dist
 	cp ./config/configs.yaml ./dist
