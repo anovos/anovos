@@ -7,7 +7,7 @@
 [![release](https://img.shields.io/badge/release-alpha%200.1-yellowgreen?style=plastic)](https://github.com/anovos/anovos/releases)
 [![Docs Latest](https://img.shields.io/badge/docs-latest-blue.svg?style=plastic)](https://docs.anovos.ai/)
 [![License](https://img.shields.io/badge/License-Apache_2.0-red.svg?style=plastic)](https://opensource.org/licenses/Apache-2.0)
-[![twitter](https://img.shields.io/badge/Tweet--lightgrey?logo=twitter&style=social)](https://twitter.com/ml_anovos)
+[![twitter](https://img.shields.io/badge/Follow--lightgrey?logo=twitter&style=social)](https://twitter.com/ml_anovos)
 [![Slack](https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&style=social)](https://go.mlops.community/slack)
 
 
