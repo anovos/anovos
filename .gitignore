@@ -1,8 +1,11 @@
 # Jupyter
-.ipynb_checkpoints
+**.ipynb_checkpoints
 
 # DS store
 *.DS_Store
+
+# Docker
+docker-stacks/
 
 # Byte-compiled / optimized / DLL files
 *.pyc

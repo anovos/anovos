@@ -11,7 +11,7 @@ make clean build test
 2. If there is already a working environment with spark, the Demo can be run via the User's local environment directly (Note: version dependencies need to be ensured by user) <br>
 For other environments, the Demo can be run using dockers
 
-#### via User's local environment
+### via User's local environment
 
 1. Check the pre-requisites - ANOVOS requires Spark (2.4.x), Python (3.7.*), Java(8). Check version using the following commands: 
 ```
@@ -36,7 +36,9 @@ tail -f run.txt
 
 Once the run has completed, the script will automatically open the final generated report `report_stats/ml_anovos_report.html` on the browser.
 
-#### via Docker
+### via Docker
+
+### Build and run Docker image
 
 Note: Kindly ensure the machine has ~15 GB free space atleast when running using Dockers
 1. Install docker on your machine (https://docs.docker.com/get-docker/)
@@ -52,10 +54,24 @@ docker image ls
 docker ps
 ```
 
-4. Create docker image and run E2E via Spark using the following command: (Note: Step #1 should have copied a "Dockerfile_spark_demo" and "create_anovos_spark_demo_image.sh" to the base directory)
+4. Create docker image and run E2E via Spark using the following command: (Note: Step #1 should have copied a "Dockerfile" and "create_anovos_spark_demo_image.sh" to the base directory)
 	
 ```
 ./run_anovos_demo.sh
 ```
 
 5. Once the run has completed, the script will automatically open the final generated report `ml_anovos_report.html` on the browser.
+
+### Pull from Docker hub
+
+1. Alternatively, you can choose to pull the demo image from our docker hub public repo and run the image:
+
+```
+docker pull anovos/anovos-spark-demo:0.1
+docker run --name anovos_demo -t -i -v $(PWD):/temp anovos/anovos-spark-demo:0.1
+```
+
+2. Once run has completed, copy the final report (ml_anovos_report.html) from docker container to local and open in browser:
+```
+docker cp anovos_demo:/report_stats/ml_anovos_report.html .
+```
