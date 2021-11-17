@@ -27,7 +27,7 @@ COPY jars/*.jar .
 COPY dist/anovos.zip . 
 COPY dist/main.py .
 ADD dist/anovos.tar.gz .
-COPY data/income_dataset ./data/income_dataset
+COPY examples/data/income_dataset ./data/income_dataset
 COPY data/metric_dictionary.csv ./data/metric_dictionary.csv
 COPY bin/spark-submit_docker.sh .
 
