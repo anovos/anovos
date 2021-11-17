@@ -463,7 +463,7 @@ def outlier_detection(spark, idf, list_of_cols='all', drop_cols=[], detection_si
             [i, odf.where(F.col(i + "_outliered") == -1).count(), odf.where(F.col(i + "_outliered") == 1).count()])
 
         if treatment & (treatment_method in ('value_replacement', 'null_replacement')):
-            if len(skewed_cols) > 0:
+            if skewed_cols:
                 warnings.warn(
                   "Columns dropped from outlier treatment due to highly skewed distribution: " + (',').join(skewed_cols))
             if i not in skewed_cols:
@@ -481,8 +481,9 @@ def outlier_detection(spark, idf, list_of_cols='all', drop_cols=[], detection_si
     odf = odf.drop("outliered")
 
     if treatment & (treatment_method == 'row_removal'):
-        warnings.warn(
-            "Columns dropped from outlier treatment due to highly skewed distribution: " + (',').join(skewed_cols))
+        if skewed_cols:
+            warnings.warn(
+                "Columns dropped from outlier treatment due to highly skewed distribution: " + (',').join(skewed_cols))
         for index, i in enumerate(list_of_cols):
             if i not in skewed_cols:
                 odf = odf.where((F.col(i + "_outliered") == 0) | (F.col(i + "_outliered").isNull())).drop(
