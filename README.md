@@ -9,11 +9,12 @@
 [![Slack Status](https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&style=social)](https://communityinviter.com/apps/mara-users/public-invite)
 -->
 ![release](https://img.shields.io/badge/release-alpha%200.1-yellowgreen?style=plastic)
+[![Docs Latest](https://img.shields.io/badge/docs-latest-blue.svg?style=plastic)](https://docs.anovos.ai/)
 [![License](https://img.shields.io/badge/License-Apache_2.0-red.svg?style=plastic)](https://opensource.org/licenses/Apache-2.0)
-[![Docs Latest](https://img.shields.io/badge/docs-latest-blue.svg?style=plastic)](https://anovos.ai/)
+
 
 [![twitter](https://img.shields.io/badge/Twitter-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white)](https://twitter.com/ml_anovos)
-[![Docs Latest](https://img.shields.io/badge/Slack-4A154B?style=for-the-badge&logo=slack&logoColor=white?style=plastic)](https://anovos.ai/)
+[![Docs Latest](https://img.shields.io/badge/Slack-4A154B?style=for-the-badge&logo=slack&logoColor=white?style=plastic)](https://go.mlops.community/slack)
 
 _Anovos_ is an open source library for feature engineering at scale.
 Built by data scientist for the data science community, it provides all capabilities required for data ingestion and transformation.
