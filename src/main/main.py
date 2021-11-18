@@ -2,7 +2,6 @@ import copy
 import subprocess
 import sys
 import timeit
-
 import yaml
 from anovos.data_analyzer import association_evaluator
 from anovos.data_analyzer import quality_checker
@@ -28,10 +27,10 @@ def ETL(args):
         if key != 'read_dataset':
             if value != None:
                 f = getattr(data_ingest, key)
-                if isinstance(value, list):
-                    df = f(df, *value)
-                else:
+                if isinstance(value, dict):
                     df = f(df, **value)
+                else:
+                    df = f(df, value)
     return df
 
 
