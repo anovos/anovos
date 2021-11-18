@@ -1,0 +1,13 @@
+attribute,definition
+Item_Identifier,Unique product ID
+Outlet_Location_Type,The type of city in which the store is located
+Item_Category,"The category to which the product belongs(e.g.,Food, drinks)"
+Item_Type,"The type to which the product belongs(e.g., dairy, softdrinks, meat)"
+Outlet_Type,Whether the outlet is just a grocery store or some sort of supermarket
+sales,Sales of the product in the particular store. This is the outcome variable to be predicted.
+Item_Fat_Content,Whether the product is low fat or not
+Item_Visibility,The % of total display area of all products in a store allocated to the particular product
+Item_MRP,Maximum Retail Price (list price) of the product
+Outlet_Years,The year in which store was established
+Item_Weight,Weight of product
+Outlet_Size,The size of the store in terms of ground area covered

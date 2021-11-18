@@ -1,6 +1,7 @@
 # coding=utf-8
 import itertools
 import math
+
 import pyspark
 from anovos.data_analyzer.stats_generator import uniqueCount_computation
 from anovos.data_ingest.data_ingest import read_dataset
@@ -62,8 +63,8 @@ def correlation_matrix(spark, idf, list_of_cols='all', drop_cols=[], stats_uniqu
     odf_pd = spark_phik_matrix_from_hist2d_dict(spark.sparkContext, grids)
     odf_pd['attribute'] = odf_pd.index
     list_of_cols.sort()
-    odf = spark.createDataFrame(odf_pd)\
-            .select(['attribute'] + list_of_cols).orderBy('attribute')
+    odf = spark.createDataFrame(odf_pd) \
+        .select(['attribute'] + list_of_cols).orderBy('attribute')
 
     if print_impact:
         odf.show(odf.count())
@@ -71,7 +72,8 @@ def correlation_matrix(spark, idf, list_of_cols='all', drop_cols=[], stats_uniqu
     return odf
 
 
-def variable_clustering(spark, idf, list_of_cols='all', drop_cols=[], sample_size=100000, stats_unique={}, stats_mode={},
+def variable_clustering(spark, idf, list_of_cols='all', drop_cols=[], sample_size=100000, stats_unique={},
+                        stats_mode={},
                         print_impact=False):
     """
     :param spark: Spark Session
@@ -136,7 +138,7 @@ def variable_clustering(spark, idf, list_of_cols='all', drop_cols=[], sample_siz
     vc.varclus()
     odf_pd = vc.rsquare
     odf = spark.createDataFrame(odf_pd).select('Cluster', F.col('Variable').alias('Attribute'),
-                                                    F.round(F.col('RS_Ratio'), 4).alias('RS_Ratio'))
+                                               F.round(F.col('RS_Ratio'), 4).alias('RS_Ratio'))
     if print_impact:
         odf.show(odf.count())
     return odf

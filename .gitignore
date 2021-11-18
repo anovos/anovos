@@ -1,0 +1,39 @@
+# Jupyter
+**.ipynb_checkpoints
+
+# DS store
+*.DS_Store
+
+# Docker
+docker-stacks/
+
+# Byte-compiled / optimized / DLL files
+*.pyc
+*.pyo
+__pycache__/
+
+# Unit test, coverage files
+.pytest_cache
+.tox/
+.coverage
+.coverage.*
+.cache
+htmlcov/
+
+# Distribution / packaging
+dist/
+*.egg-info/
+*.egg
+*.whl
+
+# Pycharm
+.idea
+
+# Environment
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/

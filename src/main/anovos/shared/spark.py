@@ -45,7 +45,7 @@ def init_spark(app_name='anovos', master='local[*]', jar_packages=[],
     return spark, sc, sqlContext
 
 
-configs = {'app_name': 'MW_ML_pipeline',
+configs = {'app_name': 'Anovos_pipeline',
            'jar_packages': ["io.github.histogrammar:histogrammar_2.11:1.0.20",
                             "io.github.histogrammar:histogrammar-sparksql_2.11:1.0.20",
                             "org.apache.spark:spark-avro_2.11:2.4.0"],
