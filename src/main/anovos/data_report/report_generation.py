@@ -1,15 +1,12 @@
-import yaml
-import subprocess
-import copy
+import json
 import os
-import sys
-import pandas as pd
-import numpy as np
+import subprocess
+
 import datapane as dp
-import plotly
+import numpy as np
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import json
 from anovos.shared.utils import ends_with
 
 global_theme = px.colors.sequential.Plasma
@@ -501,7 +498,7 @@ def executive_summary_gen(master_path, label_col, ds_ind, id_col, iv_threshold, 
     if print_report:
         dp.Report(default_template[0], default_template[1], report).save(
             ends_with(master_path) + "executive_summary.html", open=True)
-    
+
     return report
 
 
@@ -544,7 +541,7 @@ def wiki_generator(master_path, dataDict_path=None, metricDict_path=None, print_
     if print_report:
         dp.Report(default_template[0], default_template[1], report).save(
             ends_with(master_path) + "wiki_generator.html", open=True)
-    
+
     return report
 
 
@@ -629,7 +626,7 @@ def descriptive_statistics(master_path, SG_tabs, avl_recs_SG, missing_recs_SG, a
     if print_report:
         dp.Report(default_template[0], default_template[1], report).save(
             ends_with(master_path) + "descriptive_statistics.html", open=True)
-    
+
     return report
 
 
@@ -810,8 +807,9 @@ def attribute_associations(master_path, AE_tabs, avl_recs_AE, missing_recs_AE, l
     if print_report:
         dp.Report(default_template[0], default_template[1], report).save(
             ends_with(master_path) + "attribute_associations.html", open=True)
-    
+
     return report
+
 
 def data_drift_stability(master_path, ds_ind, id_col, drift_threshold_model, all_drift_charts_, print_report=False):
     """
@@ -1114,11 +1112,12 @@ def data_drift_stability(master_path, ds_ind, id_col, drift_threshold_model, all
     if print_report:
         dp.Report(default_template[0], default_template[1], report).save(
             ends_with(master_path) + "data_drift_stability.html", open=True)
-    
+
     return report
 
 
-def anovos_report(master_path, id_col='', label_col='', corr_threshold=0.4, iv_threshold=0.02, drift_threshold_model=0.1, dataDict_path=".",
+def anovos_report(master_path, id_col='', label_col='', corr_threshold=0.4, iv_threshold=0.02,
+                  drift_threshold_model=0.1, dataDict_path=".",
                   metricDict_path=".", run_type="local", final_report_path="."):
     """
 	:param master_path: Path containing the input files.
@@ -1329,5 +1328,5 @@ def anovos_report(master_path, id_col='', label_col='', corr_threshold=0.4, iv_t
 
         bash_cmd = "aws s3 cp ml_anovos_report.html " + ends_with(final_report_path)
         output = subprocess.check_output(['bash', '-c', bash_cmd])
-    
+
     print("Report generated successfully at the specified location")
