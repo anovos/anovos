@@ -204,7 +204,7 @@ def nullColumns_detection(spark, idf, list_of_cols='missing', drop_cols=[], trea
     list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if len(list_of_cols) == 0:
-        warnings.warn("No Action Performed - Imputation")
+        warnings.warn("No Null Detection")
         odf = idf
         schema = T.StructType([T.StructField('attribute', T.StringType(), True),
                                T.StructField('missing_count', T.StringType(), True),
@@ -331,7 +331,7 @@ def outlier_detection(spark, idf, list_of_cols='all', drop_cols=[], detection_si
 
     num_cols = attributeType_segregation(idf)[0]
     if len(num_cols) == 0:
-        warnings.warn("No Outlier Check")
+        warnings.warn("No Outlier Check - No numerical column to analyse")
         odf = idf
         schema = T.StructType([T.StructField('attribute', T.StringType(), True),
                                T.StructField('lower_outliers', T.StringType(), True),
@@ -509,7 +509,7 @@ def IDness_detection(spark, idf, list_of_cols='all', drop_cols=[], treatment=Fal
     """
     :param spark: Spark Session
     :param idf: Input Dataframe
-    :param list_of_cols: List of categorical columns to inspect e.g., ["col1","col2"].
+    :param list_of_cols: List of Discrete (Categorical + Integer) columns to inspect e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
                          where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
                          "all" can be passed to include all categorical columns for analysis.
@@ -534,9 +534,9 @@ def IDness_detection(spark, idf, list_of_cols='all', drop_cols=[], treatment=Fal
               if IDness is above the threshold, else 0.
     """
 
-    cat_cols = attributeType_segregation(idf)[1]
     if list_of_cols == 'all':
-        list_of_cols = cat_cols
+        num_cols, cat_cols, other_cols = attributeType_segregation(idf)
+        list_of_cols = num_cols + cat_cols
     if isinstance(list_of_cols, str):
         list_of_cols = [x.strip() for x in list_of_cols.split('|')]
     if isinstance(drop_cols, str):
@@ -544,10 +544,15 @@ def IDness_detection(spark, idf, list_of_cols='all', drop_cols=[], treatment=Fal
 
     list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
-    if any(x not in cat_cols for x in list_of_cols):
+    for i in idf.select(list_of_cols).dtypes:
+        if (i[1] not in ('string', 'int', 'bigint', 'long')):
+            list_of_cols.remove(i[0])
+
+    if any(x not in idf.columns for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
+
     if len(list_of_cols) == 0:
-        warnings.warn("No IDness Check")
+        warnings.warn("No IDness Check - No discrete column to analyze")
         odf = idf
         schema = T.StructType([T.StructField('attribute', T.StringType(), True),
                                T.StructField('unique_values', T.StringType(), True),
@@ -631,8 +636,19 @@ def biasedness_detection(spark, idf, list_of_cols='all', drop_cols=[], treatment
         if (i[1] not in ('string', 'int', 'bigint', 'long')):
             list_of_cols.remove(i[0])
 
-    if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
+    if any(x not in idf.columns for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
+
+    if len(list_of_cols) == 0:
+        warnings.warn("No biasedness Check - No discrete column to analyze")
+        odf = idf
+        schema = T.StructType([T.StructField('attribute', T.StringType(), True),
+                               T.StructField('mode', T.StringType(), True),
+                               T.StructField('mode_pct', T.StringType(), True),
+                               T.StructField('flagged', T.StringType(), True)])
+        odf_print = spark.sparkContext.emptyRDD().toDF(schema)
+        return odf, odf_print
+
     if (treatment_threshold < 0) | (treatment_threshold > 1):
         raise TypeError('Invalid input for Treatment Threshold Value')
     if str(treatment).lower() == 'true':
@@ -709,8 +725,19 @@ def invalidEntries_detection(spark, idf, list_of_cols='all', drop_cols=[], treat
 
     list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
-    if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
+    if any(x not in idf.columns for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
+
+    if len(list_of_cols) == 0:
+        warnings.warn("No Invalid Entries Check - No discrete column to analyze")
+        odf = idf
+        schema = T.StructType([T.StructField('attribute', T.StringType(), True),
+                               T.StructField('invalid_entries', T.StringType(), True),
+                               T.StructField('invalid_count', T.StringType(), True),
+                               T.StructField('invalid_pct', T.StringType(), True)])
+        odf_print = spark.sparkContext.emptyRDD().toDF(schema)
+        return odf, odf_print
+
     if output_mode not in ('replace', 'append'):
         raise TypeError('Invalid input for output_mode')
     if str(treatment).lower() == 'true':

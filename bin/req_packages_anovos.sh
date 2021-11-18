@@ -16,3 +16,4 @@ sudo pip-3.7 install datapane==0.12.0
 sudo pip-3.7 install plotly==5.2.1
 sudo pip-3.7 install fsspec
 sudo pip-3.7 install s3fs
+sudo pip-3.7 install --no-deps --force-reinstall matplotlib==3.4.3
