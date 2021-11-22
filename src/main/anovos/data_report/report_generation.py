@@ -125,6 +125,9 @@ def data_analyzer_output(master_path, avl_recs_tab, tab_name):
     avl_recs_tab = [x for x in avl_recs_tab if "global_summary" not in x]
 
     for index, i in enumerate(avl_recs_tab):
+        data = pd.read_csv(ends_with(master_path) + str(i) + ".csv")
+        if len(data.index) == 0:
+            continue
 
         if tab_name == "quality_checker":
             if i == "duplicate_detection":
@@ -1193,18 +1196,19 @@ def anovos_report(master_path, id_col='', label_col='', corr_threshold=0.4, iv_t
     blank_chart.update_xaxes(visible=False)
     blank_chart.update_yaxes(visible=False)
 
-    try:
-
-        global_summary_df = pd.read_csv(ends_with(master_path) + "global_summary.csv")
-        rows_count = int(global_summary_df[global_summary_df.metric.values == "rows_count"].value.values[0])
-        catcols_count = int(global_summary_df[global_summary_df.metric.values == "catcols_count"].value.values[0])
-        numcols_count = int(global_summary_df[global_summary_df.metric.values == "numcols_count"].value.values[0])
-        columns_count = int(global_summary_df[global_summary_df.metric.values == "columns_count"].value.values[0])
+    global_summary_df = pd.read_csv(ends_with(master_path) + "global_summary.csv")
+    rows_count = int(global_summary_df[global_summary_df.metric.values == "rows_count"].value.values[0])
+    catcols_count = int(global_summary_df[global_summary_df.metric.values == "catcols_count"].value.values[0])
+    numcols_count = int(global_summary_df[global_summary_df.metric.values == "numcols_count"].value.values[0])
+    columns_count = int(global_summary_df[global_summary_df.metric.values == "columns_count"].value.values[0])
+    if catcols_count > 0:
         catcols_name = ",".join(list(global_summary_df[global_summary_df.metric.values == "catcols_name"].value.values))
+    else:
+        catcols_name = ""
+    if numcols_count > 0:
         numcols_name = ",".join(list(global_summary_df[global_summary_df.metric.values == "numcols_name"].value.values))
-
-    except:
-        pass
+    else:
+        numcols_name = ""
 
     all_files = os.listdir(master_path)
     eventDist_charts = [x for x in all_files if "eventDist" in x]

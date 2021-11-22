@@ -152,14 +152,12 @@ def plot_eventRate(spark, idf, col, label_col, event_label, cutoffs_path):
     :param event_label: Event label
     :param cutoffs_path: Path containing the range cut offs details for the analysis column
     """
-    event_label = str(event_label)
-    class_cats = idf.select(label_col).distinct().rdd.flatMap(lambda x: x).collect()
 
-    odf = idf.groupBy(col).pivot(label_col).count() \
-        .fillna(0, subset=class_cats) \
-        .withColumn("event_rate", 100 * (F.col(event_label) / (F.col(class_cats[0]) + F.col(class_cats[1])))) \
-        .withColumn("attribute_name", F.lit(col)) \
-        .withColumn(col, f_edit_binRange(col))
+    odf = idf.withColumn(label_col, F.when(F.col(label_col) == event_label, 1).otherwise(0))\
+            .groupBy(col).pivot(label_col).count().fillna(0, subset=["0","1"]) \
+            .withColumn("event_rate", 100 * (F.col("1") / (F.col("0") + F.col("1"))))\
+            .withColumn("attribute_name", F.lit(col)) \
+            .withColumn(col, f_edit_binRange(col))
 
     if col in cat_cols:
         odf_pd = odf.orderBy("event_rate", ascending=False).toPandas()
@@ -269,12 +267,16 @@ def charts_to_objects(spark, idf, list_of_cols='all', drop_cols=[], label_col=No
 
     num_cols, cat_cols, other_cols = attributeType_segregation(idf.select(list_of_cols))
 
-    idf_cleaned = outlier_categories(spark, idf, list_of_cols=cat_cols, coverage=coverage, max_category=bin_size)
+    if cat_cols:
+        idf_cleaned = outlier_categories(spark, idf, list_of_cols=cat_cols, coverage=coverage, max_category=bin_size)
+    else:
+        idf_cleaned = idf
 
     if drift_detector:
         encoding_model_exists = True
     else:
         encoding_model_exists = False
+    
     idf_encoded = attribute_binning(spark, idf_cleaned, list_of_cols=num_cols, method_type=bin_method,
                                     bin_size=bin_size,
                                     bin_dtype="categorical", pre_existing_model=encoding_model_exists,
@@ -296,8 +298,9 @@ def charts_to_objects(spark, idf, list_of_cols='all', drop_cols=[], label_col=No
             f.write_json(ends_with(local_path) + "freqDist_" + col)
 
             if label_col:
-                f = plot_eventRate(spark, idf_encoded, col, label_col, event_label, cutoffs_path)
-                f.write_json(ends_with(local_path) + "eventDist_" + col)
+                if col != label_col:
+                    f = plot_eventRate(spark, idf_encoded, col, label_col, event_label, cutoffs_path)
+                    f.write_json(ends_with(local_path) + "eventDist_" + col)
 
             if drift_detector:
                 try:
@@ -315,9 +318,10 @@ def charts_to_objects(spark, idf, list_of_cols='all', drop_cols=[], label_col=No
             f.write_json(ends_with(local_path) + "freqDist_" + col)
 
             if label_col:
-                f = plot_eventRate(spark, idf_encoded.drop(col).withColumnRenamed(col + "_binned", col), col, label_col,
+                if col != label_col:
+                    f = plot_eventRate(spark, idf_encoded.drop(col).withColumnRenamed(col + "_binned", col), col, label_col,
                                    event_label, cutoffs_path)
-                f.write_json(ends_with(local_path) + "eventDist_" + col)
+                    f.write_json(ends_with(local_path) + "eventDist_" + col)
 
             if drift_detector:
                 try:
