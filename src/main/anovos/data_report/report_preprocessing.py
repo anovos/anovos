@@ -274,15 +274,26 @@ def charts_to_objects(spark, idf, list_of_cols='all', drop_cols=[], label_col=No
 
     if drift_detector:
         encoding_model_exists = True
+        binned_cols = spark.read.parquet(source_path + "/drift_statistics/attribute_binning")\
+                        .select('attribute').rdd.flatMap(lambda x:x).collect()
+        to_be_binned = [e for e in num_cols if e not in binned_cols]
     else:
         encoding_model_exists = False
-    
-    idf_encoded = attribute_binning(spark, idf_cleaned, list_of_cols=num_cols, method_type=bin_method,
+        binned_cols = []
+        to_be_binned = num_cols
+    idf_encoded = attribute_binning(spark, idf_cleaned, list_of_cols=to_be_binned, method_type=bin_method,
                                     bin_size=bin_size,
-                                    bin_dtype="categorical", pre_existing_model=encoding_model_exists,
+                                    bin_dtype="categorical", pre_existing_model=False,
+                                    model_path=source_path + "/charts_to_objects", output_mode='append')
+    if binned_cols:
+        idf_encoded = attribute_binning(spark, idf_encoded, list_of_cols=binned_cols, method_type=bin_method,
+                                    bin_size=bin_size,
+                                    bin_dtype="categorical", pre_existing_model=True,
                                     model_path=source_path + "/drift_statistics", output_mode='append')
 
-    cutoffs_path = source_path + "/drift_statistics/attribute_binning"
+    cutoffs_path1 = source_path + "/charts_to_objects/attribute_binning"
+    cutoffs_path2 = source_path + "/drift_statistics/attribute_binning"
+
     idf_encoded.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
 
     if run_type == "local":
@@ -292,6 +303,11 @@ def charts_to_objects(spark, idf, list_of_cols='all', drop_cols=[], label_col=No
     Path(local_path).mkdir(parents=True, exist_ok=True)
 
     for idx, col in enumerate(list_of_cols):
+
+        if col in binned_cols:
+            cutoffs_path = cutoffs_path2
+        else:
+            cutoffs_path = cutoffs_path1
 
         if col in cat_cols:
             f = plot_frequency(spark, idf_encoded, col, cutoffs_path)
