@@ -61,7 +61,7 @@ def attribute_binning(spark, idf, list_of_cols='all', drop_cols=[], method_type=
     if any(x not in num_cols for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
     if len(list_of_cols) == 0:
-        warnings.warn("No Transformation Performed - Binning")
+        warnings.warn("No Binning Performed - No numerical column(s) to transform")
         return idf
 
     if method_type not in ("equal_frequency", "equal_range"):
@@ -262,7 +262,7 @@ def cat_to_num_unsupervised(spark, idf, list_of_cols='all', drop_cols=[], method
         raise TypeError('Invalid input for Column(s)')
 
     if len(list_of_cols) == 0:
-        warnings.warn("No Encoding Computation")
+        warnings.warn("No Encoding Computation - No categorical column(s) to transform")
         return idf
     if method_type not in (0, 1):
         raise TypeError('Invalid input for method_type')
@@ -412,7 +412,7 @@ def imputation_MMM(spark, idf, list_of_cols="missing", drop_cols=[], method_type
     list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if len(list_of_cols) == 0:
-        warnings.warn("No Action Performed - Imputation")
+        warnings.warn("No Imputation performed- No column(s) to impute")
         return idf
     if any(x not in idf.columns for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
@@ -543,7 +543,7 @@ def outlier_categories(spark, idf, list_of_cols='all', drop_cols=[], coverage=1.
         raise TypeError('Invalid input for Column(s)')
 
     if len(list_of_cols) == 0:
-        warnings.warn("No Outlier Categories Computation")
+        warnings.warn("No Outlier Categories Computation - No categorical column(s) to transform")
         return idf
     if (coverage <= 0) | (coverage > 1):
         raise TypeError('Invalid input for Coverage Value')

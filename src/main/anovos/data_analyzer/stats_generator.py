@@ -129,7 +129,7 @@ def nonzeroCount_computation(spark, idf, list_of_cols='all', drop_cols=[], print
         raise TypeError('Invalid input for Column(s)')
 
     if len(list_of_cols) == 0:
-        warnings.warn("No Non-Zero Count Computation")
+        warnings.warn("No Non-Zero Count Computation - No numerical column(s) to analyze")
         schema = T.StructType([T.StructField('attribute', T.StringType(), True),
                                T.StructField('nonzero_count', T.StringType(), True),
                                T.StructField('nonzero_pct', T.StringType(), True)])
@@ -220,7 +220,7 @@ def mode_computation(spark, idf, list_of_cols='all', drop_cols=[], print_impact=
         raise TypeError('Invalid input for Column(s)')
 
     if len(list_of_cols) == 0:
-        warnings.warn("No Mode Computation - No discrete column to analyze")
+        warnings.warn("No Mode Computation - No discrete column(s) to analyze")
         schema = T.StructType([T.StructField('attribute', T.StringType(), True),
                                T.StructField('mode', T.StringType(), True),
                                T.StructField('mode_rows', T.StringType(), True)])
@@ -312,7 +312,7 @@ def uniqueCount_computation(spark, idf, list_of_cols='all', drop_cols=[], print_
         raise TypeError('Invalid input for Column(s)')
 
     if len(list_of_cols) == 0:
-        warnings.warn("No Unique Count Computation - No discrete column to analyze")
+        warnings.warn("No Unique Count Computation - No discrete column(s) to analyze")
         schema = T.StructType([T.StructField('attribute', T.StringType(), True),
                                T.StructField('unique_values', T.StringType(), True)])
         odf = spark.sparkContext.emptyRDD().toDF(schema)
@@ -357,7 +357,7 @@ def measures_of_cardinality(spark, idf, list_of_cols='all', drop_cols=[], print_
         raise TypeError('Invalid input for Column(s)')
 
     if len(list_of_cols) == 0:
-        warnings.warn("No Cardinality Computation - No discrete column to analyze")
+        warnings.warn("No Cardinality Computation - No discrete column(s) to analyze")
         schema = T.StructType([T.StructField('attribute', T.StringType(), True),
                                T.StructField('unique_values', T.StringType(), True),
                                T.StructField('IDness', T.StringType(), True)])
@@ -401,7 +401,7 @@ def measures_of_dispersion(spark, idf, list_of_cols='all', drop_cols=[], print_i
     if any(x not in num_cols for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
     if len(list_of_cols) == 0:
-        warnings.warn("No Dispersion Computation")
+        warnings.warn("No Dispersion Computation - No numerical column(s) to analyze")
         schema = T.StructType([T.StructField('attribute', T.StringType(), True),
                                T.StructField('stddev', T.StringType(), True),
                                T.StructField('variance', T.StringType(), True),
@@ -451,7 +451,7 @@ def measures_of_percentiles(spark, idf, list_of_cols='all', drop_cols=[], print_
     if any(x not in num_cols for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
     if len(list_of_cols) == 0:
-        warnings.warn("No Percentiles Computation")
+        warnings.warn("No Percentiles Computation - No numerical column(s) to analyze")
         schema = T.StructType([T.StructField('attribute', T.StringType(), True),
                                T.StructField('min', T.StringType(), True),
                                T.StructField('1%', T.StringType(), True),
@@ -507,7 +507,7 @@ def measures_of_shape(spark, idf, list_of_cols='all', drop_cols=[], print_impact
     if any(x not in num_cols for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
     if len(list_of_cols) == 0:
-        warnings.warn("No Skewness/Kurtosis Computation")
+        warnings.warn("No Skewness/Kurtosis Computation - No numerical column(s) to analyze")
         schema = T.StructType([T.StructField('attribute', T.StringType(), True),
                                T.StructField('skewness', T.StringType(), True),
                                T.StructField('kurtosis', T.StringType(), True)])

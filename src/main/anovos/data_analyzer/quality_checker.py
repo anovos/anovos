@@ -204,7 +204,7 @@ def nullColumns_detection(spark, idf, list_of_cols='missing', drop_cols=[], trea
     list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if len(list_of_cols) == 0:
-        warnings.warn("No Null Detection")
+        warnings.warn("No Null Detection - No column(s) to analyze")
         odf = idf
         schema = T.StructType([T.StructField('attribute', T.StringType(), True),
                                T.StructField('missing_count', T.StringType(), True),
@@ -331,7 +331,7 @@ def outlier_detection(spark, idf, list_of_cols='all', drop_cols=[], detection_si
 
     num_cols = attributeType_segregation(idf)[0]
     if len(num_cols) == 0:
-        warnings.warn("No Outlier Check - No numerical column to analyse")
+        warnings.warn("No Outlier Check - No numerical column(s) to analyse")
         odf = idf
         schema = T.StructType([T.StructField('attribute', T.StringType(), True),
                                T.StructField('lower_outliers', T.StringType(), True),
@@ -552,7 +552,7 @@ def IDness_detection(spark, idf, list_of_cols='all', drop_cols=[], treatment=Fal
         raise TypeError('Invalid input for Column(s)')
 
     if len(list_of_cols) == 0:
-        warnings.warn("No IDness Check - No discrete column to analyze")
+        warnings.warn("No IDness Check - No discrete column(s) to analyze")
         odf = idf
         schema = T.StructType([T.StructField('attribute', T.StringType(), True),
                                T.StructField('unique_values', T.StringType(), True),
@@ -640,7 +640,7 @@ def biasedness_detection(spark, idf, list_of_cols='all', drop_cols=[], treatment
         raise TypeError('Invalid input for Column(s)')
 
     if len(list_of_cols) == 0:
-        warnings.warn("No biasedness Check - No discrete column to analyze")
+        warnings.warn("No biasedness Check - No discrete column(s) to analyze")
         odf = idf
         schema = T.StructType([T.StructField('attribute', T.StringType(), True),
                                T.StructField('mode', T.StringType(), True),
@@ -729,7 +729,7 @@ def invalidEntries_detection(spark, idf, list_of_cols='all', drop_cols=[], treat
         raise TypeError('Invalid input for Column(s)')
 
     if len(list_of_cols) == 0:
-        warnings.warn("No Invalid Entries Check - No discrete column to analyze")
+        warnings.warn("No Invalid Entries Check - No discrete column(s) to analyze")
         odf = idf
         schema = T.StructType([T.StructField('attribute', T.StringType(), True),
                                T.StructField('invalid_entries', T.StringType(), True),
