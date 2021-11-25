@@ -137,8 +137,12 @@ def data_analyzer_output(master_path, avl_recs_tab, tab_name):
                            ",")) + "**"
                 rows_count = " No. of Rows: **" + str(
                     format(int(duplicate_recs[duplicate_recs["metric"] == "rows_count"].value.values), ",")) + "**"
+                duplicate_rows = " No. of Duplicate Rows: **" + str(
+                    format(int(duplicate_recs[duplicate_recs["metric"] == "duplicate_rows"].value.values), ",")) + "**"
+                pct_duplicate_rows = " Percentage of Duplicate Rows: **" + str(
+                    float(duplicate_recs[duplicate_recs["metric"] == "pct_duplicate_rows"].value.values * 100.0)) + " %" + "**"
                 df_list.append([dp.Text("### " + str(remove_u_score(i))),
-                                dp.Group(dp.Text(rows_count), dp.Text(unique_rows_count), rows=2), dp.Text("#"),
+                                dp.Group(dp.Text(rows_count), dp.Text(unique_rows_count), dp.Text(duplicate_rows), dp.Text(pct_duplicate_rows), rows=4),
                                 dp.Text("#")])
 
             elif i == "outlier_detection":
@@ -377,8 +381,11 @@ def executive_summary_gen(master_path, label_col, ds_ind, id_col, iv_threshold, 
         x6_1 = ["Low Fill Rates", None]
 
     try:
-        x7 = list(
-            pd.read_csv(ends_with(master_path) + "biasedness_detection.csv").query("`flagged`>0").attribute.values)
+        biasedness_df = pd.read_csv(ends_with(master_path) + "biasedness_detection.csv")
+        if "treated" in biasedness_df:
+            x7 = list(df.query("`treated`>0").attribute.values)
+        else:
+            x7 = list(df.query("`flagged`>0").attribute.values)
         if len(x7) > 0:
             x7_1 = ["High Biasedness", x7]
         else:

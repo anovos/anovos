@@ -53,8 +53,8 @@ def duplicate_detection(spark, idf, list_of_cols='all', drop_cols=[], treatment=
 
     odf_print = spark.createDataFrame([["rows_count", float(idf.count())], \
 					["unique_rows_count", float(odf_tmp.count())], \
-					["duplicate_rows", float(odf_tmp.count() - idf.count())], \
-					["pct_duplicate_rows", (odf_tmp.count() - idf.count())/idf.count()]], \
+					["duplicate_rows", float(idf.count() - odf_tmp.count())], \
+					["pct_duplicate_rows", round((idf.count() - odf_tmp.count())/idf.count(), 4)]], \
 					schema=['metric', 'value'])
     if print_impact:
         print("No. of Rows: " + str(idf.count()))
@@ -470,8 +470,7 @@ def outlier_detection(spark, idf, list_of_cols='all', drop_cols=[], detection_si
         if treatment & (treatment_method in ('value_replacement', 'null_replacement')):
             if skewed_cols:
                 warnings.warn(
-                    "Columns dropped from outlier treatment due to highly skewed distribution: " + (',').join(
-                        skewed_cols))
+                    "Columns dropped from outlier treatment due to highly skewed distribution: " + (',').join(skewed_cols))
             if i not in skewed_cols:
                 replace_vals = {'value_replacement': [params[index][0], params[index][1]],
                                 'null_replacement': [None, None]}
@@ -533,7 +532,7 @@ def IDness_detection(spark, idf, list_of_cols='all', drop_cols=[], treatment=Fal
                          uniqueCount_computation (data_analyzer.stats_generator module) has been computed & saved before.
     :return: (Output Dataframe, Metric Dataframe)
               Output Dataframe is the dataframe after column removal if treated, else original input dataframe.
-              Metric Dataframe is of schema [attribute, unique_values, IDness, flagged]. unique_values is no. of distinct
+              Metric Dataframe is of schema [attribute, unique_values, IDness, flagged/treated]. unique_values is no. of distinct
               values in a column, IDness is unique_values divided by no. of non-null values. A column is flagged 1
               if IDness is above the threshold, else 0.
     """
@@ -622,9 +621,9 @@ def biasedness_detection(spark, idf, list_of_cols='all', drop_cols=[], treatment
                        mode_computation (data_analyzer.stats_generator module) has been computed & saved before.
     :return: (Output Dataframe, Metric Dataframe)
               Output Dataframe is the dataframe after column removal if treated, else original input dataframe.
-              Metric Dataframe is of schema [attribute, mode, mode_pct, flagged]. mode is the most frequently seen value
-              and mode_pct is number of rows with mode value divided by non-null values. A column is flagged 1 if
-              mode_pct is above the threshold else 0.
+              Metric Dataframe is of schema [attribute, mode, mode_rows, mode_pct, flagged/treated]. mode is the most frequently seen value,
+              mode_rows is number of rows with mode value and mode_pct is number of rows with mode value divided by non-null values. 
+              A column is flagged 1 if mode_pct is above the threshold else 0.
     """
 
     if list_of_cols == 'all':
@@ -649,6 +648,7 @@ def biasedness_detection(spark, idf, list_of_cols='all', drop_cols=[], treatment
         odf = idf
         schema = T.StructType([T.StructField('attribute', T.StringType(), True),
                                T.StructField('mode', T.StringType(), True),
+                               T.StructField('mode_rows', T.StringType(), True),
                                T.StructField('mode_pct', T.StringType(), True),
                                T.StructField('flagged', T.StringType(), True)])
         odf_print = spark.sparkContext.emptyRDD().toDF(schema)
@@ -668,9 +668,9 @@ def biasedness_detection(spark, idf, list_of_cols='all', drop_cols=[], treatment
             .withColumnRenamed('key', 'attribute') \
             .join(mode_computation(spark, idf, list_of_cols), 'attribute', 'full_outer') \
             .withColumn('mode_pct', F.round(F.col('mode_rows') / F.col('count').cast(T.DoubleType()), 4)) \
-            .select('attribute', 'mode', 'mode_pct', 'mode_rows')
+            .select('attribute', 'mode', 'mode_rows', 'mode_pct')
     else:
-        odf_print = read_dataset(spark, **stats_mode).select('attribute', 'mode', 'mode_pct') \
+        odf_print = read_dataset(spark, **stats_mode).select('attribute', 'mode', 'mode_rows', 'mode_pct') \
             .where(F.col('attribute').isin(list_of_cols))
 
     odf_print = odf_print.withColumn('flagged',
