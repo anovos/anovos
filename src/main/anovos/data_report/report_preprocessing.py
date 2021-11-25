@@ -281,10 +281,15 @@ def charts_to_objects(spark, idf, list_of_cols='all', drop_cols=[], label_col=No
         encoding_model_exists = False
         binned_cols = []
         to_be_binned = num_cols
-    idf_encoded = attribute_binning(spark, idf_cleaned, list_of_cols=to_be_binned, method_type=bin_method,
+    
+    if to_be_binned:
+        idf_encoded = attribute_binning(spark, idf_cleaned, list_of_cols=to_be_binned, method_type=bin_method,
                                     bin_size=bin_size,
                                     bin_dtype="categorical", pre_existing_model=False,
                                     model_path=source_path + "/charts_to_objects", output_mode='append')
+    else:
+        idf_encoded = idf_cleaned
+    
     if binned_cols:
         idf_encoded = attribute_binning(spark, idf_encoded, list_of_cols=binned_cols, method_type=bin_method,
                                     bin_size=bin_size,
