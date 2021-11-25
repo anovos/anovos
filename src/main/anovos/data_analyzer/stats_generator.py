@@ -129,7 +129,7 @@ def nonzeroCount_computation(spark, idf, list_of_cols='all', drop_cols=[], print
         raise TypeError('Invalid input for Column(s)')
 
     if len(list_of_cols) == 0:
-        warnings.warn("No Non-Zero Count Computation")
+        warnings.warn("No Non-Zero Count Computation - No numerical column(s) to analyze")
         schema = T.StructType([T.StructField('attribute', T.StringType(), True),
                                T.StructField('nonzero_count', T.StringType(), True),
                                T.StructField('nonzero_pct', T.StringType(), True)])
@@ -216,8 +216,16 @@ def mode_computation(spark, idf, list_of_cols='all', drop_cols=[], print_impact=
         if (i[1] not in ('string', 'int', 'bigint', 'long')):
             list_of_cols.remove(i[0])
 
-    if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
+    if any(x not in idf.columns for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
+
+    if len(list_of_cols) == 0:
+        warnings.warn("No Mode Computation - No discrete column(s) to analyze")
+        schema = T.StructType([T.StructField('attribute', T.StringType(), True),
+                               T.StructField('mode', T.StringType(), True),
+                               T.StructField('mode_rows', T.StringType(), True)])
+        odf = spark.sparkContext.emptyRDD().toDF(schema)
+        return odf
 
     mode = [list(idf.select(i).dropna().groupby(i).count().orderBy("count", ascending=False).first() or [None, None])
             for i in list_of_cols]
@@ -300,8 +308,15 @@ def uniqueCount_computation(spark, idf, list_of_cols='all', drop_cols=[], print_
 
     list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
-    if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
+    if any(x not in idf.columns for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
+
+    if len(list_of_cols) == 0:
+        warnings.warn("No Unique Count Computation - No discrete column(s) to analyze")
+        schema = T.StructType([T.StructField('attribute', T.StringType(), True),
+                               T.StructField('unique_values', T.StringType(), True)])
+        odf = spark.sparkContext.emptyRDD().toDF(schema)
+        return odf
 
     uniquevalue_count = idf.agg(*(F.countDistinct(F.col(i)).alias(i) for i in list_of_cols))
     odf = spark.createDataFrame(zip(list_of_cols, uniquevalue_count.rdd.map(list).collect()[0]),
@@ -338,8 +353,16 @@ def measures_of_cardinality(spark, idf, list_of_cols='all', drop_cols=[], print_
 
     list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
-    if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
+    if any(x not in idf.columns for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
+
+    if len(list_of_cols) == 0:
+        warnings.warn("No Cardinality Computation - No discrete column(s) to analyze")
+        schema = T.StructType([T.StructField('attribute', T.StringType(), True),
+                               T.StructField('unique_values', T.StringType(), True),
+                               T.StructField('IDness', T.StringType(), True)])
+        odf = spark.sparkContext.emptyRDD().toDF(schema)
+        return odf
 
     odf = uniqueCount_computation(spark, idf, list_of_cols) \
         .join(missingCount_computation(spark, idf, list_of_cols), 'attribute', 'full_outer') \
@@ -378,7 +401,7 @@ def measures_of_dispersion(spark, idf, list_of_cols='all', drop_cols=[], print_i
     if any(x not in num_cols for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
     if len(list_of_cols) == 0:
-        warnings.warn("No Dispersion Computation")
+        warnings.warn("No Dispersion Computation - No numerical column(s) to analyze")
         schema = T.StructType([T.StructField('attribute', T.StringType(), True),
                                T.StructField('stddev', T.StringType(), True),
                                T.StructField('variance', T.StringType(), True),
@@ -428,7 +451,7 @@ def measures_of_percentiles(spark, idf, list_of_cols='all', drop_cols=[], print_
     if any(x not in num_cols for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
     if len(list_of_cols) == 0:
-        warnings.warn("No Percentiles Computation")
+        warnings.warn("No Percentiles Computation - No numerical column(s) to analyze")
         schema = T.StructType([T.StructField('attribute', T.StringType(), True),
                                T.StructField('min', T.StringType(), True),
                                T.StructField('1%', T.StringType(), True),
@@ -484,7 +507,7 @@ def measures_of_shape(spark, idf, list_of_cols='all', drop_cols=[], print_impact
     if any(x not in num_cols for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
     if len(list_of_cols) == 0:
-        warnings.warn("No Skewness/Kurtosis Computation")
+        warnings.warn("No Skewness/Kurtosis Computation - No numerical column(s) to analyze")
         schema = T.StructType([T.StructField('attribute', T.StringType(), True),
                                T.StructField('skewness', T.StringType(), True),
                                T.StructField('kurtosis', T.StringType(), True)])
