@@ -51,12 +51,16 @@ def duplicate_detection(spark, idf, list_of_cols='all', drop_cols=[], treatment=
     odf_tmp = idf.drop_duplicates(subset=list_of_cols)
     odf = odf_tmp if treatment else idf
 
-    odf_print = spark.createDataFrame([["rows_count", idf.count()], ["unique_rows_count", odf_tmp.count()]],
-                                      schema=['metric', 'value'])
-
+    odf_print = spark.createDataFrame([["rows_count", float(idf.count())], \
+					["unique_rows_count", float(odf_tmp.count())], \
+					["duplicate_rows", float(odf_tmp.count() - idf.count())], \
+					["pct_duplicate_rows", (odf_tmp.count() - idf.count())/idf.count()]], \
+					schema=['metric', 'value'])
     if print_impact:
         print("No. of Rows: " + str(idf.count()))
         print("No. of UNIQUE Rows: " + str(odf_tmp.count()))
+        print("No. of Duplicate Rows: " + str(odf_tmp.count() - idf.count()))
+        print("Percentage of Duplicate Rows: " + str((odf_tmp.count() - idf.count())/idf.count()))
 
     return odf, odf_print
 
@@ -580,6 +584,7 @@ def IDness_detection(spark, idf, list_of_cols='all', drop_cols=[], treatment=Fal
     if treatment:
         remove_cols = odf_print.where(F.col('flagged') == 1).select('attribute').rdd.flatMap(lambda x: x).collect()
         odf = idf.drop(*remove_cols)
+        odf_print = odf_print.withColumnRenamed('flagged','treated')
     else:
         odf = idf
 
@@ -663,7 +668,7 @@ def biasedness_detection(spark, idf, list_of_cols='all', drop_cols=[], treatment
             .withColumnRenamed('key', 'attribute') \
             .join(mode_computation(spark, idf, list_of_cols), 'attribute', 'full_outer') \
             .withColumn('mode_pct', F.round(F.col('mode_rows') / F.col('count').cast(T.DoubleType()), 4)) \
-            .select('attribute', 'mode', 'mode_pct')
+            .select('attribute', 'mode', 'mode_pct', 'mode_rows')
     else:
         odf_print = read_dataset(spark, **stats_mode).select('attribute', 'mode', 'mode_pct') \
             .where(F.col('attribute').isin(list_of_cols))
@@ -677,6 +682,7 @@ def biasedness_detection(spark, idf, list_of_cols='all', drop_cols=[], treatment
         remove_cols = odf_print.where((F.col('mode_pct') >= treatment_threshold) | (F.col('mode_pct').isNull())) \
             .select('attribute').rdd.flatMap(lambda x: x).collect()
         odf = idf.drop(*remove_cols)
+        odf_print = odf_print.withColumnRenamed('flagged','treated')
 
     else:
         odf = idf
