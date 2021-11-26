@@ -253,7 +253,7 @@ def measures_of_centralTendency(spark, idf, list_of_cols='all', drop_cols=[], pr
     :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
                       Alternatively, columns can be specified in a string format,
                       where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    :return: Dataframe [attribute, mean, median, mode, mode_pct]
+    :return: Dataframe [attribute, mean, median, mode, mode_rows, mode_pct]
     """
     if list_of_cols == 'all':
         num_cols, cat_cols, other_cols = attributeType_segregation(idf)
@@ -274,7 +274,7 @@ def measures_of_centralTendency(spark, idf, list_of_cols='all', drop_cols=[], pr
         .withColumnRenamed('key', 'attribute') \
         .join(mode_computation(spark, idf, list_of_cols), 'attribute', 'full_outer') \
         .withColumn('mode_pct', F.round(F.col('mode_rows') / F.col('count').cast(T.DoubleType()), 4)) \
-        .select('attribute', 'mean', 'median', 'mode', 'mode_pct')
+        .select('attribute', 'mean', 'median', 'mode', 'mode_rows', 'mode_pct')
 
     if print_impact:
         odf.show(len(list_of_cols))
