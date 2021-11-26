@@ -60,8 +60,8 @@ def duplicate_detection(spark, idf, list_of_cols='all', drop_cols=[], treatment=
     if print_impact:
         print("No. of Rows: " + str(idf.count()))
         print("No. of UNIQUE Rows: " + str(odf_tmp.count()))
-        print("No. of Duplicate Rows: " + str(odf_tmp.count() - idf.count()))
-        print("Percentage of Duplicate Rows: " + str(round((odf_tmp.count() - idf.count())/idf.count(),4)))
+        print("No. of Duplicate Rows: " + str(idf.count() - odf_tmp.count()))
+        print("Percentage of Duplicate Rows: " + str(round((idf.count() - odf_tmp.count())/idf.count(),4)))
 
     return odf, odf_print
 
