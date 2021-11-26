@@ -139,11 +139,11 @@ def data_analyzer_output(master_path, avl_recs_tab, tab_name):
                     format(int(duplicate_recs[duplicate_recs["metric"] == "rows_count"].value.values), ",")) + "**"
                 duplicate_rows = " No. of Duplicate Rows: **" + str(
                     format(int(duplicate_recs[duplicate_recs["metric"] == "duplicate_rows"].value.values), ",")) + "**"
-                pct_duplicate_rows = " Percentage of Duplicate Rows: **" + str(
-                    float(duplicate_recs[duplicate_recs["metric"] == "pct_duplicate_rows"].value.values * 100.0)) + " %" + "**"
+                duplicate_pct = " Percentage of Duplicate Rows: **" + str(
+                    float(duplicate_recs[duplicate_recs["metric"] == "duplicate_pct"].value.values * 100.0)) + " %" + "**"
                 df_list.append([dp.Text("### " + str(remove_u_score(i))),
-                                dp.Group(dp.Text(rows_count), dp.Text(unique_rows_count), dp.Text(duplicate_rows), dp.Text(pct_duplicate_rows), rows=4),
-                                dp.Text("#")])
+                                dp.Group(dp.Text(rows_count), dp.Text(unique_rows_count), dp.Text(duplicate_rows), 
+                                dp.Text(duplicate_pct), rows=4), dp.Text("#"), dp.Text("#")])
 
             elif i == "outlier_detection":
                 df_list.append([dp.Text("### " + str(remove_u_score(i))),

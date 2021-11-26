@@ -120,9 +120,13 @@ def anovos_basic_report(spark, idf, id_col='', label_col='', event_label='', out
                 format(int(stats[stats["metric"] == "unique_rows_count"].value.values), ",")) + "**"
             total_rows_count = " No. of Rows: **" + str(
                 format(int(stats[stats["metric"] == "rows_count"].value.values), ",")) + "**"
+            duplicate_rows_count = " No. of Duplicate Rows: **" + str(
+                format(int(stats[stats["metric"] == "duplicate_rows"].value.values), ",")) + "**"
+            duplicate_rows_pct = " Percentage of Duplicate Rows: **" + str(
+                float(stats[stats["metric"] == "duplicate_pct"].value.values * 100.0)) + " %" + "**"
             QCrow_content.append([dp.Text("### " + str(remove_u_score(i.__name__))),
-                                  dp.Group(dp.Text(total_rows_count), dp.Text(unique_rows_count), rows=2), dp.Text("#"),
-                                  dp.Text("#")])
+                                  dp.Group(dp.Text(total_rows_count), dp.Text(unique_rows_count), dp.Text(duplicate_rows_count), 
+                                  dp.Text(duplicate_rows_pct), rows=4), dp.Text("#"),dp.Text("#")])
         else:
             QCrow_content.append([dp.Text("### " + str(remove_u_score(i.__name__))),
                                   dp.DataTable(pd.read_csv(ends_with(local_path) + str(i.__name__) + ".csv").round(3)),

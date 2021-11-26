@@ -27,7 +27,8 @@ def duplicate_detection(spark, idf, list_of_cols='all', drop_cols=[], treatment=
     :param treatment: Boolean argument – True or False. If True, duplicate rows are removed from the input dataframe.
     :return: (Output Dataframe, Metric Dataframe)
               Output Dataframe is de-duplicated dataframe if treated, else original input dataframe.
-              Metric Dataframe is of schema [metric, value] and contains metrics - number of rows & number of unique rows.
+              Metric Dataframe is of schema [metric, value] and contains metrics - number of rows, number of unique rows, 
+              number of duplicate rows and percentage of duplicate rows in total.
     """
     if list_of_cols == 'all':
         num_cols, cat_cols, other_cols = attributeType_segregation(idf)
@@ -54,13 +55,13 @@ def duplicate_detection(spark, idf, list_of_cols='all', drop_cols=[], treatment=
     odf_print = spark.createDataFrame([["rows_count", float(idf.count())], \
 					["unique_rows_count", float(odf_tmp.count())], \
 					["duplicate_rows", float(idf.count() - odf_tmp.count())], \
-					["pct_duplicate_rows", round((idf.count() - odf_tmp.count())/idf.count(), 4)]], \
+					["duplicate_pct", round((idf.count() - odf_tmp.count())/idf.count(), 4)]], \
 					schema=['metric', 'value'])
     if print_impact:
         print("No. of Rows: " + str(idf.count()))
         print("No. of UNIQUE Rows: " + str(odf_tmp.count()))
         print("No. of Duplicate Rows: " + str(odf_tmp.count() - idf.count()))
-        print("Percentage of Duplicate Rows: " + str((odf_tmp.count() - idf.count())/idf.count()))
+        print("Percentage of Duplicate Rows: " + str(round((odf_tmp.count() - idf.count())/idf.count(),4)))
 
     return odf, odf_print
 
