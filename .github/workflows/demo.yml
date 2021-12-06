@@ -30,9 +30,4 @@ jobs:
       - name: Run the demo
         run: |
           cd dist/
-          ./spark-submit.sh > run.txt
-          tail -n 30 -f run.txt
-          
-          
-        
-
+          ./spark-submit.sh
