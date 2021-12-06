@@ -14,6 +14,11 @@ from pyspark.sql import types as T
 from pyspark.sql.window import Window
 from scipy import stats
 
+import pandas as pd
+import numpy as np
+import os
+import subprocess
+
 
 def attribute_binning(spark, idf, list_of_cols='all', drop_cols=[], method_type="equal_range", bin_size=10,
                       bin_dtype="numerical",
@@ -902,7 +907,7 @@ def imputation_matrixFactorization(spark, idf, list_of_cols="missing", drop_cols
     if any(x not in idf.columns for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
     
-    num_cols = featureType_segregation(idf.select(list_of_cols))[0]
+    num_cols = attributeType_segregation(idf.select(list_of_cols))[0]
     include_cols = num_cols
     exclude_cols = [e for e in idf.columns if e not in num_cols]
      
@@ -1002,7 +1007,7 @@ def imputation_custom(spark, idf, list_of_cols="missing", drop_cols=[], list_of_
     if any(x not in idf.columns for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
     
-    num_cols, cat_cols, other_cols = featureType_segregation(idf.select(list_of_cols))
+    num_cols, cat_cols, other_cols = attributeType_segregation(idf.select(list_of_cols))
     
     if method_type == 'row_removal':
         odf = idf.dropna(subset=list_of_cols)
@@ -1082,7 +1087,7 @@ def imputation_comparison(spark, idf, list_of_cols="missing", drop_cols=[], id_c
     if any(x not in idf.columns for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
     
-    num_cols = featureType_segregation(idf.select(list_of_cols))[0]
+    num_cols = attributeType_segregation(idf.select(list_of_cols))[0]
     list_of_cols = num_cols
     
     idf_test = idf.dropna().withColumn('index', F.monotonically_increasing_id()).withColumn("index", F.row_number().over(Window.orderBy("index")))
@@ -1093,7 +1098,7 @@ def imputation_comparison(spark, idf, list_of_cols="missing", drop_cols=[], id_c
         idf_null = idf_null.withColumn(i, F.when(F.col('index').isin(null_index), None).otherwise(F.col(i)))
 
     idf_null.write.parquet("intermediate_data/imputation_comparison/test_dataset", mode='overwrite')
-    idf_null = sqlContext.read.parquet("intermediate_data/imputation_comparison/test_dataset")
+    idf_null = spark.read.parquet("intermediate_data/imputation_comparison/test_dataset")
 
     method1 = imputation_MMM(spark, idf_null, list_of_cols=list_of_cols, method_type="mean", stats_missing=stats_missing)
     method2 = imputation_MMM(spark, idf_null, list_of_cols=list_of_cols, method_type="median", stats_missing=stats_missing)
@@ -1466,12 +1471,12 @@ def feature_transformation(spark, idf, list_of_cols="all", drop_cols=[], method_
                 # lambdaVal = [-5,-4,-3,-2,-1,-0.5,-0.25,0.25,0.5,1,2,3,4,5]
                 best_pVal = 0
                 for j in lambdaVal:
-                    pVal = Statistics.kolmogorovSmirnovTest(df.select(F.pow(F.col(i),j)).rdd.flatMap(lambda x:x), "norm").pValue
+                    pVal = Statistics.kolmogorovSmirnovTest(odf.select(F.pow(F.col(i),j)).rdd.flatMap(lambda x:x), "norm").pValue
                     if pVal > best_pVal:
                         best_pVal = pVal
                         best_lambdaVal = j
 
-                pVal = Statistics.kolmogorovSmirnovTest(df.select(F.log(F.col(i))).rdd.flatMap(lambda x:x), "norm").pValue
+                pVal = Statistics.kolmogorovSmirnovTest(odf.select(F.log(F.col(i))).rdd.flatMap(lambda x:x), "norm").pValue
                 if pVal > best_pVal:
                     best_pVal = pVal
                     best_lambdaVal = 0
@@ -1620,8 +1625,8 @@ def feature_autoLearn(spark, idf, list_of_cols="all", drop_cols=[], label_col='l
         print("Newly Constructed Features (After Stability Check): ", len(stable_feats))
         print("Newly Constructed Features (Final): ", len(final_feats))
         
-    odf = sqlContext.createDataFrame(pd.concat([idf[fixed_cols],output[final_feats]], axis=1))
-    idf = sqlContext.createDataFrame(idf)
+    odf = spark.createDataFrame(pd.concat([idf[fixed_cols],output[final_feats]], axis=1))
+    idf = spark.createDataFrame(idf)
     if print_impact:
         print("Before:")
         idf.show(5)
@@ -1817,8 +1822,9 @@ def catfeats_basic_cleaning(spark, idf, list_of_cols='all', drop_cols=[], output
     for i in list_of_cols:
         modify_col = ((i + "_cleaned") if (output_mode == "append") else i)
         modify_list.append(modify_col)
-        odf_tmp = odf_tmp.withColumn(modify_col, F.lower(F.trim(F.col(i))))\
-            .withColumn(modify_col, F.regexp_replace(F.col(modify_col),'[ &$;:.,*#@_?%!^()-/\'\"\\\]',''))
+        # Note: removed regexp_replace part: may lead to misunderstanding? For example Other-relative becomes otherrelative
+        odf_tmp = odf_tmp.withColumn(modify_col, F.lower(F.trim(F.col(i))))
+        # .withColumn(modify_col, F.regexp_replace(F.col(modify_col),'[ &$;:.,*#@_?%!^()-/\'\"\\\]',''))
     odf = declare_missing(spark, odf_tmp, list_of_cols=modify_list, missing_values=null_vocab)
     
     # Note: if output_mode == 'append', drop columns if col i = col i + "_cleaned" for all rows
@@ -1851,7 +1857,7 @@ def catfeats_basic_cleaning(spark, idf, list_of_cols='all', drop_cols=[], output
     
 
 def catfeats_fuzzy_matching(spark, idf, list_of_cols='all', drop_cols=[], basic_cleaning=False, 
-                            output_mode='replace',print_impact=False):
+                            output_mode='replace', print_impact=False):
     '''
     idf: Input Dataframe
     list_of_cols: all (numerical columns except ID & Label) or list of columns (in list format or string separated by |)
@@ -1876,54 +1882,69 @@ def catfeats_fuzzy_matching(spark, idf, list_of_cols='all', drop_cols=[], basic_
     list_of_cols = cat_cols
 
     from sklearn import cluster
-    from fuzzywuzzy import fuzz,process
+    from fuzzywuzzy import fuzz, process
     if basic_cleaning:
         idf_cleaned = catfeats_basic_cleaning(spark, idf, list_of_cols)
     else:
         idf_cleaned = idf
     idf_cleaned.persist()
-    odf=idf_cleaned
+    odf = idf_cleaned
     for i in list_of_cols:
         ls = idf_cleaned.select(i).dropna().distinct().rdd.flatMap(lambda x:x).collect()
-        similarity_array = np.ones((len(ls),(len(ls))))*100
+        distance_array = np.ones((len(ls),(len(ls))))*0
         for k in range(1, len(ls)):
             for j in range(k):
                 s1 = fuzz.token_set_ratio(ls[k],ls[j]) + 0.000000000001
                 s2 = fuzz.partial_ratio(ls[k],ls[j]) + 0.000000000001
-                similarity_array[k][j] = 2*s1*s2/(s1+s2)
-                similarity_array[j][k] = similarity_array[k][j]
+                similarity_score = 2*s1*s2/(s1+s2)
+                # Note: merge categories with >=85 similarity
+                distance = 100 if similarity_score < 85 else 0
+                distance_array[k][j] = distance
+                distance_array[j][k] = distance_array[k][j]
       
-        clusters = cluster.AffinityPropagation(affinity="precomputed",convergence_iter=15,
-                                               max_iter=200,damping=0.5,random_state=None)\
-                          .fit_predict(similarity_array)
-            
+        # Note: replaced the cluster part by DBSCAN which create clusters with 1 point if all are different
+        clusters = cluster.DBSCAN(metric="precomputed", min_samples=1).fit_predict(distance_array)
+
         lol = list(zip(ls,clusters))
         lol = [[str(e[0]), "cluster"+ str(e[1])] for e in lol]
-        df_clusters = sqlContext.createDataFrame(lol, schema = [i,'cluster'])\
+        df_clusters = spark.createDataFrame(lol, schema = [i,'cluster'])\
             .groupBy('cluster').agg(F.collect_list(i).alias(i))\
             .withColumn('mapped_value', F.col(i)[0]).drop('cluster')
         if print_impact:
             df_clusters.show(df_clusters.count(), False)
         df_clusters = df_clusters.withColumn(i, F.explode(i))
-        odf = odf.join(df_clusters,i,'left_outer').withColumnRenamed('mapped_value',i+"_fuzzmatched")
+        odf = odf.join(df_clusters,i,'left_outer').withColumnRenamed('mapped_value', i+"_fuzzmatched")
         
     if output_mode == 'replace':
         for i in list_of_cols:
-            odf = odf.drop(i).withColumnRenamed(i+"_fuzzmatched",i)
+            odf = odf.drop(i).withColumnRenamed(i+"_fuzzmatched", i)
     
     if print_impact:
         if output_mode == 'replace':
             output_cols = list_of_cols
         else:
             output_cols = [(i+"_fuzzmatched") for i in list_of_cols]
-        uniquecount_computation(idf, list_of_cols).select('feature', F.col("unique_values").alias("uniqueValues_before")).show(len(output_cols))
-        uniquecount_computation(odf, output_cols).select('feature', F.col("unique_values").alias("uniqueValues_after")).show(len(output_cols))
-   
+
+        idf_unique = uniqueCount_computation(spark, idf, list_of_cols)\
+            .select('attribute', F.col("unique_values").alias("uniqueValues_before"))
+        odf_unique = uniqueCount_computation(spark, odf, output_cols)\
+            .select('attribute', F.col("unique_values").alias("uniqueValues_after"))
+        
+        if output_mode == 'replace':
+            odf_print = idf_unique.join(odf_unique, 'attribute', 'inner')
+        else:
+            odf_print = idf_unique\
+                .join(odf_unique\
+                      .withColumnRenamed('attribute', 'attribute_after') \
+                      .withColumn('attribute', F.expr("substring(attribute_after, 1, length(attribute_after)-8)")),
+                      'attribute', 'inner') 
+        odf_print.show(len(output_mode))
+    
     idf_cleaned.unpersist()
     return odf
 
 
-def cat_to_num_supervised(idf, list_of_cols, id_col="id", label_col="label", event_label=1, nonevent_label=0,
+def cat_to_num_supervised(spark, idf, list_of_cols, id_col="id", label_col="label", event_label=1, nonevent_label=0,
                           pre_existing_model =False, model_path="NA", output_mode= "replace",seed = 0, print_impact=False):
     '''
     idf: Input Dataframe
@@ -1946,14 +1967,14 @@ def cat_to_num_supervised(idf, list_of_cols, id_col="id", label_col="label", eve
     if len(list_of_cols) == 0:
         raise TypeError('Invalid input for Column(s)')
     
-    num_cols, cat_cols, other_cols = featureType_segregation(idf.select(list_of_cols))
+    num_cols, cat_cols, other_cols = attributeType_segregation(idf.select(list_of_cols))
     list_of_cols = cat_cols
     odf = idf
     for index, i in enumerate(list_of_cols):
         if index > 0:
-            odf = sqlContext.read.parquet("intermediate_data/df_index" + str(index-1) + "_seed" +str(seed))
+            odf = spark.read.parquet("intermediate_data/df_index" + str(index-1) + "_seed" +str(seed))
         if pre_existing_model == True:
-            df_tmp = sqlContext.read.csv(model_path+ "/cat_to_num_supervised/" + i, header=True, inferSchema=True)
+            df_tmp = spark.read.csv(model_path+ "/cat_to_num_supervised/" + i, header=True, inferSchema=True)
         else:        
             df_tmp = idf.groupBy(i,label_col).count()                    .groupBy(i).pivot(label_col).sum('count').fillna(0)                    .withColumn( i + '_value', F.round(F.col(event_label)/(F.col(event_label)+F.col(nonevent_label)), 4))                    .drop(*[event_label,nonevent_label])
         
