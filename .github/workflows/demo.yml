@@ -1,0 +1,38 @@
+name: Demo
+on:
+  push:
+
+
+jobs:
+  run-demo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.7'
+
+      - uses: actions/setup-java@v1
+        with:
+          java-version: '8'
+
+      - uses: vemonet/setup-spark@v1
+        with:
+          spark-version: '2.4.8'
+          hadoop-version: '2.7'
+
+      - name: Checkout code
+        uses: actions/checkout@master
+
+      - name: Ensure clean environment
+        run: |
+          make clean build
+
+      - name: Run the demo
+        run: |
+          cd dist/
+          ./spark-submit.sh > run.txt
+          tail -n 30 -f run.txt
+          
+          
+        
+
