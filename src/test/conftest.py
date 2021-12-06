@@ -1,10 +1,12 @@
 import sys
+import os
 
 import pytest
 from pyspark.sql import SparkSession
 
 sys.path.insert(0, './dist/anovos.zip')
-
+sys.path.insert(0, os.path.abspath("./main"))
+print(sys.path)
 
 @pytest.fixture(scope="session")
 def spark_session():
