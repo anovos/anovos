@@ -346,6 +346,204 @@ def cat_to_num_unsupervised(spark, idf, list_of_cols='all', drop_cols=[], method
     return odf
 
 
+def z_standardization(spark, idf, list_of_cols='all', drop_cols=[], pre_existing_model=False, model_path="NA", 
+                      output_mode='replace', print_impact=False):
+    '''
+    idf: Input Dataframe
+    list_of_cols: List of columns for standarization
+    pre_existing_model: Mean/stddev for each feature. True if model files exists already, False Otherwise
+    model_path: If pre_existing_model is True, this argument is path for model file. 
+                  If pre_existing_model is False, this field can be used for saving the model file. 
+                  Default NA means there is neither pre_existing_model nor there is a need to save one.
+    output_mode: replace or append
+    return: Scaled Dataframe
+    '''
+    num_cols = attributeType_segregation(idf)[0]
+    if list_of_cols == 'all':
+        list_of_cols = num_cols
+    if isinstance(list_of_cols, str):
+        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
+    if isinstance(drop_cols, str):
+        drop_cols = [x.strip() for x in drop_cols.split('|')]
+
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
+
+    if any(x not in num_cols for x in list_of_cols):
+        raise TypeError('Invalid input for Column(s)')
+    if len(list_of_cols) == 0:
+        warnings.warn("No Transformation Performed - Normalization")
+        return idf
+
+    if output_mode not in ('replace', 'append'):
+        raise TypeError('Invalid input for output_mode')
+    
+    if pre_existing_model:
+        df_model = spark.read.parquet(model_path+"/z_standardization")
+        parameters = []
+        for i in list_of_cols:
+            mapped_value = df_model.where(F.col('feature') == i).select('parameters').rdd.flatMap(lambda x:x).collect()[0]
+            parameters.append(mapped_value)
+    else:
+        parameters = []
+        for i in list_of_cols:
+            mean, sttdev = idf.select(F.mean(i), F.stddev(i)).first()
+            parameters.append([mean, sttdev])
+    
+    odf = idf
+    for index, i in enumerate(list_of_cols):
+        modify_col = ((i + "_scaled") if (output_mode == "append") else i)
+        odf = odf.withColumn(modify_col, (F.col(i) - parameters[index][0])/parameters[index][1])
+    
+    # Saving Model File if required
+    if (pre_existing_model == False) & (model_path != "NA"):
+        df_model = spark.createDataFrame(zip(list_of_cols, parameters), schema=['feature', 'parameters'])
+        df_model.repartition(1).write.parquet(model_path+"/z_standardization", mode='overwrite')
+        
+    if print_impact:
+        if output_mode == 'replace':
+            output_cols = list_of_cols
+        else:
+            output_cols = [(i+"_scaled") for i in list_of_cols]
+        print("Before: ")
+        idf.select(list_of_cols).describe().show()
+        print("After: ")
+        odf.select(output_cols).describe().show()
+    
+    return odf
+
+
+def IQR_standardization(spark, idf, list_of_cols='all', drop_cols=[], pre_existing_model=False, model_path="NA", 
+                        output_mode='replace', print_impact=False):
+    '''
+    idf: Input Dataframe
+    list_of_cols: List of columns for standarization
+    pre_existing_model: 25/50/75 percentile for each feature. True if model files exists already, False Otherwise
+    model_path: If pre_existing_model is True, this argument is path for model file. 
+                  If pre_existing_model is False, this field can be used for saving the model file. 
+                  Default NA means there is neither pre_existing_model nor there is a need to save one.
+    output_mode: replace or append
+    return: Scaled Dataframe
+    '''
+    num_cols = attributeType_segregation(idf)[0]
+    if list_of_cols == 'all':
+        list_of_cols = num_cols
+    if isinstance(list_of_cols, str):
+        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
+    if isinstance(drop_cols, str):
+        drop_cols = [x.strip() for x in drop_cols.split('|')]
+
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
+
+    if any(x not in num_cols for x in list_of_cols):
+        raise TypeError('Invalid input for Column(s)')
+    if len(list_of_cols) == 0:
+        warnings.warn("No Transformation Performed - Normalization")
+        return idf
+
+    if output_mode not in ('replace', 'append'):
+        raise TypeError('Invalid input for output_mode')
+
+    if pre_existing_model:
+        df_model = spark.read.parquet(model_path+"/IQR_standardization")
+        parameters = []
+        for i in list_of_cols:
+            mapped_value = df_model.where(F.col('feature') == i).select('parameters').rdd.flatMap(lambda x:x).collect()[0]
+            parameters.append(mapped_value)
+    else:
+        parameters = idf.approxQuantile(list_of_cols, [0.25,0.5,0.75], 0.01)
+    
+    odf = idf
+    for index, i in enumerate(list_of_cols):
+        modify_col = ((i + "_scaled") if (output_mode == "append") else i)
+        odf = odf.withColumn(modify_col, (F.col(i) - parameters[index][1])/(parameters[index][2] - parameters[index][0]))
+    if (pre_existing_model == False) & (model_path != "NA"):
+        df_model = spark.createDataFrame(zip(list_of_cols, parameters), schema=['feature', 'parameters'])
+        df_model.repartition(1).write.parquet(model_path+"/IQR_standardization", mode='overwrite') 
+    
+    if print_impact:
+        if output_mode == 'replace':
+            output_cols = list_of_cols
+        else:
+            output_cols = [(i+"_scaled") for i in list_of_cols]
+        print("Before: ")
+        idf.select(list_of_cols).describe().show()
+        print("After: ")
+        odf.select(output_cols).describe().show()
+    
+    return odf
+
+
+def normalization(spark, idf, list_of_cols='all', drop_cols=[], pre_existing_model=False, model_path="NA", 
+                  output_mode='replace', print_impact=False):
+    '''
+    idf: Pyspark Dataframe
+    list_of_cols: List of columns for normalization
+    pre_existing_model: True if normalization/scalar model exists already, False Otherwise
+    model_path: If pre_existing_model is True, this argument is path for normalization model. If pre_existing_model is False, 
+                this argument can be used for saving the normalization model. 
+                Default ("NA") means there is neither pre_existing_model nor there is a need to save one.
+    output_mode: replace or append
+    return: Scaled Dataframe
+    '''
+    num_cols = attributeType_segregation(idf)[0]
+    if list_of_cols == 'all':
+        list_of_cols = num_cols
+    if isinstance(list_of_cols, str):
+        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
+    if isinstance(drop_cols, str):
+        drop_cols = [x.strip() for x in drop_cols.split('|')]
+
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
+
+    if any(x not in num_cols for x in list_of_cols):
+        raise TypeError('Invalid input for Column(s)')
+    if len(list_of_cols) == 0:
+        warnings.warn("No Transformation Performed - Normalization")
+        return idf
+
+    if output_mode not in ('replace', 'append'):
+        raise TypeError('Invalid input for output_mode')
+    
+    # Building new scalar model or uploading the existing model
+    from pyspark.ml.feature import VectorAssembler, MinMaxScaler, MinMaxScalerModel
+    assembler_norm = VectorAssembler(inputCols=list_of_cols, outputCol="list_of_cols_vector", handleInvalid="keep")
+    assembled_norm_data = assembler_norm.transform(idf) 
+    if pre_existing_model == True:
+        scalerModel = MinMaxScalerModel.load(model_path+"/normalization")
+    else:
+        scaler = MinMaxScaler(inputCol="list_of_cols_vector", outputCol="list_of_cols_scaled")
+        scalerModel = scaler.fit(assembled_norm_data)
+    # Applying model
+    scaledData = scalerModel.transform(assembled_norm_data)
+    # Saving model if required
+    if (pre_existing_model == False) & (model_path != "NA"):
+        scalerModel.write().overwrite().save(model_path+"/normalization")
+    
+    # Converting normalization output back into individual features
+    def vector_to_array(v):
+        return v.toArray().tolist()
+    f_vector_to_array = F.udf(vector_to_array, T.ArrayType(T.FloatType()))
+    odf = scaledData.withColumn("list_of_cols_array", f_vector_to_array('list_of_cols_scaled')).drop(*['list_of_cols_scaled',"list_of_cols_vector"])
+    
+    odf = odf.select(odf.columns + [(F.when(F.isnan(F.col("list_of_cols_array")[i]),None).otherwise(F.col("list_of_cols_array")[i])).alias(list_of_cols[i]+"_scaled") for i in range(len(list_of_cols))])            .drop("list_of_cols_array")
+    
+    if output_mode =='replace':
+        for i in list_of_cols:
+            odf = odf.drop(i).withColumnRenamed(i+"_scaled",i)
+            
+    if print_impact:
+        if output_mode == 'replace':
+            output_cols = list_of_cols
+        else:
+            output_cols = [(i+"_scaled") for i in list_of_cols]
+        print("Before: ")
+        idf.select(list_of_cols).describe().show()
+        print("After: ")
+        odf.select(output_cols).describe().show()
+    
+    return odf
+
+
 def imputation_MMM(spark, idf, list_of_cols="missing", drop_cols=[], method_type="median", pre_existing_model=False,
                    model_path="NA",
                    output_mode="replace", stats_missing={}, stats_mode={}, print_impact=False):
@@ -499,6 +697,940 @@ def imputation_MMM(spark, idf, list_of_cols="missing", drop_cols=[], method_type
     return odf
 
 
+def imputation_sklearn(spark, idf, list_of_cols="missing", drop_cols=[], method_type="KNN", max_size=500000, 
+                       emr_mode=False, pre_existing_model=False, model_path="NA", output_mode="replace", 
+                       stats_missing={}, print_impact=False):
+    
+    '''
+    idf: Pyspark Dataframe
+    method_type: KNN, RBM, regression
+    list_of_cols: all, missing (i.e. all feautures with missing values), list of columns (in list format or string separated by |) 
+                all is better strategy when training has no missing data but testing/prediction data may have.
+                Categorical features are discarded else transform them before this process.
+    id_col, label_col: Excluding ID & Label columns from imputation
+    max_size: Maximum rows for training the imputer
+    pre_existing_model: True if imputer exists already, False Otherwise. 
+    model_path: If pre_existing_model is True, this argument is path for imputation model. 
+                  If pre_existing_model is False, this argument can be used for saving the imputation model. 
+                  Default "NA" means there is neither pre_existing_model nor there is a need to save one.
+    output_mode: replace or append
+    return: Imputed Dataframe
+    '''
+    if stats_missing == {}:
+        missing_df = missingCount_computation(spark, idf)
+    else:
+        missing_df = read_dataset(spark, **stats_missing).select('attribute', 'missing_count', 'missing_pct')
+
+    missing_cols = missing_df.where(F.col('missing_count') > 0).select('attribute').rdd.flatMap(lambda x: x).collect()
+
+    if str(pre_existing_model).lower() == 'true':
+        pre_existing_model = True
+    elif str(pre_existing_model).lower() == 'false':
+        pre_existing_model = False
+    else:
+        raise TypeError('Non-Boolean input for pre_existing_model')
+
+    if (len(missing_cols) == 0) & (pre_existing_model == False) & (model_path == "NA"):
+        return idf
+        
+    if list_of_cols == 'all':
+        num_cols = attributeType_segregation(idf)[0]
+        list_of_cols = num_cols
+    if list_of_cols == "missing":
+        list_of_cols = missing_cols
+    if isinstance(list_of_cols, str):
+        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
+    if isinstance(drop_cols, str):
+        drop_cols = [x.strip() for x in drop_cols.split('|')]
+
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
+
+    if len(list_of_cols) == 0:
+        warnings.warn("No Action Performed - sklearn Imputation")
+        return idf
+    if any(x not in idf.columns for x in list_of_cols):
+        raise TypeError('Invalid input for Column(s)')
+        
+    if method_type not in ('KNN', 'RBM', 'regression'):
+        raise TypeError('Invalid input for method_type')
+    if output_mode not in ('replace', 'append'):
+        raise TypeError('Invalid input for output_mode')
+    
+    num_cols = attributeType_segregation(idf.select(list_of_cols))[0]
+    include_cols = num_cols
+    exclude_cols = [e for e in idf.columns if e not in num_cols]
+    
+    import joblib
+    import pickle
+    
+    if pre_existing_model:
+        if emr_mode:
+            bash_cmd = "aws s3 cp " + model_path + "/imputation_sklearn.sav"
+            output = subprocess.check_output(['bash', '-c', bash_cmd])
+            #imputer = joblib.load("imputation_sklearn.sav")
+            imputer = pickle.load(open("imputation_sklearn.sav", 'rb'))
+        else: 
+            #imputer = joblib.load(model_path + "/imputation_sklearn.sav")
+            imputer = pickle.load(open(model_path + "/imputation_sklearn.sav", 'rb'))
+        idf_rest = idf
+    else:
+        sample_ratio = min(1.0,float(max_size)/idf.count())
+        idf_model =  idf.sample(False, sample_ratio, 0)
+        idf_rest = idf.subtract(idf_model)
+        idf_pd = idf_model.toPandas()
+        X = idf_pd.drop(exclude_cols,axis=1)
+        # Y = idf_pd[exclude_cols]
+        if method_type == 'KNN':
+            from sklearn.impute import KNNImputer
+            imputer = KNNImputer(n_neighbors=5, weights='uniform', metric='nan_euclidean')
+            imputer.fit(X)
+        if method_type == 'regression':
+            from sklearn.experimental import enable_iterative_imputer
+            from sklearn.impute import IterativeImputer
+            imputer = IterativeImputer()
+            imputer.fit(X)
+        if method_type == 'RBM':
+            import boltzmannclean
+            imputer = boltzmannclean.train_rbm(X.values, tune_hyperparameters=False)
+
+        if (pre_existing_model == False) & (model_path != "NA"):
+            if emr_mode:
+                #joblib.dump(imputer, "imputation_sklearn.sav")
+                pickle.dump(imputer, open("imputation_sklearn.sav", 'wb'))
+                bash_cmd = "aws s3 cp imputation_sklearn.sav " + model_path + "/imputation_sklearn.sav"
+                output = subprocess.check_output(['bash', '-c', bash_cmd])
+            else:
+                #joblib.dump(imputer, model_path + "/imputation_sklearn.sav")
+                local_path = model_path  + "/imputation_sklearn.sav"
+                os.makedirs(os.path.dirname(local_path), exist_ok=True)
+                #joblib.dump(imputer, local_path)
+                pickle.dump(imputer, open(local_path, 'wb'))
+        
+        pred = imputer.transform(X)
+        output = pd.concat([pd.Series(list(pred)),idf_pd], axis=1)
+        output.rename(columns={0:'features'}, inplace=True)
+        output.features = output.features.map(lambda x: [float(e) for e in x])
+        odf_model = spark.createDataFrame(output)
+        for index,i in enumerate(include_cols):
+            modify_col = ((i + "_imputed") if (output_mode == "append") else i)
+            odf_model = odf_model.withColumn(modify_col, F.col('features')[index])
+        odf_model = odf_model.drop('features')
+        for i in odf_model.columns:
+            odf_model = odf_model.withColumn(i,F.when(F.isnan(F.col(i)),None).otherwise(F.col(i)))
+
+    if idf_rest.count() > 0:
+        @F.pandas_udf(returnType=T.ArrayType(T.DoubleType()))
+        def prediction(*cols):
+            X = pd.concat(cols, axis=1)
+            return pd.Series(row.tolist() for row in imputer.transform(X))
+        odf_rest = idf_rest.withColumn('features',prediction(*include_cols))
+        for index,i in enumerate(include_cols):
+            modify_col = ((i + "_imputed") if (output_mode == "append") else i)
+            odf_rest = odf_rest.withColumn(modify_col, F.col('features')[index])
+        odf_rest = odf_rest.drop('features')
+        
+    if pre_existing_model:
+        odf = odf_rest
+    elif idf_rest.count() == 0:
+        odf = odf_model
+    else:
+        odf = odf_model.union(odf_rest.select(odf_model.columns))
+    
+    
+    for i in include_cols:
+        if (i not in missing_cols) & (output_mode == 'append'):
+            odf = odf.drop(i+"_imputed")
+    
+    if print_impact:
+        if output_mode == 'replace':
+            odf_print = missing_df.select('attribute', F.col("missing_count").alias("missingCount_before")) \
+                .join(missingCount_computation(spark, odf, list_of_cols) \
+                      .select('attribute', F.col("missing_count").alias("missingCount_after")), 'attribute', 'inner')
+        else:
+            output_cols = [(i + "_imputed") for i in [e for e in num_cols if e in missing_cols]]
+            odf_print = missing_df.select('attribute', F.col("missing_count").alias("missingCount_before")) \
+                .join(missingCount_computation(spark, odf, output_cols) \
+                      .withColumnRenamed('attribute', 'attribute_after') \
+                      .withColumn('attribute', F.expr("substring(attribute_after, 1, length(attribute_after)-8)")) \
+                      .drop('missing_pct'), 'attribute', 'inner')
+        odf_print.show(len(list_of_cols))
+    return odf
+
+
+def imputation_matrixFactorization(spark, idf, list_of_cols="missing", drop_cols=[], id_col="id", output_mode='replace',
+                                   stats_missing={}, print_impact=False):
+    '''
+    idf: Pyspark Dataframe
+    list_of_cols: all, missing (i.e. all feautures with missing values), list of columns (in list format or string separated by |) 
+                all is better strategy when training has no missing data but testing/prediction data may have.
+                Categorical features are discarded else transform them before this process.
+    id_col, label_col: Excluding ID & Label columns from imputation
+    output_mode: replace or append
+    return: Imputed Dataframe
+    '''
+    
+    from typing import Iterable 
+    from itertools import chain
+    from pyspark.ml.feature import StringIndexer, IndexToString
+    from pyspark.ml.recommendation import ALS
+    from pyspark.ml.evaluation import RegressionEvaluator
+        
+    if output_mode not in ('replace','append'):
+        raise TypeError('Invalid input for output_mode')
+    
+    if stats_missing == {}:
+        missing_df = missingCount_computation(spark, idf)
+    else:
+        missing_df = read_dataset(spark, **stats_missing).select('attribute', 'missing_count', 'missing_pct')
+    missing_cols = missing_df.where(F.col('missing_count') > 0).select('attribute').rdd.flatMap(lambda x: x).collect()
+
+    if list_of_cols == 'all':
+        num_cols = attributeType_segregation(idf)[0]
+        list_of_cols = num_cols
+    if list_of_cols == "missing":
+        list_of_cols = missing_cols
+    if isinstance(list_of_cols, str):
+        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
+    if isinstance(drop_cols, str):
+        drop_cols = [x.strip() for x in drop_cols.split('|')]
+
+    list_of_cols = list(set([e for e in list_of_cols if (e not in drop_cols) & (e != id_col)]))
+
+    if len(list_of_cols) == 0:
+        warnings.warn("No Action Performed - Matrix Factorization Imputation")
+        return idf
+    if any(x not in idf.columns for x in list_of_cols):
+        raise TypeError('Invalid input for Column(s)')
+    
+    num_cols = featureType_segregation(idf.select(list_of_cols))[0]
+    include_cols = num_cols
+    exclude_cols = [e for e in idf.columns if e not in num_cols]
+     
+    #Create map<key: value>
+    key_and_val = F.create_map(list(chain.from_iterable([[F.lit(c), F.col(c)] for c in include_cols])))
+    df_flatten = idf.select(id_col, F.explode(key_and_val)).withColumn("key", F.concat(F.col('key'), F.lit("_imputed")))
+
+    #Indexing ID & Key/Feature Column
+    id_type = get_dtype(idf,id_col)
+    if id_type == 'string':
+        id_indexer = StringIndexer().setInputCol(id_col).setOutputCol("IDLabel")
+        id_indexer_model = id_indexer.fit(df_flatten)
+        df_flatten = id_indexer_model.transform(df_flatten).drop(id_col)
+    else:
+        df_flatten = df_flatten.withColumnRenamed(id_col,"IDLabel")
+    
+    indexer = StringIndexer().setInputCol("key").setOutputCol("keyLabel")
+    indexer_model = indexer.fit(df_flatten)
+    df_encoded = indexer_model.transform(df_flatten).drop('key')
+    df_model = df_encoded.where(F.col('value').isNotNull())
+    df_test = df_encoded.where(F.col('value').isNull())
+    # Build the recommendation model using ALS on the training data
+    als = ALS(maxIter=20, regParam=0.01, userCol="IDLabel", itemCol="keyLabel", ratingCol="value",
+              coldStartStrategy="drop")
+    model = als.fit(df_model)
+    
+    df_pred = model.transform(df_test).drop('value').withColumnRenamed("prediction","value")
+    df_encoded_pred = df_model.union(df_pred.select(df_model.columns))
+    if id_type == 'string':
+        IDlabelReverse = IndexToString().setInputCol("IDLabel").setOutputCol(id_col)
+        df_encoded_pred = IDlabelReverse.transform(df_encoded_pred)
+    else:
+        df_encoded_pred = df_encoded_pred.withColumnRenamed("IDLabel", id_col)
+        
+    keylabelReverse = IndexToString().setInputCol("keyLabel").setOutputCol("key")
+    odf_imputed = keylabelReverse.transform(df_encoded_pred).groupBy(id_col).pivot('key').agg(F.first('value'))                   .select([id_col]+[(i+"_imputed") for i in include_cols if i in missing_cols])
+        
+    odf = idf.join(odf_imputed,id_col,'left_outer')
+    
+    for i in num_cols:
+        if i not in missing_cols:
+            odf = odf.drop(i + "_imputed")
+        elif output_mode == 'replace':
+            odf = odf.drop(i).withColumnRenamed(i + "_imputed", i)
+    
+    if print_impact:
+        if output_mode == 'replace':
+            odf_print = missing_df.select('attribute', F.col("missing_count").alias("missingCount_before")) \
+                .join(missingCount_computation(spark, odf, list_of_cols) \
+                      .select('attribute', F.col("missing_count").alias("missingCount_after")), 'attribute', 'inner')
+        else:
+            output_cols = [(i + "_imputed") for i in [e for e in num_cols if e in missing_cols]]
+            odf_print = missing_df.select('attribute', F.col("missing_count").alias("missingCount_before")) \
+                .join(missingCount_computation(spark, odf, output_cols) \
+                      .withColumnRenamed('attribute', 'attribute_after') \
+                      .withColumn('attribute', F.expr("substring(attribute_after, 1, length(attribute_after)-8)")) \
+                      .drop('missing_pct'), 'attribute', 'inner')
+        odf_print.show(len(list_of_cols))
+    return odf
+
+
+def imputation_custom(spark, idf, list_of_cols="missing", drop_cols=[], list_of_fills=None, method_type='row_removal', 
+                      output_mode="replace", stats_missing={}, print_impact=False):
+    '''
+    idf: Pyspark Dataframe
+    method: fill_constant or row_removal
+    list_of_cols: all, list of columns (in list format or string separated by |)
+    list_of_fills: list of constants to be filled for correponding columns in list_of_cols
+    output_mode: replace or append
+    return: Imputed Dataframe
+    '''
+    
+    if method_type not in ('fill_constant','row_removal'):
+        raise TypeError('Invalid input for method_type')
+    if output_mode not in ('replace','append'):
+        raise TypeError('Invalid input for output_mode')
+    
+    if stats_missing == {}:
+        missing_df = missingCount_computation(spark, idf)
+    else:
+        missing_df = read_dataset(spark, **stats_missing).select('attribute', 'missing_count', 'missing_pct')
+    missing_cols = missing_df.where(F.col('missing_count') > 0).select('attribute').rdd.flatMap(lambda x: x).collect()
+    
+    if list_of_cols == 'all':
+        list_of_cols = idf.columns
+    if list_of_cols == "missing":
+        list_of_cols = missing_cols
+    if isinstance(list_of_cols, str):
+        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
+    if isinstance(drop_cols, str):
+        drop_cols = [x.strip() for x in drop_cols.split('|')]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
+
+    if len(list_of_cols) == 0:
+        warnings.warn("No Action Performed - custom Imputation")
+        return idf
+    if any(x not in idf.columns for x in list_of_cols):
+        raise TypeError('Invalid input for Column(s)')
+    
+    num_cols, cat_cols, other_cols = featureType_segregation(idf.select(list_of_cols))
+    
+    if method_type == 'row_removal':
+        odf = idf.dropna(subset=list_of_cols)
+        
+        if print_impact:
+            print("Before Count: " + str(idf.count()))
+            print("After Count: " + str(odf.count()))
+                
+    else:
+        if isinstance(list_of_fills, str):
+            list_of_fills = [x.strip() for x in list_of_fills.split('|')]
+        odf = idf
+        for i in list(zip(list_of_cols,list_of_fills)):
+            if i in missing_cols:
+                modify_col = ((i[0] + "_imputed") if (output_mode == "append") else i[0])
+                if i[0] in num_cols:
+                    odf = odf.withColumn(modify_col, F.when(F.col(i[0]).isNull(), i[1]).otherwise(F.col(i[0])))
+                if i[0] in cat_cols:
+                    odf = odf.withColumn(modify_col, F.when(F.col(i[0]).isNull(), i[1]).otherwise(F.col(i[0])))
+
+        if print_impact:
+            if output_mode == 'replace':
+                odf_print = missing_df.select('attribute', F.col("missing_count").alias("missingCount_before")) \
+                    .join(missingCount_computation(spark, odf, list_of_cols) \
+                        .select('attribute', F.col("missing_count").alias("missingCount_after")), 'attribute', 'inner')
+            else:
+                output_cols = [(i + "_imputed") for i in [e for e in (num_cols + cat_cols) if e in missing_cols]]
+                odf_print = missing_df.select('attribute', F.col("missing_count").alias("missingCount_before")) \
+                    .join(missingCount_computation(spark, odf, output_cols) \
+                        .withColumnRenamed('attribute', 'attribute_after') \
+                        .withColumn('attribute', F.expr("substring(attribute_after, 1, length(attribute_after)-8)")) \
+                        .drop('missing_pct'), 'attribute', 'inner')
+            odf_print.show(len(output_cols))
+    return odf
+
+
+def imputation_comparison(spark, idf, list_of_cols="missing", drop_cols=[], id_col="id", null_pct=0.1, 
+                          stats_missing={}, print_impact=True):
+    '''
+    idf: Pyspark Dataframe
+    list_of_cols: all, missing (i.e. all feautures with missing values), list of columns (in list format or string separated by |) 
+                all is better strategy when training has no missing data but testing/prediction data may have.
+                Categorical features are discarded else transform them before this process.
+    id_col, label_col: Excluding ID & Label columns from imputation
+    null_pct: %row converted into null for test dataset (per col)
+    return: Name of Imputation Technique
+    '''
+    
+    from pyspark.ml.evaluation import RegressionEvaluator
+    import random
+    from pyspark.sql.window import Window
+
+    if stats_missing == {}:
+        missing_df = missingCount_computation(spark, idf)
+        # Note: save generated stats_missing result which can be used in method 1~5
+        # Pending: path to save the result; delete file after computation?
+        missing_df.write.parquet("NA/missing", mode='overwrite')
+        stats_missing = {"file_path": "NA/missing", "file_type": "parquet"}
+    else:
+        missing_df = read_dataset(spark, **stats_missing).select('attribute', 'missing_count', 'missing_pct')
+    missing_cols = missing_df.where(F.col('missing_count') > 0).select('attribute').rdd.flatMap(lambda x: x).collect()
+    
+    if list_of_cols == 'all':
+        num_cols = attributeType_segregation(idf)[0]
+        list_of_cols = num_cols
+    elif list_of_cols == "missing":
+        list_of_cols = missing_cols
+    elif isinstance(list_of_cols, str):
+        list_of_cols = [x.strip() for x in list_of_cols.split('|') if x.strip() in idf.columns]
+    else:
+        list_of_cols = [e for e in list_of_cols if e in idf.columns] 
+    list_of_cols = list(set([e for e in list_of_cols if (e not in drop_cols) & (e !=id_col)]))
+
+    if len(list_of_cols) == 0:
+        warnings.warn("No Action Performed - Imputation_Comparison")
+        return idf
+    if any(x not in idf.columns for x in list_of_cols):
+        raise TypeError('Invalid input for Column(s)')
+    
+    num_cols = featureType_segregation(idf.select(list_of_cols))[0]
+    list_of_cols = num_cols
+    
+    idf_test = idf.dropna().withColumn('index', F.monotonically_increasing_id()).withColumn("index", F.row_number().over(Window.orderBy("index")))
+    null_count = int(null_pct*idf_test.count())
+    idf_null = idf_test
+    for i in list_of_cols:
+        null_index = random.sample(range(idf_test.count()), null_count)
+        idf_null = idf_null.withColumn(i, F.when(F.col('index').isin(null_index), None).otherwise(F.col(i)))
+
+    idf_null.write.parquet("intermediate_data/imputation_comparison/test_dataset", mode='overwrite')
+    idf_null = sqlContext.read.parquet("intermediate_data/imputation_comparison/test_dataset")
+
+    method1 = imputation_MMM(spark, idf_null, list_of_cols=list_of_cols, method_type="mean", stats_missing=stats_missing)
+    method2 = imputation_MMM(spark, idf_null, list_of_cols=list_of_cols, method_type="median", stats_missing=stats_missing)
+    method3 = imputation_sklearn(spark, idf_null, list_of_cols=list_of_cols, method_type="KNN", stats_missing=stats_missing)
+    method4 = imputation_sklearn(spark, idf_null, list_of_cols=list_of_cols, method_type='regression', stats_missing=stats_missing)
+    method5 = imputation_matrixFactorization(spark, idf_null, id_col = id_col, list_of_cols=list_of_cols, stats_missing=stats_missing)
+    #method6 = imputation_sklearn(idf_null, method_type='RBM', list_of_cols=list_of_cols, id_col = id_col, label_col=label_col)
+
+    rmse_all = []
+    method_all = ['MMM-mean','MMM-median','KNN','regression','matrix_factorization'] 
+    for index, method in enumerate([method1,method2,method3,method4,method5]):
+        rmse=0
+        for i in list_of_cols:
+            idf_joined = idf_test.select('index',F.col(i).alias('val')).join(method.select('index',F.col(i).alias('pred')),'index','left_outer').dropna()
+            i_rmse = RegressionEvaluator(metricName="rmse", labelCol="val",predictionCol="pred").evaluate(idf_joined)
+            rmse += i_rmse
+        rmse_all.append(rmse)
+        
+    min_index= rmse_all.index(np.min(rmse_all))
+    best_method =method_all[min_index]
+    
+    if print_impact:
+        print(list(zip(method_all, rmse_all)))
+        print("Best Imputation Method: ", best_method)
+    return best_method
+
+
+def autoencoders_latentFeatures(spark, idf, list_of_cols="all", drop_cols=[], reduction_params=0.5, max_size=500000, 
+                                epochs=100, batch_size=256, emr_mode=False, pre_existing_model=False, model_path="NA",
+                                standardization_pre_existing_model=False, standardization_model_path="NA",
+                                output_mode="replace", print_impact=False, plot_learning_curves=True):
+    '''
+    idf: Input Dataframe
+    list_of_cols: all (numerical columns except ID & Label) or list of columns (in list format or string separated by |)
+    id_col, label_col: Excluding ID & Label columns from analysis
+    pre_existing_model: True if model files exists already, False Otherwise
+    model_path: If pre_existing_model is True, this argument is path for model file. 
+                  If pre_existing_model is False, this field can be used for saving the model file. 
+                  Default NA means there is neither pre_existing_model nor there is a need to save one.
+    output_mode: append or replace
+    return: Dataframe
+    '''
+    if list_of_cols == 'all': 
+        num_cols = attributeType_segregation(idf)[0]
+        list_of_cols = num_cols
+    if isinstance(list_of_cols, str):
+        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
+    if isinstance(drop_cols, str):
+        drop_cols = [x.strip() for x in drop_cols.split('|')]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
+    
+    if (len(list_of_cols) == 0) | (any(x not in idf.columns for x in list_of_cols)):
+        raise TypeError('Invalid input for Column(s)')
+    
+    num_cols = attributeType_segregation(idf.select(list_of_cols))[0]
+    list_of_cols = num_cols
+    
+    import tensorflow as tf
+    from tensorflow import keras
+    from tensorflow.keras.models import Sequential, load_model, save_model, Model
+    from tensorflow.keras.layers import Dense, Input, BatchNormalization, LeakyReLU
+    import tempfile
+    import tensorflow
+    
+    n_inputs = len(list_of_cols)
+    if reduction_params < 1:
+        n_bottleneck = int(reduction_params*n_inputs)
+    else:
+        n_bottleneck = int(reduction_params)
+    
+    # Note: standardize input columns before training. Otherwise it could be hard to converge
+    idf_standardized = z_standardization(spark, idf, list_of_cols=list_of_cols, pre_existing_model=standardization_pre_existing_model,
+                                         model_path=standardization_model_path, output_mode='append')
+    list_of_cols_scaled = [i+'_scaled' for i in list_of_cols]
+    
+    if pre_existing_model:
+        if emr_mode:
+            bash_cmd = "aws s3 cp " + model_path + "/autoencoders_latentFeatures/encoder.h5"
+            output = subprocess.check_output(['bash', '-c', bash_cmd])
+            bash_cmd = "aws s3 cp " + model_path + "/autoencoders_latentFeatures/model.h5"
+            output = subprocess.check_output(['bash', '-c', bash_cmd])
+            encoder = load_model("encoder.h5")
+            model = load_model("model.h5")
+        else: 
+            encoder = load_model(model_path + "/autoencoders_latentFeatures/encoder.h5")
+            model = load_model(model_path + "/autoencoders_latentFeatures/model.h5")
+    else:
+        idf_valid = idf_standardized.select(list_of_cols_scaled).dropna()
+        idf_model = idf_valid.sample(False, min(1.0, float(max_size)/idf_valid.count()), 0)
+        
+        idf_train = idf_model.sample(False, 0.8, 0)
+        idf_test = idf_model.subtract(idf_train)
+        X_train = idf_train.toPandas()
+        X_test = idf_test.toPandas()
+             
+        visible = Input(shape=(n_inputs,))
+        e = Dense(n_inputs*2)(visible)
+        e = BatchNormalization()(e)
+        e = LeakyReLU()(e)
+        e = Dense(n_inputs)(e)
+        e = BatchNormalization()(e)
+        e = LeakyReLU()(e)
+        bottleneck = Dense(n_bottleneck)(e)
+        d = Dense(n_inputs)(bottleneck)
+        d = BatchNormalization()(d)
+        d = LeakyReLU()(d)
+        d = Dense(n_inputs*2)(d)
+        d = BatchNormalization()(d)
+        d = LeakyReLU()(d)
+        output = Dense(n_inputs, activation='linear')(d)
+
+        # autoencoder model
+        model = Model(inputs=visible, outputs=output)
+        encoder = Model(inputs=visible, outputs=bottleneck)
+        model.compile(optimizer='adam', loss='mse')
+        history = model.fit(X_train, X_train, epochs=int(epochs), batch_size=int(batch_size), verbose=2, 
+                  validation_data=(X_test,X_test))
+        if plot_learning_curves:
+            from matplotlib import pyplot
+            pyplot.plot(history.history['loss'], label='train')
+            pyplot.plot(history.history['val_loss'], label='test')
+            pyplot.legend()
+            pyplot.show()
+        
+        # Saving model if required
+        if (pre_existing_model == False) & (model_path != "NA"):
+            if emr_mode:
+                encoder.save("encoder.h5")
+                model.save("model.h5")
+                bash_cmd = "aws s3 cp encoder.h5 " + model_path + "/autoencoders_latentFeatures/encoder.h5"
+                output = subprocess.check_output(['bash', '-c', bash_cmd])
+                bash_cmd = "aws s3 cp model.h5 " + model_path + "/autoencoders_latentFeatures/model.h5"
+                output = subprocess.check_output(['bash', '-c', bash_cmd])
+            else:
+                encoder.save(model_path + "/autoencoders_latentFeatures/encoder.h5")
+                model.save(model_path + "/autoencoders_latentFeatures/model.h5")
+        
+        #print(model.predict(X_test))
+    
+    class ModelWrapperPickable:
+        def __init__(self, model):
+            self.model = model
+
+        def __getstate__(self):
+            model_str = ''
+            with tempfile.NamedTemporaryFile(suffix='.hdf5', delete=True) as fd:
+                tensorflow.keras.models.save_model(self.model, fd.name, overwrite=True)
+                model_str = fd.read()
+            d = { 'model_str': model_str }
+            return d
+
+        def __setstate__(self, state):
+            with tempfile.NamedTemporaryFile(suffix='.hdf5', delete=True) as fd:
+                fd.write(state['model_str'])
+                fd.flush()
+                self.model = tensorflow.keras.models.load_model(fd.name)
+
+    model_wrapper= ModelWrapperPickable(encoder)
+    #print(model_wrapper.model.predict(X_test))
+
+    def compute_output_pandas_udf(model_wrapper):
+        '''Spark pandas udf for model prediction.'''
+        @F.pandas_udf(returnType=T.ArrayType(T.DoubleType()))
+        def predict_pandas_udf(*cols):
+            X = pd.concat(cols, axis=1)
+            return pd.Series(row.tolist() for row in model_wrapper.model.predict(X))
+        return predict_pandas_udf
+    
+    """
+    # Pending: 2 configs need to be added to anovos.shared.spark configs variabl:
+        - 'spark.yarn.appMasterEnv.ARROW_PRE_0_15_IPC_FORMAT': '1', 
+        - 'spark.executorEnv.ARROW_PRE_0_15_IPC_FORMAT': '1'
+    """
+    if output_mode=="append":
+        odf = idf_standardized.withColumn('predicted_output', compute_output_pandas_udf(model_wrapper)(*list_of_cols_scaled))\
+            .select(idf.columns+[F.col("predicted_output")[j].alias("latent_" + str(j)) for j in range(0, n_bottleneck)])
+    else:
+        odf = idf_standardized.withColumn('predicted_output', compute_output_pandas_udf(model_wrapper)(*list_of_cols_scaled))\
+            .select([e for e in idf.columns if e not in list_of_cols]+
+                    [F.col("predicted_output")[j].alias("latent_" + str(j)) for j in range(0, n_bottleneck)])
+    
+    # Pending: print impact for generated latent features only or all features?
+    if print_impact:
+        #odf.describe().show()
+        output_cols = ["latent_" + str(j) for j in range(0, n_bottleneck)]
+        odf.select(output_cols).describe().show()
+    
+    return odf
+
+
+def PCA_latentFeatures(spark, idf, list_of_cols="all", drop_cols=[], explained_variance_cutoff=0.95, 
+                       pre_existing_model=False, model_path="NA", 
+                       standardization_pre_existing_model=False, standardization_model_path="NA",
+                       output_mode="replace", print_impact=False):
+    '''
+    idf: Input Dataframe
+    list_of_cols: all (numerical columns except ID & Label) or list of columns (in list format or string separated by |)
+    id_col, label_col: Excluding ID & Label columns from analysis
+    pre_existing_model: True if model files exists already, False Otherwise
+    model_path: If pre_existing_model is True, this argument is path for model file. 
+                  If pre_existing_model is False, this field can be used for saving the model file. 
+                  Default NA means there is neither pre_existing_model nor there is a need to save one.
+    output_mode: append or replace
+    return: Dataframe
+    '''
+    if list_of_cols == 'all': 
+        num_cols = attributeType_segregation(idf)[0]
+        list_of_cols = num_cols
+    if isinstance(list_of_cols, str):
+        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
+    if isinstance(drop_cols, str):
+        drop_cols = [x.strip() for x in drop_cols.split('|')]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
+    
+    if (len(list_of_cols) == 0) | (any(x not in idf.columns for x in list_of_cols)):
+        raise TypeError('Invalid input for Column(s)')
+    
+    num_cols = attributeType_segregation(idf.select(list_of_cols))[0]
+    list_of_cols = num_cols
+
+    # Note: standardize input columns before training. Otherwise it could be hard to converge
+    idf_standardized = z_standardization(spark, idf, list_of_cols=list_of_cols, pre_existing_model=standardization_pre_existing_model,
+                                         model_path=standardization_model_path, output_mode='append')
+    list_of_cols_scaled = [i+'_scaled' for i in list_of_cols]
+    
+    from pyspark.ml.feature import VectorAssembler, PCA, PCAModel
+    # Note: use the assembled data without nan values for PCA model training
+    assembler = VectorAssembler(inputCols=list_of_cols_scaled, outputCol="features", handleInvalid="skip")
+    assembled_data = assembler.transform(idf_standardized)
+    # Note: use the original assembled data to generate odf
+    assembler_orignial = VectorAssembler(inputCols=list_of_cols_scaled, outputCol="features", handleInvalid="keep")
+    assembled_data_orignial = assembler_orignial.transform(idf_standardized)
+
+    if pre_existing_model == True:
+        pca = PCA.load(model_path+"/PCA_latentFeatures/pca_path")
+        pcaModel = PCAModel.load(model_path+"/PCA_latentFeatures/pcaModel_path")
+        n = pca.getK()
+    else:
+        pca = PCA(k=len(list_of_cols_scaled), inputCol='features', outputCol='features_pca')
+        pcaModel = pca.fit(assembled_data)
+        explained_variance = 0
+        for n in range(1,len(list_of_cols)+1):
+            explained_variance += pcaModel.explainedVariance[n-1]
+            if explained_variance > explained_variance_cutoff:
+                break
+        
+        pca = PCA(k=n, inputCol='features', outputCol='features_pca')
+        pcaModel = pca.fit(assembled_data)
+        # Saving model if required
+        if (pre_existing_model == False) & (model_path != "NA"):
+            pcaModel.write().overwrite().save(model_path+"/PCA_latentFeatures/pcaModel_path")
+            pca.write().overwrite().save(model_path+"/PCA_latentFeatures/pca_path")
+    
+    def vector_to_array(v):
+            return v.toArray().tolist()
+    f_vector_to_array = F.udf(vector_to_array, T.ArrayType(T.FloatType()))
+    
+    if output_mode=="append":
+        odf = pcaModel.transform(assembled_data_orignial)\
+            .withColumn("features_pca_array", f_vector_to_array('features_pca'))\
+            .select(idf.columns+
+                    [F.col("features_pca_array")[j].alias("latent_" + str(j)) for j in range(0, n)])\
+            .replace(float('nan'), None, subset=["latent_" + str(j) for j in range(0, n)])
+    else:
+        odf = pcaModel.transform(assembled_data_orignial)\
+            .withColumn("features_pca_array", f_vector_to_array('features_pca'))\
+            .select([e for e in idf.columns if e not in list_of_cols]+
+                    [F.col("features_pca_array")[j].alias("latent_" + str(j)) for j in range(0, n)])\
+            .replace(float('nan'), None, subset=["latent_" + str(j) for j in range(0, n)])
+
+    if print_impact:
+        print("Explained Variance: ", round(np.sum(pcaModel.explainedVariance[0:n]),4))
+        odf.select([e for e in odf.columns if e.startswith('latent_')]).describe().show()
+        
+    return odf
+
+
+def feature_transformation(spark, idf, list_of_cols="all", drop_cols=[], method_type="square_root", boxcox_lambda=None,
+                           output_mode="replace",print_impact=False):
+    # Note: currently using square_root as the default value for method_type because log & box_cox require positive data
+    '''
+    idf: Input Dataframe
+    list_of_cols: all (numerical columns except ID & Label) or list of columns (in list format or string separated by |)
+    id_col, label_col: Excluding ID & Label columns from analysis
+    method_type: "log" or "square_root" or "box_cox"
+    output_mode: append or replace
+    return: Dataframe
+    '''
+
+    if list_of_cols == 'all': 
+        num_cols = attributeType_segregation(idf)[0]
+        list_of_cols = num_cols
+    if isinstance(list_of_cols, str):
+        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
+    if isinstance(drop_cols, str):
+        drop_cols = [x.strip() for x in drop_cols.split('|')]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
+    
+    if (len(list_of_cols) == 0) | (any(x not in idf.columns for x in list_of_cols)):
+        raise TypeError('Invalid input for Column(s)')
+    
+    num_cols = attributeType_segregation(idf.select(list_of_cols))[0]
+    list_of_cols = num_cols
+    odf = idf
+    if method_type in ["log", "box_cox"]:
+        # Note: raise error when there are non positive value in any column (same as scipy.stats.boxcox for box_cox)
+        col_mins = idf.select([F.min(i) for i in list_of_cols])
+        if any([i <= 0 for i in col_mins.rdd.flatMap(lambda x: x).collect()]):
+            col_mins.show(1, False)
+            raise ValueError('Data must be positive')
+    elif method_type != "square_root":
+        raise TypeError('Invalid input method_type')
+
+    if method_type == "log":
+        for i in list_of_cols:
+            modify_col = (i + "_log") if output_mode == 'append' else i
+            odf = odf.withColumn(modify_col, F.log(F.col(i)))
+            
+        if print_impact:
+            print("Before:")
+            # Note: previously shows idf.select(list_of_cols).show(5)
+            idf.select(list_of_cols).describe().show()
+            print("After:")
+            if output_mode == 'replace':
+                output_cols = list_of_cols
+            else:
+                output_cols = [(i+"_log") for i in list_of_cols]
+            odf.select(output_cols).describe().show()
+    
+    if method_type == "square_root":
+        for i in list_of_cols:
+            modify_col = (i + "_sqrt") if output_mode == 'append' else i
+            odf = odf.withColumn(modify_col, F.sqrt(F.col(i)))
+        
+        if print_impact:
+            print("Before:")
+            idf.select(list_of_cols).describe().show()
+            print("After:")
+            if output_mode == 'replace':
+                output_cols = list_of_cols
+            else:
+                output_cols = [(i+"_sqrt") for i in list_of_cols]
+            odf.select(output_cols).describe().show()
+    
+    # Note: current logic for box_cox transformation (might need further discussion)
+    # if boxcox_lambda is not None, directly use the input value for transformation
+    # else, search for the bese lambda for each column and apply the transformation
+    if method_type == "box_cox":
+        if boxcox_lambda is not None:
+            if isinstance(boxcox_lambda, (list, tuple)):
+                if len(boxcox_lambda) != len(list_of_cols):
+                    raise TypeError('Invalid input for boxcox_lambda')
+                elif all([isinstance(l, (float, int)) for l in boxcox_lambda]):
+                    raise TypeError('Invalid input for boxcox_lambda')
+                else:
+                    boxcox_lambda_list = list(boxcox_lambda)
+
+            elif isinstance(boxcox_lambda, (float, int)):
+                boxcox_lambda_list = [boxcox_lambda] * len(list_of_cols)
+            else:
+                raise TypeError('Invalid input for boxcox_lambda')
+        
+        else:
+            boxcox_lambda_list = []
+            from pyspark.mllib.stat import Statistics
+            for i in list_of_cols:
+                # Note: changed the order a bit so that smaller transformation is preferred (can further change)
+                # (Sometimes kolmogorovSmirnovTest gives the same extremely small pVal for all lambdas tested)
+                lambdaVal = [1,-1,0.5,-0.5,2,-2,0.25,-0.25,3,-3,4,-4,5,-5]
+                # lambdaVal = [-5,-4,-3,-2,-1,-0.5,-0.25,0.25,0.5,1,2,3,4,5]
+                best_pVal = 0
+                for j in lambdaVal:
+                    pVal = Statistics.kolmogorovSmirnovTest(df.select(F.pow(F.col(i),j)).rdd.flatMap(lambda x:x), "norm").pValue
+                    if pVal > best_pVal:
+                        best_pVal = pVal
+                        best_lambdaVal = j
+
+                pVal = Statistics.kolmogorovSmirnovTest(df.select(F.log(F.col(i))).rdd.flatMap(lambda x:x), "norm").pValue
+                if pVal > best_pVal:
+                    best_pVal = pVal
+                    best_lambdaVal = 0
+                
+                boxcox_lambda_list.append(best_lambdaVal)
+        
+        for i, curr_lambdaVal in zip(list_of_cols, boxcox_lambda_list):
+            # Pending: previously (i + "_log") was used as the new column name for 0 lambdaVal. 
+            # But I feel it might make tracking column names a bit hard? 
+            modify_col = (i + "_bxcx_"+str(curr_lambdaVal)) if output_mode == 'append' else i
+            if curr_lambdaVal == 0:
+                odf = odf.withColumn(modify_col, F.log(F.col(i)))
+            else:
+                odf = odf.withColumn(modify_col, F.pow(F.col(i), curr_lambdaVal))
+        
+        if print_impact:
+            print("Transformed Columns: ", list_of_cols)
+            print("Best BoxCox Parameter(s): ", boxcox_lambda_list)
+            print("Before:")
+            # Note: added skewness to summary statistics 
+            idf.select(list_of_cols).describe()\
+                .unionByName(idf.select([F.skewness(i).alias(i) for i in list_of_cols])\
+                                .withColumn('summary', F.lit('skewness')))\
+                .show()
+            print("After:")
+            if output_mode == 'replace':
+                output_cols = list_of_cols
+            else:
+                output_cols = [("`"+i+"_bxcx_"+str(l)+"`") for i, l in zip(list_of_cols, boxcox_lambda_list)]
+            odf.select(output_cols).describe()\
+                .unionByName(odf.select([F.skewness(i).alias(i[1:-1]) for i in output_cols])\
+                                .withColumn('summary', F.lit('skewness')))\
+                .show()
+    
+    return odf
+
+
+def feature_autoLearn(spark, idf, list_of_cols="all", drop_cols=[], label_col='label', event_label=1, IG_threshold=0,
+               dist_corr_threshold=0.7, stability_threshold=0.8, output_mode="replace",print_impact=False):
+    '''
+    idf: Input Dataframe
+    list_of_cols: all (numerical columns except ID & Label) or list of columns (in list format or string separated by |)
+    id_col, label_col: Excluding ID & Label columns from analysis
+    IG_threshold: Information Gain Value Threshold
+    dist_corr_threshold: Distance Correlation Threshold
+    stability_threshold= Stability Score Threshold
+    output_mode: append or replace
+    return: Dataframe
+    '''
+    
+    if list_of_cols == 'all': 
+        num_cols = attributeType_segregation(idf)[0]
+        list_of_cols = num_cols
+    if isinstance(list_of_cols, str):
+        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
+    if isinstance(drop_cols, str):
+        drop_cols = [x.strip() for x in drop_cols.split('|')]
+    list_of_cols = list(set([e for e in list_of_cols if (e not in drop_cols) & (e != label_col)]))
+    
+    if (len(list_of_cols) == 0) | (any(x not in idf.columns for x in list_of_cols)):
+        raise TypeError('Invalid input for Column(s)')
+    
+    num_cols = attributeType_segregation(idf.select(list_of_cols))[0]
+    list_of_cols = num_cols
+    
+    ## Information Gain Based Filteration (1st Round)
+    def IG_feature_selection(X, Y, IG_threshold=0, print_impact=False):
+        from sklearn.feature_selection import SelectKBest
+        from sklearn.feature_selection import mutual_info_classif
+        IG_model = SelectKBest(mutual_info_classif, k='all')
+        IG_model.fit_transform(X,Y)
+        feats_score = list(IG_model.scores_)
+        feats_selected = []
+        for index,i in enumerate(X.columns):
+            if feats_score[index] > IG_threshold:
+                feats_selected.append(i)
+        if print_impact:
+            print("Features dropped due to low Information Gain value: ", len(X.columns) - len(feats_selected))
+            print("Features after IG based feature selection: ", len(feats_selected))
+        return feats_selected
+
+    idf = idf.withColumn(label_col, F.when(F.col(label_col) == event_label, 1).otherwise(0)).toPandas()
+    if output_mode=="replace":
+        fixed_cols = [e for e in idf.columns if e not in list_of_cols]
+    else:
+        fixed_cols = idf.columns
+    all_feats = [e for e in idf.columns if e in list_of_cols]
+    X_init = idf[all_feats]
+    Y = idf[label_col]
+    IG_feats = IG_feature_selection(X_init,Y, IG_threshold=IG_threshold, print_impact=print_impact)
+
+    ## Feature Generation (Predicted + Error for every feature pair)
+    from dcor import distance_correlation
+    X = idf[IG_feats]
+    linear_pairs = []
+    nonlinear_pairs = []
+    for index, i in enumerate(IG_feats):
+        for subindex, j in enumerate(IG_feats):
+            if index != subindex:
+                if distance_correlation(X[i], X[j])>= dist_corr_threshold:
+                    linear_pairs.append([i,j])
+                else:
+                    nonlinear_pairs.append([i,j])
+    #print(len(linear_pairs),len(nonlinear_pairs))
+    from sklearn.linear_model import Ridge
+    clf_linear = Ridge(alpha=1.0)
+    output = Y
+    for i,j in linear_pairs:
+        pred = clf_linear.fit(X[[i]],X[[j]]).predict(X[[i]])
+        output = pd.concat([output,X[[j]], pd.Series(list(pred))], axis=1).rename(columns={0:(i+j+"_pred")})
+        output[i+j+"_pred"] = output.apply(lambda x: float(x[i+j+"_pred"][0]), axis=1)
+        #output.to_csv("test.csv", header=True, index=False)
+        #output = pd.read_csv("test.csv")
+        output[i+j+"_err"] = output[j] - output[i+j+"_pred"]
+        output.drop(j, axis=1, inplace=True)
+    #print(output.head())
+
+    from sklearn.kernel_ridge import KernelRidge
+    clf_nonlinear = KernelRidge(alpha=1.0, coef0=1, degree=3, gamma=None, kernel='rbf',kernel_params=None)
+    for i,j in nonlinear_pairs:
+        pred = clf_nonlinear.fit(X[[i]],X[[j]]).predict(X[[i]])
+        output = pd.concat([output,X[[j]], pd.Series(list(pred))], axis=1).rename(columns={0:(i+j+"_pred")})
+        output[i+j+"_pred"] = output.apply(lambda x: float(x[i+j+"_pred"][0]), axis=1)
+        #output.to_csv("test.csv", header=True, index=False)
+        #output = pd.read_csv("test.csv")
+        output[i+j+"_err"] = output[j] - output[i+j+"_pred"]
+        output.drop(j, axis=1, inplace=True)
+    #print(output.head())
+
+    ## Stability Check on New Constructed Features 
+    from randomized_lasso import RandomizedLasso
+    from stability_selection import StabilitySelection
+    X = output.drop(label_col, axis=1)
+    Y = output[label_col]
+    stability_model = StabilitySelection(base_estimator=RandomizedLasso(), lambda_name='alpha',threshold=stability_threshold, verbose=0)
+    stable_feats = [i for i,j in zip(X.columns,list(stability_model.fit(X, Y))) if j == True]
+
+    ## Information Gain Based Filteration (1st Round)
+    X = output[stable_feats]
+    final_feats = IG_feature_selection(X,Y, IG_threshold=IG_threshold, print_impact=False)
+
+    if print_impact:
+        print("No. of linear feature pairs: ", len(linear_pairs))
+        print("No. of nonlinear feature pairs: ", len(nonlinear_pairs))
+        print("Newly Constructed Features: ", len(output.columns) - 1)
+        print("Newly Constructed Features (After Stability Check): ", len(stable_feats))
+        print("Newly Constructed Features (Final): ", len(final_feats))
+        
+    odf = sqlContext.createDataFrame(pd.concat([idf[fixed_cols],output[final_feats]], axis=1))
+    idf = sqlContext.createDataFrame(idf)
+    if print_impact:
+        print("Before:")
+        idf.show(5)
+        print("After:")
+        odf.show(5)
+    
+    return odf
+
+
 def outlier_categories(spark, idf, list_of_cols='all', drop_cols=[], coverage=1.0, max_category=50,
                        pre_existing_model=False, model_path="NA", output_mode='replace', print_impact=False):
     """
@@ -600,3 +1732,260 @@ def outlier_categories(spark, idf, list_of_cols='all', drop_cols=[], coverage=1.
             len(list_of_cols))
 
     return odf
+
+
+def declare_missing(spark, idf, list_of_cols='all', drop_cols=[], 
+                    missing_values=['', ' ', 'nan', 'null', 'na', 'n/a', 'NaN', 'none', '?'], 
+                    output_mode="replace", print_impact=False):
+    '''
+    idf: Input Dataframe
+    list_of_cols: all or list of columns (in list format or string separated by |)
+    missing_values: list of values to be replaced by null
+    output_mode: replace or append
+    return: Dataframe
+    '''
+    if list_of_cols == 'all':
+        list_of_cols = idf.columns
+    elif isinstance(list_of_cols, str):
+        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
+    if isinstance(drop_cols, str):
+        drop_cols = [x.strip() for x in drop_cols.split('|')]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
+    
+    if (len(list_of_cols) == 0) | (any(x not in idf.columns for x in list_of_cols)):
+        raise TypeError('Invalid input for Column(s)')
+    
+    if isinstance(missing_values, str):
+        missing_values = [x.strip() for x in missing_values.split('|')]
+    
+    odf = idf
+    for i in list_of_cols:
+        modify_col = ((i + "_missing") if (output_mode == "append") else i)
+        odf = odf.withColumn(modify_col, F.when(F.col(i).isin(missing_values), None).otherwise(F.col(i)))
+    
+    # Note: if output_mode == 'append', drop columns with equal missing_count in idf and odf
+    if output_mode == 'append':
+        output_cols = [(i+"_missing") for i in list_of_cols]
+        idf_missing = missingCount_computation(spark, idf, list_of_cols).select('attribute', F.col("missing_count").alias("missingCount_before"))
+        odf_missing = missingCount_computation(spark, odf, output_cols).select('attribute', F.col("missing_count").alias("missingCount_after"))
+        odf_print = idf_missing\
+                .join(odf_missing.withColumnRenamed('attribute', 'attribute_after') \
+                                 .withColumn('attribute', F.expr("substring(attribute_after, 1, length(attribute_after)-8)")), 
+                      'attribute', 'inner')
+        same_cols = odf_print.where(F.col('missingCount_before')==F.col('missingCount_after'))\
+            .select('attribute_after').rdd.flatMap(lambda x: x).collect()
+        odf = odf.drop(*same_cols)
+        odf_print = odf_print.where(F.col('missingCount_before')!=F.col('missingCount_after'))
+
+    if print_impact:
+        if output_mode == 'replace':
+            output_cols = list_of_cols
+            idf_missing = missingCount_computation(spark, idf, list_of_cols).select('attribute', F.col("missing_count").alias("missingCount_before"))
+            odf_missing = missingCount_computation(spark, odf, output_cols).select('attribute', F.col("missing_count").alias("missingCount_after"))
+            odf_print = idf_missing.join(odf_missing, 'attribute', 'inner')
+        odf_print.show(len(list_of_cols))
+    
+    return odf
+
+
+def catfeats_basic_cleaning(spark, idf, list_of_cols='all', drop_cols=[], output_mode='replace', print_impact=False):
+    '''
+    idf: Input Dataframe
+    list_of_cols: all (numerical columns except ID & Label) or list of columns (in list format or string separated by |)
+    id_col, label_col: Excluding ID & Label columns from analysis
+    output_mode: append or replace
+    return: Cleaned Dataframe
+    '''
+    if list_of_cols == 'all':
+        cat_cols = attributeType_segregation(idf)[1]
+        list_of_cols = cat_cols
+    elif isinstance(list_of_cols, str):
+        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
+    if isinstance(drop_cols, str):
+        drop_cols = [x.strip() for x in drop_cols.split('|')]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
+    
+    if (len(list_of_cols) == 0) | (any(x not in idf.columns for x in list_of_cols)):
+        raise TypeError('Invalid input for Column(s)')
+    
+    cat_cols = attributeType_segregation(idf.select(list_of_cols))[1]
+    list_of_cols = cat_cols
+        
+    null_vocab = ['',' ','nan', 'null', 'na', 'inf', 'n/a', 'not defined', 'none', 'undefined','blank']
+    odf_tmp=idf
+    modify_list = []
+    for i in list_of_cols:
+        modify_col = ((i + "_cleaned") if (output_mode == "append") else i)
+        modify_list.append(modify_col)
+        odf_tmp = odf_tmp.withColumn(modify_col, F.lower(F.trim(F.col(i))))\
+            .withColumn(modify_col, F.regexp_replace(F.col(modify_col),'[ &$;:.,*#@_?%!^()-/\'\"\\\]',''))
+    odf = declare_missing(spark, odf_tmp, list_of_cols=modify_list, missing_values=null_vocab)
+    
+    # Note: if output_mode == 'append', drop columns if col i = col i + "_cleaned" for all rows
+    if output_mode == 'replace':
+            output_cols = list_of_cols
+    else:
+        output_cols = []
+        for i in list_of_cols:
+            unequal_rows = odf.withColumn('col_equality', F.col(i)==F.col(i + "_cleaned"))\
+                .where(F.col('col_equality')==False).count()
+            if unequal_rows == 0:
+                odf = odf.drop(i + "_cleaned")
+            else:
+                output_cols.append(i + "_cleaned")
+
+    if print_impact:
+        idf_missing = missingCount_computation(spark, idf, list_of_cols).select('attribute', F.col("missing_count").alias("missingCount_before"))
+        odf_missing = missingCount_computation(spark, odf, output_cols).select('attribute', F.col("missing_count").alias("missingCount_after"))
+        
+        if output_mode == 'replace':
+            odf_print = idf_missing.join(odf_missing, 'attribute', 'inner')
+        else:
+            odf_print = idf_missing\
+                .join(odf_missing\
+                      .withColumnRenamed('attribute', 'attribute_after') \
+                      .withColumn('attribute', F.expr("substring(attribute_after, 1, length(attribute_after)-8)")) \
+                      .drop('missing_pct'), 'attribute', 'inner') 
+        odf_print.show(len(output_mode))
+    return odf
+    
+
+def catfeats_fuzzy_matching(spark, idf, list_of_cols='all', drop_cols=[], basic_cleaning=False, 
+                            output_mode='replace',print_impact=False):
+    '''
+    idf: Input Dataframe
+    list_of_cols: all (numerical columns except ID & Label) or list of columns (in list format or string separated by |)
+    id_col, label_col: Excluding ID & Label columns from analysis
+    basic_cleaning: True or False
+    output_mode: append or replace
+    return: Cleaned Dataframe
+    '''
+    if list_of_cols == 'all':
+        cat_cols = attributeType_segregation(idf)[1]
+        list_of_cols = cat_cols
+    elif isinstance(list_of_cols, str):
+        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
+    if isinstance(drop_cols, str):
+        drop_cols = [x.strip() for x in drop_cols.split('|')]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
+    
+    if (len(list_of_cols) == 0) | (any(x not in idf.columns for x in list_of_cols)):
+        raise TypeError('Invalid input for Column(s)')
+    
+    cat_cols = attributeType_segregation(idf.select(list_of_cols))[1]
+    list_of_cols = cat_cols
+
+    from sklearn import cluster
+    from fuzzywuzzy import fuzz,process
+    if basic_cleaning:
+        idf_cleaned = catfeats_basic_cleaning(spark, idf, list_of_cols)
+    else:
+        idf_cleaned = idf
+    idf_cleaned.persist()
+    odf=idf_cleaned
+    for i in list_of_cols:
+        ls = idf_cleaned.select(i).dropna().distinct().rdd.flatMap(lambda x:x).collect()
+        similarity_array = np.ones((len(ls),(len(ls))))*100
+        for k in range(1, len(ls)):
+            for j in range(k):
+                s1 = fuzz.token_set_ratio(ls[k],ls[j]) + 0.000000000001
+                s2 = fuzz.partial_ratio(ls[k],ls[j]) + 0.000000000001
+                similarity_array[k][j] = 2*s1*s2/(s1+s2)
+                similarity_array[j][k] = similarity_array[k][j]
+      
+        clusters = cluster.AffinityPropagation(affinity="precomputed",convergence_iter=15,
+                                               max_iter=200,damping=0.5,random_state=None)\
+                          .fit_predict(similarity_array)
+            
+        lol = list(zip(ls,clusters))
+        lol = [[str(e[0]), "cluster"+ str(e[1])] for e in lol]
+        df_clusters = sqlContext.createDataFrame(lol, schema = [i,'cluster'])\
+            .groupBy('cluster').agg(F.collect_list(i).alias(i))\
+            .withColumn('mapped_value', F.col(i)[0]).drop('cluster')
+        if print_impact:
+            df_clusters.show(df_clusters.count(), False)
+        df_clusters = df_clusters.withColumn(i, F.explode(i))
+        odf = odf.join(df_clusters,i,'left_outer').withColumnRenamed('mapped_value',i+"_fuzzmatched")
+        
+    if output_mode == 'replace':
+        for i in list_of_cols:
+            odf = odf.drop(i).withColumnRenamed(i+"_fuzzmatched",i)
+    
+    if print_impact:
+        if output_mode == 'replace':
+            output_cols = list_of_cols
+        else:
+            output_cols = [(i+"_fuzzmatched") for i in list_of_cols]
+        uniquecount_computation(idf, list_of_cols).select('feature', F.col("unique_values").alias("uniqueValues_before")).show(len(output_cols))
+        uniquecount_computation(odf, output_cols).select('feature', F.col("unique_values").alias("uniqueValues_after")).show(len(output_cols))
+   
+    idf_cleaned.unpersist()
+    return odf
+
+
+def cat_to_num_supervised(idf, list_of_cols, id_col="id", label_col="label", event_label=1, nonevent_label=0,
+                          pre_existing_model =False, model_path="NA", output_mode= "replace",seed = 0, print_impact=False):
+    '''
+    idf: Input Dataframe
+    list_of_cols: all (categorical columns except ID & Label) or list of columns (in list format or string separated by |)
+    id_col, label_col: Excluding ID & Label columns from analysis
+    pre_existing_model: categorical value to numerical value model. True if model files exists already, False Otherwise
+    model_path: If pre_existing_model is True, this argument is path for model file. 
+                  If pre_existing_model is False, this field can be used for saving the model file. 
+                  Default NA means there is neither pre_existing_model nor there is a need to save one.
+    output_mode: append or replace
+    seed: Saving the intermediate data (optimization purpose only)
+    return: Dataframe
+    '''
+    if list_of_cols == 'all': 
+        list_of_cols = [e for e in idf.columns if e not in (id_col, label_col)]
+    if isinstance(list_of_cols, str):
+        list_of_cols = [x.strip() for x in list_of_cols.split('|') if ((x.strip() in idf.columns) & (x.strip() not in (id_col, label_col)))]
+    if isinstance(list_of_cols, list):
+        list_of_cols = [e for e in list_of_cols if ((e in idf.columns) & (e not in (id_col, label_col)))]
+    if len(list_of_cols) == 0:
+        raise TypeError('Invalid input for Column(s)')
+    
+    num_cols, cat_cols, other_cols = featureType_segregation(idf.select(list_of_cols))
+    list_of_cols = cat_cols
+    odf = idf
+    for index, i in enumerate(list_of_cols):
+        if index > 0:
+            odf = sqlContext.read.parquet("intermediate_data/df_index" + str(index-1) + "_seed" +str(seed))
+        if pre_existing_model == True:
+            df_tmp = sqlContext.read.csv(model_path+ "/cat_to_num_supervised/" + i, header=True, inferSchema=True)
+        else:        
+            df_tmp = idf.groupBy(i,label_col).count()                    .groupBy(i).pivot(label_col).sum('count').fillna(0)                    .withColumn( i + '_value', F.round(F.col(event_label)/(F.col(event_label)+F.col(nonevent_label)), 4))                    .drop(*[event_label,nonevent_label])
+        
+        odf = odf.join(df_tmp,i, 'left_outer')
+        
+        # Saving model File if required
+        if (pre_existing_model == False) & (model_path != "NA"):
+            df_tmp.repartition(1).write.csv(model_path+ "/cat_to_num_supervised/" + i, header=True, mode='overwrite')
+            
+        error = 1
+        while error > 0:
+            try:
+                odf.write.parquet("intermediate_data/df_index" + str(index) + "_seed" +str(seed))
+                error = 0
+            except:
+                seed += 1
+                pass
+            
+    if output_mode =='replace':
+        for i in list_of_cols:
+            odf = odf.drop(i).withColumnRenamed(i + '_value', i)
+        odf = odf.select(idf.columns)
+    
+    if print_impact:
+        if output_mode == 'replace':
+                output_cols = list_of_cols
+        else:
+            output_cols = [(i+"_value") for i in list_of_cols]
+        print("Before: ")
+        idf.select(list_of_cols).describe().where(F.col('summary').isin('count','min','max')).show()
+        print("After: ")
+        odf.select(output_cols).describe().where(F.col('summary').isin('count','min','max')).show()
+        
+    return odf
+
