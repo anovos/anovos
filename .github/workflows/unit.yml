@@ -1,10 +1,11 @@
-name: Demo
+name: Unit Test
+
 on:
   push:
 
 
 jobs:
-  run-demo:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/setup-python@v2
@@ -30,9 +31,10 @@ jobs:
       - name: Install Python requirements
         run: |
           python -m pip install --upgrade pip
+          pip install pytest pytest-cov
           pip install -r requirements.txt
 
-      - name: Run the demo
+      - name: Run the unit tests
         run: |
-          cd dist/
-          ./spark-submit.sh
+          cd src/
+          pytest -v --cov=anovos/ test/
