@@ -230,30 +230,34 @@ def nullColumns_detection(spark, idf, list_of_cols='missing', drop_cols=[], trea
         raise TypeError('Non-Boolean input for treatment')
     if treatment_method not in ('MMM', 'row_removal', 'column_removal'):
         raise TypeError('Invalid input for method_type')
-    if treatment_method == 'column_removal':
-        treatment_threshold = treatment_configs.get('treatment_threshold', None)
-        if treatment_threshold:
-            treatment_threshold = float(treatment_threshold)
-        else:
-            raise TypeError('Invalid input for column removal threshold')
+
+    treatment_threshold = treatment_configs.pop('treatment_threshold', None)
+    if treatment_threshold:
+        treatment_threshold = float(treatment_threshold)
+    else:
+        if treatment_method == 'column_removal':
+            raise TypeError('Invalid input for column removal threshold')    
 
     odf_print = odf_print.where(F.col('attribute').isin(list_of_cols))
 
     if treatment:
-
-        if treatment_method == 'column_removal':
-            remove_cols = odf_print.where(F.col('attribute').isin(list_of_cols)) \
+        if treatment_threshold:
+            threshold_cols = odf_print.where(F.col('attribute').isin(list_of_cols)) \
                 .where(F.col('missing_pct') > treatment_threshold) \
                 .select('attribute').rdd.flatMap(lambda x: x).collect()
-            odf = idf.drop(*remove_cols)
+
+        if treatment_method == 'column_removal':
+            odf = idf.drop(*threshold_cols)
             if print_impact:
-                print("Removed Columns: ", remove_cols)
+                print("Removed Columns: ", threshold_cols)
 
         if treatment_method == 'row_removal':
             remove_cols = odf_print.where(F.col('attribute').isin(list_of_cols)) \
                 .where(F.col('missing_pct') == 1.0) \
                 .select('attribute').rdd.flatMap(lambda x: x).collect()
             list_of_cols = [e for e in list_of_cols if e not in remove_cols]
+            if treatment_threshold:
+                list_of_cols = [e for e in threshold_cols if e not in remove_cols]
             odf = idf.dropna(subset=list_of_cols)
 
             if print_impact:
@@ -269,6 +273,8 @@ def nullColumns_detection(spark, idf, list_of_cols='missing', drop_cols=[], trea
                 remove_cols = read_dataset(spark, **stats_unique).where(F.col('unique_values') < 2) \
                     .select('attribute').rdd.flatMap(lambda x: x).collect()
             list_of_cols = [e for e in list_of_cols if e not in remove_cols]
+            if treatment_threshold:
+                list_of_cols = [e for e in threshold_cols if e not in remove_cols]
             odf = imputation_MMM(spark, idf, list_of_cols, **treatment_configs, stats_missing=stats_missing,
                                  stats_mode=stats_mode, print_impact=print_impact)
     else:
