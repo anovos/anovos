@@ -1557,16 +1557,17 @@ def feature_autoLearn(spark, idf, list_of_cols="all", drop_cols=[], label_col='l
             print("Features dropped due to low Information Gain value: ", len(X.columns) - len(feats_selected))
             print("Features after IG based feature selection: ", len(feats_selected))
         return feats_selected
-
-    idf = idf.withColumn(label_col, F.when(F.col(label_col) == event_label, 1).otherwise(0)).toPandas()
+    
     if output_mode=="replace":
         fixed_cols = [e for e in idf.columns if e not in list_of_cols]
     else:
         fixed_cols = idf.columns
+
+    idf = idf.withColumn(label_col+'_converted', F.when(F.col(label_col) == event_label, 1).otherwise(0)).toPandas()
     all_feats = [e for e in idf.columns if e in list_of_cols]
     X_init = idf[all_feats]
-    Y = idf[label_col]
-    IG_feats = IG_feature_selection(X_init,Y, IG_threshold=IG_threshold, print_impact=print_impact)
+    Y = idf[label_col+'_converted']
+    IG_feats = IG_feature_selection(X_init, Y, IG_threshold=IG_threshold, print_impact=print_impact)
 
     ## Feature Generation (Predicted + Error for every feature pair)
     from dcor import distance_correlation
@@ -1585,36 +1586,40 @@ def feature_autoLearn(spark, idf, list_of_cols="all", drop_cols=[], label_col='l
     clf_linear = Ridge(alpha=1.0)
     output = Y
     for i,j in linear_pairs:
+        col_name_pred, col_name_err = i+"_and_"+j+"_pred", i+"_and_"+j+"_err"
         pred = clf_linear.fit(X[[i]],X[[j]]).predict(X[[i]])
-        output = pd.concat([output,X[[j]], pd.Series(list(pred))], axis=1).rename(columns={0:(i+j+"_pred")})
-        output[i+j+"_pred"] = output.apply(lambda x: float(x[i+j+"_pred"][0]), axis=1)
+        output = pd.concat([output,X[[j]], pd.Series(list(pred))], axis=1).rename(columns={0:(col_name_pred)})
+        output[col_name_pred] = output.apply(lambda x: float(x[col_name_pred][0]), axis=1)
         #output.to_csv("test.csv", header=True, index=False)
         #output = pd.read_csv("test.csv")
-        output[i+j+"_err"] = output[j] - output[i+j+"_pred"]
+        output[col_name_err] = output[j] - output[col_name_pred]
         output.drop(j, axis=1, inplace=True)
     #print(output.head())
 
     from sklearn.kernel_ridge import KernelRidge
     clf_nonlinear = KernelRidge(alpha=1.0, coef0=1, degree=3, gamma=None, kernel='rbf',kernel_params=None)
     for i,j in nonlinear_pairs:
+        col_name_pred, col_name_err = i+"_and_"+j+"_pred", i+"_and_"+j+"_err"
         pred = clf_nonlinear.fit(X[[i]],X[[j]]).predict(X[[i]])
-        output = pd.concat([output,X[[j]], pd.Series(list(pred))], axis=1).rename(columns={0:(i+j+"_pred")})
-        output[i+j+"_pred"] = output.apply(lambda x: float(x[i+j+"_pred"][0]), axis=1)
+        output = pd.concat([output,X[[j]], pd.Series(list(pred))], axis=1).rename(columns={0:(col_name_pred)})
+        output[col_name_pred] = output.apply(lambda x: float(x[col_name_pred][0]), axis=1)
         #output.to_csv("test.csv", header=True, index=False)
         #output = pd.read_csv("test.csv")
-        output[i+j+"_err"] = output[j] - output[i+j+"_pred"]
+        output[col_name_err] = output[j] - output[col_name_pred]
         output.drop(j, axis=1, inplace=True)
     #print(output.head())
 
     ## Stability Check on New Constructed Features 
+    # Pending: to add the corresponding scripts but they are not written by us
     from randomized_lasso import RandomizedLasso
     from stability_selection import StabilitySelection
-    X = output.drop(label_col, axis=1)
-    Y = output[label_col]
-    stability_model = StabilitySelection(base_estimator=RandomizedLasso(), lambda_name='alpha',threshold=stability_threshold, verbose=0)
+    X = output.drop(label_col+'_converted', axis=1)
+    Y = output[label_col+'_converted']
+    stability_model = StabilitySelection(base_estimator=RandomizedLasso(), lambda_name='alpha',
+                                         threshold=stability_threshold, verbose=0)
     stable_feats = [i for i,j in zip(X.columns,list(stability_model.fit(X, Y))) if j == True]
 
-    ## Information Gain Based Filteration (1st Round)
+    ## Information Gain Based Filteration (2nd Round)
     X = output[stable_feats]
     final_feats = IG_feature_selection(X,Y, IG_threshold=IG_threshold, print_impact=False)
 
@@ -1626,7 +1631,7 @@ def feature_autoLearn(spark, idf, list_of_cols="all", drop_cols=[], label_col='l
         print("Newly Constructed Features (Final): ", len(final_feats))
         
     odf = spark.createDataFrame(pd.concat([idf[fixed_cols],output[final_feats]], axis=1))
-    idf = spark.createDataFrame(idf)
+    idf = spark.createDataFrame(idf).drop(label_col+'_converted')
     if print_impact:
         print("Before:")
         idf.show(5)
@@ -1889,6 +1894,7 @@ def catfeats_fuzzy_matching(spark, idf, list_of_cols='all', drop_cols=[], basic_
         idf_cleaned = idf
     idf_cleaned.persist()
     odf = idf_cleaned
+    unchanged_cols = []
     for i in list_of_cols:
         ls = idf_cleaned.select(i).dropna().distinct().rdd.flatMap(lambda x:x).collect()
         distance_array = np.ones((len(ls),(len(ls))))*0
@@ -1902,7 +1908,7 @@ def catfeats_fuzzy_matching(spark, idf, list_of_cols='all', drop_cols=[], basic_
                 distance_array[k][j] = distance
                 distance_array[j][k] = distance_array[k][j]
       
-        # Note: replaced the cluster part by DBSCAN which create clusters with 1 point if all are different
+        # Note: replaced the AffinityPropagation part by DBSCAN which create clusters with 1 point if all are different
         clusters = cluster.DBSCAN(metric="precomputed", min_samples=1).fit_predict(distance_array)
 
         lol = list(zip(ls,clusters))
@@ -1910,7 +1916,10 @@ def catfeats_fuzzy_matching(spark, idf, list_of_cols='all', drop_cols=[], basic_
         df_clusters = spark.createDataFrame(lol, schema = [i,'cluster'])\
             .groupBy('cluster').agg(F.collect_list(i).alias(i))\
             .withColumn('mapped_value', F.col(i)[0]).drop('cluster')
-        if print_impact:
+        if len(set(clusters))==len(clusters):
+            unchanged_cols.append(i)
+        elif print_impact:
+            # Note: skip printing impact if the column is unchanged
             df_clusters.show(df_clusters.count(), False)
         df_clusters = df_clusters.withColumn(i, F.explode(i))
         odf = odf.join(df_clusters,i,'left_outer').withColumnRenamed('mapped_value', i+"_fuzzmatched")
@@ -1918,12 +1927,15 @@ def catfeats_fuzzy_matching(spark, idf, list_of_cols='all', drop_cols=[], basic_
     if output_mode == 'replace':
         for i in list_of_cols:
             odf = odf.drop(i).withColumnRenamed(i+"_fuzzmatched", i)
+    else:
+        # Note: remove unchanged columns
+        odf = odf.drop(*[(i+"_fuzzmatched") for i in unchanged_cols])
     
     if print_impact:
         if output_mode == 'replace':
             output_cols = list_of_cols
         else:
-            output_cols = [(i+"_fuzzmatched") for i in list_of_cols]
+            output_cols = [(i+"_fuzzmatched") for i in list_of_cols if i not in unchanged_cols]
 
         idf_unique = uniqueCount_computation(spark, idf, list_of_cols)\
             .select('attribute', F.col("unique_values").alias("uniqueValues_before"))
@@ -1936,7 +1948,7 @@ def catfeats_fuzzy_matching(spark, idf, list_of_cols='all', drop_cols=[], basic_
             odf_print = idf_unique\
                 .join(odf_unique\
                       .withColumnRenamed('attribute', 'attribute_after') \
-                      .withColumn('attribute', F.expr("substring(attribute_after, 1, length(attribute_after)-8)")),
+                      .withColumn('attribute', F.expr("substring(attribute_after, 1, length(attribute_after)-12)")),
                       'attribute', 'inner') 
         odf_print.show(len(output_mode))
     
@@ -1944,8 +1956,8 @@ def catfeats_fuzzy_matching(spark, idf, list_of_cols='all', drop_cols=[], basic_
     return odf
 
 
-def cat_to_num_supervised(spark, idf, list_of_cols, id_col="id", label_col="label", event_label=1, nonevent_label=0,
-                          pre_existing_model =False, model_path="NA", output_mode= "replace",seed = 0, print_impact=False):
+def cat_to_num_supervised(spark, idf, list_of_cols='all', drop_cols=[], label_col="label", event_label=1, nonevent_label=0,
+                          seed=0, pre_existing_model=False, model_path="NA", output_mode="replace", print_impact=False):
     '''
     idf: Input Dataframe
     list_of_cols: all (categorical columns except ID & Label) or list of columns (in list format or string separated by |)
@@ -1958,36 +1970,44 @@ def cat_to_num_supervised(spark, idf, list_of_cols, id_col="id", label_col="labe
     seed: Saving the intermediate data (optimization purpose only)
     return: Dataframe
     '''
-    if list_of_cols == 'all': 
-        list_of_cols = [e for e in idf.columns if e not in (id_col, label_col)]
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split('|') if ((x.strip() in idf.columns) & (x.strip() not in (id_col, label_col)))]
-    if isinstance(list_of_cols, list):
-        list_of_cols = [e for e in list_of_cols if ((e in idf.columns) & (e not in (id_col, label_col)))]
-    if len(list_of_cols) == 0:
+    if list_of_cols == 'all':
+        cat_cols = attributeType_segregation(idf)[1]
+        list_of_cols = cat_cols
+    elif isinstance(list_of_cols, str):
+        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
+    if isinstance(drop_cols, str):
+        drop_cols = [x.strip() for x in drop_cols.split('|')]
+    list_of_cols = list(set([e for e in list_of_cols if (e not in drop_cols) & (e != label_col)]))
+    
+    if (len(list_of_cols) == 0) | (any(x not in idf.columns for x in list_of_cols)):
         raise TypeError('Invalid input for Column(s)')
     
-    num_cols, cat_cols, other_cols = attributeType_segregation(idf.select(list_of_cols))
+    cat_cols = attributeType_segregation(idf.select(list_of_cols))[1]
     list_of_cols = cat_cols
+    event_label, nonevent_label = str(event_label), str(nonevent_label)
     odf = idf
+
     for index, i in enumerate(list_of_cols):
         if index > 0:
             odf = spark.read.parquet("intermediate_data/df_index" + str(index-1) + "_seed" +str(seed))
         if pre_existing_model == True:
-            df_tmp = spark.read.csv(model_path+ "/cat_to_num_supervised/" + i, header=True, inferSchema=True)
+            df_tmp = spark.read.csv(model_path + "/cat_to_num_supervised/" + i, header=True, inferSchema=True)
         else:        
-            df_tmp = idf.groupBy(i,label_col).count()                    .groupBy(i).pivot(label_col).sum('count').fillna(0)                    .withColumn( i + '_value', F.round(F.col(event_label)/(F.col(event_label)+F.col(nonevent_label)), 4))                    .drop(*[event_label,nonevent_label])
+            df_tmp = idf.groupBy(i, label_col).count().groupBy(i).pivot(label_col).sum('count').fillna(0)\
+                .withColumn(i + '_value', F.round(F.col(event_label)/(F.col(event_label)+F.col(nonevent_label)), 4))\
+                .drop(*[event_label, nonevent_label])
         
-        odf = odf.join(df_tmp,i, 'left_outer')
+        odf = odf.join(df_tmp, i, 'left_outer')
         
         # Saving model File if required
         if (pre_existing_model == False) & (model_path != "NA"):
             df_tmp.repartition(1).write.csv(model_path+ "/cat_to_num_supervised/" + i, header=True, mode='overwrite')
-            
+
+        # Pending: not sure why we need to write the intermediate data? - users might unconsciously save some huge dataframes?   
         error = 1
         while error > 0:
             try:
-                odf.write.parquet("intermediate_data/df_index" + str(index) + "_seed" +str(seed))
+                odf.write.parquet("intermediate_data/df_index"+str(index)+"_seed"+str(seed))
                 error = 0
             except:
                 seed += 1
