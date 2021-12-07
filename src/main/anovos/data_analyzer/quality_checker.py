@@ -88,9 +88,9 @@ def nullRows_detection(spark, idf, list_of_cols='all', drop_cols=[], treatment=F
                                 null value are removed.
     :return: (Output Dataframe, Metric Dataframe)
               Output Dataframe is the dataframe after row removal if treated, else original input dataframe.
-              Metric Dataframe is of schema [null_cols_count, row_count, row_pct, flagged]. null_cols_count is defined as
+              Metric Dataframe is of schema [null_cols_count, row_count, row_pct, flagged/treated]. null_cols_count is defined as
               no. of missing columns in a row. row_count is no. of rows with null_cols_count missing columns.
-              row_pct is row_count divided by number of rows. flagged is 1 if null_cols_count is more than
+              row_pct is row_count divided by number of rows. flagged/treated is 1 if null_cols_count is more than
               (threshold  X Number of Columns), else 0.
     """
 
@@ -130,14 +130,16 @@ def nullRows_detection(spark, idf, list_of_cols='all', drop_cols=[], treatment=F
     if treatment_threshold == 1:
         odf_tmp = odf_tmp.withColumn('flagged', F.when(F.col("null_cols_count") == len(list_of_cols), 1).otherwise(0))
 
-    if treatment:
-        odf = odf_tmp.where(F.col("flagged") == 0).drop(*["null_cols_count", "flagged"])
-    else:
-        odf = idf
-
     odf_print = odf_tmp.groupBy("null_cols_count", "flagged").agg(F.count(F.lit(1)).alias('row_count')) \
         .withColumn('row_pct', F.round(F.col('row_count') / float(idf.count()), 4)) \
         .select('null_cols_count', 'row_count', 'row_pct', 'flagged').orderBy('null_cols_count')
+
+    if treatment:
+        odf = odf_tmp.where(F.col("flagged") == 0).drop(*["null_cols_count", "flagged"])
+        odf_print = odf_print.withColumnRenamed('flagged', 'treated')
+    else:
+        odf = idf
+
     if print_impact:
         odf_print.show(odf.count())
 
