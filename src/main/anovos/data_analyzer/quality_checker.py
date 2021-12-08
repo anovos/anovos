@@ -849,10 +849,14 @@ def invalidEntries_detection(spark, idf, list_of_cols='all', drop_cols=[], treat
             for index, i in enumerate(list_of_cols):
                 if treatment_threshold:
                     if i not in threshold_cols:
+                        odf = odf.drop(i + "_invalid")
                         continue
                 odf = odf.withColumn(i + "_invalid", F.when(F.col('invalid')[index] == 1, None).otherwise(F.col(i)))
                 if output_mode == 'replace':
                     odf = odf.drop(i).withColumnRenamed(i + "_invalid", i)
+                else:
+                    if odf_print.where(F.col("attribute") == i).select('invalid_pct').collect()[0][0] == 0.0:
+                        odf = odf.drop(i + "_invalid") 
             odf = odf.drop("invalid")
 
         if treatment_method == 'column_removal':
