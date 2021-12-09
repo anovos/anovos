@@ -36,5 +36,4 @@ jobs:
 
       - name: Run the unit tests
         run: |
-          cd src/
-          pytest -v --cov=main/anovos test/
+          pytest -v --cov=src/main/anovos src/test/
