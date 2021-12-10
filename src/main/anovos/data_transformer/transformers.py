@@ -1,4 +1,5 @@
 # coding=utf-8
+from operator import mod
 import warnings
 
 import pyspark
@@ -392,6 +393,7 @@ def z_standardization(spark, idf, list_of_cols='all', drop_cols=[], pre_existing
         parameters = []
         for i in list_of_cols:
             mean, sttdev = idf.select(F.mean(i), F.stddev(i)).first()
+            mean, sttdev = float(mean), float(sttdev)
             parameters.append([mean, sttdev])
     
     odf = idf
@@ -769,7 +771,7 @@ def imputation_sklearn(spark, idf, list_of_cols="missing", drop_cols=[], method_
     if any(x not in num_cols for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
         
-    if method_type not in ('KNN', 'RBM', 'regression'):
+    if method_type not in ('KNN', 'regression'):
         raise TypeError('Invalid input for method_type')
     if output_mode not in ('replace', 'append'):
         raise TypeError('Invalid input for output_mode')
@@ -805,10 +807,6 @@ def imputation_sklearn(spark, idf, list_of_cols="missing", drop_cols=[], method_
         # Note: in this case, column order in odf will be wrong if list_of_cols does not follow the original column
         # Y = idf_pd[exclude_cols]
 
-        # Pending: version conflict issue:
-        # Imputer (used by boltzmannclean in RBM) was deprecated since sklearn v0.22 but KNNImputer was first introduced in version 0.22
-        # - https://scikit-learn.org/0.20/modules/classes.html#module-sklearn.preprocessing
-        # - https://scikit-learn.org/stable/modules/generated/sklearn.impute.KNNImputer.html
         if method_type == 'KNN':
             from sklearn.impute import KNNImputer
             imputer = KNNImputer(n_neighbors=5, weights='uniform', metric='nan_euclidean')
@@ -818,10 +816,11 @@ def imputation_sklearn(spark, idf, list_of_cols="missing", drop_cols=[], method_
             from sklearn.impute import IterativeImputer
             imputer = IterativeImputer()
             imputer.fit(X)
-        if method_type == 'RBM':
-            # Pending: boltzmannclean does not work with latest sklearn (0.21.0 works)
-            import boltzmannclean
-            imputer = boltzmannclean.train_rbm(X.values, tune_hyperparameters=False)
+        # Note: removed due to version conflict
+        # Imputer (used by boltzmannclean in RBM) was deprecated since sklearn v0.22 but KNNImputer was first introduced in version 0.22
+        # if method_type == 'RBM':
+        #     import boltzmannclean
+        #     imputer = boltzmannclean.train_rbm(X.values, tune_hyperparameters=False)
 
         if (pre_existing_model == False) & (model_path != "NA"):
             if emr_mode:
@@ -999,7 +998,7 @@ def imputation_matrixFactorization(spark, idf, list_of_cols="missing", drop_cols
 
 def imputation_custom(spark, idf, list_of_cols="missing", list_of_fills=None, method_type='row_removal', 
                       output_mode="replace", stats_missing={}, print_impact=False):
-    # Note: remove column drop_cols - may cause confusion in list_of_fills, list_of_cols mapping
+    # Note: remove input variable drop_cols - may cause confusion in list_of_fills, list_of_cols mapping
     '''
     idf: Pyspark Dataframe
     method: fill_constant or row_removal
@@ -1271,6 +1270,8 @@ def autoencoders_latentFeatures(spark, idf, list_of_cols="all", drop_cols=[], re
                 bash_cmd = "aws s3 cp model.h5 " + model_path + "/autoencoders_latentFeatures/model.h5"
                 output = subprocess.check_output(['bash', '-c', bash_cmd])
             else:
+                if not os.path.exists(model_path + "/autoencoders_latentFeatures/"):
+                    os.makedirs(model_path + "/autoencoders_latentFeatures/")
                 encoder.save(model_path + "/autoencoders_latentFeatures/encoder.h5")
                 model.save(model_path + "/autoencoders_latentFeatures/model.h5")
         
@@ -1441,13 +1442,17 @@ def feature_transformation(spark, idf, list_of_cols="all", drop_cols=[], method_
     num_cols = attributeType_segregation(idf.select(list_of_cols))[0]
     list_of_cols = num_cols
     odf = idf
+    col_mins = idf.select([F.min(i) for i in list_of_cols])
     if method_type in ["log", "box_cox"]:
         # Note: raise error when there are non positive value in any column (same as scipy.stats.boxcox for box_cox)
-        col_mins = idf.select([F.min(i) for i in list_of_cols])
         if any([i <= 0 for i in col_mins.rdd.flatMap(lambda x: x).collect()]):
             col_mins.show(1, False)
             raise ValueError('Data must be positive')
-    elif method_type != "square_root":
+    elif method_type == "square_root":
+        if any([i < 0 for i in col_mins.rdd.flatMap(lambda x: x).collect()]):
+            col_mins.show(1, False)
+            raise ValueError('Data must be non-negative')
+    else:
         raise TypeError('Invalid input method_type')
 
     if method_type == "log":
@@ -1489,7 +1494,7 @@ def feature_transformation(spark, idf, list_of_cols="all", drop_cols=[], method_
             if isinstance(boxcox_lambda, (list, tuple)):
                 if len(boxcox_lambda) != len(list_of_cols):
                     raise TypeError('Invalid input for boxcox_lambda')
-                elif all([isinstance(l, (float, int)) for l in boxcox_lambda]):
+                elif not all([isinstance(l, (float, int)) for l in boxcox_lambda]):
                     raise TypeError('Invalid input for boxcox_lambda')
                 else:
                     boxcox_lambda_list = list(boxcox_lambda)
@@ -1521,14 +1526,20 @@ def feature_transformation(spark, idf, list_of_cols="all", drop_cols=[], method_
                 
                 boxcox_lambda_list.append(best_lambdaVal)
         
+        output_cols = []
         for i, curr_lambdaVal in zip(list_of_cols, boxcox_lambda_list):
             # Pending: previously (i + "_log") was used as the new column name for 0 lambdaVal. 
             # But I feel it might make tracking column names a bit hard? 
-            modify_col = (i + "_bxcx_"+str(curr_lambdaVal)) if output_mode == 'append' else i
-            if curr_lambdaVal == 0:
-                odf = odf.withColumn(modify_col, F.log(F.col(i)))
-            else:
-                odf = odf.withColumn(modify_col, F.pow(F.col(i), curr_lambdaVal))
+            if curr_lambdaVal != 1:
+                modify_col = (i + "_bxcx_" + str(curr_lambdaVal)) if output_mode == 'append' else i
+                output_cols.append(modify_col)
+                if curr_lambdaVal == 0:
+                    odf = odf.withColumn(modify_col, F.log(F.col(i)))
+                else:
+                    odf = odf.withColumn(modify_col, F.pow(F.col(i), curr_lambdaVal))
+        if len(output_cols)==0:
+            warnings.warn("lambdaVal for all columns are 1 so no transformation is performed so idf is returned")
+            return idf
         
         if print_impact:
             print("Transformed Columns: ", list_of_cols)
@@ -1541,13 +1552,14 @@ def feature_transformation(spark, idf, list_of_cols="all", drop_cols=[], method_
                 .show()
             print("After:")
             if output_mode == 'replace':
-                output_cols = list_of_cols
+                odf.select(list_of_cols).describe()\
+                    .unionByName(odf.select([F.skewness(i).alias(i) for i in list_of_cols])\
+                                    .withColumn('summary', F.lit('skewness'))).show()
             else:
-                output_cols = [("`"+i+"_bxcx_"+str(l)+"`") for i, l in zip(list_of_cols, boxcox_lambda_list)]
-            odf.select(output_cols).describe()\
-                .unionByName(odf.select([F.skewness(i).alias(i[1:-1]) for i in output_cols])\
-                                .withColumn('summary', F.lit('skewness')))\
-                .show()
+                output_cols = [("`" + i + "`") for i in output_cols]
+                odf.select(output_cols).describe()\
+                    .unionByName(odf.select([F.skewness(i).alias(i[1:-1]) for i in output_cols])\
+                                    .withColumn('summary', F.lit('skewness'))).show()
     
     return odf
 
@@ -2027,8 +2039,8 @@ def cat_to_num_supervised(spark, idf, list_of_cols='all', drop_cols=[], label_co
     odf = idf
 
     for index, i in enumerate(list_of_cols):
-        if index > 0:
-            odf = spark.read.parquet("intermediate_data/df_index" + str(index-1) + "_seed" +str(seed))
+        # if index > 0:
+        #     odf = spark.read.parquet("intermediate_data/df_index" + str(index-1) + "_seed" +str(seed))
         if pre_existing_model == True:
             df_tmp = spark.read.csv(model_path + "/cat_to_num_supervised/" + i, header=True, inferSchema=True)
         else:        
@@ -2042,15 +2054,15 @@ def cat_to_num_supervised(spark, idf, list_of_cols='all', drop_cols=[], label_co
         if (pre_existing_model == False) & (model_path != "NA"):
             df_tmp.repartition(1).write.csv(model_path+ "/cat_to_num_supervised/" + i, header=True, mode='overwrite')
 
-        # Pending: not sure why we need to write the intermediate data? - users might unconsciously save some huge dataframes?   
-        error = 1
-        while error > 0:
-            try:
-                odf.write.parquet("intermediate_data/df_index"+str(index)+"_seed"+str(seed))
-                error = 0
-            except:
-                seed += 1
-                pass
+        # Pending: sometimes the loop runs forever so comented this out for now
+        # error = 1
+        # while error > 0:
+        #     try:
+        #         odf.write.parquet("intermediate_data/df_index"+str(index)+"_seed"+str(seed))
+        #         error = 0
+        #     except:
+        #         seed += 1
+        #         pass
             
     if output_mode =='replace':
         for i in list_of_cols:
