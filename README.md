@@ -50,10 +50,10 @@ To use _Anovos_, you need a compatible version of [Apache Spark](https://spark.a
 
 Currently, we support:
 - Apache Spark 2.4.x (on Java 8)
-- Python 2.7.x
+- Python 3.7.x
 
-Please not that _Anovos_ is not yet compatible with Apache Spark 3.x.
-For a more detailed and comprehensive description of the Spark environment expected by _Anovos_, please see ...
+Please note that _Anovos_ is not yet compatible with Apache Spark 3.x or later versions of Python.
+For a more detailed and comprehensive description of the Spark environment expected by _Anovos_, please see [here](https://docs.anovos.ai/docs/setting-up-your-environment/anovos-on-local/).
 
 ## Installation
 
