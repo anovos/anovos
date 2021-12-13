@@ -228,9 +228,6 @@ def test_global_summary(spark_session):
     assert result_df9.where(F.col("metric") == "numcols_count").toPandas().to_dict('list')['value'][0] == "1"
     assert result_df9.where(F.col("metric") == "numcols_name").toPandas().to_dict('list')['value'][0] == "age"
     assert result_df9.where(F.col("metric") == "catcols_count").toPandas().to_dict('list')['value'][0] == "2"
-    assert result_df9.where(F.col("metric") == "catcols_name").toPandas().to_dict('list')['value'][
-               0] == "education, ifa"
-
 
 def test_measures_of_percentiles(spark_session):
     test_df10 = spark_session.createDataFrame(
