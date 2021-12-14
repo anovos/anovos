@@ -28,10 +28,10 @@ def test_nullRows_detection(spark_session):
     assert result_df[0].count() == 3
     assert result_df[1].where(F.col("null_cols_count") == 0).toPandas().to_dict('list')['row_count'][0] == 3
     assert result_df[1].where(F.col("null_cols_count") == 0).toPandas().to_dict('list')['row_pct'][0] == 0.75
-    assert result_df[1].where(F.col("null_cols_count") == 0).toPandas().to_dict('list')['flagged'][0] == 0
+    assert result_df[1].where(F.col("null_cols_count") == 0).toPandas().to_dict('list')['treated'][0] == 0
     assert result_df[1].where(F.col("null_cols_count") == 2).toPandas().to_dict('list')['row_count'][0] == 1
     assert result_df[1].where(F.col("null_cols_count") == 2).toPandas().to_dict('list')['row_pct'][0] == 0.25
-    assert result_df[1].where(F.col("null_cols_count") == 2).toPandas().to_dict('list')['flagged'][0] == 1
+    assert result_df[1].where(F.col("null_cols_count") == 2).toPandas().to_dict('list')['treated'][0] == 1
 
 
 def test_duplicate_detection(spark_session):
