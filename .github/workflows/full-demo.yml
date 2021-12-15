@@ -1,6 +1,6 @@
-name: Demo
+name: Full Demo
 on:
-  push:
+  pull_request:
 
 
 jobs:
@@ -34,6 +34,6 @@ jobs:
 
       - name: Run the demo
         run: |
-          cp config/configs_basic.yaml dist/configs.yaml
+          cp config/configs_full.yaml dist/configs.yaml
           cd dist/
           ./spark-submit.sh
