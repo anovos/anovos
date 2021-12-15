@@ -1,27 +1,51 @@
 # coding=utf-8
-import imp
-from operator import mod
-import warnings
 
 import pyspark
-from anovos.data_analyzer.stats_generator import missingCount_computation, uniqueCount_computation
-from anovos.data_ingest.data_ingest import read_dataset, recast_column
-from anovos.shared.utils import attributeType_segregation, get_dtype
-from pyspark.ml import Pipeline, PipelineModel
-from pyspark.ml.feature import Imputer, ImputerModel
-from pyspark.ml.feature import StringIndexer, OneHotEncoderEstimator
-from pyspark.ml.linalg import DenseVector
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
 from pyspark.sql.window import Window
-from scipy import stats
+from pyspark.mllib.stat import Statistics
+from pyspark.ml import Pipeline, PipelineModel
+from pyspark.ml.recommendation import ALS
+from pyspark.ml.evaluation import RegressionEvaluator
+from pyspark.ml.feature import Imputer, ImputerModel, StringIndexer, IndexToString, OneHotEncoderEstimator
+from pyspark.ml.feature import VectorAssembler, MinMaxScaler, MinMaxScalerModel, PCA, PCAModel
+from pyspark.ml.linalg import DenseVector
 
+from anovos.data_analyzer.stats_generator import missingCount_computation, uniqueCount_computation
+from anovos.data_ingest.data_ingest import read_dataset, recast_column
+from anovos.shared.utils import attributeType_segregation, get_dtype
+
+from sklearn import cluster
+from sklearn.linear_model import Ridge
+from sklearn.kernel_ridge import KernelRidge
+from sklearn.utils.validation import column_or_1d
+from sklearn.feature_selection import SelectKBest, mutual_info_classif
+from sklearn.experimental import enable_iterative_imputer
+from sklearn.impute import KNNImputer, IterativeImputer
+
+import tensorflow
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras.models import Sequential, load_model, save_model, Model
+from tensorflow.keras.layers import Dense, Input, BatchNormalization, LeakyReLU
+
+import imp
+import os
+import joblib
+import pickle
+import random
+import tempfile
+import warnings
+import subprocess
 import pandas as pd
 import numpy as np
-import os
-import subprocess
-
-from sklearn.utils.validation import column_or_1d
+from scipy import stats
+from operator import mod
+from typing import Iterable 
+from itertools import chain
+from matplotlib import pyplot
+from dcor import distance_correlation
 
 
 def attribute_binning(spark, idf, list_of_cols='all', drop_cols=[], method_type="equal_range", bin_size=10,
@@ -527,7 +551,6 @@ def normalization(spark, idf, list_of_cols='all', drop_cols=[], pre_existing_mod
         raise TypeError('Invalid input for output_mode')
     
     # Building new scalar model or uploading the existing model
-    from pyspark.ml.feature import VectorAssembler, MinMaxScaler, MinMaxScalerModel
     assembler_norm = VectorAssembler(inputCols=list_of_cols, outputCol="list_of_cols_vector", handleInvalid="keep")
     assembled_norm_data = assembler_norm.transform(idf) 
     if pre_existing_model == True:
@@ -783,9 +806,6 @@ def imputation_sklearn(spark, idf, list_of_cols="missing", drop_cols=[], method_
     include_cols = num_cols
     exclude_cols = [e for e in idf.columns if e not in num_cols]
     
-    import joblib
-    import pickle
-    
     if pre_existing_model:
         if emr_mode:
             bash_cmd = "aws s3 cp " + model_path + "/imputation_sklearn.sav"
@@ -811,12 +831,9 @@ def imputation_sklearn(spark, idf, list_of_cols="missing", drop_cols=[], method_
         # Y = idf_pd[exclude_cols]
 
         if method_type == 'KNN':
-            from sklearn.impute import KNNImputer
             imputer = KNNImputer(n_neighbors=5, weights='uniform', metric='nan_euclidean')
             imputer.fit(X)
         if method_type == 'regression':
-            from sklearn.experimental import enable_iterative_imputer
-            from sklearn.impute import IterativeImputer
             imputer = IterativeImputer()
             imputer.fit(X)
         # Note: removed due to version conflict
@@ -900,12 +917,6 @@ def imputation_matrixFactorization(spark, idf, list_of_cols="missing", drop_cols
     output_mode: replace or append
     return: Imputed Dataframe
     '''
-    
-    from typing import Iterable 
-    from itertools import chain
-    from pyspark.ml.feature import StringIndexer, IndexToString
-    from pyspark.ml.recommendation import ALS
-    from pyspark.ml.evaluation import RegressionEvaluator
         
     if output_mode not in ('replace','append'):
         raise TypeError('Invalid input for output_mode')
@@ -1092,11 +1103,7 @@ def imputation_comparison(spark, idf, list_of_cols="missing", drop_cols=[], id_c
     id_col, label_col: Excluding ID & Label columns from imputation
     null_pct: %row converted into null for test dataset (per col)
     return: Name of Imputation Technique
-    '''
-    
-    from pyspark.ml.evaluation import RegressionEvaluator
-    import random
-    from pyspark.sql.window import Window
+    ''' 
 
     if stats_missing == {}:
         missing_df = missingCount_computation(spark, idf)
@@ -1196,13 +1203,6 @@ def autoencoders_latentFeatures(spark, idf, list_of_cols="all", drop_cols=[], re
     num_cols = attributeType_segregation(idf.select(list_of_cols))[0]
     list_of_cols = num_cols
     
-    import tensorflow as tf
-    from tensorflow import keras
-    from tensorflow.keras.models import Sequential, load_model, save_model, Model
-    from tensorflow.keras.layers import Dense, Input, BatchNormalization, LeakyReLU
-    import tempfile
-    import tensorflow
-    
     n_inputs = len(list_of_cols)
     if reduction_params < 1:
         n_bottleneck = int(reduction_params*n_inputs)
@@ -1257,12 +1257,11 @@ def autoencoders_latentFeatures(spark, idf, list_of_cols="all", drop_cols=[], re
         history = model.fit(X_train, X_train, epochs=int(epochs), batch_size=int(batch_size), verbose=2, 
                   validation_data=(X_test,X_test))
         if plot_learning_curves:
-            from matplotlib import pyplot
             pyplot.plot(history.history['loss'], label='train')
             pyplot.plot(history.history['val_loss'], label='test')
             pyplot.legend()
             pyplot.show()
-        
+ 
         # Saving model if required
         if (pre_existing_model == False) & (model_path != "NA"):
             if emr_mode:
@@ -1365,8 +1364,6 @@ def PCA_latentFeatures(spark, idf, list_of_cols="all", drop_cols=[], explained_v
     idf_standardized = z_standardization(spark, idf, list_of_cols=list_of_cols, pre_existing_model=standardization_pre_existing_model,
                                          model_path=standardization_model_path, output_mode='append')
     list_of_cols_scaled = [i+'_scaled' for i in list_of_cols]
-    
-    from pyspark.ml.feature import VectorAssembler, PCA, PCAModel
     # Note: use the assembled data without nan values for PCA model training
     assembler = VectorAssembler(inputCols=list_of_cols_scaled, outputCol="features", handleInvalid="skip")
     assembled_data = assembler.transform(idf_standardized)
@@ -1506,10 +1503,9 @@ def feature_transformation(spark, idf, list_of_cols="all", drop_cols=[], method_
                 boxcox_lambda_list = [boxcox_lambda] * len(list_of_cols)
             else:
                 raise TypeError('Invalid input for boxcox_lambda')
-        
+
         else:
             boxcox_lambda_list = []
-            from pyspark.mllib.stat import Statistics
             for i in list_of_cols:
                 # Note: changed the order a bit so that smaller transformation is preferred (can further change)
                 # (Sometimes kolmogorovSmirnovTest gives the same extremely small pVal for all lambdas tested)
@@ -1609,9 +1605,6 @@ def feature_autoLearn(spark, idf, list_of_cols="all", drop_cols=[], label_col='l
 
     idf = idf.withColumn(label_col+'_converted', F.when(F.col(label_col) == event_label, 1).otherwise(0))
 
-    import joblib
-    import pickle
-
     models, col_pairs = [], []
     if pre_existing_model:
         if emr_mode:
@@ -1644,8 +1637,7 @@ def feature_autoLearn(spark, idf, list_of_cols="all", drop_cols=[], label_col='l
     else:
         ## Information Gain Based Filteration (1st Round)
         def IG_feature_selection(X, Y, IG_threshold=0, print_impact=False):
-            from sklearn.feature_selection import SelectKBest
-            from sklearn.feature_selection import mutual_info_classif
+
             IG_model = SelectKBest(mutual_info_classif, k='all')
             IG_model.fit_transform(X,Y)
             feats_score = list(IG_model.scores_)
@@ -1675,7 +1667,6 @@ def feature_autoLearn(spark, idf, list_of_cols="all", drop_cols=[], label_col='l
             return idf.drop(label_col+'_converted')
 
         ## Feature Generation (Predicted + Error for every feature pair)
-        from dcor import distance_correlation
         X = idf_pd[IG_feats].astype(float)
         linear_pairs = []
         nonlinear_pairs = []
@@ -1687,8 +1678,6 @@ def feature_autoLearn(spark, idf, list_of_cols="all", drop_cols=[], label_col='l
                     else:
                         nonlinear_pairs.append([i,j])
         #print(len(linear_pairs),len(nonlinear_pairs))
-        from sklearn.linear_model import Ridge
-        from sklearn.base import clone
         # clf_linear = Ridge(alpha=1.0)
         output = Y
         for i,j in linear_pairs:
@@ -1705,7 +1694,6 @@ def feature_autoLearn(spark, idf, list_of_cols="all", drop_cols=[], label_col='l
             col_pairs.append([i, j])
         #print(output.head())
 
-        from sklearn.kernel_ridge import KernelRidge
         # clf_nonlinear = KernelRidge(alpha=1.0, coef0=1, degree=3, gamma=None, kernel='rbf',kernel_params=None)
         for i,j in nonlinear_pairs:
             clf_nonlinear = KernelRidge(alpha=1.0, coef0=1, degree=3, gamma=None, kernel='rbf',kernel_params=None)
@@ -2061,8 +2049,6 @@ def catfeats_fuzzy_matching(spark, idf, list_of_cols='all', drop_cols=[], basic_
     cat_cols = attributeType_segregation(idf.select(list_of_cols))[1]
     list_of_cols = cat_cols
 
-    from sklearn import cluster
-    from fuzzywuzzy import fuzz, process
     if basic_cleaning:
         idf_cleaned = catfeats_basic_cleaning(spark, idf, list_of_cols)
     else:
