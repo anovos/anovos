@@ -88,9 +88,9 @@ def nullRows_detection(spark, idf, list_of_cols='all', drop_cols=[], treatment=F
                                 null value are removed.
     :return: (Output Dataframe, Metric Dataframe)
               Output Dataframe is the dataframe after row removal if treated, else original input dataframe.
-              Metric Dataframe is of schema [null_cols_count, row_count, row_pct, flagged]. null_cols_count is defined as
+              Metric Dataframe is of schema [null_cols_count, row_count, row_pct, flagged/treated]. null_cols_count is defined as
               no. of missing columns in a row. row_count is no. of rows with null_cols_count missing columns.
-              row_pct is row_count divided by number of rows. flagged is 1 if null_cols_count is more than
+              row_pct is row_count divided by number of rows. flagged/treated is 1 if null_cols_count is more than
               (threshold  X Number of Columns), else 0.
     """
 
@@ -130,14 +130,16 @@ def nullRows_detection(spark, idf, list_of_cols='all', drop_cols=[], treatment=F
     if treatment_threshold == 1:
         odf_tmp = odf_tmp.withColumn('flagged', F.when(F.col("null_cols_count") == len(list_of_cols), 1).otherwise(0))
 
-    if treatment:
-        odf = odf_tmp.where(F.col("flagged") == 0).drop(*["null_cols_count", "flagged"])
-    else:
-        odf = idf
-
     odf_print = odf_tmp.groupBy("null_cols_count", "flagged").agg(F.count(F.lit(1)).alias('row_count')) \
         .withColumn('row_pct', F.round(F.col('row_count') / float(idf.count()), 4)) \
         .select('null_cols_count', 'row_count', 'row_pct', 'flagged').orderBy('null_cols_count')
+
+    if treatment:
+        odf = odf_tmp.where(F.col("flagged") == 0).drop(*["null_cols_count", "flagged"])
+        odf_print = odf_print.withColumnRenamed('flagged', 'treated')
+    else:
+        odf = idf
+
     if print_impact:
         odf_print.show(odf.count())
 
@@ -228,30 +230,34 @@ def nullColumns_detection(spark, idf, list_of_cols='missing', drop_cols=[], trea
         raise TypeError('Non-Boolean input for treatment')
     if treatment_method not in ('MMM', 'row_removal', 'column_removal'):
         raise TypeError('Invalid input for method_type')
-    if treatment_method == 'column_removal':
-        treatment_threshold = treatment_configs.get('treatment_threshold', None)
-        if treatment_threshold:
-            treatment_threshold = float(treatment_threshold)
-        else:
-            raise TypeError('Invalid input for column removal threshold')
+
+    treatment_threshold = treatment_configs.pop('treatment_threshold', None)
+    if treatment_threshold:
+        treatment_threshold = float(treatment_threshold)
+    else:
+        if treatment_method == 'column_removal':
+            raise TypeError('Invalid input for column removal threshold')    
 
     odf_print = odf_print.where(F.col('attribute').isin(list_of_cols))
 
     if treatment:
-
-        if treatment_method == 'column_removal':
-            remove_cols = odf_print.where(F.col('attribute').isin(list_of_cols)) \
+        if treatment_threshold:
+            threshold_cols = odf_print.where(F.col('attribute').isin(list_of_cols)) \
                 .where(F.col('missing_pct') > treatment_threshold) \
                 .select('attribute').rdd.flatMap(lambda x: x).collect()
-            odf = idf.drop(*remove_cols)
+
+        if treatment_method == 'column_removal':
+            odf = idf.drop(*threshold_cols)
             if print_impact:
-                print("Removed Columns: ", remove_cols)
+                print("Removed Columns: ", threshold_cols)
 
         if treatment_method == 'row_removal':
             remove_cols = odf_print.where(F.col('attribute').isin(list_of_cols)) \
                 .where(F.col('missing_pct') == 1.0) \
                 .select('attribute').rdd.flatMap(lambda x: x).collect()
             list_of_cols = [e for e in list_of_cols if e not in remove_cols]
+            if treatment_threshold:
+                list_of_cols = [e for e in threshold_cols if e not in remove_cols]
             odf = idf.dropna(subset=list_of_cols)
 
             if print_impact:
@@ -267,6 +273,8 @@ def nullColumns_detection(spark, idf, list_of_cols='missing', drop_cols=[], trea
                 remove_cols = read_dataset(spark, **stats_unique).where(F.col('unique_values') < 2) \
                     .select('attribute').rdd.flatMap(lambda x: x).collect()
             list_of_cols = [e for e in list_of_cols if e not in remove_cols]
+            if treatment_threshold:
+                list_of_cols = [e for e in threshold_cols if e not in remove_cols]
             odf = imputation_MMM(spark, idf, list_of_cols, **treatment_configs, stats_missing=stats_missing,
                                  stats_mode=stats_mode, print_impact=print_impact)
     else:
@@ -695,9 +703,8 @@ def biasedness_detection(spark, idf, list_of_cols='all', drop_cols=[], treatment
 
     return odf, odf_print
 
-
-def invalidEntries_detection(spark, idf, list_of_cols='all', drop_cols=[], treatment=False,
-                             output_mode='replace', print_impact=False):
+def invalidEntries_detection(spark, idf, list_of_cols='all', drop_cols=[], treatment=False, treatment_method='null_replacement',
+                             treatment_configs={}, stats_missing={}, stats_unique={}, stats_mode={}, output_mode='replace', print_impact=False):
     """
     :param spark: Spark Session
     :param idf: Input Dataframe
@@ -711,15 +718,28 @@ def invalidEntries_detection(spark, idf, list_of_cols='all', drop_cols=[], treat
                       Alternatively, columns can be specified in a string format,
                       where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
     :param treatment: Boolean argument – True or False. If True, invalid values are replaced by Null.
+    :param treatment_method: "MMM", "null_replacement", "column_removal" (more methods to be added soon).
+                             MMM (Mean Median Mode) replaces invalid value by the measure of central tendency (mode for
+                             categorical features and mean or median for numerical features).
+                             null_replacement removes all values with any invalid values as null.
+                             column_removal remove a column if % of rows with invalid value is above a threshold (defined
+                             by key "treatment_threshold" under treatment_configs argument).
+     :param treatment_configs: Takes input in dictionary format.
+                              For column_removal treatment, key ‘treatment_threshold’ is provided with a value between 0 to 1.
+                              For value replacement, by MMM, arguments corresponding to imputation_MMM function (transformer module) are provided,
+                              where each key is an argument from imputation_MMM function.
+                              For null_replacement, this argument can be skipped.
     :param output_mode: "replace", "append".
                         “replace” option replaces original columns with treated column. “append” option append treated
                         column to the input dataset with a postfix "_invalid" e.g. column X is appended as X_invalid.
     :return: (Output Dataframe, Metric Dataframe)
               Output Dataframe is the dataframe after treatment if applicable, else original input dataframe.
               Metric Dataframe is of schema [attribute, invalid_entries, invalid_count, invalid_pct].
-              invalid_entries are all potential invalid values (separated by delimiter pipe “|”), invalid_count	is no.
+              invalid_entries are all potential invalid values (separated by delimiter pipe “|”), invalid_count is no.
               of rows which are impacted by invalid entries and invalid_pct is invalid_count divided by no of rows.
     """
+
+
     if list_of_cols == 'all':
         list_of_cols = []
         for i in idf.dtypes:
@@ -753,6 +773,16 @@ def invalidEntries_detection(spark, idf, list_of_cols='all', drop_cols=[], treat
         treatment = False
     else:
         raise TypeError('Non-Boolean input for treatment')
+        
+    if treatment_method not in ('MMM', 'null_replacement', 'column_removal'):
+        raise TypeError('Invalid input for method_type')
+
+    treatment_threshold = treatment_configs.pop('treatment_threshold', None)
+    if treatment_threshold:
+        treatment_threshold = float(treatment_threshold)
+    else:
+        if treatment_method == 'column_removal':
+            raise TypeError('Invalid input for column removal threshold')
 
     null_vocab = ['', ' ', 'nan', 'null', 'na', 'inf', 'n/a', 'not defined', 'none', 'undefined', 'blank']
     specialChars_vocab = ["&", "$", ";", ":", ".", ",", "*", "#", "@", "_", "?", "%", "!", "^", "(", ")", "-", "/", "'"]
@@ -796,8 +826,10 @@ def invalidEntries_detection(spark, idf, list_of_cols='all', drop_cols=[], treat
     f_detect = F.udf(detect, T.ArrayType(T.LongType()))
 
     odf = idf.withColumn("invalid", f_detect(*list_of_cols))
+    
     odf.persist()
     output_print = []
+    
     for index, i in enumerate(list_of_cols):
         tmp = odf.withColumn(i + "_invalid", F.col('invalid')[index])
         invalid = tmp.where(F.col(i + "_invalid") == 1).select(i).distinct().rdd.flatMap(lambda x: x).collect()
@@ -805,17 +837,52 @@ def invalidEntries_detection(spark, idf, list_of_cols='all', drop_cols=[], treat
         invalid_count = tmp.where(F.col(i + "_invalid") == 1).count()
         output_print.append([i, '|'.join(invalid), invalid_count, round(invalid_count / idf.count(), 4)])
 
+    odf_print = spark.createDataFrame(output_print,
+                                      schema=['attribute', 'invalid_entries', 'invalid_count', 'invalid_pct'])
+
     if treatment:
-        for index, i in enumerate(list_of_cols):
-            odf = odf.withColumn(i + "_invalid", F.when(F.col('invalid')[index] == 1, None).otherwise(F.col(i)))
-            if output_mode == 'replace':
-                odf = odf.drop(i).withColumnRenamed(i + "_invalid", i)
-        odf = odf.drop("invalid")
+        if treatment_threshold:
+            threshold_cols = odf_print.where(F.col('attribute').isin(list_of_cols)) \
+                .where(F.col('invalid_pct') > treatment_threshold) \
+                .select('attribute').rdd.flatMap(lambda x: x).collect()
+        if treatment_method in ('null_replacement', 'MMM'):
+            for index, i in enumerate(list_of_cols):
+                if treatment_threshold:
+                    if i not in threshold_cols:
+                        odf = odf.drop(i + "_invalid")
+                        continue
+                odf = odf.withColumn(i + "_invalid", F.when(F.col('invalid')[index] == 1, None).otherwise(F.col(i)))
+                if output_mode == 'replace':
+                    odf = odf.drop(i).withColumnRenamed(i + "_invalid", i)
+                else:
+                    if odf_print.where(F.col("attribute") == i).select('invalid_pct').collect()[0][0] == 0.0:
+                        odf = odf.drop(i + "_invalid") 
+            odf = odf.drop("invalid")
+
+        if treatment_method == 'column_removal':
+            odf = idf.drop(*threshold_cols)
+            if print_impact:
+                print("Removed Columns: ", threshold_cols)
+
+        if treatment_method == 'MMM':
+            if stats_unique == {} or output_mode == 'append':
+                remove_cols = uniqueCount_computation(spark, odf, list_of_cols).where(F.col('unique_values') < 2) \
+                .select('attribute').rdd.flatMap(lambda x: x).collect()
+            else:
+                remove_cols = read_dataset(spark, **stats_unique).where(F.col('unique_values') < 2) \
+                .select('attribute').rdd.flatMap(lambda x: x).collect()
+                
+            list_of_cols = [e for e in list_of_cols if e not in remove_cols]
+            if treatment_threshold:
+                list_of_cols = [e for e in threshold_cols if e not in remove_cols]
+            if output_mode == 'append':
+                if len(list_of_cols) > 0:
+                    list_of_cols = [e + '_invalid' for e in list_of_cols]
+            odf = imputation_MMM(spark, odf, list_of_cols, **treatment_configs, stats_missing=stats_missing,
+                                 stats_mode=stats_mode, print_impact=print_impact)
     else:
         odf = idf
 
-    odf_print = spark.createDataFrame(output_print,
-                                      schema=['attribute', 'invalid_entries', 'invalid_count', 'invalid_pct'])
     if print_impact:
         odf_print.show(len(list_of_cols))
 
