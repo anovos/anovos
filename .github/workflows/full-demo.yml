@@ -1,6 +1,9 @@
 name: Full Demo
 on:
   pull_request:
+  push:
+    branches:
+      - master
 
 
 jobs:
