@@ -1,4 +1,5 @@
 # coding=utf-8
+import imp
 from operator import mod
 import warnings
 
@@ -19,6 +20,8 @@ import pandas as pd
 import numpy as np
 import os
 import subprocess
+
+from sklearn.utils.validation import column_or_1d
 
 
 def attribute_binning(spark, idf, list_of_cols='all', drop_cols=[], method_type="equal_range", bin_size=10,
@@ -1564,8 +1567,11 @@ def feature_transformation(spark, idf, list_of_cols="all", drop_cols=[], method_
     return odf
 
 
-def feature_autoLearn(spark, idf, list_of_cols="all", drop_cols=[], label_col='label', event_label=1, IG_threshold=0,
-               dist_corr_threshold=0.7, stability_threshold=0.8, output_mode="replace",print_impact=False):
+def feature_autoLearn(spark, idf, list_of_cols="all", drop_cols=[], label_col='label', event_label=1, 
+                      IG_threshold=0, dist_corr_threshold=0.7, stability_threshold=0.8, max_size=500000,
+                      emr_mode=False, pre_existing_model=False, model_path="NA", output_mode="replace",
+                      print_impact=False):
+    # Note: added variables emr_mode, pre_existing_model, model_path
     '''
     idf: Input Dataframe
     list_of_cols: all (numerical columns except ID & Label) or list of columns (in list format or string separated by |)
@@ -1590,97 +1596,213 @@ def feature_autoLearn(spark, idf, list_of_cols="all", drop_cols=[], label_col='l
     
     num_cols = attributeType_segregation(idf.select(list_of_cols))[0]
     list_of_cols = num_cols
-    
-    ## Information Gain Based Filteration (1st Round)
-    def IG_feature_selection(X, Y, IG_threshold=0, print_impact=False):
-        from sklearn.feature_selection import SelectKBest
-        from sklearn.feature_selection import mutual_info_classif
-        IG_model = SelectKBest(mutual_info_classif, k='all')
-        IG_model.fit_transform(X,Y)
-        feats_score = list(IG_model.scores_)
-        feats_selected = []
-        for index,i in enumerate(X.columns):
-            if feats_score[index] > IG_threshold:
-                feats_selected.append(i)
-        if print_impact:
-            print("Features dropped due to low Information Gain value: ", len(X.columns) - len(feats_selected))
-            print("Features after IG based feature selection: ", len(feats_selected))
-        return feats_selected
-    
+
     if output_mode=="replace":
         fixed_cols = [e for e in idf.columns if e not in list_of_cols]
     else:
         fixed_cols = idf.columns
 
-    idf = idf.withColumn(label_col+'_converted', F.when(F.col(label_col) == event_label, 1).otherwise(0)).toPandas()
-    all_feats = [e for e in idf.columns if e in list_of_cols]
-    X_init = idf[all_feats]
-    Y = idf[label_col+'_converted']
-    IG_feats = IG_feature_selection(X_init, Y, IG_threshold=IG_threshold, print_impact=print_impact)
+    # Note: the predict function of sklearn does not support null input so error might be raised later if list_of_cols contains null.
+    # Pending: should we support null values?
+    if (idf.count()!=idf.dropna(subset=list_of_cols).count()):
+        warnings.warn("list_of_cols should not contain None values, otherwise it may cause error.")
 
-    ## Feature Generation (Predicted + Error for every feature pair)
-    from dcor import distance_correlation
-    X = idf[IG_feats]
-    linear_pairs = []
-    nonlinear_pairs = []
-    for index, i in enumerate(IG_feats):
-        for subindex, j in enumerate(IG_feats):
-            if index != subindex:
-                if distance_correlation(X[i], X[j])>= dist_corr_threshold:
-                    linear_pairs.append([i,j])
-                else:
-                    nonlinear_pairs.append([i,j])
-    #print(len(linear_pairs),len(nonlinear_pairs))
-    from sklearn.linear_model import Ridge
-    clf_linear = Ridge(alpha=1.0)
-    output = Y
-    for i,j in linear_pairs:
-        col_name_pred, col_name_err = i+"_and_"+j+"_pred", i+"_and_"+j+"_err"
-        pred = clf_linear.fit(X[[i]],X[[j]]).predict(X[[i]])
-        output = pd.concat([output,X[[j]], pd.Series(list(pred))], axis=1).rename(columns={0:(col_name_pred)})
-        output[col_name_pred] = output.apply(lambda x: float(x[col_name_pred][0]), axis=1)
-        #output.to_csv("test.csv", header=True, index=False)
-        #output = pd.read_csv("test.csv")
-        output[col_name_err] = output[j] - output[col_name_pred]
-        output.drop(j, axis=1, inplace=True)
-    #print(output.head())
+    idf = idf.withColumn(label_col+'_converted', F.when(F.col(label_col) == event_label, 1).otherwise(0))
 
-    from sklearn.kernel_ridge import KernelRidge
-    clf_nonlinear = KernelRidge(alpha=1.0, coef0=1, degree=3, gamma=None, kernel='rbf',kernel_params=None)
-    for i,j in nonlinear_pairs:
-        col_name_pred, col_name_err = i+"_and_"+j+"_pred", i+"_and_"+j+"_err"
-        pred = clf_nonlinear.fit(X[[i]],X[[j]]).predict(X[[i]])
-        output = pd.concat([output,X[[j]], pd.Series(list(pred))], axis=1).rename(columns={0:(col_name_pred)})
-        output[col_name_pred] = output.apply(lambda x: float(x[col_name_pred][0]), axis=1)
-        #output.to_csv("test.csv", header=True, index=False)
-        #output = pd.read_csv("test.csv")
-        output[col_name_err] = output[j] - output[col_name_pred]
-        output.drop(j, axis=1, inplace=True)
-    #print(output.head())
+    import joblib
+    import pickle
 
-    ## Stability Check on New Constructed Features 
-    # Pending: to add the corresponding scripts but they are not written by us
-    from randomized_lasso import RandomizedLasso
-    from stability_selection import StabilitySelection
-    X = output.drop(label_col+'_converted', axis=1)
-    Y = output[label_col+'_converted']
-    stability_model = StabilitySelection(base_estimator=RandomizedLasso(), lambda_name='alpha',
-                                         threshold=stability_threshold, verbose=0)
-    stable_feats = [i for i,j in zip(X.columns,list(stability_model.fit(X, Y))) if j == True]
+    models, col_pairs = [], []
+    if pre_existing_model:
+        if emr_mode:
+            subprocess.check_output(['bash', '-c', 'rm -r feature_autoLearn; mkdir feature_autoLearn'])
+            bash_cmd = "aws s3 cp " + model_path + "/feature_autoLearn feature_autoLearn --recursive"
+            subprocess.check_output(['bash', '-c', bash_cmd])
+            model_names = [f for f in os.listdir() if '.sav' in f]
+            for m in model_names:
+                models.append(pickle.load(open(m, 'rb')))
+                col_pairs.append(m.split('.sav')[0].split("__and__"))
 
-    ## Information Gain Based Filteration (2nd Round)
-    X = output[stable_feats]
-    final_feats = IG_feature_selection(X,Y, IG_threshold=IG_threshold, print_impact=False)
-
-    if print_impact:
-        print("No. of linear feature pairs: ", len(linear_pairs))
-        print("No. of nonlinear feature pairs: ", len(nonlinear_pairs))
-        print("Newly Constructed Features: ", len(output.columns) - 1)
-        print("Newly Constructed Features (After Stability Check): ", len(stable_feats))
-        print("Newly Constructed Features (Final): ", len(final_feats))
+        else:
+            model_names = [f for f in os.listdir(model_path + "/feature_autoLearn") if '.sav' in f]
+            for m in model_names:
+                m_path = model_path + "/feature_autoLearn/" + m
+                models.append(pickle.load(open(m_path, 'rb')))
+                col_pairs.append(m.split('.sav')[0].split("__and__"))
+        idf_rest = idf
+        final_feats_df = spark.read.csv(model_path + "/feature_autoLearn/final_feats", header=True, inferSchema=True)
+        # Note: to remove irrelevant columns when list_of_cols is a subset of previously trained columns 
+        final_feats = final_feats_df\
+            .withColumn('var', F.split('feature', '__and__')).withColumn('var1', F.col('var')[0])\
+            .withColumn('var2', F.regexp_replace(F.col('var')[1], '_pred|_err', ''))\
+            .where((F.col('var1').isin(list_of_cols)) & (F.col('var2').isin(list_of_cols)))\
+            .where(F.col('selected')==True).select('feature').rdd.flatMap(lambda x: x).collect()
         
-    odf = spark.createDataFrame(pd.concat([idf[fixed_cols],output[final_feats]], axis=1))
-    idf = spark.createDataFrame(idf).drop(label_col+'_converted')
+        if print_impact:
+            print("Newly Constructed Features (Final): ", len(final_feats))
+
+    else:
+        ## Information Gain Based Filteration (1st Round)
+        def IG_feature_selection(X, Y, IG_threshold=0, print_impact=False):
+            from sklearn.feature_selection import SelectKBest
+            from sklearn.feature_selection import mutual_info_classif
+            IG_model = SelectKBest(mutual_info_classif, k='all')
+            IG_model.fit_transform(X,Y)
+            feats_score = list(IG_model.scores_)
+            feats_selected = []
+            for index,i in enumerate(X.columns):
+                if feats_score[index] > IG_threshold:
+                    feats_selected.append(i)
+            if print_impact:
+                print("Features dropped due to low Information Gain value: ", len(X.columns) - len(feats_selected))
+                print("Features after IG based feature selection: ", len(feats_selected))
+            return feats_selected
+        
+        idf = idf.withColumn('id', F.monotonically_increasing_id())
+        idf_valid = idf.dropna(subset=list_of_cols+[label_col+'_converted'])
+        idf_model = idf_valid.sample(False, min(1.0,float(max_size)/idf_valid.count()), 0)
+        idf_rest = idf.subtract(idf_model)
+        idf, idf_model, idf_rest = idf.drop('id'), idf_model.drop('id'), idf_rest.drop('id')
+        idf_pd = idf_model.toPandas()
+
+        all_feats = [e for e in idf_pd.columns if e in list_of_cols]
+        X_init = idf_pd[all_feats]
+        Y = idf_pd[label_col+'_converted']
+        IG_feats = IG_feature_selection(X_init, Y, IG_threshold=IG_threshold, print_impact=print_impact)
+
+        if len(IG_feats)<=1:
+            warnings.warn("No transformation performed - feature_autoLearn")
+            return idf.drop(label_col+'_converted')
+
+        ## Feature Generation (Predicted + Error for every feature pair)
+        from dcor import distance_correlation
+        X = idf_pd[IG_feats].astype(float)
+        linear_pairs = []
+        nonlinear_pairs = []
+        for index, i in enumerate(IG_feats):
+            for subindex, j in enumerate(IG_feats):
+                if index != subindex:
+                    if distance_correlation(X[i], X[j])>= dist_corr_threshold:
+                        linear_pairs.append([i,j])
+                    else:
+                        nonlinear_pairs.append([i,j])
+        #print(len(linear_pairs),len(nonlinear_pairs))
+        from sklearn.linear_model import Ridge
+        from sklearn.base import clone
+        # clf_linear = Ridge(alpha=1.0)
+        output = Y
+        for i,j in linear_pairs:
+            clf_linear = Ridge(alpha=1.0)
+            col_name_pred, col_name_err = i+"__and__"+j+"_pred", i+"__and__"+j+"_err"
+            pred = clf_linear.fit(X[[i]],X[[j]]).predict(X[[i]])
+            output = pd.concat([output,X[[j]], pd.Series(list(pred))], axis=1).rename(columns={0:(col_name_pred)})
+            output[col_name_pred] = output.apply(lambda x: float(x[col_name_pred][0]), axis=1)
+            #output.to_csv("test.csv", header=True, index=False)
+            #output = pd.read_csv("test.csv")
+            output[col_name_err] = output[j] - output[col_name_pred]
+            output.drop(j, axis=1, inplace=True)
+            models.append(clf_linear)
+            col_pairs.append([i, j])
+        #print(output.head())
+
+        from sklearn.kernel_ridge import KernelRidge
+        # clf_nonlinear = KernelRidge(alpha=1.0, coef0=1, degree=3, gamma=None, kernel='rbf',kernel_params=None)
+        for i,j in nonlinear_pairs:
+            clf_nonlinear = KernelRidge(alpha=1.0, coef0=1, degree=3, gamma=None, kernel='rbf',kernel_params=None)
+            col_name_pred, col_name_err = i+"__and__"+j+"_pred", i+"__and__"+j+"_err"
+            pred = clf_nonlinear.fit(X[[i]],X[[j]]).predict(X[[i]])
+            output = pd.concat([output,X[[j]], pd.Series(list(pred))], axis=1).rename(columns={0:(col_name_pred)})
+            output[col_name_pred] = output.apply(lambda x: float(x[col_name_pred][0]), axis=1)
+            #output.to_csv("test.csv", header=True, index=False)
+            #output = pd.read_csv("test.csv")
+            output[col_name_err] = output[j] - output[col_name_pred]
+            output.drop(j, axis=1, inplace=True)
+            models.append(clf_nonlinear)
+            col_pairs.append([i, j])
+        #print(output.head())
+
+        ## Stability Check on New Constructed Features 
+        # Pending: to add the corresponding scripts but they are not written by us
+        # Pending: sometimes not coverged warning is shown but the result looks fine.
+        from randomized_lasso import RandomizedLasso
+        from stability_selection import StabilitySelection
+        X = output.drop(label_col+'_converted', axis=1)
+        Y = output[label_col+'_converted']
+        stability_model = StabilitySelection(base_estimator=RandomizedLasso(), lambda_name='alpha',
+                                            threshold=stability_threshold, verbose=0)
+        stable_feats = [i for i,j in zip(X.columns,list(stability_model.fit(X, Y))) if j == True]
+        ## Information Gain Based Filteration (2nd Round)
+        X_stable = output[stable_feats]
+        final_feats = IG_feature_selection(X_stable,Y, IG_threshold=IG_threshold, print_impact=False)
+
+        feats_selected_bool = [True if i in final_feats else False for i in X.columns]
+        final_feats_df = spark.createDataFrame(zip(X.columns,feats_selected_bool), schema=['feature', 'selected'])
+        odf_model = spark.createDataFrame(pd.concat([idf_pd[fixed_cols],output[final_feats]], axis=1))
+        
+        # filter out unused models
+        models_, col_pairs_ = [], []
+        for i in range(len(models)):
+            m, [c1, c2] = models[i], col_pairs[i]
+            if (c1+"__and__"+c2+"_pred" in final_feats) or (c1+"__and__"+c2+"_err" in final_feats):
+                models_.append(m)
+                col_pairs_.append([c1, c2])
+        models, col_pairs = models_, col_pairs_
+
+        if (pre_existing_model == False) & (model_path != "NA"):
+            if emr_mode:
+                subprocess.check_output(['bash', '-c', 'rm -r feature_autoLearn; mkdir feature_autoLearn'])
+                for m, [c1, c2] in zip(models, col_pairs):
+                    model_name = "feature_autoLearn/"+c1+"__and__"+c2+".sav"
+                    pickle.dump(m, open(model_name, 'wb'))
+                    bash_cmd = "aws s3 cp " + model_name + ' ' + model_path + "/feature_autoLearn/" + model_name
+                    subprocess.check_output(['bash', '-c', bash_cmd])
+                    #joblib.dump(imputer, "imputation_sklearn.sav")
+            else:
+                subprocess.check_output(['bash', '-c', 'cd ' + model_path + '; rm -r feature_autoLearn; mkdir feature_autoLearn'])
+                for m, [c1, c2] in zip(models, col_pairs):
+                    local_path = model_path + "/feature_autoLearn/"+c1+"__and__"+c2+".sav"
+                    os.makedirs(os.path.dirname(local_path), exist_ok=True)
+                    #joblib.dump(imputer, local_path)
+                    pickle.dump(m, open(local_path, 'wb'))
+            
+            final_feats_df.repartition(1).write.csv(model_path + "/feature_autoLearn/final_feats", header=True, mode='overwrite')
+        
+        if print_impact:
+            print("No. of linear feature pairs: ", len(linear_pairs))
+            print("No. of nonlinear feature pairs: ", len(nonlinear_pairs))
+            print("Newly Constructed Features: ", len(output.columns) - 1)
+            print("Newly Constructed Features (After Stability Check): ", len(stable_feats))
+            print("Newly Constructed Features (Final): ", len(final_feats))
+    
+    if idf_rest.count() > 0:
+        def model_prediction(model):
+            @F.pandas_udf(returnType=T.ArrayType(T.DoubleType()))
+            def prediction(col):
+                X = pd.concat([col], axis=1)
+                return pd.Series(row.tolist() for row in model.predict(X))        
+            return prediction
+        
+        odf_rest = idf_rest # .select(label_col+'_converted')
+        for i in range(len(models)):
+            m, [c1, c2] = models[i], col_pairs[i]
+
+            col_name_pred, col_name_err = c1+"__and__"+c2+"_pred", c1+"__and__"+c2+"_err"
+            odf_rest = odf_rest.withColumn(col_name_pred, model_prediction(m)(c1)[0])\
+                .withColumn(col_name_err, F.col(c2) - F.col(col_name_pred))
+            # odf_rest = odf_rest.withColumn(col_name_pred, F.when(F.isnull(c1), None).otherwise(model_prediction(m)(c1)[0]))\
+            #     .withColumn(col_name_err, F.when((F.isnull(col_name_pred)) | (F.isnull(c2)), None)\
+            #                                .otherwise(F.col(c2) - F.col(col_name_pred)))
+        odf_rest = odf_rest.select(fixed_cols + final_feats)
+
+    if pre_existing_model:
+        odf = odf_rest
+    elif idf_rest.count() == 0:
+        odf = odf_model
+    else:
+        odf = odf_model.unionByName(odf_rest.select(odf_model.columns))
+        
+    
+    idf = idf.drop(label_col+'_converted')
     if print_impact:
         print("Before:")
         idf.show(5)
@@ -1912,7 +2034,9 @@ def catfeats_basic_cleaning(spark, idf, list_of_cols='all', drop_cols=[], output
     
 
 def catfeats_fuzzy_matching(spark, idf, list_of_cols='all', drop_cols=[], basic_cleaning=False, 
+                            pre_existing_model=False, model_path="NA",
                             output_mode='replace', print_impact=False):
+    # Note: added variables: pre_existing_model, model_path
     '''
     idf: Input Dataframe
     list_of_cols: all (numerical columns except ID & Label) or list of columns (in list format or string separated by |)
@@ -1947,33 +2071,41 @@ def catfeats_fuzzy_matching(spark, idf, list_of_cols='all', drop_cols=[], basic_
     odf = idf_cleaned
     unchanged_cols = []
     for i in list_of_cols:
-        ls = idf_cleaned.select(i).dropna().distinct().rdd.flatMap(lambda x:x).collect()
-        distance_array = np.ones((len(ls),(len(ls))))*0
-        for k in range(1, len(ls)):
-            for j in range(k):
-                s1 = fuzz.token_set_ratio(ls[k],ls[j]) + 0.000000000001
-                s2 = fuzz.partial_ratio(ls[k],ls[j]) + 0.000000000001
-                similarity_score = 2*s1*s2/(s1+s2)
-                # Note: merge categories with >=85 similarity
-                distance = 100 if similarity_score < 85 else 0
-                distance_array[k][j] = distance
-                distance_array[j][k] = distance_array[k][j]
-      
-        # Note: replaced the AffinityPropagation part by DBSCAN which create clusters with 1 point if all are different
-        clusters = cluster.DBSCAN(metric="precomputed", min_samples=1).fit_predict(distance_array)
+        if pre_existing_model:
+            df_clusters = spark.read.parquet(model_path+"/catfeats_fuzzy_matching/"+i)
+        else:
+            ls = idf_cleaned.select(i).dropna().distinct().rdd.flatMap(lambda x:x).collect()
+            distance_array = np.ones((len(ls),(len(ls))))*0
+            for k in range(1, len(ls)):
+                for j in range(k):
+                    s1 = fuzz.token_set_ratio(ls[k],ls[j]) + 0.000000000001
+                    s2 = fuzz.partial_ratio(ls[k],ls[j]) + 0.000000000001
+                    similarity_score = 2*s1*s2/(s1+s2)
+                    # Note: merge categories with >=85 similarity
+                    distance = 100 if similarity_score < 85 else 0
+                    distance_array[k][j] = distance
+                    distance_array[j][k] = distance_array[k][j]
+        
+            # Note: replaced the AffinityPropagation part by DBSCAN which create clusters with 1 point if all are different
+            clusters = cluster.DBSCAN(metric="precomputed", min_samples=1).fit_predict(distance_array)
 
-        lol = list(zip(ls,clusters))
-        lol = [[str(e[0]), "cluster"+ str(e[1])] for e in lol]
-        df_clusters = spark.createDataFrame(lol, schema = [i,'cluster'])\
-            .groupBy('cluster').agg(F.collect_list(i).alias(i))\
-            .withColumn('mapped_value', F.col(i)[0]).drop('cluster')
-        if len(set(clusters))==len(clusters):
-            unchanged_cols.append(i)
-        elif print_impact:
-            # Note: skip printing impact if the column is unchanged
-            df_clusters.show(df_clusters.count(), False)
-        df_clusters = df_clusters.withColumn(i, F.explode(i))
-        odf = odf.join(df_clusters,i,'left_outer').withColumnRenamed('mapped_value', i+"_fuzzmatched")
+            lol = list(zip(ls,clusters))
+            lol = [[str(e[0]), "cluster"+ str(e[1])] for e in lol]
+            df_clusters = spark.createDataFrame(lol, schema = [i,'cluster'])\
+                .groupBy('cluster').agg(F.collect_list(i).alias(i))\
+                .withColumn('mapped_value', F.col(i)[0]).drop('cluster')
+            if len(set(clusters))==len(clusters):
+                unchanged_cols.append(i)
+            elif print_impact:
+                # Note: skip printing impact if the column is unchanged
+                df_clusters.show(df_clusters.count(), False)
+            df_clusters = df_clusters.withColumn(i, F.explode(i))
+            if (pre_existing_model == False) & (model_path != "NA"):
+                df_clusters.repartition(1).write.parquet(model_path+"/catfeats_fuzzy_matching/"+i, mode='overwrite') 
+        # Note: if existing model is applied on another dataset, some keys might not exist in df_clusters -> use the original value
+        odf = odf.join(df_clusters,i,'left_outer')\
+            .withColumn('mapped_value', F.coalesce('mapped_value', i))\
+            .withColumnRenamed('mapped_value', i+"_fuzzmatched")
         
     if output_mode == 'replace':
         for i in list_of_cols:
