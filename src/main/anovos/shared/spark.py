@@ -46,9 +46,9 @@ def init_spark(app_name='anovos', master='local[*]', jar_packages=[],
 
 
 configs = {'app_name': 'Anovos_pipeline',
-           'jar_packages': ["io.github.histogrammar:histogrammar_2.11:1.0.20",
-                            "io.github.histogrammar:histogrammar-sparksql_2.11:1.0.20",
-                            "org.apache.spark:spark-avro_2.11:2.4.0"],
+           'jar_packages': ["io.github.histogrammar:histogrammar_2.12:1.0.20",
+                            "io.github.histogrammar:histogrammar-sparksql_2.12:1.0.20",
+                            "org.apache.spark:spark-avro_2.12:3.1.2"],
            'py_files': [],
            'spark_configs': {'spark.sql.session.timeZone': 'GMT',
                              'spark.python.profile': 'false'}}
