@@ -21,5 +21,6 @@ def spark_session():
                            "org.apache.spark:spark-avro_2.11:2.4.0"]
     spark_builder = SparkSession.builder.master("local[*]").appName("anovos_test")
     spark_builder.config('spark.jars.packages', ','.join(list(spark_jars_packages)))
+    spark_builder.config("spark.driver.bindAddress", "127.0.0.1")
     spark = spark_builder.getOrCreate()
     return spark
