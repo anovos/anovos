@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ['3.7', '3.x']
+        python: ['3.7']
         spark: ['3.0.3', '3.1.2', '3.2.0']
         hadoop: ['2.7', '3.2', '3.0']
         java: ['8', '11']
@@ -22,6 +22,11 @@ jobs:
             hadoop: '2.7'
             java: '8'
             experimental: false
+          - python: '3.x'
+            spark: '3.2.0'
+            java: '11'
+            hadoop: '3.0'
+            experimental: true
         exclude:
           - spark: '3.2.0'
             hadoop: '3.2'
