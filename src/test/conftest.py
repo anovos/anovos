@@ -1,3 +1,6 @@
+import findspark
+findspark.init()
+
 import sys
 import os
 
