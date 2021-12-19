@@ -10,7 +10,7 @@ from pyspark.ml import Pipeline, PipelineModel
 from pyspark.ml.feature import Imputer, ImputerModel
 from pyspark.ml.feature import StringIndexer
 
-if version.parse(pyspark.__version__) <= version.parse("3.0.0"):
+if version.parse(pyspark.__version__) < version.parse("3.0.0"):
     from pyspark.ml.feature import OneHotEncoderEstimator
 else:
     from pyspark.ml.feature import OneHotEncoder as OneHotEncoderEstimator

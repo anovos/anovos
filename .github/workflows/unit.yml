@@ -60,7 +60,7 @@ jobs:
       - name: Check SPARK_HOME
         run: |
           echo $SPARK_HOME
-          ls | grep spark
+          ls $SPARK_HOME
 
       - name: Run the unit tests
         run: |
