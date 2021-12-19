@@ -57,6 +57,11 @@ jobs:
           pip install pytest pytest-cov wheel
           pip install -r requirements.txt
 
+      - name: Check SPARK_HOME
+        run: |
+          echo $SPARK_HOME
+          ls | grep spark
+
       - name: Run the unit tests
         run: |
           pytest -v --cov=src/main/anovos src/test/
