@@ -13,9 +13,9 @@ jobs:
       max-parallel: 4
       matrix:
         python: ['3.7']
-        spark: ['3.0.3', '3.1.2', '3.2.0']
+        spark: ['3.1.2', '3.2.0']
         hadoop: ['2.7', '3.2', '3.0']
-        java: ['8', '11']
+        java: ['8']
         experimental: [true]
         include:
           - python: '3.7'
