@@ -14,3 +14,4 @@ numpy==1.18.1
 plotly==5.2.1
 pytest
 coverage
+py4j

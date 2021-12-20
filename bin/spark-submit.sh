@@ -1,5 +1,7 @@
 #!/bin/bash
 
+cp ../config/log4j.properties ${SPARK_HOME}/conf/
+
 spark-submit \
 --deploy-mode client \
 --num-executors 1000 \
