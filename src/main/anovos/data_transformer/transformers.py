@@ -45,6 +45,7 @@ from operator import mod
 from typing import Iterable 
 from itertools import chain
 from matplotlib import pyplot
+from fuzzywuzzy import fuzz, process
 from dcor import distance_correlation
 
 
@@ -808,7 +809,7 @@ def imputation_sklearn(spark, idf, list_of_cols="missing", drop_cols=[], method_
     
     if pre_existing_model:
         if emr_mode:
-            bash_cmd = "aws s3 cp " + model_path + "/imputation_sklearn.sav"
+            bash_cmd = "aws s3 cp " + model_path + "/imputation_sklearn.sav ."
             output = subprocess.check_output(['bash', '-c', bash_cmd])
             #imputer = joblib.load("imputation_sklearn.sav")
             imputer = pickle.load(open("imputation_sklearn.sav", 'rb'))
@@ -984,7 +985,9 @@ def imputation_matrixFactorization(spark, idf, list_of_cols="missing", drop_cols
         df_encoded_pred = df_encoded_pred.withColumnRenamed("IDLabel", id_col)
         
     keylabelReverse = IndexToString().setInputCol("keyLabel").setOutputCol("key")
-    odf_imputed = keylabelReverse.transform(df_encoded_pred).groupBy(id_col).pivot('key').agg(F.first('value'))                   .select([id_col]+[(i+"_imputed") for i in include_cols if i in missing_cols])
+    odf_imputed = keylabelReverse.transform(df_encoded_pred)\
+        .groupBy(id_col).pivot('key').agg(F.first('value'))\
+        .select([id_col]+[(i+"_imputed") for i in include_cols if i in missing_cols])
         
     odf = idf.join(odf_imputed,id_col,'left_outer')
     
@@ -1216,9 +1219,9 @@ def autoencoders_latentFeatures(spark, idf, list_of_cols="all", drop_cols=[], re
     
     if pre_existing_model:
         if emr_mode:
-            bash_cmd = "aws s3 cp " + model_path + "/autoencoders_latentFeatures/encoder.h5"
+            bash_cmd = "aws s3 cp " + model_path + "/autoencoders_latentFeatures/encoder.h5 ."
             output = subprocess.check_output(['bash', '-c', bash_cmd])
-            bash_cmd = "aws s3 cp " + model_path + "/autoencoders_latentFeatures/model.h5"
+            bash_cmd = "aws s3 cp " + model_path + "/autoencoders_latentFeatures/model.h5 ."
             output = subprocess.check_output(['bash', '-c', bash_cmd])
             encoder = load_model("encoder.h5")
             model = load_model("model.h5")
