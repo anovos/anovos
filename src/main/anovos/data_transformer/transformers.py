@@ -416,44 +416,50 @@ def z_standardization(spark, idf, list_of_cols='all', drop_cols=[], pre_existing
     if any(x not in num_cols for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
     if len(list_of_cols) == 0:
-        warnings.warn("No Transformation Performed - Normalization")
+        warnings.warn("No Standardization Performed - No numerical column(s) to transform")
         return idf
 
     if output_mode not in ('replace', 'append'):
         raise TypeError('Invalid input for output_mode')
     
+    parameters = []
+    excluded_cols = []
     if pre_existing_model:
         df_model = spark.read.parquet(model_path+"/z_standardization")
-        parameters = []
         for i in list_of_cols:
             mapped_value = df_model.where(F.col('feature') == i).select('parameters').rdd.flatMap(lambda x:x).collect()[0]
             parameters.append(mapped_value)
     else:
-        parameters = []
         for i in list_of_cols:
-            mean, sttdev = idf.select(F.mean(i), F.stddev(i)).first()
-            mean, sttdev = float(mean), float(sttdev)
-            parameters.append([mean, sttdev])
+            mean, stddev = idf.select(F.mean(i), F.stddev(i)).first()
+            parameters.append([float(mean) if mean else None, float(stddev) if stddev else None])
+            if stddev:
+                if round(stddev,5) == 0.0:
+                    excluded_cols.append(i)
+            else:
+                excluded_cols.append(i)
+    if len(excluded_cols) > 0:
+        warnings.warn('The following column(s) are excluded from standardization because the standard deviation is zero:'+str(excluded_cols))
     
     odf = idf
     for index, i in enumerate(list_of_cols):
-        modify_col = ((i + "_scaled") if (output_mode == "append") else i)
-        odf = odf.withColumn(modify_col, (F.col(i) - parameters[index][0])/parameters[index][1])
+        if i not in excluded_cols: 
+            modify_col = ((i + "_scaled") if (output_mode == "append") else i)
+            odf = odf.withColumn(modify_col, (F.col(i) - parameters[index][0])/parameters[index][1])
     
-    # Saving Model File if required
     if (pre_existing_model == False) & (model_path != "NA"):
         df_model = spark.createDataFrame(zip(list_of_cols, parameters), schema=['feature', 'parameters'])
-        df_model.repartition(1).write.parquet(model_path+"/z_standardization", mode='overwrite')
+        df_model.coalesce(1).write.parquet(model_path+"/z_standardization", mode='overwrite')
         
     if print_impact:
         if output_mode == 'replace':
             output_cols = list_of_cols
         else:
-            output_cols = [(i+"_scaled") for i in list_of_cols]
+            output_cols = [(i+"_scaled") for i in list_of_cols if i not in excluded_cols]
         print("Before: ")
-        idf.select(list_of_cols).describe().show(10, False)
+        idf.select(list_of_cols).describe().show(len(list_of_cols))
         print("After: ")
-        odf.select(output_cols).describe().show(10, False)
+        odf.select(output_cols).describe().show(len(list_of_cols))
     
     return odf
 
@@ -494,7 +500,7 @@ def IQR_standardization(spark, idf, list_of_cols='all', drop_cols=[], pre_existi
     if any(x not in num_cols for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
     if len(list_of_cols) == 0:
-        warnings.warn("No Transformation Performed - Normalization")
+        warnings.warn("No Standardization Performed - No numerical column(s) to transform")
         return idf
 
     if output_mode not in ('replace', 'append'):
@@ -509,35 +515,35 @@ def IQR_standardization(spark, idf, list_of_cols='all', drop_cols=[], pre_existi
     else:
         parameters = idf.approxQuantile(list_of_cols, [0.25,0.5,0.75], 0.01)
     
-    # Note: drop columns with identical 75th and 25th percentiles (o/w all values in odf will be null)
-    parameters_, excluded_col = [], []
+    excluded_cols = []
     for i, param in zip(list_of_cols, parameters):
-        if param[0]!=param[2]:
-            parameters_.append(param)
+        if len(param) > 0:
+            if round(param[0],5) == round(param[2],5):
+                excluded_cols.append(i)
         else:
-            parameters_.append([0, 0, 1])
-            excluded_col.append(i)
-    if len(excluded_col) > 0:
-        warnings.warn('The original values of the following column(s) are returned because the 75th and 25th percentiles are the same:'+str(excluded_col))
-    parameters = parameters_
+            excluded_cols.append(i)
+    if len(excluded_cols) > 0:
+        warnings.warn('The following column(s) are excluded from standardization because the 75th and 25th percentiles are the same:'+str(excluded_cols))
     
     odf = idf
     for index, i in enumerate(list_of_cols):
-        modify_col = ((i + "_scaled") if (output_mode == "append") else i)
-        odf = odf.withColumn(modify_col, (F.col(i) - parameters[index][1])/(parameters[index][2] - parameters[index][0]))
+        if i not in excluded_cols:
+            modify_col = ((i + "_scaled") if (output_mode == "append") else i)
+            odf = odf.withColumn(modify_col, (F.col(i) - parameters[index][1])/(parameters[index][2] - parameters[index][0]))
+    
     if (pre_existing_model == False) & (model_path != "NA"):
         df_model = spark.createDataFrame(zip(list_of_cols, parameters), schema=['feature', 'parameters'])
-        df_model.repartition(1).write.parquet(model_path+"/IQR_standardization", mode='overwrite') 
+        df_model.coalesce(1).write.parquet(model_path+"/IQR_standardization", mode='overwrite') 
     
     if print_impact:
         if output_mode == 'replace':
             output_cols = list_of_cols
         else:
-            output_cols = [(i+"_scaled") for i in list_of_cols]
+            output_cols = [(i+"_scaled") for i in list_of_cols if i not in excluded_cols]
         print("Before: ")
-        idf.select(list_of_cols).describe().show(10, False)
+        idf.select(list_of_cols).describe().show(len(list_of_cols))
         print("After: ")
-        odf.select(output_cols).describe().show(10, False)
+        odf.select(output_cols).describe().show(len(list_of_cols))
     
     return odf
 
@@ -578,47 +584,45 @@ def normalization(spark, idf, list_of_cols='all', drop_cols=[], pre_existing_mod
     if any(x not in num_cols for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
     if len(list_of_cols) == 0:
-        warnings.warn("No Transformation Performed - Normalization")
+        warnings.warn("No Normalization Performed - No numerical column(s) to transform")
         return idf
 
     if output_mode not in ('replace', 'append'):
         raise TypeError('Invalid input for output_mode')
     
-    # Building new scalar model or uploading the existing model
-    assembler_norm = VectorAssembler(inputCols=list_of_cols, outputCol="list_of_cols_vector", handleInvalid="keep")
-    assembled_norm_data = assembler_norm.transform(idf) 
-    if pre_existing_model == True:
+    assembler = VectorAssembler(inputCols=list_of_cols, outputCol="list_of_cols_vector", handleInvalid="keep")
+    assembled_data = assembler.transform(idf) 
+    if pre_existing_model:
         scalerModel = MinMaxScalerModel.load(model_path+"/normalization")
     else:
         scaler = MinMaxScaler(inputCol="list_of_cols_vector", outputCol="list_of_cols_scaled")
-        scalerModel = scaler.fit(assembled_norm_data)
-    # Applying model
-    scaledData = scalerModel.transform(assembled_norm_data)
-    # Saving model if required
+        scalerModel = scaler.fit(assembled_data)
+    scaledData = scalerModel.transform(assembled_data)
+    
     if (pre_existing_model == False) & (model_path != "NA"):
         scalerModel.write().overwrite().save(model_path+"/normalization")
     
-    # Converting normalization output back into individual features
     def vector_to_array(v):
         return v.toArray().tolist()
     f_vector_to_array = F.udf(vector_to_array, T.ArrayType(T.FloatType()))
     odf = scaledData.withColumn("list_of_cols_array", f_vector_to_array('list_of_cols_scaled')).drop(*['list_of_cols_scaled',"list_of_cols_vector"])
-    
-    odf = odf.select(odf.columns + [(F.when(F.isnan(F.col("list_of_cols_array")[i]),None).otherwise(F.col("list_of_cols_array")[i])).alias(list_of_cols[i]+"_scaled") for i in range(len(list_of_cols))])            .drop("list_of_cols_array")
-    
+    odf = odf.select(idf.columns + [(F.when(F.isnan(F.col("list_of_cols_array")[i]),None)\
+                                     .otherwise(F.col("list_of_cols_array")[i])).alias(list_of_cols[i]+"_scaled") \
+                                     for i in range(len(list_of_cols))]).drop("list_of_cols_array")
     if output_mode =='replace':
         for i in list_of_cols:
             odf = odf.drop(i).withColumnRenamed(i+"_scaled",i)
-            
+        odf = odf.select(idf.columns)
+
     if print_impact:
         if output_mode == 'replace':
             output_cols = list_of_cols
         else:
             output_cols = [(i+"_scaled") for i in list_of_cols]
         print("Before: ")
-        idf.select(list_of_cols).describe().show(10, False)
+        idf.select(list_of_cols).describe().show(len(list_of_cols))
         print("After: ")
-        odf.select(output_cols).describe().show(10, False)
+        odf.select(output_cols).describe().show(len(list_of_cols))
     
     return odf
 
@@ -776,9 +780,9 @@ def imputation_MMM(spark, idf, list_of_cols="missing", drop_cols=[], method_type
     return odf
 
 
-def imputation_sklearn(spark, idf, list_of_cols="missing", drop_cols=[], method_type="KNN", max_size=500000, 
-                       emr_mode=False, pre_existing_model=False, model_path="NA", output_mode="replace", 
-                       stats_missing={}, print_impact=False):
+def imputation_sklearn(spark, idf, list_of_cols="missing", drop_cols=[], method_type="KNN", sample_size=500000, 
+                       pre_existing_model=False, model_path="NA", output_mode="replace", 
+                       stats_missing={}, emr_mode = False, print_impact=False):
     """
     :param spark: Spark Session
     :param idf: Input Dataframe
@@ -797,7 +801,7 @@ def imputation_sklearn(spark, idf, list_of_cols="missing", drop_cols=[], method_
                       where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
     :param method_type: "KNN", "regression".
                         "KNN" option trains a sklearn.impute.KNNImputer. "regression" option trains a sklearn.impute.IterativeImputer
-    :param max_size: Maximum rows for training the sklearn imputer  
+    :param sample_size: Maximum rows for training the sklearn imputer  
     :param emr_mode: Boolean argument – True or False. True if it is run on EMR, False otherwise.
     :param pre_existing_model: Boolean argument – True or False. True if imputation model exists already, False otherwise.
     :param model_path: If pre_existing_model is True, this argument is path for referring the pre-saved model.
@@ -811,12 +815,34 @@ def imputation_sklearn(spark, idf, list_of_cols="missing", drop_cols=[], method_
                           missingCount_computation (data_analyzer.stats_generator module) has been computed & saved before.
     :return: Imputed Dataframe
     """
+    
+    num_cols = attributeType_segregation(idf)[0]
     if stats_missing == {}:
-        missing_df = missingCount_computation(spark, idf)
+        missing_df = missingCount_computation(spark, idf, num_cols)
     else:
-        missing_df = read_dataset(spark, **stats_missing).select('attribute', 'missing_count', 'missing_pct')
+        missing_df = read_dataset(spark, **stats_missing).select('attribute', 'missing_count', 'missing_pct')\
+                        .where(F.col('attribute').isin(num_cols))
+    empty_cols = missing_df.where(F.col('missing_pct') == 1.0).select('attribute').rdd.flatMap(lambda x: x).collect()
+    if len(empty_cols) > 0:
+        warnings.warn("Following columns dropped from the imputation as all values are null: " + ",".join(empty_cols))
 
-    missing_cols = missing_df.where(F.col('missing_count') > 0).select('attribute').rdd.flatMap(lambda x: x).collect()
+    missing_cols = missing_df.where(F.col('missing_count') > 0).where(F.col('missing_pct') < 1.0)\
+                        .select('attribute').rdd.flatMap(lambda x: x).collect()
+
+    if list_of_cols == 'all':
+        list_of_cols = num_cols
+    if list_of_cols == "missing":
+        list_of_cols = missing_cols
+    if isinstance(list_of_cols, str):
+        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
+    if isinstance(drop_cols, str):
+        drop_cols = [x.strip() for x in drop_cols.split('|')]
+
+    list_of_cols = list(set([e for e in list_of_cols if (e not in drop_cols)  & (e not in empty_cols)]))
+    
+    if (len(list_of_cols) <= 1):
+        warnings.warn("No Imputation Performed - No Column(s) or Insufficient Column(s) to Impute")
+        return idf
 
     if str(pre_existing_model).lower() == 'true':
         pre_existing_model = True
@@ -824,93 +850,55 @@ def imputation_sklearn(spark, idf, list_of_cols="missing", drop_cols=[], method_
         pre_existing_model = False
     else:
         raise TypeError('Non-Boolean input for pre_existing_model')
-
-    if (len(missing_cols) == 0) & (pre_existing_model == False) & (model_path == "NA"):
+    if (len([e for e in list_of_cols if e in missing_cols]) == 0) & (pre_existing_model == False) & (model_path == "NA"):
+        warnings.warn("No Imputation Performed - No Column(s) to Impute and No Imputation Model to be saved")
         return idf
-    
-    num_cols = attributeType_segregation(idf)[0]
-    if list_of_cols == 'all':
-        list_of_cols = num_cols
-    if list_of_cols == "missing":
-        list_of_cols = [x for x in missing_cols if x in num_cols]
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split('|')]
 
-    list_of_cols = sorted(list(set([e for e in list_of_cols if e not in drop_cols])))
-
-    if len(list_of_cols) == 0:
-        warnings.warn("No Action Performed - sklearn Imputation")
-        return idf
-    # Pending: should we allow input column with wrong dtype? (applicable to all functions - currently not allowed)
     if any(x not in num_cols for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
-        
     if method_type not in ('KNN', 'regression'):
         raise TypeError('Invalid input for method_type')
     if output_mode not in ('replace', 'append'):
         raise TypeError('Invalid input for output_mode')
     
-    num_cols = attributeType_segregation(idf.select(list_of_cols))[0]
-    include_cols = num_cols
-    exclude_cols = [e for e in idf.columns if e not in num_cols]
-    
     if pre_existing_model:
         if emr_mode:
             bash_cmd = "aws s3 cp " + model_path + "/imputation_sklearn.sav ."
             output = subprocess.check_output(['bash', '-c', bash_cmd])
-            #imputer = joblib.load("imputation_sklearn.sav")
             imputer = pickle.load(open("imputation_sklearn.sav", 'rb'))
         else: 
-            #imputer = joblib.load(model_path + "/imputation_sklearn.sav")
             imputer = pickle.load(open(model_path + "/imputation_sklearn.sav", 'rb'))
         idf_rest = idf
     else:
-        sample_ratio = min(1.0,float(max_size)/idf.count())
-        # Note: subtract removes duplicated rows also so assigned an ID and drop it later (o/w odf may have less num of rows)
+        sample_ratio = min(1.0,float(sample_size)/idf.count())
         idf = idf.withColumn('id', F.monotonically_increasing_id())
         idf_model = idf.sample(False, sample_ratio, 0)
         idf_rest = idf.subtract(idf_model)
-        idf, idf_model, idf_rest = idf.drop('id'), idf_model.drop('id'), idf_rest.drop('id')
-        idf_pd = idf_model.toPandas()
-        
-        X = idf_pd[include_cols]
-        # X = idf_pd.drop(exclude_cols,axis=1)
-        # Note: in this case, column order in odf will be wrong if list_of_cols does not follow the original column
-        # Y = idf_pd[exclude_cols]
-
+        idf_pd = idf_model.select(['id']+list_of_cols).toPandas()
+       
         if method_type == 'KNN':
             imputer = KNNImputer(n_neighbors=5, weights='uniform', metric='nan_euclidean')
-            imputer.fit(X)
+            imputer.fit(idf_pd)
         if method_type == 'regression':
             imputer = IterativeImputer()
-            imputer.fit(X)
-        # Note: removed due to version conflict
-        # Imputer (used by boltzmannclean in RBM) was deprecated since sklearn v0.22 but KNNImputer was first introduced in version 0.22
-        # if method_type == 'RBM':
-        #     import boltzmannclean
-        #     imputer = boltzmannclean.train_rbm(X.values, tune_hyperparameters=False)
-
+            imputer.fit(idf_pd)
+        
         if (pre_existing_model == False) & (model_path != "NA"):
             if emr_mode:
-                #joblib.dump(imputer, "imputation_sklearn.sav")
                 pickle.dump(imputer, open("imputation_sklearn.sav", 'wb'))
                 bash_cmd = "aws s3 cp imputation_sklearn.sav " + model_path + "/imputation_sklearn.sav"
                 output = subprocess.check_output(['bash', '-c', bash_cmd])
             else:
-                #joblib.dump(imputer, model_path + "/imputation_sklearn.sav")
                 local_path = model_path  + "/imputation_sklearn.sav"
                 os.makedirs(os.path.dirname(local_path), exist_ok=True)
-                #joblib.dump(imputer, local_path)
                 pickle.dump(imputer, open(local_path, 'wb'))
         
-        pred = imputer.transform(X)
+        pred = imputer.transform(idf_pd)
         output = pd.concat([pd.Series(list(pred)),idf_pd], axis=1)
         output.rename(columns={0:'features'}, inplace=True)
         output.features = output.features.map(lambda x: [float(e) for e in x])
         odf_model = spark.createDataFrame(output)
-        for index,i in enumerate(include_cols):
+        for index,i in enumerate(list_of_cols):
             modify_col = ((i + "_imputed") if (output_mode == "append") else i)
             odf_model = odf_model.withColumn(modify_col, F.col('features')[index])
         odf_model = odf_model.drop('features')
@@ -922,21 +910,24 @@ def imputation_sklearn(spark, idf, list_of_cols="missing", drop_cols=[], method_
         def prediction(*cols):
             X = pd.concat(cols, axis=1)
             return pd.Series(row.tolist() for row in imputer.transform(X))
-        odf_rest = idf_rest.withColumn('features',prediction(*include_cols))
-        for index,i in enumerate(include_cols):
+        odf_rest = idf_rest.withColumn('features',prediction(*list_of_cols))
+        for index,i in enumerate(list_of_cols):
             modify_col = ((i + "_imputed") if (output_mode == "append") else i)
             odf_rest = odf_rest.withColumn(modify_col, F.col('features')[index])
         odf_rest = odf_rest.drop('features')
         
     if pre_existing_model:
-        odf = odf_rest
+        odf = idf.select(['id'] + [e for e in idf.columns if e not in list_of_cols])\
+                 .join(odf_rest,'id','left_outer').drop('id')
     elif idf_rest.count() == 0:
-        odf = odf_model
+        odf = idf.select(['id'] + [e for e in idf.columns if e not in list_of_cols])\
+                 .join(odf_model,'id','left_outer').drop('id')
     else:
-        odf = odf_model.union(odf_rest.select(odf_model.columns))
+        odf = idf.select(['id'] + [e for e in idf.columns if e not in list_of_cols])\
+                 .join(odf_model.union(odf_rest.select(odf_model.columns)),'id','left_outer').drop('id')
     
     
-    for i in include_cols:
+    for i in list_of_cols:
         if (i not in missing_cols) & (output_mode == 'append'):
             odf = odf.drop(i+"_imputed")
     
@@ -956,7 +947,7 @@ def imputation_sklearn(spark, idf, list_of_cols="missing", drop_cols=[], method_
     return odf
 
 
-def imputation_matrixFactorization(spark, idf, list_of_cols="missing", drop_cols=[], id_col="id", output_mode='replace',
+def imputation_matrixFactorization(spark, idf, list_of_cols="missing", drop_cols=[], id_col="", output_mode='replace',
                                    stats_missing={}, print_impact=False):
     """
     :param spark: Spark Session
@@ -980,43 +971,50 @@ def imputation_matrixFactorization(spark, idf, list_of_cols="missing", drop_cols
                           missingCount_computation (data_analyzer.stats_generator module) has been computed & saved before.
     :return: Imputed Dataframe
     """
-        
-    if output_mode not in ('replace','append'):
-        raise TypeError('Invalid input for output_mode')
     
-    if stats_missing == {}:
-        missing_df = missingCount_computation(spark, idf)
-    else:
-        missing_df = read_dataset(spark, **stats_missing).select('attribute', 'missing_count', 'missing_pct')
-    missing_cols = missing_df.where(F.col('missing_count') > 0).select('attribute').rdd.flatMap(lambda x: x).collect()
-
     num_cols = attributeType_segregation(idf)[0]
+    if stats_missing == {}:
+        missing_df = missingCount_computation(spark, idf, num_cols)
+    else:
+        missing_df = read_dataset(spark, **stats_missing).select('attribute', 'missing_count', 'missing_pct')\
+                        .where(F.col('attribute').isin(num_cols))
+    
+    empty_cols = missing_df.where(F.col('missing_pct') == 1.0).select('attribute').rdd.flatMap(lambda x: x).collect()
+    if len(empty_cols) > 0:
+        warnings.warn("Following columns dropped from the imputation as all values are null: " + ",".join(empty_cols))
+        
+    missing_cols = missing_df.where(F.col('missing_count') > 0).where(F.col('missing_pct') < 1.0)\
+                        .select('attribute').rdd.flatMap(lambda x: x).collect()
+
     if list_of_cols == 'all':
         list_of_cols = num_cols
     if list_of_cols == "missing":
-        list_of_cols = [x for x in missing_cols if x in num_cols]
+        list_of_cols = missing_cols
     if isinstance(list_of_cols, str):
         list_of_cols = [x.strip() for x in list_of_cols.split('|')]
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
 
-    list_of_cols = list(set([e for e in list_of_cols if (e not in drop_cols) & (e != id_col)]))
-
-    if len(list_of_cols) == 0:
-        warnings.warn("No Action Performed - Matrix Factorization Imputation")
+    list_of_cols = list(set([e for e in list_of_cols if (e not in drop_cols) & (e != id_col) & (e not in empty_cols)]))
+    
+    if (len(list_of_cols) == 0) | (len([e for e in list_of_cols if e in missing_cols]) == 0):
+        warnings.warn("No Imputation Performed - No Column(s) to Impute")
+        return idf
+    if (len(list_of_cols) == 1):
+        warnings.warn("No Imputation Performed - Needs more than 1 column for matrix factorization")
         return idf
     if any(x not in num_cols for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
+    if output_mode not in ('replace','append'):
+        raise TypeError('Invalid input for output_mode')
     
-    num_cols = attributeType_segregation(idf.select(list_of_cols))[0]
-    include_cols = num_cols
-    exclude_cols = [e for e in idf.columns if e not in num_cols]
-     
-    #Create map<key: value>
-    key_and_val = F.create_map(list(chain.from_iterable([[F.lit(c), F.col(c)] for c in include_cols])))
+    if id_col == "":
+        idf = idf.withColumn("id",F.monotonically_increasing_id())
+        id_col = "id"
+    
+    key_and_val = F.create_map(list(chain.from_iterable([[F.lit(c), F.col(c)] for c in list_of_cols])))
     df_flatten = idf.select(id_col, F.explode(key_and_val)).withColumn("key", F.concat(F.col('key'), F.lit("_imputed")))
-
-    #Indexing ID & Key/Feature Column
+    
     id_type = get_dtype(idf,id_col)
     if id_type == 'string':
         id_indexer = StringIndexer().setInputCol(id_col).setOutputCol("IDLabel")
@@ -1032,28 +1030,26 @@ def imputation_matrixFactorization(spark, idf, list_of_cols="missing", drop_cols
     df_test = df_encoded.where(F.col('value').isNull())
     if df_model.select('IDLabel').distinct().count() < df_encoded.select('IDLabel').distinct().count():
         warnings.warn("The returned odf may not be fully imputed because values for all list_of_cols are null for some IDs")
-    
-    # Build the recommendation model using ALS on the training data
     als = ALS(maxIter=20, regParam=0.01, userCol="IDLabel", itemCol="keyLabel", ratingCol="value",
               coldStartStrategy="drop")
     model = als.fit(df_model)
-    
     df_pred = model.transform(df_test).drop('value').withColumnRenamed("prediction","value")
     df_encoded_pred = df_model.union(df_pred.select(df_model.columns))
+    
     if id_type == 'string':
         IDlabelReverse = IndexToString().setInputCol("IDLabel").setOutputCol(id_col)
         df_encoded_pred = IDlabelReverse.transform(df_encoded_pred)
     else:
         df_encoded_pred = df_encoded_pred.withColumnRenamed("IDLabel", id_col)
-        
+    
     keylabelReverse = IndexToString().setInputCol("keyLabel").setOutputCol("key")
     odf_imputed = keylabelReverse.transform(df_encoded_pred)\
-        .groupBy(id_col).pivot('key').agg(F.first('value'))\
-        .select([id_col]+[(i+"_imputed") for i in include_cols if i in missing_cols])
-        
+                    .groupBy(id_col).pivot('key').agg(F.first('value'))\
+                    .select([id_col]+[(i+"_imputed") for i in list_of_cols if i in missing_cols])
+
     odf = idf.join(odf_imputed,id_col,'left_outer')
     
-    for i in num_cols:
+    for i in list_of_cols:
         if i not in missing_cols:
             odf = odf.drop(i + "_imputed")
         elif output_mode == 'replace':
@@ -1065,7 +1061,7 @@ def imputation_matrixFactorization(spark, idf, list_of_cols="missing", drop_cols
                 .join(missingCount_computation(spark, odf, list_of_cols) \
                       .select('attribute', F.col("missing_count").alias("missingCount_after")), 'attribute', 'inner')
         else:
-            output_cols = [(i + "_imputed") for i in [e for e in num_cols if e in missing_cols]]
+            output_cols = [(i + "_imputed") for i in [e for e in list_of_cols if e in missing_cols]]
             odf_print = missing_df.select('attribute', F.col("missing_count").alias("missingCount_before")) \
                 .join(missingCount_computation(spark, odf, output_cols) \
                       .withColumnRenamed('attribute', 'attribute_after') \
@@ -1075,111 +1071,12 @@ def imputation_matrixFactorization(spark, idf, list_of_cols="missing", drop_cols
     return odf
 
 
-def imputation_custom(spark, idf, list_of_cols="missing", method_type='row_removal', list_of_fills=None, 
-                      output_mode="replace", stats_missing={}, print_impact=False):
+def auto_imputation(spark, idf, list_of_cols="missing", drop_cols=[], id_col="", null_pct=0.1, 
+                          stats_missing={}, output_mode="replace", print_impact=True):
     """
     :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_cols: List of columns to impute e.g., ["col1","col2"].
-                         Alternatively, columns can be specified in a string format,
-                         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-                         "all" can be passed to include all (non-array) columns for analysis.
-                         "missing" (default) can be passed to include only those columns with missing values.
-    :param method_type: "fill_constant", "row_removal"
-                        "fill_constant" option fill None values by constant. 
-                        "row_removal" option removes rows with None values in selected columns.
-    :param list_of_fills: constant fills for "fill_constant" method_type. 3 types are supported:
-                          List: The length of the list must be the same as the length of list_of_cols.
-                          String: Different constant fills are separated by pipe delimiter “|” e.g., "c1|c2". 
-                                  The number of elements must be the same as the length of list_of_cols.
-                          Integer: A list will be created with the same length as list_of_cols filled by list_of_fills.
-    :param output_mode: "replace", "append" (applicable for "fill_constant" method_type only).
-                         “replace” option replaces original columns with transformed column. “append” option append transformed
-                         column to the input dataset with a postfix "_imputed" e.g. column X is appended as X_imputed.
-    :param stats_missing: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
-                          to read pre-saved statistics on missing count/pct i.e. if measures_of_counts or
-                          missingCount_computation (data_analyzer.stats_generator module) has been computed & saved before.
-    :return: Imputed Dataframe
-    """
-    
-    if method_type not in ('fill_constant','row_removal'):
-        raise TypeError('Invalid input for method_type')
-    if output_mode not in ('replace','append'):
-        raise TypeError('Invalid input for output_mode')
-    
-    if stats_missing == {}:
-        missing_df = missingCount_computation(spark, idf)
-    else:
-        missing_df = read_dataset(spark, **stats_missing).select('attribute', 'missing_count', 'missing_pct')
-    missing_cols = missing_df.where(F.col('missing_count') > 0).select('attribute').rdd.flatMap(lambda x: x).collect()
-    
-    if list_of_cols == 'all':
-        list_of_cols = idf.columns
-    if list_of_cols == "missing":
-        list_of_cols = missing_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
-    
-    # Note: remove input variable drop_cols - may cause confusion in list_of_fills, list_of_cols mapping
-    # if isinstance(drop_cols, str):
-    #     drop_cols = [x.strip() for x in drop_cols.split('|')]
-    # list_of_cols = list([e for e in list_of_cols if e not in drop_cols])
-
-    if len(list_of_cols) == 0:
-        warnings.warn("No Action Performed - custom Imputation")
-        return idf
-    if any(x not in idf.columns for x in list_of_cols):
-        raise TypeError('Invalid input for Column(s)')
-    
-    num_cols, cat_cols, other_cols = attributeType_segregation(idf.select(list_of_cols))
-    
-    if method_type == 'row_removal':
-        odf = idf.dropna(subset=list_of_cols)
-        
-        if print_impact:
-            print("Before Count: " + str(idf.count()))
-            print("After Count: " + str(odf.count()))
-                
-    else:
-        if isinstance(list_of_fills, str):
-            list_of_fills = [x.strip() for x in list_of_fills.split('|')]
-        # Allow single value input for numerical fill
-        elif isinstance(list_of_fills, int):
-            list_of_fills = [list_of_fills] * len(list_of_cols)
-        if len(list_of_fills) != len(list_of_cols):
-            raise TypeError('Invalid input for list_of_fills')
-
-        odf = idf
-        for i in list(zip(list_of_cols,list_of_fills)):
-            if i[0] in missing_cols:
-                modify_col = ((i[0] + "_imputed") if (output_mode == "append") else i[0])
-                if i[0] in num_cols:
-                    odf = odf.withColumn(modify_col, F.when(F.col(i[0]).isNull(), i[1]).otherwise(F.col(i[0])))
-                if i[0] in cat_cols:
-                    odf = odf.withColumn(modify_col, F.when(F.col(i[0]).isNull(), i[1]).otherwise(F.col(i[0])))
-
-        if print_impact:
-            if output_mode == 'replace':
-                odf_print = missing_df.select('attribute', F.col("missing_count").alias("missingCount_before")) \
-                    .join(missingCount_computation(spark, odf, list_of_cols) \
-                        .select('attribute', F.col("missing_count").alias("missingCount_after")), 'attribute', 'inner')
-            else:
-                output_cols = [(i + "_imputed") for i in [e for e in (num_cols + cat_cols) if e in missing_cols]]
-                odf_print = missing_df.select('attribute', F.col("missing_count").alias("missingCount_before")) \
-                    .join(missingCount_computation(spark, odf, output_cols) \
-                        .withColumnRenamed('attribute', 'attribute_after') \
-                        .withColumn('attribute', F.expr("substring(attribute_after, 1, length(attribute_after)-8)")) \
-                        .drop('missing_pct'), 'attribute', 'inner')
-            odf_print.show(len(list_of_cols))
-    return odf
-
-
-def imputation_comparison(spark, idf, list_of_cols="missing", drop_cols=[], id_col="id", null_pct=0.1, 
-                          stats_missing={}, print_impact=True):
-    """
-    :param spark: Spark Session
-    :param idf: Input Dataframe
-    :param list_of_cols: List of numerical columns to impute e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
                          where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
                          "all" can be passed to include all (non-array) columns for analysis.
@@ -1192,74 +1089,99 @@ def imputation_comparison(spark, idf, list_of_cols="missing", drop_cols=[], id_c
     :param stats_missing: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
                           to read pre-saved statistics on missing count/pct i.e. if measures_of_counts or
                           missingCount_computation (data_analyzer.stats_generator module) has been computed & saved before.
+    :param output_mode: "replace", "append".
+                         “replace” option replaces original columns with transformed column. “append” option append transformed
+                         column to the input dataset with a postfix "_imputed" e.g. column X is appended as X_imputed.
     :return: Name of the best Imputation Technique
     """
-
+    
     if stats_missing == {}:
         missing_df = missingCount_computation(spark, idf)
-        # Note: save generated stats_missing result which can be used in method 1~5
-        # Pending: path to save the result; delete file after computation?
-        missing_df.write.parquet("NA/missing", mode='overwrite')
-        stats_missing = {"file_path": "NA/missing", "file_type": "parquet"}
+        missing_df.write.parquet("intermediate_data/imputation_comparison/missingCount_computation", mode='overwrite')
+        stats_missing = {"file_path": "intermediate_data/imputation_comparison/missingCount_computation", "file_type": "parquet"}
     else:
         missing_df = read_dataset(spark, **stats_missing).select('attribute', 'missing_count', 'missing_pct')
-    missing_cols = missing_df.where(F.col('missing_count') > 0).select('attribute').rdd.flatMap(lambda x: x).collect()
+        
+    empty_cols = missing_df.where(F.col('missing_pct') == 1.0).select('attribute').rdd.flatMap(lambda x: x).collect()
+    if len(empty_cols) > 0:
+        warnings.warn("Following columns have all null values: " + ",".join(empty_cols))
     
-    num_cols = attributeType_segregation(idf)[0]
+    missing_cols = missing_df.where(F.col('missing_count') > 0)\
+                        .select('attribute').rdd.flatMap(lambda x: x).collect()
+    
     if list_of_cols == 'all':
-        list_of_cols = num_cols
-    elif list_of_cols == "missing":
-        list_of_cols = [x for x in missing_cols if x in num_cols]
-    elif isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split('|') if x.strip() in idf.columns]
-    else:
-        list_of_cols = [e for e in list_of_cols if e in idf.columns] 
-    list_of_cols = list(set([e for e in list_of_cols if (e not in drop_cols) & (e !=id_col)]))
+        list_of_cols = idf.columns
+    if list_of_cols == "missing":
+        list_of_cols = missing_cols
+    if isinstance(list_of_cols, str):
+        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
+    if isinstance(drop_cols, str):
+        drop_cols = [x.strip() for x in drop_cols.split('|')]
 
-    if len(list_of_cols) == 0:
-        warnings.warn("No Action Performed - Imputation_Comparison")
-        return None
-    if any(x not in num_cols for x in list_of_cols):
+    list_of_cols = list(set([e for e in list_of_cols if (e not in drop_cols) & (e !=id_col)]))
+    if any(x not in idf.columns for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
     
-    num_cols = attributeType_segregation(idf.select(list_of_cols))[0]
-    list_of_cols = num_cols
+    del_cols = [e for e in list_of_cols if e in empty_cols]
+    odf_del = idf.drop(*del_cols)
     
-    idf_test = idf.dropna().withColumn('index', F.monotonically_increasing_id()).withColumn("index", F.row_number().over(Window.orderBy("index")))
+    list_of_cols = [e for e in list_of_cols if e not in empty_cols]
+    num_cols, cat_cols, other_cols = attributeType_segregation(odf_del.select(list_of_cols))
+    missing_catcols = [e for e in cat_cols if e in missing_cols]
+    missing_numcols = [e for e in num_cols if e in missing_cols]
+    
+    if missing_catcols:
+        odf_imputed_cat = imputation_MMM(spark, odf_del, list_of_cols=missing_catcols, stats_missing=stats_missing)
+    else:
+        odf_imputed_cat = odf_del
+    
+    if (len(missing_numcols) == 0):
+        warnings.warn("No Imputation Performed - No Column(s) to Impute")
+        return odf_imputed_cat
+    
+    idf_test = odf_imputed_cat.dropna(subset=missing_numcols)\
+                    .withColumn('index', F.monotonically_increasing_id())\
+                    .withColumn("index", F.row_number().over(Window.orderBy("index")))
     null_count = int(null_pct*idf_test.count())
     idf_null = idf_test
-    for i in list_of_cols:
+    for i in missing_numcols:
         null_index = random.sample(range(idf_test.count()), null_count)
         idf_null = idf_null.withColumn(i, F.when(F.col('index').isin(null_index), None).otherwise(F.col(i)))
 
     idf_null.write.parquet("intermediate_data/imputation_comparison/test_dataset", mode='overwrite')
     idf_null = spark.read.parquet("intermediate_data/imputation_comparison/test_dataset")
-
-    method1 = imputation_MMM(spark, idf_null, list_of_cols=list_of_cols, method_type="mean", stats_missing=stats_missing)
-    method2 = imputation_MMM(spark, idf_null, list_of_cols=list_of_cols, method_type="median", stats_missing=stats_missing)
-    method3 = imputation_sklearn(spark, idf_null, list_of_cols=list_of_cols, method_type="KNN", stats_missing=stats_missing)
-    method4 = imputation_sklearn(spark, idf_null, list_of_cols=list_of_cols, method_type='regression', stats_missing=stats_missing)
-    method5 = imputation_matrixFactorization(spark, idf_null, id_col = id_col, list_of_cols=list_of_cols, stats_missing=stats_missing)
-    #method6 = imputation_sklearn(idf_null, method_type='RBM', list_of_cols=list_of_cols, id_col = id_col, label_col=label_col)
-
-    rmse_all = []
-    method_all = ['MMM-mean','MMM-median','KNN','regression','matrix_factorization'] 
-    for index, method in enumerate([method1,method2,method3,method4,method5]):
-        rmse=0
-        for i in list_of_cols:
-            idf_joined = idf_test.select('index',F.col(i).alias('val')).join(method.select('index',F.col(i).alias('pred')),'index','left_outer').dropna()
+    
+    method1 = imputation_MMM(spark, idf_null, list_of_cols=missing_numcols, method_type="mean", stats_missing=stats_missing,output_mode=output_mode)
+    method2 = imputation_MMM(spark, idf_null, list_of_cols=missing_numcols, method_type="median", stats_missing=stats_missing,output_mode=output_mode)
+    valid_methods = [method1,method2]
+    if len(num_cols) > 1:
+        method3 = imputation_sklearn(spark, idf_null, list_of_cols=num_cols, method_type="KNN", stats_missing=stats_missing,output_mode=output_mode)
+        method4 = imputation_sklearn(spark, idf_null, list_of_cols=num_cols, method_type='regression', stats_missing=stats_missing,output_mode=output_mode)
+        method5 = imputation_matrixFactorization(spark, idf_null, list_of_cols=num_cols, id_col = id_col, stats_missing=stats_missing,output_mode=output_mode)
+        valid_methods = [method1,method2,method3,method4,method5]
+    
+    nrmse_all = []
+    method_all = ['MMM-mean','MMM-median','KNN','regression','matrix_factorization']
+    
+    for index, method in enumerate(valid_methods):
+        nrmse=0
+        for i in missing_numcols:
+            pred_col = (i + "_imputed") if output_mode == "append" else i
+            idf_joined = idf_test.select('index',F.col(i).alias('val')).join(method.select('index',F.col(pred_col).alias('pred')),'index','left_outer').dropna()
             idf_joined = recast_column(idf=idf_joined, list_of_cols=['val','pred'], list_of_dtypes=['double', 'double'])
-            i_rmse = RegressionEvaluator(metricName="rmse", labelCol="val",predictionCol="pred").evaluate(idf_joined)
-            rmse += i_rmse
-        rmse_all.append(rmse)
+            pred_mean = float(method.select(F.mean(pred_col)).rdd.flatMap(lambda x: x).collect()[0])
+            i_nrmse = (RegressionEvaluator(metricName="rmse", labelCol="val",predictionCol="pred").evaluate(idf_joined))/pred_mean
+            nrmse += i_nrmse
+        nrmse_all.append(nrmse)
         
-    min_index= rmse_all.index(np.min(rmse_all))
+    min_index= nrmse_all.index(np.min(nrmse_all))
     best_method =method_all[min_index]
+    odf = valid_methods[min_index]
     
     if print_impact:
-        print(list(zip(method_all, rmse_all)))
+        print(list(zip(method_all, nrmse_all)))
         print("Best Imputation Method: ", best_method)
-    return best_method
+    return odf, best_method
 
 
 def autoencoders_latentFeatures(spark, idf, list_of_cols="all", drop_cols=[], reduction_params=0.5, max_size=500000, 
