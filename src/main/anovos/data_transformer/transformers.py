@@ -2057,80 +2057,6 @@ def declare_missing(spark, idf, list_of_cols='all', drop_cols=[],
         odf_print.show(len(list_of_cols))
     
     return odf
-
-
-def catfeats_basic_cleaning(spark, idf, list_of_cols='all', drop_cols=[], output_mode='replace', print_impact=False):
-    """
-    :param spark: Spark Session
-    :param idf: Input Dataframe
-    :param list_of_cols: List of catigorical columns to clean e.g., ["col1","col2"].
-                         Alternatively, columns can be specified in a string format,
-                         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-                         "all" can be passed to include all (non-array) columns for analysis.
-                         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
-                         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
-    :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
-                      Alternatively, columns can be specified in a string format,
-                      where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    :param output_mode: "replace", "append".
-                         “replace” option replaces original columns with transformed column. “append” option append transformed
-                         column to the input dataset with a postfix "_cleaned" e.g. column X is appended as X_cleaned.
-    :return: Transformed Dataframe
-    """
-
-    cat_cols = attributeType_segregation(idf)[1]
-    if list_of_cols == 'all':
-        list_of_cols = cat_cols
-    elif isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split('|')]
-    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
-    
-    if (len(list_of_cols) == 0) | (any(x not in cat_cols for x in list_of_cols)):
-        raise TypeError('Invalid input for Column(s)')
-    
-    cat_cols = attributeType_segregation(idf.select(list_of_cols))[1]
-    list_of_cols = cat_cols
-        
-    null_vocab = ['',' ','nan', 'null', 'na', 'inf', 'n/a', 'not defined', 'none', 'undefined','blank']
-    odf_tmp=idf
-    modify_list = []
-    for i in list_of_cols:
-        modify_col = ((i + "_cleaned") if (output_mode == "append") else i)
-        modify_list.append(modify_col)
-        # Note: removed regexp_replace part: may lead to misunderstanding? For example Other-relative becomes otherrelative
-        odf_tmp = odf_tmp.withColumn(modify_col, F.lower(F.trim(F.col(i))))
-        # .withColumn(modify_col, F.regexp_replace(F.col(modify_col),'[ &$;:.,*#@_?%!^()-/\'\"\\\]',''))
-    odf = declare_missing(spark, odf_tmp, list_of_cols=modify_list, missing_values=null_vocab)
-    
-    # Note: if output_mode == 'append', drop columns if col i = col i + "_cleaned" for all rows
-    if output_mode == 'replace':
-            output_cols = list_of_cols
-    else:
-        output_cols = []
-        for i in list_of_cols:
-            unequal_rows = odf.withColumn('col_equality', F.col(i)==F.col(i + "_cleaned"))\
-                .where(F.col('col_equality')==False).count()
-            if unequal_rows == 0:
-                odf = odf.drop(i + "_cleaned")
-            else:
-                output_cols.append(i + "_cleaned")
-
-    if print_impact:
-        idf_missing = missingCount_computation(spark, idf, list_of_cols).select('attribute', F.col("missing_count").alias("missingCount_before"))
-        odf_missing = missingCount_computation(spark, odf, output_cols).select('attribute', F.col("missing_count").alias("missingCount_after"))
-        
-        if output_mode == 'replace':
-            odf_print = idf_missing.join(odf_missing, 'attribute', 'inner')
-        else:
-            odf_print = idf_missing\
-                .join(odf_missing\
-                      .withColumnRenamed('attribute', 'attribute_after') \
-                      .withColumn('attribute', F.expr("substring(attribute_after, 1, length(attribute_after)-8)")) \
-                      .drop('missing_pct'), 'attribute', 'inner') 
-        odf_print.show(len(output_mode))
-    return odf
     
 
 def catfeats_fuzzy_matching(spark, idf, list_of_cols='all', drop_cols=[], basic_cleaning=False, 
@@ -2339,3 +2265,64 @@ def cat_to_num_supervised(spark, idf, list_of_cols='all', drop_cols=[], label_co
         
     return odf
 
+
+def expression_parser(spark, idf, list_of_expr, postfix="", print_impact=False):
+    """
+    :param spark: Spark Session
+    :param idf: Input Dataframe
+    :param list_of_expr: List of expressions to evaluate as new features e.g., ["expr1","expr2"].
+                         Alternatively, expressions can be specified in a string format,
+                         where different expressions are separated by pipe delimiter “|” e.g., "expr1|expr2".
+    :param postfix: postfix for new feature name.Naming convention "f" + expression_index + postfix 
+                    e.g. with postfix of "new", new added features are named as f0new, f1new etc.
+    """
+    if isinstance(list_of_expr, str):
+        list_of_expr = [x.strip() for x in list_of_expr.split('|')]
+        
+    special_chars = ["&", "$", ";", ":", ",", "*", "#", "@", "?", "%", "!", "^", "(", ")", "-", "/", "'"]
+    rename_cols = []
+    replace_chars = {}
+    for char in special_chars:
+        for col in idf.columns:
+            if char in col:
+                rename_cols.append(col)
+                if col in replace_chars.keys():
+                    (replace_chars[col]).append(char)
+                else:
+                    replace_chars[col] = [char]
+
+    rename_mapping = {}
+    idf_renamed = idf
+    for col in rename_cols:
+        new_col = col
+        for char in replace_chars[col]:
+            new_col = new_col.replace(char,"_")
+        rename_mapping[new_col] = col
+        rename_mapping[col] = new_col
+    
+        idf_renamed = idf_renamed.withColumnRenamed(col, new_col)
+        
+    list_of_expr_ = []
+    for expr in list_of_expr:
+        new_expr = expr
+        for col in rename_cols:
+            if col in expr:
+                new_expr = new_expr.replace(col, rename_mapping[col])
+        list_of_expr_.append(new_expr)
+
+    list_of_expr = list_of_expr_
+        
+    odf = idf_renamed
+    new_cols = []
+    for index, exp in enumerate(list_of_expr):
+        odf = odf.withColumn("f"+str(index)+postfix, F.expr(exp))
+        new_cols.append("f"+str(index)+postfix)
+        
+    for new_col, col in rename_mapping.items():
+        odf = odf.withColumnRenamed(new_col, col)
+    
+    if print_impact:
+        print("Columns Added: ", new_cols)
+        odf.select(new_cols).describe().show(len(new_cols))
+        
+    return odf
