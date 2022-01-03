@@ -12,7 +12,7 @@ jobs:
       fail-fast: false
       max-parallel: 4
       matrix:
-        python: ['3.x']
+        python: ['3.9']
         spark: ['3.1.2', '3.2.0']
         hadoop: ['3.0', '3.2']
         java: ['8', '11']
