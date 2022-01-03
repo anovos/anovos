@@ -1,5 +1,6 @@
 # coding=utf-8
 import warnings
+from packaging import version
 
 import pyspark
 from anovos.data_analyzer.stats_generator import missingCount_computation, uniqueCount_computation
@@ -7,7 +8,13 @@ from anovos.data_ingest.data_ingest import read_dataset
 from anovos.shared.utils import attributeType_segregation, get_dtype
 from pyspark.ml import Pipeline, PipelineModel
 from pyspark.ml.feature import Imputer, ImputerModel
-from pyspark.ml.feature import StringIndexer, OneHotEncoder
+from pyspark.ml.feature import StringIndexer
+
+if version.parse(pyspark.__version__) < version.parse("3.0.0"):
+    from pyspark.ml.feature import OneHotEncoderEstimator as OneHotEncoder
+else:
+    from pyspark.ml.feature import OneHotEncoder
+
 from pyspark.ml.linalg import DenseVector
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
