@@ -6,7 +6,7 @@ plotly>=5.2.1
 scipy
 scikit-learn
 boto3
-pyarrow
+pyarrow<6.0.0
 s3path
 pybind11
 popmon
