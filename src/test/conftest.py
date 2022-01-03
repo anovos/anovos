@@ -1,5 +1,8 @@
 import sys
 import os
+import findspark
+
+findspark.init()
 
 import pytest
 from pyspark.sql import SparkSession
@@ -14,8 +17,8 @@ print(sys.path)
 @pytest.fixture(scope="session")
 def spark_session():
     spark_jars_packages = ["io.github.histogrammar:histogrammar_2.12:1.0.20",
-                            "io.github.histogrammar:histogrammar-sparksql_2.12:1.0.20",
-                            "org.apache.spark:spark-avro_2.12:3.1.2"]
+                           "io.github.histogrammar:histogrammar-sparksql_2.12:1.0.20",
+                           "org.apache.spark:spark-avro_2.12:3.1.2"]
     spark_builder = SparkSession.builder.master("local[*]").appName("anovos_test")
     spark_builder.config('spark.jars.packages', ','.join(list(spark_jars_packages)))
     spark = spark_builder.getOrCreate()
