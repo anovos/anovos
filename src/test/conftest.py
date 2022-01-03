@@ -1,3 +1,8 @@
+import pathlib
+import sys
+
+
+
 import findspark
 import pytest
 from packaging import version
@@ -16,6 +21,10 @@ else:
                            "org.apache.spark:spark-avro_2.12:3.1.2"]
 
 from pyspark.sql import SparkSession
+
+SRC_DIR = pathlib.Path(__file__).parent.parent / 'main'
+
+sys.path.insert(0, str(SRC_DIR.absolute()))
 
 
 @pytest.fixture(scope="session")
