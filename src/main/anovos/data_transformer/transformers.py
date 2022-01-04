@@ -32,6 +32,7 @@ from tensorflow.keras.layers import Dense, Input, BatchNormalization, LeakyReLU
 
 import imp
 import os
+import math
 import joblib
 import pickle
 import random
@@ -1605,9 +1606,8 @@ def PCA_latentFeatures(spark, idf, list_of_cols="all", drop_cols=[], explained_v
     return odf
 
 
-def feature_transformation(spark, idf, list_of_cols="all", drop_cols=[], method_type="square_root", boxcox_lambda=None,
+def feature_transformation(spark, idf, list_of_cols="all", drop_cols=[], method_type="sqrt", N=None,
                            output_mode="replace",print_impact=False):
-    # Note: currently using square_root as the default value for method_type because log & box_cox require positive data
     '''
     :param spark: Spark Session
     :param idf: Input Dataframe
@@ -1617,19 +1617,112 @@ def feature_transformation(spark, idf, list_of_cols="all", drop_cols=[], method_
                          "all" can be passed to include all numerical columns for analysis.
                          Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
                          drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
-    :param method_type: "log" or "square_root" or "box_cox"
-                        "log" and "box_cox" options require data to be positive. 
-                        "square_root" option requires data to be non-negative
-    :param boxcox_lambda: Lambda value for box_cox transormation if method_type="box_cox". 
-                          If boxcox_lambda is not None, it will be directly used for the transformation.
-                          Else, search for the best lambda among [1,-1,0.5,-0.5,2,-2,0.25,-0.25,3,-3,4,-4,5,-5] 
-                          for each column and apply the transformation
     :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
                       Alternatively, columns can be specified in a string format,
                       where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+    :param method_type: "ln", "log10", "log2", "exp", "powOf2" (2^x), "powOf10" (10^x), "powOfN" (N^x), 
+                        "sqrt" (square root), "cbrt" (cube root), "sq" (square), "cb" (cube), "toPowerN" (x^N),
+                        "sin", "cos", "tan", "asin", "acos", "atan", "radians",
+                        "remainderDivByN" (x%N), "factorial" (x!), "mul_inv" (1/x),
+                        "floor", "ceil", "roundN" (round to N decimal places)
+    :param N: None by default. If method_type is "powOfN", "toPowerN", "remainderDivByN" or "roundN", N will
+              be used as the required constant.
     :param output_mode: "replace", "append".
                         “replace” option replaces original columns with transformed columns. 
-                        “append” option append transformed columns with a postfix "_log"/ "_sqrt"/ "_bxcx_<lambda>" 
+                        “append” option append transformed columns with a postfix (E.g. "_ln", "_powOf<N>") 
+                        to the input dataset.
+    :return:  Dataframe with encoded columns.
+    '''
+    
+    num_cols = attributeType_segregation(idf)[0]
+    if list_of_cols == 'all': 
+        list_of_cols = num_cols
+    if isinstance(list_of_cols, str):
+        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
+    if isinstance(drop_cols, str):
+        drop_cols = [x.strip() for x in drop_cols.split('|')]
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
+    
+    if (len(list_of_cols) == 0) | (any(x not in num_cols for x in list_of_cols)):
+        raise TypeError('Invalid input for Column(s)')
+    
+    if method_type not in ["ln", "log10", "log2", "exp", "powOf2", "powOf10", "powOfN", 
+                           "sqrt", "cbrt", "sq", "cb", "toPowerN", 
+                           "sin", "cos", "tan", "asin", "acos", "atan", "radians",
+                           "remainderDivByN", "factorial", "mul_inv", 
+                           "floor", "ceil", "roundN"]:
+        raise TypeError('Invalid input method_type')
+    
+    num_cols = attributeType_segregation(idf.select(list_of_cols))[0]
+    list_of_cols = num_cols
+    odf = idf
+
+    transformation_function = {"ln": F.log, 
+                               "log10": F.log10, 
+                               "log2": F.log2,
+                               "exp": F.exp, 
+                               "powOf2": (lambda x: F.pow(2.0, x)),
+                               "powOf10": (lambda x: F.pow(10.0, x)),
+                               "powOfN": (lambda x: F.pow(N, x)),                               
+                               "sqrt": F.sqrt, "cbrt": F.cbrt,
+                               "sq": (lambda x: x**2),
+                               "cb": (lambda x: x**3),
+                               "toPowerN": (lambda x: x**N),
+                               "sin": F.sin, "cos": F.cos, "tan": F.tan,
+                               "asin": F.asin, "acos": F.acos, "atan": F.atan,
+                               "radians": F.radians,
+                               "remainderDivByN": (lambda x: x%F.lit(N)),
+                               "factorial": F.factorial,
+                               "mul_inv": (lambda x: F.lit(1)/x),
+                               "floor": F.floor, "ceil": F.ceil,
+                               "roundN": (lambda x: F.round(x, N))}
+
+    def get_col_name(i):
+        if output_mode == 'replace':
+            return i
+        else:
+            if method_type in ["powOfN", "toPowerN", "remainderDivByN", "roundN"]:
+                return (i + "_" + method_type[:-1] + str(N))
+            else:
+                return (i + "_" + method_type)
+    
+    
+    output_cols = []
+    for i in list_of_cols:
+        modify_col = get_col_name(i)
+        odf = odf.withColumn(modify_col, transformation_function[method_type](F.col(i)))
+        output_cols.append(i)
+        
+    if print_impact:
+        print("Before:")
+        idf.select(list_of_cols).describe().show(10, False)
+        print("After:")
+        odf.select(output_cols).describe().show(10, False)
+    
+    return odf
+
+
+def boxcox_transformation(spark, idf, list_of_cols="all", drop_cols=[], boxcox_lambda=None,
+                           output_mode="replace",print_impact=False):
+    '''
+    :param spark: Spark Session
+    :param idf: Input Dataframe
+    :param list_of_cols: List of numerical columns to encode e.g., ["col1","col2"].
+                         Alternatively, columns can be specified in a string format,
+                         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+                         "all" can be passed to include all numerical columns for analysis.
+                         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
+                         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
+    :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
+                      Alternatively, columns can be specified in a string format,
+                      where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+    :param boxcox_lambda: Lambda value for box_cox transormation. 
+                          If boxcox_lambda is not None, it will be directly used for the transformation.
+                          Else, search for the best lambda among [1,-1,0.5,-0.5,2,-2,0.25,-0.25,3,-3,4,-4,5,-5] 
+                          for each column and apply the transformation
+    :param output_mode: "replace", "append".
+                        “replace” option replaces original columns with transformed columns. 
+                        “append” option append transformed columns with a postfix "_bxcx_<lambda>" 
                         to the input dataset.
     :return:  Dataframe with encoded columns.
     '''
@@ -1650,122 +1743,72 @@ def feature_transformation(spark, idf, list_of_cols="all", drop_cols=[], method_
     list_of_cols = num_cols
     odf = idf
     col_mins = idf.select([F.min(i) for i in list_of_cols])
-    if method_type in ["log", "box_cox"]:
-        # Note: raise error when there are non positive value in any column (same as scipy.stats.boxcox for box_cox)
-        if any([i <= 0 for i in col_mins.rdd.flatMap(lambda x: x).collect()]):
-            col_mins.show(1, False)
-            raise ValueError('Data must be positive')
-    elif method_type == "square_root":
-        if any([i < 0 for i in col_mins.rdd.flatMap(lambda x: x).collect()]):
-            col_mins.show(1, False)
-            raise ValueError('Data must be non-negative')
-    else:
-        raise TypeError('Invalid input method_type')
+    if any([i <= 0 for i in col_mins.rdd.flatMap(lambda x: x).collect()]):
+        col_mins.show(1, False)
+        raise ValueError('Data must be positive')
 
-    if method_type == "log":
-        for i in list_of_cols:
-            modify_col = (i + "_log") if output_mode == 'append' else i
-            odf = odf.withColumn(modify_col, F.log(F.col(i)))
-            
-        if print_impact:
-            print("Before:")
-            # Note: previously shows idf.select(list_of_cols).show(5)
-            idf.select(list_of_cols).describe().show(10, False)
-            print("After:")
-            if output_mode == 'replace':
-                output_cols = list_of_cols
-            else:
-                output_cols = [(i+"_log") for i in list_of_cols]
-            odf.select(output_cols).describe().show(10, False)
-    
-    if method_type == "square_root":
-        for i in list_of_cols:
-            modify_col = (i + "_sqrt") if output_mode == 'append' else i
-            odf = odf.withColumn(modify_col, F.sqrt(F.col(i)))
-        
-        if print_impact:
-            print("Before:")
-            idf.select(list_of_cols).describe().show(10, False)
-            print("After:")
-            if output_mode == 'replace':
-                output_cols = list_of_cols
-            else:
-                output_cols = [(i+"_sqrt") for i in list_of_cols]
-            odf.select(output_cols).describe().show(10, False)
-    
-    # Note: current logic for box_cox transformation (might need further discussion)
-    # if boxcox_lambda is not None, directly use the input value for transformation
-    # else, search for the best lambda for each column and apply the transformation
-    if method_type == "box_cox":
-        if boxcox_lambda is not None:
-            if isinstance(boxcox_lambda, (list, tuple)):
-                if len(boxcox_lambda) != len(list_of_cols):
-                    raise TypeError('Invalid input for boxcox_lambda')
-                elif not all([isinstance(l, (float, int)) for l in boxcox_lambda]):
-                    raise TypeError('Invalid input for boxcox_lambda')
-                else:
-                    boxcox_lambda_list = list(boxcox_lambda)
-
-            elif isinstance(boxcox_lambda, (float, int)):
-                boxcox_lambda_list = [boxcox_lambda] * len(list_of_cols)
-            else:
+    if boxcox_lambda is not None:
+        if isinstance(boxcox_lambda, (list, tuple)):
+            if len(boxcox_lambda) != len(list_of_cols):
                 raise TypeError('Invalid input for boxcox_lambda')
+            elif not all([isinstance(l, (float, int)) for l in boxcox_lambda]):
+                raise TypeError('Invalid input for boxcox_lambda')
+            else:
+                boxcox_lambda_list = list(boxcox_lambda)
 
+        elif isinstance(boxcox_lambda, (float, int)):
+            boxcox_lambda_list = [boxcox_lambda] * len(list_of_cols)
         else:
-            boxcox_lambda_list = []
-            for i in list_of_cols:
-                # Note: changed the order a bit so that smaller transformation is preferred (can further change)
-                # (Sometimes kolmogorovSmirnovTest gives the same extremely small pVal for all lambdas tested)
-                lambdaVal = [1,-1,0.5,-0.5,2,-2,0.25,-0.25,3,-3,4,-4,5,-5]
-                # lambdaVal = [-5,-4,-3,-2,-1,-0.5,-0.25,0.25,0.5,1,2,3,4,5]
-                best_pVal = 0
-                for j in lambdaVal:
-                    pVal = Statistics.kolmogorovSmirnovTest(odf.select(F.pow(F.col(i),j)).rdd.flatMap(lambda x:x), "norm").pValue
-                    if pVal > best_pVal:
-                        best_pVal = pVal
-                        best_lambdaVal = j
+            raise TypeError('Invalid input for boxcox_lambda')
 
-                pVal = Statistics.kolmogorovSmirnovTest(odf.select(F.log(F.col(i))).rdd.flatMap(lambda x:x), "norm").pValue
+    else:
+        boxcox_lambda_list = []
+        for i in list_of_cols:
+            lambdaVal = [1,-1,0.5,-0.5,2,-2,0.25,-0.25,3,-3,4,-4,5,-5]
+            best_pVal = 0
+            for j in lambdaVal:
+                pVal = Statistics.kolmogorovSmirnovTest(odf.select(F.pow(F.col(i),j)).rdd.flatMap(lambda x:x), "norm").pValue
                 if pVal > best_pVal:
                     best_pVal = pVal
-                    best_lambdaVal = 0
-                
-                boxcox_lambda_list.append(best_lambdaVal)
-        
-        output_cols = []
-        for i, curr_lambdaVal in zip(list_of_cols, boxcox_lambda_list):
-            # Pending: previously (i + "_log") was used as the new column name for 0 lambdaVal. 
-            # But I feel it might make tracking column names a bit hard? 
-            if curr_lambdaVal != 1:
-                modify_col = (i + "_bxcx_" + str(curr_lambdaVal)) if output_mode == 'append' else i
-                output_cols.append(modify_col)
-                if curr_lambdaVal == 0:
-                    odf = odf.withColumn(modify_col, F.log(F.col(i)))
-                else:
-                    odf = odf.withColumn(modify_col, F.pow(F.col(i), curr_lambdaVal))
-        if len(output_cols)==0:
-            warnings.warn("lambdaVal for all columns are 1 so no transformation is performed so idf is returned")
-            return idf
-        
-        if print_impact:
-            print("Transformed Columns: ", list_of_cols)
-            print("Best BoxCox Parameter(s): ", boxcox_lambda_list)
-            print("Before:")
-            # Note: added skewness to summary statistics 
-            idf.select(list_of_cols).describe()\
-                .unionByName(idf.select([F.skewness(i).alias(i) for i in list_of_cols])\
-                                .withColumn('summary', F.lit('skewness')))\
-                .show()
-            print("After:")
-            if output_mode == 'replace':
-                odf.select(list_of_cols).describe()\
-                    .unionByName(odf.select([F.skewness(i).alias(i) for i in list_of_cols])\
-                                    .withColumn('summary', F.lit('skewness'))).show()
+                    best_lambdaVal = j
+
+            pVal = Statistics.kolmogorovSmirnovTest(odf.select(F.log(F.col(i))).rdd.flatMap(lambda x:x), "norm").pValue
+            if pVal > best_pVal:
+                best_pVal = pVal
+                best_lambdaVal = 0
+            boxcox_lambda_list.append(best_lambdaVal)
+
+    output_cols = []
+    for i, curr_lambdaVal in zip(list_of_cols, boxcox_lambda_list):
+        if curr_lambdaVal != 1:
+            modify_col = (i + "_bxcx_" + str(curr_lambdaVal)) if output_mode == 'append' else i
+            output_cols.append(modify_col)
+            if curr_lambdaVal == 0:
+                odf = odf.withColumn(modify_col, F.log(F.col(i)))
             else:
-                output_cols = [("`" + i + "`") for i in output_cols]
-                odf.select(output_cols).describe()\
-                    .unionByName(odf.select([F.skewness(i).alias(i[1:-1]) for i in output_cols])\
-                                    .withColumn('summary', F.lit('skewness'))).show()
+                odf = odf.withColumn(modify_col, F.pow(F.col(i), curr_lambdaVal))
+    if len(output_cols)==0:
+        warnings.warn("lambdaVal for all columns are 1 so no transformation is performed and idf is returned")
+        return idf
+
+    if print_impact:
+        print("Transformed Columns: ", list_of_cols)
+        print("Best BoxCox Parameter(s): ", boxcox_lambda_list)
+        print("Before:")
+        idf.select(list_of_cols).describe()\
+            .unionByName(idf.select([F.skewness(i).alias(i) for i in list_of_cols])\
+                            .withColumn('summary', F.lit('skewness')))\
+            .show()
+        print("After:")
+        if output_mode == 'replace':
+            odf.select(list_of_cols).describe()\
+                .unionByName(odf.select([F.skewness(i).alias(i) for i in list_of_cols])\
+                                .withColumn('summary', F.lit('skewness'))).show()
+        else:
+            output_cols = [("`" + i + "`") for i in output_cols]
+            odf.select(output_cols).describe()\
+                .unionByName(odf.select([F.skewness(i).alias(i[1:-1]) for i in output_cols])\
+                                .withColumn('summary', F.lit('skewness'))).show()
     
     return odf
 
