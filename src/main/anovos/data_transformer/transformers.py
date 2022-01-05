@@ -253,10 +253,9 @@ def monotonic_binning(spark, idf, list_of_cols='all', drop_cols=[], label_col='l
     return odf
 
 
-def cat_to_num_unsupervised(spark, idf, list_of_cols='all', drop_cols=[], method_type=1, index_order='frequencyDesc',
+def cat_to_num_unsupervised(idf, list_of_cols='all', drop_cols=[], method_type=1, index_order='frequencyDesc',
                             pre_existing_model=False, model_path="NA", output_mode='replace', print_impact=False):
     """
-    :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_cols: List of categorical columns to transform e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
@@ -629,10 +628,9 @@ def IQR_standardization(spark, idf, list_of_cols='all', drop_cols=[], pre_existi
     return odf
 
 
-def normalization(spark, idf, list_of_cols='all', drop_cols=[], pre_existing_model=False, model_path="NA", 
+def normalization(idf, list_of_cols='all', drop_cols=[], pre_existing_model=False, model_path="NA", 
                   output_mode='replace', print_impact=False):
     '''
-    :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_cols: List of numerical columns to transform e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
@@ -1608,10 +1606,9 @@ def PCA_latentFeatures(spark, idf, list_of_cols="all", drop_cols=[], explained_v
     return odf
 
 
-def feature_transformation(spark, idf, list_of_cols="all", drop_cols=[], method_type="sqrt", N=None,
+def feature_transformation(idf, list_of_cols="all", drop_cols=[], method_type="sqrt", N=None,
                            output_mode="replace",print_impact=False):
     '''
-    :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_cols: List of numerical columns to encode e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
@@ -1704,10 +1701,9 @@ def feature_transformation(spark, idf, list_of_cols="all", drop_cols=[], method_
     return odf
 
 
-def boxcox_transformation(spark, idf, list_of_cols="all", drop_cols=[], boxcox_lambda=None,
+def boxcox_transformation(idf, list_of_cols="all", drop_cols=[], boxcox_lambda=None,
                            output_mode="replace",print_impact=False):
     '''
-    :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_cols: List of numerical columns to encode e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
@@ -1985,9 +1981,8 @@ def declare_missing(spark, idf, list_of_cols='all', drop_cols=[],
     return odf
     
 
-def expression_parser(spark, idf, list_of_expr, postfix="", print_impact=False):
+def expression_parser(idf, list_of_expr, postfix="", print_impact=False):
     """
-    :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_expr: List of expressions to evaluate as new features e.g., ["expr1","expr2"].
                          Alternatively, expressions can be specified in a string format,
