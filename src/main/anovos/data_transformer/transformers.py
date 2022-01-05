@@ -33,6 +33,7 @@ from tensorflow.keras.layers import Dense, Input, BatchNormalization, LeakyReLU
 import imp
 import os
 import math
+import copy
 import joblib
 import pickle
 import random
@@ -178,7 +179,7 @@ def attribute_binning(spark, idf, list_of_cols='all', drop_cols=[], method_type=
             output_cols = list_of_cols
         else:
             output_cols = [(i + "_binned") for i in list_of_cols]
-        uniqueCount_computation(spark, odf, output_cols).show(len(output_cols))
+        uniqueCount_computation(spark, odf, output_cols).show(len(output_cols), False)
     return odf
 
 
@@ -369,9 +370,9 @@ def cat_to_num_unsupervised(spark, idf, list_of_cols='all', drop_cols=[], method
 
     if (print_impact == True) & (method_type == 1):
         print("Before")
-        idf.describe().where(F.col('summary').isin('count', 'min', 'max')).show()
+        idf.describe().where(F.col('summary').isin('count', 'min', 'max')).show(3, False)
         print("After")
-        odf.describe().where(F.col('summary').isin('count', 'min', 'max')).show()
+        odf.describe().where(F.col('summary').isin('count', 'min', 'max')).show(3, False)
     if (print_impact == True) & (method_type == 0):
         print("Before")
         idf.printSchema()
@@ -454,9 +455,9 @@ def cat_to_num_supervised(spark, idf, list_of_cols='all', drop_cols=[], label_co
         else:
             output_cols = [(i+"_encoded") for i in list_of_cols]
         print("Before: ")
-        idf.select(list_of_cols).describe().where(F.col('summary').isin('count','min','max')).show()
+        idf.select(list_of_cols).describe().where(F.col('summary').isin('count','min','max')).show(3, False)
         print("After: ")
-        odf.select(output_cols).describe().where(F.col('summary').isin('count','min','max')).show()
+        odf.select(output_cols).describe().where(F.col('summary').isin('count','min','max')).show(3, False)
         
     return odf
 
@@ -537,9 +538,9 @@ def z_standardization(spark, idf, list_of_cols='all', drop_cols=[], pre_existing
         else:
             output_cols = [(i+"_scaled") for i in list_of_cols if i not in excluded_cols]
         print("Before: ")
-        idf.select(list_of_cols).describe().show(len(list_of_cols))
+        idf.select(list_of_cols).describe().show(5, False)
         print("After: ")
-        odf.select(output_cols).describe().show(len(list_of_cols))
+        odf.select(output_cols).describe().show(5, False)
     
     return odf
 
@@ -621,9 +622,9 @@ def IQR_standardization(spark, idf, list_of_cols='all', drop_cols=[], pre_existi
         else:
             output_cols = [(i+"_scaled") for i in list_of_cols if i not in excluded_cols]
         print("Before: ")
-        idf.select(list_of_cols).describe().show(len(list_of_cols))
+        idf.select(list_of_cols).describe().show(5, False)
         print("After: ")
-        odf.select(output_cols).describe().show(len(list_of_cols))
+        odf.select(output_cols).describe().show(5, False)
     
     return odf
 
@@ -700,9 +701,9 @@ def normalization(spark, idf, list_of_cols='all', drop_cols=[], pre_existing_mod
         else:
             output_cols = [(i+"_scaled") for i in list_of_cols]
         print("Before: ")
-        idf.select(list_of_cols).describe().show(len(list_of_cols))
+        idf.select(list_of_cols).describe().show(5, False)
         print("After: ")
-        odf.select(output_cols).describe().show(len(list_of_cols))
+        odf.select(output_cols).describe().show(5, False)
     
     return odf
 
@@ -856,7 +857,7 @@ def imputation_MMM(spark, idf, list_of_cols="missing", drop_cols=[], method_type
                       .withColumnRenamed('attribute', 'attribute_after') \
                       .withColumn('attribute', F.expr("substring(attribute_after, 1, length(attribute_after)-8)")) \
                       .drop('missing_pct'), 'attribute', 'inner')
-        odf_print.show(len(list_of_cols))
+        odf_print.show(len(list_of_cols), False)
     return odf
 
 
@@ -882,7 +883,6 @@ def imputation_sklearn(spark, idf, list_of_cols="missing", drop_cols=[], method_
     :param method_type: "KNN", "regression".
                         "KNN" option trains a sklearn.impute.KNNImputer. "regression" option trains a sklearn.impute.IterativeImputer
     :param sample_size: Maximum rows for training the sklearn imputer  
-    :param emr_mode: Boolean argument – True or False. True if it is run on EMR, False otherwise.
     :param pre_existing_model: Boolean argument – True or False. True if imputation model exists already, False otherwise.
     :param model_path: If pre_existing_model is True, this argument is path for referring the pre-saved model.
                        If pre_existing_model is False, this argument can be used for saving the model.
@@ -893,6 +893,7 @@ def imputation_sklearn(spark, idf, list_of_cols="missing", drop_cols=[], method_
     :param stats_missing: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
                           to read pre-saved statistics on missing count/pct i.e. if measures_of_counts or
                           missingCount_computation (data_analyzer.stats_generator module) has been computed & saved before.
+    :param emr_mode: Boolean argument – True or False. True if it is run on EMR, False otherwise.
     :return: Imputed Dataframe
     """
     
@@ -958,10 +959,10 @@ def imputation_sklearn(spark, idf, list_of_cols="missing", drop_cols=[], method_
        
         if method_type == 'KNN':
             imputer = KNNImputer(n_neighbors=5, weights='uniform', metric='nan_euclidean')
-            imputer.fit(idf_pd)
+            imputer.fit(idf_pd.drop(columns=['id']))
         if method_type == 'regression':
             imputer = IterativeImputer()
-            imputer.fit(idf_pd)
+            imputer.fit(idf_pd.drop(columns=['id']))
         
         if (pre_existing_model == False) & (model_path != "NA"):
             if emr_mode:
@@ -973,7 +974,7 @@ def imputation_sklearn(spark, idf, list_of_cols="missing", drop_cols=[], method_
                 os.makedirs(os.path.dirname(local_path), exist_ok=True)
                 pickle.dump(imputer, open(local_path, 'wb'))
         
-        pred = imputer.transform(idf_pd)
+        pred = imputer.transform(idf_pd.drop(columns=['id']))
         output = pd.concat([pd.Series(list(pred)),idf_pd], axis=1)
         output.rename(columns={0:'features'}, inplace=True)
         output.features = output.features.map(lambda x: [float(e) for e in x])
@@ -1011,19 +1012,25 @@ def imputation_sklearn(spark, idf, list_of_cols="missing", drop_cols=[], method_
         if (i not in missing_cols) & (output_mode == 'append'):
             odf = odf.drop(i+"_imputed")
     
+    if output_mode == 'replace':
+        odf_cols = idf.drop('id').columns
+    else:
+        output_cols = [(i + "_imputed") for i in [e for e in list_of_cols if e in missing_cols]]
+        odf_cols = idf.drop('id').columns + output_cols
+    odf = odf.select(odf_cols)
+    
     if print_impact:
         if output_mode == 'replace':
             odf_print = missing_df.select('attribute', F.col("missing_count").alias("missingCount_before")) \
                 .join(missingCount_computation(spark, odf, list_of_cols) \
                       .select('attribute', F.col("missing_count").alias("missingCount_after")), 'attribute', 'inner')
         else:
-            output_cols = [(i + "_imputed") for i in [e for e in num_cols if e in missing_cols]]
             odf_print = missing_df.select('attribute', F.col("missing_count").alias("missingCount_before")) \
                 .join(missingCount_computation(spark, odf, output_cols) \
                       .withColumnRenamed('attribute', 'attribute_after') \
                       .withColumn('attribute', F.expr("substring(attribute_after, 1, length(attribute_after)-8)")) \
                       .drop('missing_pct'), 'attribute', 'inner')
-        odf_print.show(len(list_of_cols))
+        odf_print.show(len(list_of_cols), False)
     return odf
 
 
@@ -1043,6 +1050,7 @@ def imputation_matrixFactorization(spark, idf, list_of_cols="missing", drop_cols
                       Alternatively, columns can be specified in a string format,
                       where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
     :param id_col: name of the column representing ID.
+                   "" (by default) can be used if there is no ID column.
     :param output_mode: "replace", "append".
                          “replace” option replaces original columns with transformed column. “append” option append transformed
                          column to the input dataset with a postfix "_imputed" e.g. column X is appended as X_imputed.
@@ -1089,7 +1097,8 @@ def imputation_matrixFactorization(spark, idf, list_of_cols="missing", drop_cols
         raise TypeError('Invalid input for output_mode')
     
     if id_col == "":
-        idf = idf.withColumn("id",F.monotonically_increasing_id())
+        idf = idf.withColumn("id", F.monotonically_increasing_id())\
+            .withColumn("id", F.row_number().over(Window.orderBy("id")))
         id_col = "id"
     
     key_and_val = F.create_map(list(chain.from_iterable([[F.lit(c), F.col(c)] for c in list_of_cols])))
@@ -1147,7 +1156,7 @@ def imputation_matrixFactorization(spark, idf, list_of_cols="missing", drop_cols
                       .withColumnRenamed('attribute', 'attribute_after') \
                       .withColumn('attribute', F.expr("substring(attribute_after, 1, length(attribute_after)-8)")) \
                       .drop('missing_pct'), 'attribute', 'inner')
-        odf_print.show(len(list_of_cols))
+        odf_print.show(len(list_of_cols), False)
     return odf
 
 
@@ -1165,6 +1174,7 @@ def auto_imputation(spark, idf, list_of_cols="missing", drop_cols=[], id_col="",
                       Alternatively, columns can be specified in a string format,
                       where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
     :param id_col: name of the column representing ID.
+                   "" (by default) can be used if there is no ID column.
     :param null_pct: proportion of the valid input data to be replaced by None to form the test data
     :param stats_missing: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
                           to read pre-saved statistics on missing count/pct i.e. if measures_of_counts or
@@ -1198,7 +1208,7 @@ def auto_imputation(spark, idf, list_of_cols="missing", drop_cols=[], id_col="",
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split('|')]
 
-    list_of_cols = list(set([e for e in list_of_cols if (e not in drop_cols) & (e !=id_col)]))
+    list_of_cols = list(set([e for e in list_of_cols if (e not in drop_cols) & (e != id_col)]))
     if any(x not in idf.columns for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
     
@@ -1216,7 +1226,7 @@ def auto_imputation(spark, idf, list_of_cols="missing", drop_cols=[], id_col="",
         odf_imputed_cat = odf_del
     
     if (len(missing_numcols) == 0):
-        warnings.warn("No Imputation Performed - No Column(s) to Impute")
+        warnings.warn("No Imputation Performed for numerical columns - No Column(s) to Impute")
         return odf_imputed_cat
     
     idf_test = odf_imputed_cat.dropna(subset=missing_numcols)\
@@ -1264,7 +1274,7 @@ def auto_imputation(spark, idf, list_of_cols="missing", drop_cols=[], id_col="",
     return odf, best_method
 
 
-def autoencoder_latentFeatures(spark, idf, list_of_cols="all", drop_cols=[], reduction_params=0.5, max_size=500000, 
+def autoencoder_latentFeatures(spark, idf, list_of_cols="all", drop_cols=[], reduction_params=0.5, sample_size=500000, 
                                 epochs=100, batch_size=256, pre_existing_model=False, model_path="NA",
                                 standardization=True, standardization_configs={'pre_existing_model':False, 'model_path':"NA"},
                                 imputation=False, imputation_configs={'imputation_function':'imputation_MMM'},
@@ -1284,7 +1294,7 @@ def autoencoder_latentFeatures(spark, idf, list_of_cols="all", drop_cols=[], red
     :param reduction_params: Determines the number of encoded features in the result. 
                              If reduction_params < 1, int(reduction_params * <number of columns>) 
                              columns will be generated. Else, reduction_params columns will be generated.
-    :param max_size: Maximum rows for training the autoencoder model using tensorflow.
+    :param sample_size: Maximum rows for training the autoencoder model using tensorflow.
     :param epochs: Integer - number of epochs to train the tensorflow model.
     :param batch_size: Integer - number of samples per gradient update when fitting the tensorflow model. 
     :param pre_existing_model: Boolean argument – True or False. True if model exists already, False Otherwise
@@ -1378,7 +1388,7 @@ def autoencoder_latentFeatures(spark, idf, list_of_cols="all", drop_cols=[], red
             model = load_model(model_path + "/autoencoders_latentFeatures/model.h5")
     else:
         idf_valid = idf_imputed.select(list_of_cols_scaled)
-        idf_model = idf_valid.sample(False, min(1.0, float(max_size)/idf_valid.count()), 0)
+        idf_model = idf_valid.sample(False, min(1.0, float(sample_size)/idf_valid.count()), 0)
         
         idf_train = idf_model.sample(False, 0.8, 0)
         idf_test = idf_model.subtract(idf_train)
@@ -1462,7 +1472,7 @@ def autoencoder_latentFeatures(spark, idf, list_of_cols="all", drop_cols=[], red
     
     if print_impact:
         output_cols = ["latent_" + str(j) for j in range(0, n_bottleneck)]
-        odf.select(output_cols).describe().show(n_bottleneck)
+        odf.select(output_cols).describe().show(5, False)
     
     return odf
 
@@ -1601,7 +1611,7 @@ def PCA_latentFeatures(spark, idf, list_of_cols="all", drop_cols=[], explained_v
     if print_impact:
         print("Explained Variance: ", round(np.sum(pcaModel.explainedVariance[0:n]),4))
         output_cols = ["latent_" + str(j) for j in range(0, n)]
-        odf.select(output_cols).describe().show(n)
+        odf.select(output_cols).describe().show(5, False)
         
     return odf
 
@@ -1695,9 +1705,9 @@ def feature_transformation(spark, idf, list_of_cols="all", drop_cols=[], method_
         
     if print_impact:
         print("Before:")
-        idf.select(list_of_cols).describe().show(10, False)
+        idf.select(list_of_cols).describe().show(5, False)
         print("After:")
-        odf.select(output_cols).describe().show(10, False)
+        odf.select(output_cols).describe().show(5, False)
     
     return odf
 
@@ -1798,17 +1808,17 @@ def boxcox_transformation(spark, idf, list_of_cols="all", drop_cols=[], boxcox_l
         idf.select(list_of_cols).describe()\
             .unionByName(idf.select([F.skewness(i).alias(i) for i in list_of_cols])\
                             .withColumn('summary', F.lit('skewness')))\
-            .show()
+            .show(6, False)
         print("After:")
         if output_mode == 'replace':
             odf.select(list_of_cols).describe()\
                 .unionByName(odf.select([F.skewness(i).alias(i) for i in list_of_cols])\
-                                .withColumn('summary', F.lit('skewness'))).show()
+                                .withColumn('summary', F.lit('skewness'))).show(6, False)
         else:
             output_cols = [("`" + i + "`") for i in output_cols]
             odf.select(output_cols).describe()\
                 .unionByName(odf.select([F.skewness(i).alias(i[1:-1]) for i in output_cols])\
-                                .withColumn('summary', F.lit('skewness'))).show()
+                                .withColumn('summary', F.lit('skewness'))).show(6, False)
     
     return odf
 
@@ -1907,11 +1917,11 @@ def outlier_categories(spark, idf, list_of_cols='all', drop_cols=[], coverage=1.
         uniqueCount_computation(spark, idf, list_of_cols).select('attribute',
                                                                  F.col("unique_values").alias(
                                                                      "uniqueValues_before")).show(
-            len(list_of_cols))
+            len(list_of_cols), False)
         uniqueCount_computation(spark, odf, output_cols).select('attribute',
                                                                 F.col("unique_values").alias(
                                                                     "uniqueValues_after")).show(
-            len(list_of_cols))
+            len(list_of_cols), False)
 
     return odf
 
@@ -1979,7 +1989,7 @@ def declare_missing(spark, idf, list_of_cols='all', drop_cols=[],
             idf_missing = missingCount_computation(spark, idf, list_of_cols).select('attribute', F.col("missing_count").alias("missingCount_before"))
             odf_missing = missingCount_computation(spark, odf, output_cols).select('attribute', F.col("missing_count").alias("missingCount_after"))
             odf_print = idf_missing.join(odf_missing, 'attribute', 'inner')
-        odf_print.show(len(list_of_cols))
+        odf_print.show(len(list_of_cols), False)
     
     return odf
     
@@ -1997,7 +2007,7 @@ def expression_parser(spark, idf, list_of_expr, postfix="", print_impact=False):
     if isinstance(list_of_expr, str):
         list_of_expr = [x.strip() for x in list_of_expr.split('|')]
         
-    special_chars = ["&", "$", ";", ":", ",", "*", "#", "@", "?", "%", "!", "^", "(", ")", "-", "/", "'"]
+    special_chars = ["&", "$", ";", ":", ",", "*", "#", "@", "?", "%", "!", "^", "(", ")", "-", "/", "'", ".", '"']
     rename_cols = []
     replace_chars = {}
     for char in special_chars:
@@ -2009,14 +2019,14 @@ def expression_parser(spark, idf, list_of_expr, postfix="", print_impact=False):
                 else:
                     replace_chars[col] = [char]
 
-    rename_mapping = {}
+    rename_mapping_to_new, rename_mapping_to_old = {}, {}
     idf_renamed = idf
     for col in rename_cols:
         new_col = col
         for char in replace_chars[col]:
             new_col = new_col.replace(char,"_")
-        rename_mapping[new_col] = col
-        rename_mapping[col] = new_col
+        rename_mapping_to_old[new_col] = col
+        rename_mapping_to_new[col] = new_col
     
         idf_renamed = idf_renamed.withColumnRenamed(col, new_col)
         
@@ -2025,7 +2035,7 @@ def expression_parser(spark, idf, list_of_expr, postfix="", print_impact=False):
         new_expr = expr
         for col in rename_cols:
             if col in expr:
-                new_expr = new_expr.replace(col, rename_mapping[col])
+                new_expr = new_expr.replace(col, rename_mapping_to_new[col])
         list_of_expr_.append(new_expr)
 
     list_of_expr = list_of_expr_
@@ -2036,11 +2046,11 @@ def expression_parser(spark, idf, list_of_expr, postfix="", print_impact=False):
         odf = odf.withColumn("f"+str(index)+postfix, F.expr(exp))
         new_cols.append("f"+str(index)+postfix)
         
-    for new_col, col in rename_mapping.items():
+    for new_col, col in rename_mapping_to_old.items():
         odf = odf.withColumnRenamed(new_col, col)
     
     if print_impact:
         print("Columns Added: ", new_cols)
-        odf.select(new_cols).describe().show(len(new_cols))
+        odf.select(new_cols).describe().show(5, False)
         
     return odf
