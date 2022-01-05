@@ -51,6 +51,8 @@ configs = {'app_name': 'Anovos_pipeline',
                             "org.apache.spark:spark-avro_2.11:2.4.0"],
            'py_files': [],
            'spark_configs': {'spark.sql.session.timeZone': 'GMT',
-                             'spark.python.profile': 'false'}}
+                             'spark.python.profile': 'false',
+                             'spark.yarn.appMasterEnv.ARROW_PRE_0_15_IPC_FORMAT': '1',
+                             'spark.executorEnv.ARROW_PRE_0_15_IPC_FORMAT': '1'}}
 
 spark, sc, sqlContext = init_spark(**configs)
