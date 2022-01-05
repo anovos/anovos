@@ -787,7 +787,6 @@ def imputation_MMM(spark, idf, list_of_cols="missing", drop_cols=[], method_type
 
     odf = idf
     if len(num_cols) > 0:
-        # Checking for Integer/Decimal Type Columns & Converting them into Float/Double Type
         recast_cols = []
         recast_type = []
         for i in num_cols:
@@ -796,7 +795,6 @@ def imputation_MMM(spark, idf, list_of_cols="missing", drop_cols=[], method_type
                 recast_cols.append(i + "_imputed")
                 recast_type.append(get_dtype(idf, i))
 
-        # Building new imputer model or uploading the existing model
         if pre_existing_model == True:
             imputerModel = ImputerModel.load(model_path + "/imputation_MMM/num_imputer-model")
         else:
@@ -804,13 +802,10 @@ def imputation_MMM(spark, idf, list_of_cols="missing", drop_cols=[], method_type
                               outputCols=[(e + "_imputed") for e in num_cols])
             imputerModel = imputer.fit(odf)
 
-        # Applying model
-        # odf = recast_column(imputerModel.transform(odf), recast_cols, recast_type)
         odf = imputerModel.transform(odf)
         for i, j in zip(recast_cols, recast_type):
             odf = odf.withColumn(i, F.col(i).cast(j))
 
-        # Saving model if required
         if (pre_existing_model == False) & (model_path != "NA"):
             imputerModel.write().overwrite().save(model_path + "/imputation_MMM/num_imputer-model")
 
@@ -834,7 +829,6 @@ def imputation_MMM(spark, idf, list_of_cols="missing", drop_cols=[], method_type
         for index, i in enumerate(cat_cols):
             odf = odf.withColumn(i + "_imputed", F.when(F.col(i).isNull(), parameters[index]).otherwise(F.col(i)))
 
-        # Saving model File if required
         if (pre_existing_model == False) & (model_path != "NA"):
             df_model = spark.createDataFrame(zip(cat_cols, parameters), schema=['attribute', 'parameters'])
             df_model.repartition(1).write.csv(model_path + "/imputation_MMM/cat_imputer", header=True, mode='overwrite')
@@ -1431,7 +1425,6 @@ def autoencoder_latentFeatures(spark, idf, list_of_cols="all", drop_cols=[], red
                 encoder.save(model_path + "/autoencoders_latentFeatures/encoder.h5")
                 model.save(model_path + "/autoencoders_latentFeatures/model.h5")
         
-        #print(model.predict(X_test))
     
     class ModelWrapperPickable:
         def __init__(self, model):
@@ -1452,7 +1445,6 @@ def autoencoder_latentFeatures(spark, idf, list_of_cols="all", drop_cols=[], red
                 self.model = tensorflow.keras.models.load_model(fd.name)
 
     model_wrapper= ModelWrapperPickable(encoder)
-    #print(model_wrapper.model.predict(X_test))
 
     def compute_output_pandas_udf(model_wrapper):
         '''Spark pandas udf for model prediction.'''
@@ -1905,7 +1897,6 @@ def outlier_categories(spark, idf, list_of_cols='all', drop_cols=[], coverage=1.
                                  F.when((F.col(i).isin(parameters)) | (F.col(i).isNull()), F.col(i)).otherwise(
                                      "others"))
 
-    # Saving model File if required
     if (pre_existing_model == False) & (model_path != "NA"):
         df_model.repartition(1).write.csv(model_path + "/outlier_categories", header=True, mode='overwrite')
 
