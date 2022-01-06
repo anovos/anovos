@@ -218,7 +218,7 @@ def monotonic_binning(spark, idf, list_of_cols='all', drop_cols=[], label_col='l
 
 
 def cat_to_num_unsupervised(spark, idf, list_of_cols='all', drop_cols=[], method_type=1, index_order='frequencyDesc',
-                            pre_existing_model=False, model_path="NA", output_mode='replace', print_impact=False):
+                            pre_existing_model=False, model_path="NA", output_mode='replace', cardinality_threshold=100, print_impact=False):
     """
     :param spark: Spark Session
     :param idf: Input Dataframe
@@ -300,23 +300,29 @@ def cat_to_num_unsupervised(spark, idf, list_of_cols='all', drop_cols=[], method
 
         odf = odf_encoded
         selected_cols = odf_encoded.columns
+        def vector_to_array(v):
+            v = DenseVector(v)
+            new_array = list([int(x) for x in v])
+            return new_array
+
+        f_vector_to_array = F.udf(vector_to_array, T.ArrayType(T.IntegerType()))
+
+        skipped_cols = []
         for i in list_of_cols:
             uniq_cats = idf.select(i).distinct().count()
-
-            def vector_to_array(v):
-                v = DenseVector(v)
-                new_array = list([int(x) for x in v])
-                return new_array
-
-            f_vector_to_array = F.udf(vector_to_array, T.ArrayType(T.IntegerType()))
-
-            odf = odf.withColumn("tmp", f_vector_to_array(i + '_vec')) \
-                .select(selected_cols + [F.col("tmp")[j].alias(i + "_" + str(j)) for j in range(0, uniq_cats)])
+            if uniq_cats > cardinality_threshold:
+                skipped_cols.append(i)
+                continue
+            selected_cols = selected_cols + ["tmp"] + [i + "_" + str(j) for j in range(0, uniq_cats)]
+            odf = odf.withColumn("tmp", f_vector_to_array(i + '_vec')).rdd.map(lambda x: (*x, *x["tmp"])).toDF(selected_cols)
             if output_mode == 'replace':
-                selected_cols = [e for e in odf.columns if e not in (i, i + '_vec', i + '_index')]
+                selected_cols = [e for e in odf.columns if e not in (i, i + '_vec', i + '_index', 'tmp')]
             else:
-                selected_cols = [e for e in odf.columns if e not in (i + '_vec', i + '_index')]
+                selected_cols = [e for e in odf.columns if e not in (i + '_vec', i + '_index', 'tmp')]
             odf = odf.select(selected_cols)
+            if skipped_cols > 0:
+                warnings.warn(
+                    "Columns dropped from one-hot encoding due to high cardinality: " + (',').join(skipped_cols))
     else:
         odf = odf_indexed
         for i in list_of_cols:
