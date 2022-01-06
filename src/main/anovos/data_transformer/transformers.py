@@ -321,7 +321,7 @@ def cat_to_num_unsupervised(spark, idf, list_of_cols='all', drop_cols=[], method
             else:
                 selected_cols = [e for e in odf.columns if e not in (i + '_vec', i + '_index', 'tmp')]
             odf = odf.select(selected_cols)
-            if skipped_cols > 0:
+            if skipped_cols:
                 warnings.warn(
                     "Columns dropped from one-hot encoding due to high cardinality: " + (',').join(skipped_cols))
     else:
