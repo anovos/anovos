@@ -242,6 +242,7 @@ def cat_to_num_unsupervised(spark, idf, list_of_cols='all', drop_cols=[], method
     :param model_path: If pre_existing_model is True, this argument is path for referring the pre-saved model.
                        If pre_existing_model is False, this argument can be used for saving the model.
                        Default "NA" means there is neither pre existing model nor there is a need to save one.
+    :param cardinality_threshold: Defines threshold to skip columns with higher cardinality values from encoding. Default value is 100.
     :param output_mode: "replace", "append".
                         “replace” option replaces original columns with transformed column. “append” option append transformed
                         column to the input dataset with a postfix "_index" e.g. column X is appended as X_index.
