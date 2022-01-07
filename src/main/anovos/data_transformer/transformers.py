@@ -47,8 +47,6 @@ from operator import mod
 from typing import Iterable 
 from itertools import chain
 from matplotlib import pyplot
-from fuzzywuzzy import fuzz, process
-from dcor import distance_correlation
 
 
 def attribute_binning(spark, idf, list_of_cols='all', drop_cols=[], method_type="equal_range", bin_size=10,
@@ -253,10 +251,9 @@ def monotonic_binning(spark, idf, list_of_cols='all', drop_cols=[], label_col='l
     return odf
 
 
-def cat_to_num_unsupervised(spark, idf, list_of_cols='all', drop_cols=[], method_type=1, index_order='frequencyDesc',
+def cat_to_num_unsupervised(idf, list_of_cols='all', drop_cols=[], method_type=1, index_order='frequencyDesc',
                             pre_existing_model=False, model_path="NA", output_mode='replace', print_impact=False):
     """
-    :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_cols: List of categorical columns to transform e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
@@ -629,10 +626,9 @@ def IQR_standardization(spark, idf, list_of_cols='all', drop_cols=[], pre_existi
     return odf
 
 
-def normalization(spark, idf, list_of_cols='all', drop_cols=[], pre_existing_model=False, model_path="NA", 
+def normalization(idf, list_of_cols='all', drop_cols=[], pre_existing_model=False, model_path="NA", 
                   output_mode='replace', print_impact=False):
     '''
-    :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_cols: List of numerical columns to transform e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
@@ -1608,10 +1604,9 @@ def PCA_latentFeatures(spark, idf, list_of_cols="all", drop_cols=[], explained_v
     return odf
 
 
-def feature_transformation(spark, idf, list_of_cols="all", drop_cols=[], method_type="sqrt", N=None,
+def feature_transformation(idf, list_of_cols="all", drop_cols=[], method_type="sqrt", N=None,
                            output_mode="replace",print_impact=False):
     '''
-    :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_cols: List of numerical columns to encode e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
@@ -1704,10 +1699,9 @@ def feature_transformation(spark, idf, list_of_cols="all", drop_cols=[], method_
     return odf
 
 
-def boxcox_transformation(spark, idf, list_of_cols="all", drop_cols=[], boxcox_lambda=None,
+def boxcox_transformation(idf, list_of_cols="all", drop_cols=[], boxcox_lambda=None,
                            output_mode="replace",print_impact=False):
     '''
-    :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_cols: List of numerical columns to encode e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
@@ -1915,79 +1909,10 @@ def outlier_categories(spark, idf, list_of_cols='all', drop_cols=[], coverage=1.
             len(list_of_cols), False)
 
     return odf
+    
 
-
-def declare_missing(spark, idf, list_of_cols='all', drop_cols=[], 
-                    missing_values=[], output_mode="replace", print_impact=False):
+def expression_parser(idf, list_of_expr, postfix="", print_impact=False):
     """
-    :param spark: Spark Session
-    :param idf: Input Dataframe
-    :param list_of_cols: List of columns to transform e.g., ["col1","col2"].
-                         Alternatively, columns can be specified in a string format,
-                         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-                         "all" can be passed to include all (non-array) columns for analysis.
-                         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
-                         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
-    :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
-                      Alternatively, columns can be specified in a string format,
-                      where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    :param missing_values: List of values to be replaced by null.
-                        Alternatively, values can be specified in a string format,
-                       where different values are separated by pipe delimiter “|” e.g., "val1|val2".
-    :param output_mode: "replace", "append".
-                         “replace” option replaces original columns with transformed column. “append” option append transformed
-                         column to the input dataset with a postfix "_declared" e.g. column X is appended as X_declared.
-    :return: Transformed Dataframe
-    """
-    if list_of_cols == 'all':
-        list_of_cols = idf.columns
-    elif isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split('|')]
-    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
-    
-    if (any(x not in idf.columns for x in list_of_cols)):
-        raise TypeError('Invalid input for Column(s)')
-    if len(list_of_cols) == 0:
-        warnings.warn("No Value declared as missing - No column(s) to transform")
-        return idf
-    
-    if isinstance(missing_values, str):
-        missing_values = [x.strip() for x in missing_values.split('|')]
-    
-    odf = idf
-    for i in list_of_cols:
-        modify_col = ((i + "_declared") if (output_mode == "append") else i)
-        odf = odf.withColumn(modify_col, F.when(F.col(i).isin(missing_values), None).otherwise(F.col(i)))
-    
-    if output_mode == 'append':
-        output_cols = [(i+"_declared") for i in list_of_cols]
-        idf_missing = missingCount_computation(spark, idf, list_of_cols).select('attribute', F.col("missing_count").alias("missingCount_before"))
-        odf_missing = missingCount_computation(spark, odf, output_cols).select('attribute', F.col("missing_count").alias("missingCount_after"))
-        odf_print = idf_missing\
-                  .join(odf_missing.withColumnRenamed('attribute', 'attribute_after') \
-                                 .withColumn('attribute', F.expr("substring(attribute_after, 1, length(attribute_after)-8)")), 
-                      'attribute', 'inner')
-        same_cols = odf_print.where(F.col('missingCount_before')==F.col('missingCount_after'))\
-            .select('attribute_after').rdd.flatMap(lambda x: x).collect()
-        odf = odf.drop(*same_cols)
-        odf_print = odf_print.where(F.col('missingCount_before')!=F.col('missingCount_after'))
-
-    if print_impact:
-        if output_mode == 'replace':
-            output_cols = list_of_cols
-            idf_missing = missingCount_computation(spark, idf, list_of_cols).select('attribute', F.col("missing_count").alias("missingCount_before"))
-            odf_missing = missingCount_computation(spark, odf, output_cols).select('attribute', F.col("missing_count").alias("missingCount_after"))
-            odf_print = idf_missing.join(odf_missing, 'attribute', 'inner')
-        odf_print.show(len(list_of_cols), False)
-    
-    return odf
-    
-
-def expression_parser(spark, idf, list_of_expr, postfix="", print_impact=False):
-    """
-    :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_expr: List of expressions to evaluate as new features e.g., ["expr1","expr2"].
                          Alternatively, expressions can be specified in a string format,
