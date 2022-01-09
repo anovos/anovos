@@ -313,17 +313,23 @@ def cat_to_num_unsupervised(spark, idf, list_of_cols='all', drop_cols=[], method
             uniq_cats = idf.select(i).distinct().count()
             if uniq_cats > cardinality_threshold:
                 skipped_cols.append(i)
+                selected_cols = [e for e in odf.columns if e not in (i + '_vec', i + '_index', 'tmp')]
+                odf = odf.select(selected_cols)
                 continue
-            selected_cols = selected_cols + ["tmp"] + [i + "_" + str(j) for j in range(0, uniq_cats)]
-            odf = odf.withColumn("tmp", f_vector_to_array(i + '_vec')).rdd.map(lambda x: (*x, *x["tmp"])).toDF(selected_cols)
+            odf_schema = odf.schema
+            odf_schema = odf_schema.add(T.StructField("tmp",T.ArrayType(T.IntegerType())))
+            for j in range(0, uniq_cats):
+                odf_schema = odf_schema.add(T.StructField(i + "_" + str(j),T.IntegerType()))
+            odf = odf.withColumn("tmp", f_vector_to_array(i + '_vec')).rdd.map(lambda x: (*x, *x["tmp"])).toDF(schema=odf_schema)
             if output_mode == 'replace':
                 selected_cols = [e for e in odf.columns if e not in (i, i + '_vec', i + '_index', 'tmp')]
             else:
                 selected_cols = [e for e in odf.columns if e not in (i + '_vec', i + '_index', 'tmp')]
             odf = odf.select(selected_cols)
-            if skipped_cols:
-                warnings.warn(
-                    "Columns dropped from one-hot encoding due to high cardinality: " + (',').join(skipped_cols))
+            write_dataset(odf, "/tmp/", "parquet",{'mode':'overwrite'})
+        if skipped_cols:
+            warnings.warn(
+                "Columns dropped from one-hot encoding due to high cardinality: " + (',').join(skipped_cols))
     else:
         odf = odf_indexed
         for i in list_of_cols:
