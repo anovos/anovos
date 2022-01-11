@@ -21,9 +21,36 @@ default_template = dp.HTML(
     '<html><img src="https://mobilewalla-anovos.s3.amazonaws.com/anovos.png" style="height:100px;display:flex;margin:auto;float:right"></img></html>'), dp.Text(
     "# ML-Anovos Report")
 
+def stats_args(path, func):
+    output = {}
+    mainfunc_to_args = {'biasedness_detection': ['stats_mode'],
+                        'IDness_detection': ['stats_unique'],
+                        'outlier_detection': ['stats_unique'],
+                        'correlation_matrix': ['stats_unique'],
+                        'nullColumns_detection': ['stats_unique', 'stats_mode', 'stats_missing'],
+                        'variable_clustering': ['stats_unique', 'stats_mode']}
+    args_to_statsfunc = {'stats_unique': 'measures_of_cardinality', 'stats_mode': 'measures_of_centralTendency',
+                         'stats_missing': 'measures_of_counts'}
+
+    for arg in mainfunc_to_args.get(func, []):
+        output[arg] = {'file_path': (ends_with(path) + args_to_statsfunc[arg] + ".csv"),
+                           'file_type': 'csv', 'file_configs': {'header': True, 'inferSchema': True}}
+
+    return output
+
 
 def anovos_basic_report(spark, idf, id_col='', label_col='', event_label='', output_path='.', local_or_emr='local',
-                        print_impact=False):
+                        print_impact=True):
+    """
+    :param spark: Spark Session
+    :param idf: Input Dataframe
+    :param id_col: ID column
+    :param label_col: Label/Target column
+    :param event_label: Value of (positive) event (i.e label 1)
+    :param output_path: File Path for saving metrics and basic report
+    :param local_or_emr: "local" (default), "emr"
+                         "emr" if the files are read from or written in AWS s3
+    """
     global num_cols
     global cat_cols
 
@@ -46,9 +73,11 @@ def anovos_basic_report(spark, idf, id_col='', label_col='', event_label='', out
         if func in SG_funcs:
             stats = func(spark, idf)
         elif func in (QC_rows_funcs + QC_cols_funcs):
-            stats = func(spark, idf)[1]
+            extra_args = stats_args(output_path, func.__name__)
+            stats = func(spark, idf, **extra_args)[1]
         elif func in AA_funcs:
-            stats = func(spark, idf, drop_cols=id_col)
+            extra_args = stats_args(output_path, func.__name__)
+            stats = func(spark, idf, drop_cols=id_col, **extra_args)
         elif label_col:
             if func in AT_funcs:
                 stats = func(spark, idf, label_col=label_col, event_label=event_label)
@@ -57,9 +86,13 @@ def anovos_basic_report(spark, idf, id_col='', label_col='', event_label='', out
 
         stats.toPandas().to_csv(ends_with(local_path) + func.__name__ + ".csv", index=False)
 
+        if local_or_emr == 'emr':
+            bash_cmd = "aws s3 cp " + ends_with(local_path) + func.__name__ + ".csv " + ends_with(output_path)
+            output = subprocess.check_output(['bash', '-c', bash_cmd])
+
         if print_impact:
             print(func.__name__, ":\n")
-            stats = spark.read.csv(ends_with(local_path) + func.__name__ + ".csv", header=True, inferSchema=True)
+            stats = spark.read.csv(ends_with(output_path) + func.__name__ + ".csv", header=True, inferSchema=True)
             stats.show()
 
     def remove_u_score(col):
@@ -203,5 +236,5 @@ def anovos_basic_report(spark, idf, id_col='', label_col='', event_label='', out
         .save(ends_with(local_path) + "basic_report.html", open=True)
 
     if local_or_emr == 'emr':
-        bash_cmd = "aws s3 cp --recursive " + ends_with(local_path) + " " + ends_with(output_path)
+        bash_cmd = "aws s3 cp " + ends_with(local_path) + "basic_report.html " + ends_with(output_path)
         output = subprocess.check_output(['bash', '-c', bash_cmd])

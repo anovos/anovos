@@ -1,0 +1,39 @@
+name: Unit Test
+
+on:
+  push:
+
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.7'
+
+      - uses: actions/setup-java@v1
+        with:
+          java-version: '8'
+
+      - uses: vemonet/setup-spark@v1
+        with:
+          spark-version: '2.4.8'
+          hadoop-version: '2.7'
+
+      - name: Checkout code
+        uses: actions/checkout@master
+
+      - name: Ensure clean environment
+        run: |
+          make clean build
+
+      - name: Install Python requirements
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov wheel
+          pip install -r requirements.txt
+
+      - name: Run the unit tests
+        run: |
+          pytest -v --cov=src/main/anovos src/test/

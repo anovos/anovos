@@ -1,9 +1,14 @@
 import sys
+import os
 
 import pytest
 from pyspark.sql import SparkSession
 
+# TODO: Why does this need to be included?
 sys.path.insert(0, './dist/anovos.zip')
+# TODO: Set up paths in a more elegant way
+sys.path.insert(0, os.path.abspath("./main"))
+print(sys.path)
 
 
 @pytest.fixture(scope="session")

@@ -9,7 +9,8 @@ sudo docker build ./docker-stacks/minimal-notebook -t minimal-notebook:3.7 --bui
 sudo docker build ./docker-stacks/scipy-notebook -t scipy-notebook:3.7 --build-arg BASE_CONTAINER=minimal-notebook:3.7
 
 # Build the pyspark-notebook image with Python 3.7.x, Spark 2.4.8, Java 8, and Hadoop 2.7 as required by Anovos (https://gitlab.com/mwengr/mw_ds_feature_machine/-/blob/master/Dockerfile#L9)
-sudo docker build ./docker-stacks/pyspark-notebook -t pyspark-notebook:anovos --build-arg BASE_CONTAINER=scipy-notebook:3.7 --build-arg SPARK_VERSION=2.4.8 --build-arg OPENJDK_VERSION=8 --build-arg HADOOP_VERSION=2.7 --build-arg SPARK_CHECKSUM=752C4D4D8FE1D72F5BA01F40D22DF35698585BD17ED4749F6065B0039FF40DB7FF8EA87DC0FB5B1EC03871E427A002581EC12F486392B92B88643D4243908E55
+sudo docker build ./docker-stacks/pyspark-notebook -t pyspark-notebook:anovos --build-arg BASE_CONTAINER=scipy-notebook:3.7 --build-arg spark_version=2.4.8 --build-arg openjdk_version=8 --build-arg hadoop_version=2.7 --build-arg spark_checksum=752C4D4D8FE1D72F5BA01F40D22DF35698585BD17ED4749F6065B0039FF40DB7FF8EA87DC0FB5B1EC03871E427A002581EC12F486392B92B88643D4243908E55
+
 
 # Build the examples image
 sudo docker build . -t anovos-examples

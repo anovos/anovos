@@ -28,10 +28,10 @@ def test_nullRows_detection(spark_session):
     assert result_df[0].count() == 3
     assert result_df[1].where(F.col("null_cols_count") == 0).toPandas().to_dict('list')['row_count'][0] == 3
     assert result_df[1].where(F.col("null_cols_count") == 0).toPandas().to_dict('list')['row_pct'][0] == 0.75
-    assert result_df[1].where(F.col("null_cols_count") == 0).toPandas().to_dict('list')['flagged'][0] == 0
+    assert result_df[1].where(F.col("null_cols_count") == 0).toPandas().to_dict('list')['treated'][0] == 0
     assert result_df[1].where(F.col("null_cols_count") == 2).toPandas().to_dict('list')['row_count'][0] == 1
     assert result_df[1].where(F.col("null_cols_count") == 2).toPandas().to_dict('list')['row_pct'][0] == 0.25
-    assert result_df[1].where(F.col("null_cols_count") == 2).toPandas().to_dict('list')['flagged'][0] == 1
+    assert result_df[1].where(F.col("null_cols_count") == 2).toPandas().to_dict('list')['treated'][0] == 1
 
 
 def test_duplicate_detection(spark_session):
@@ -55,6 +55,8 @@ def test_duplicate_detection(spark_session):
     assert result_df1[0].count() == 4
     assert result_df1[1].where(F.col("metric") == "rows_count").toPandas().to_dict('list')['value'][0] == 5
     assert result_df1[1].where(F.col("metric") == "unique_rows_count").toPandas().to_dict('list')['value'][0] == 4
+    assert result_df1[1].where(F.col("metric") == "duplicate_rows").toPandas().to_dict('list')['value'][0] == 1
+    assert result_df1[1].where(F.col("metric") == "duplicate_pct").toPandas().to_dict('list')['value'][0] == 0.20
 
 
 def test_invalidEntries_detection(spark_session):
@@ -97,12 +99,19 @@ def test_IDness_detection(spark_session):
     assert test_df3.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['income'][0] == 9000
     assert test_df3.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['education'][0] == 'HS-grad'
 
-    result_df3 = IDness_detection(spark_session, test_df3, drop_cols=['ifa'], treatment=True, treatment_threshold=1.0)
+    result_df3 = IDness_detection(spark_session, test_df3, drop_cols=['ifa'], treatment=False, treatment_threshold=1.0)
 
-    assert len(result_df3[0].columns) == 3
+    assert len(result_df3[0].columns) == 4
     assert result_df3[1].where(F.col("attribute") == "education").toPandas().to_dict('list')['unique_values'][0] == 4
     assert result_df3[1].where(F.col("attribute") == "education").toPandas().to_dict('list')['IDness'][0] == 1.0
     assert result_df3[1].where(F.col("attribute") == "education").toPandas().to_dict('list')['flagged'][0] == 1
+
+    result_df3 = IDness_detection(spark_session, test_df3, drop_cols=['ifa'], treatment=True, treatment_threshold=1.0)
+
+    assert len(result_df3[0].columns) == 1
+    assert result_df3[1].where(F.col("attribute") == "education").toPandas().to_dict('list')['unique_values'][0] == 4
+    assert result_df3[1].where(F.col("attribute") == "education").toPandas().to_dict('list')['IDness'][0] == 1.0
+    assert result_df3[1].where(F.col("attribute") == "education").toPandas().to_dict('list')['treated'][0] == 1
 
 
 def test_biasedness_detection(spark_session):
@@ -121,12 +130,19 @@ def test_biasedness_detection(spark_session):
     assert test_df4.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['income'][0] == 9000
     assert test_df4.where(F.col("ifa") == "27520a").toPandas().to_dict('list')['education'][0] == 'HS-grad'
 
+    result_df4 = biasedness_detection(spark_session, test_df4, treatment=False, treatment_threshold=0.8)
+
+    assert len(result_df4[0].columns) == 4
+    assert result_df4[1].where(F.col("attribute") == "education").toPandas().to_dict('list')['mode'][0] == 'HS-grad'
+    assert result_df4[1].where(F.col("attribute") == "education").toPandas().to_dict('list')['mode_pct'][0] == 0.8
+    assert result_df4[1].where(F.col("attribute") == "education").toPandas().to_dict('list')['flagged'][0] == 1
+
     result_df4 = biasedness_detection(spark_session, test_df4, treatment=True, treatment_threshold=0.8)
 
     assert len(result_df4[0].columns) == 3
     assert result_df4[1].where(F.col("attribute") == "education").toPandas().to_dict('list')['mode'][0] == 'HS-grad'
     assert result_df4[1].where(F.col("attribute") == "education").toPandas().to_dict('list')['mode_pct'][0] == 0.8
-    assert result_df4[1].where(F.col("attribute") == "education").toPandas().to_dict('list')['flagged'][0] == 1
+    assert result_df4[1].where(F.col("attribute") == "education").toPandas().to_dict('list')['treated'][0] == 1
 
 
 def test_imputation_MMM(spark_session):

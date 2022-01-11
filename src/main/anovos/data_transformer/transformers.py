@@ -774,7 +774,7 @@ def imputation_MMM(spark, idf, list_of_cols="missing", drop_cols=[], method_type
         return idf
     if any(x not in num_cols + cat_cols for x in list_of_cols):
         raise TypeError('Invalid input for Column(s)')
-    if method_type not in ('mean', 'median'):
+    if method_type not in ('mode', 'mean', 'median'):
         raise TypeError('Invalid input for method_type')
     if output_mode not in ('replace', 'append'):
         raise TypeError('Invalid input for output_mode')
@@ -790,20 +790,44 @@ def imputation_MMM(spark, idf, list_of_cols="missing", drop_cols=[], method_type
                 odf = odf.withColumn(i, F.col(i).cast(T.DoubleType()))
                 recast_cols.append(i + "_imputed")
                 recast_type.append(get_dtype(idf, i))
+                
+        # For mode imputation 
+        if method_type == 'mode':
+            if stats_mode == {}:
+                parameters = [str((idf.select(i).dropna().groupby(i).count().orderBy("count", ascending=False).first() 
+                                   or [None])[0]) for i in num_cols]
+            else:
+                mode_df = read_dataset(spark, **stats_mode).replace('None', None)
+                mode_df_cols = list(mode_df.select('attribute').toPandas()['attribute'])
+                parameters = []
+                for i in num_cols:
+                    if i not in mode_df_cols:
+                        parameters.append(str((idf.select(i).dropna().groupby(i).count().orderBy("count", ascending=False).first() 
+                                               or [None])[0]))
+                    else:
+                        parameters.append(mode_df.where(F.col('attribute') == i).select('mode').rdd.flatMap(list).collect()[0])  
 
-        if pre_existing_model == True:
-            imputerModel = ImputerModel.load(model_path + "/imputation_MMM/num_imputer-model")
-        else:
-            imputer = Imputer(strategy=method_type, inputCols=num_cols,
-                              outputCols=[(e + "_imputed") for e in num_cols])
-            imputerModel = imputer.fit(odf)
+            for index, i in enumerate(num_cols):
+                odf = odf.withColumn(i + "_imputed", F.when(F.col(i).isNull(), parameters[index]).otherwise(F.col(i)))
+            
+        else: #For mean, median imputation         
+            # Building new imputer model or uploading the existing model
+            if pre_existing_model == True:
+                imputerModel = ImputerModel.load(model_path + "/imputation_MMM/num_imputer-model")
+            else:
+                imputer = Imputer(strategy=method_type, inputCols=num_cols,
+                                  outputCols=[(e + "_imputed") for e in num_cols])
+                imputerModel = imputer.fit(odf)
 
-        odf = imputerModel.transform(odf)
-        for i, j in zip(recast_cols, recast_type):
-            odf = odf.withColumn(i, F.col(i).cast(j))
+            # Applying model            
+            # odf = recast_column(imputerModel.transform(odf), recast_cols, recast_type)
+            odf = imputerModel.transform(odf)
+            for i, j in zip(recast_cols, recast_type):
+                odf = odf.withColumn(i, F.col(i).cast(j))
 
-        if (pre_existing_model == False) & (model_path != "NA"):
-            imputerModel.write().overwrite().save(model_path + "/imputation_MMM/num_imputer-model")
+            # Saving model if required
+            if (pre_existing_model == False) & (model_path != "NA"):
+                imputerModel.write().overwrite().save(model_path + "/imputation_MMM/num_imputer-model")
 
     if len(cat_cols) > 0:
         if pre_existing_model:
