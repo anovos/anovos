@@ -16,25 +16,14 @@ from anovos.data_analyzer.stats_generator import missingCount_computation, uniqu
 from anovos.data_ingest.data_ingest import read_dataset, recast_column
 from anovos.shared.utils import attributeType_segregation, get_dtype
 
-from sklearn import cluster
-from sklearn.linear_model import Ridge
-from sklearn.kernel_ridge import KernelRidge
-from sklearn.utils.validation import column_or_1d
-from sklearn.feature_selection import SelectKBest, mutual_info_classif
 from sklearn.experimental import enable_iterative_imputer
 from sklearn.impute import KNNImputer, IterativeImputer
 
 import tensorflow
-import tensorflow as tf
-from tensorflow import keras
 from tensorflow.keras.models import Sequential, load_model, save_model, Model
 from tensorflow.keras.layers import Dense, Input, BatchNormalization, LeakyReLU
-
-import imp
 import os
-import math
 import copy
-import joblib
 import pickle
 import random
 import tempfile
@@ -43,11 +32,7 @@ import subprocess
 import pandas as pd
 import numpy as np
 from scipy import stats
-from operator import mod
-from typing import Iterable 
 from itertools import chain
-from matplotlib import pyplot
-
 
 def attribute_binning(spark, idf, list_of_cols='all', drop_cols=[], method_type="equal_range", bin_size=10,
                       bin_dtype="numerical",
