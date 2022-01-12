@@ -310,12 +310,15 @@ def cat_to_num_unsupervised(spark, idf, list_of_cols='all', drop_cols=[], method
 
         f_vector_to_array = F.udf(vector_to_array, T.ArrayType(T.IntegerType()))
 
+        if stats_unique != {}:
+            stats_df = read_dataset(spark, **stats_unique)
         skipped_cols = []
         for i in list_of_cols:
             if stats_unique == {}:
                 uniq_cats = idf.select(i).distinct().count()
             else:
-                uniq_cats = read_dataset(spark, **stats_unique).where(F.col("attribute") == i).select("unique_values").rdd.flatMap(lambda x: x).collect()[0]   
+                uniq_cats = stats_df.where(F.col("attribute") == i).select("unique_values").rdd.flatMap(lambda x: x).collect()[0]
+
             if uniq_cats > cardinality_threshold:
                 skipped_cols.append(i)
                 odf = odf.drop(i + '_vec', i + '_index')
@@ -325,6 +328,7 @@ def cat_to_num_unsupervised(spark, idf, list_of_cols='all', drop_cols=[], method
             for j in range(0, uniq_cats):
                 odf_schema = odf_schema.add(T.StructField(i + "_" + str(j),T.IntegerType()))
             odf = odf.withColumn("tmp", f_vector_to_array(i + '_vec')).rdd.map(lambda x: (*x, *x["tmp"])).toDF(schema=odf_schema)
+
             if output_mode == 'replace':
                 odf = odf.drop(i, i + '_vec', i + '_index', 'tmp')
             else:
