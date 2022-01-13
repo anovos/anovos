@@ -31,27 +31,39 @@ def write_dataset(idf, file_path, file_type, file_configs={}):
                       Avro data source requires an external package to run, which can be configured with
                       spark-submit (--packages org.apache.spark:spark-avro_2.11:2.4.0).
     :param file_configs: This argument is passed in dictionary format as key/value pairs.
-                         Some of the potential keys are header, delimiter, mode, compression, repartition.
+                         Some of the potential keys are header, delimiter, column_order, mode, compression, repartition.
+                         column_order - list of columns in the order in which dataframe is to be written.
                          compression options - uncompressed, gzip (doesn't work with avro), snappy (only valid for parquet)
                          mode options - error (default), overwrite, append
                          repartition - None (automatic partitioning) or an integer value ()
-                         e.g. {"header":"True","delimiter":",",'compression':'snappy','mode':'overwrite','repartition':'10'}.
+                         e.g. {"header":"True","delimiter":",",'column_order':[col1, col2, col3],'compression':'snappy','mode':'overwrite','repartition':'10'}.
     :return: None (Dataframe saved)
     """
+
+    column_order = file_configs.pop('column_order', None)
+    if column_order is None:
+        column_order = idf.columns
+    else:
+        if not isinstance(column_order, list):
+            raise TypeError('Invalid input type for column_order argument')
+        if len(column_order) != len(idf.columns):
+            raise ValueError('Count of column(s) specified in column_order argument do not match Dataframe')
+        diff_cols = [x for x in column_order if x not in set(idf.columns)]
+        if diff_cols:
+            raise ValueError('Column(s) specified in column_order argument not found in Dataframe: ' + str(diff_cols))
 
     mode = file_configs['mode'] if 'mode' in file_configs else 'error'
     repartition = int(file_configs['repartition']) if 'repartition' in file_configs else None
 
     if repartition is None:
-        idf.write.format(file_type).options(**file_configs).save(file_path, mode=mode)
+        idf.select(column_order).write.format(file_type).options(**file_configs).save(file_path, mode=mode)
     else:
         exist_parts = idf.rdd.getNumPartitions()
         req_parts = int(repartition)
         if req_parts > exist_parts:
-            idf.repartition(req_parts).write.format(file_type).options(**file_configs).save(file_path, mode=mode)
+            idf.select(column_order).repartition(req_parts).write.format(file_type).options(**file_configs).save(file_path, mode=mode)
         else:
-            idf.coalesce(req_parts).write.format(file_type).options(**file_configs).save(file_path, mode=mode)
-
+            idf.select(column_order).coalesce(req_parts).write.format(file_type).options(**file_configs).save(file_path, mode=mode)
 
 def concatenate_dataset(*idfs, method_type='name'):
     """
