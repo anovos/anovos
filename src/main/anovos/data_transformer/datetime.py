@@ -101,7 +101,7 @@ def timestamp_to_unix (spark, idf, list_of_cols, precision="s", tz='local', outp
     list_of_cols = argument_checker('timestamp_to_unix', 
                                     {'list_of_cols': list_of_cols, 'all_columns': idf.columns,
                                      'output_mode': output_mode, 'precision': precision, 'tz': tz})
-    if list_of_cols:
+    if not list_of_cols:
         return idf
     
     localtz = spark.sql("SET spark.sql.session.timeZone")\
@@ -143,7 +143,7 @@ def unix_to_timestamp (spark, idf, list_of_cols, precision="s", tz='local', outp
     list_of_cols = argument_checker('unix_to_timestamp', 
                                     {'list_of_cols': list_of_cols, 'all_columns': idf.columns,
                                      'output_mode': output_mode, 'precision': precision, 'tz': tz})
-    if list_of_cols:
+    if not list_of_cols:
         return idf
     
     localtz = spark.sql("SET spark.sql.session.timeZone")\
@@ -177,7 +177,7 @@ def timezone_conversion(spark, idf, list_of_cols, given_tz, output_tz, output_mo
     """
     list_of_cols = argument_checker('timezone_conversion', {'list_of_cols': list_of_cols, 'all_columns': idf.columns,
                                     'output_mode': output_mode})
-    if list_of_cols:
+    if not list_of_cols:
         return idf
     
     localtz = spark.sql("SET spark.sql.session.timeZone")\
@@ -214,7 +214,7 @@ def string_to_timestamp(idf, list_of_cols, date_format="%Y-%m-%d %H:%M:%S", outp
     list_of_cols = argument_checker('string_to_timestamp', 
                                     {'list_of_cols': list_of_cols, 'all_columns': idf.columns,
                                      'output_mode': output_mode, 'output_type': output_type})
-    if list_of_cols:
+    if not list_of_cols:
             return idf
     
     def conversion(col, form):
@@ -247,7 +247,7 @@ def timestamp_to_string (idf, list_of_cols, date_format="%Y-%m-%d %H:%M:%S", out
     """
     list_of_cols = argument_checker('timestamp_to_string', 
                                     {'list_of_cols': list_of_cols, 'all_columns': idf.columns, 'output_mode': output_mode})
-    if list_of_cols:
+    if not list_of_cols:
             return idf
 
     def conversion(col, form):
@@ -279,7 +279,7 @@ def dateformat_conversion(idf, list_of_cols, input_format="%Y-%m-%d %H:%M:%S",
     """
     list_of_cols = argument_checker('dateformat_conversion', 
                                     {'list_of_cols': list_of_cols, 'all_columns': idf.columns, 'output_mode': output_mode})
-    if list_of_cols:
+    if not list_of_cols:
             return idf
     
     odf_tmp = string_to_timestamp(idf, list_of_cols, date_format=input_format, output_type="ts", output_mode=output_mode)
@@ -315,7 +315,7 @@ def timeUnits_extraction(idf, list_of_cols, units, output_mode="append"):
         
     list_of_cols = argument_checker('timeUnits_extraction', {'list_of_cols': list_of_cols, 'all_columns': idf.columns, 
                                                             'output_mode': output_mode, 'units': units})
-    if list_of_cols:
+    if not list_of_cols:
         return idf
 
     odf = idf
@@ -380,7 +380,7 @@ def time_elapsed(idf, list_of_cols, unit, output_mode="append"):
     """
     list_of_cols = argument_checker('time_elapsed', 
                                     {'list_of_cols': list_of_cols, 'all_columns': idf.columns, 'output_mode': output_mode})
-    if list_of_cols:
+    if not list_of_cols:
             return idf
     
     factor_mapping = {'second': 1,  'minute': 60, 'hour': 3600, 'day': 86400, 
@@ -420,7 +420,7 @@ def adding_timeUnits(idf, list_of_cols, unit, unit_value, output_mode="append"):
     """
     list_of_cols = argument_checker('adding_timeUnits', 
                                     {'list_of_cols': list_of_cols, 'all_columns': idf.columns, 'output_mode': output_mode, 'unit': unit})
-    if list_of_cols:
+    if not list_of_cols:
         return idf
 
     odf = idf
@@ -454,7 +454,7 @@ def timestamp_comparison(idf, list_of_cols, comparison_type, comparison_value,
     list_of_cols = argument_checker('timestamp_comparison', 
                                     {'list_of_cols': list_of_cols, 'all_columns': idf.columns, 
                                      'output_mode': output_mode, 'comparison_type': comparison_type})
-    if list_of_cols:
+    if not list_of_cols:
         return idf
 
 
@@ -490,7 +490,7 @@ def start_of_month(idf, list_of_cols, output_mode="append"):
     """
     list_of_cols = argument_checker('start_of_month', 
                                     {'list_of_cols': list_of_cols, 'all_columns': idf.columns, 'output_mode': output_mode})
-    if list_of_cols:
+    if not list_of_cols:
         return idf
 
     odf = idf
@@ -515,7 +515,7 @@ def is_monthStart(idf, list_of_cols, output_mode="append"):
     """
     list_of_cols = argument_checker('is_monthStart', 
                                     {'list_of_cols': list_of_cols, 'all_columns': idf.columns, 'output_mode': output_mode})
-    if list_of_cols:
+    if not list_of_cols:
         return idf
         
     odf = start_of_month(idf, list_of_cols, output_mode="append")
@@ -542,7 +542,7 @@ def end_of_month(idf, list_of_cols, output_mode="append"):
     """
     list_of_cols = argument_checker('end_of_month', 
                                     {'list_of_cols': list_of_cols, 'all_columns': idf.columns, 'output_mode': output_mode})
-    if list_of_cols:
+    if not list_of_cols:
         return idf
         
     odf = idf
@@ -567,7 +567,7 @@ def is_monthEnd(idf, list_of_cols, output_mode="append"):
     """
     list_of_cols = argument_checker('is_monthEnd', 
                                     {'list_of_cols': list_of_cols, 'all_columns': idf.columns, 'output_mode': output_mode})
-    if list_of_cols:
+    if not list_of_cols:
         return idf    
     
     odf = end_of_month(idf, list_of_cols, output_mode="append")
@@ -594,7 +594,7 @@ def start_of_year(idf, list_of_cols, output_mode="append"):
     """
     list_of_cols = argument_checker('start_of_year', 
                                     {'list_of_cols': list_of_cols, 'all_columns': idf.columns, 'output_mode': output_mode})
-    if list_of_cols:
+    if not list_of_cols:
         return idf
         
     odf = idf
@@ -619,7 +619,7 @@ def is_yearStart(idf, list_of_cols, output_mode="append"):
     """
     list_of_cols = argument_checker('is_yearStart', 
                                     {'list_of_cols': list_of_cols, 'all_columns': idf.columns, 'output_mode': output_mode})
-    if list_of_cols:
+    if not list_of_cols:
         return idf
             
     odf = start_of_year(idf, list_of_cols, output_mode="append")
@@ -646,7 +646,7 @@ def end_of_year(idf, list_of_cols, output_mode="append"):
     """
     list_of_cols = argument_checker('end_of_year', 
                                     {'list_of_cols': list_of_cols, 'all_columns': idf.columns, 'output_mode': output_mode})
-    if list_of_cols:
+    if not list_of_cols:
         return idf
            
     odf = idf
@@ -671,7 +671,7 @@ def is_yearEnd(idf, list_of_cols, output_mode="append"):
     """
     list_of_cols = argument_checker('is_yearEnd', 
                                     {'list_of_cols': list_of_cols, 'all_columns': idf.columns, 'output_mode': output_mode})
-    if list_of_cols:
+    if not list_of_cols:
         return idf
         
     odf = end_of_year(idf, list_of_cols, output_mode="append")
@@ -698,7 +698,7 @@ def start_of_quarter(idf, list_of_cols, output_mode="append"):
     """
     list_of_cols = argument_checker('start_of_quarter', 
                                     {'list_of_cols': list_of_cols, 'all_columns': idf.columns, 'output_mode': output_mode})
-    if list_of_cols:
+    if not list_of_cols:
         return idf
         
     odf = idf
@@ -723,7 +723,7 @@ def is_quarterStart(idf, list_of_cols, output_mode="append"):
     """
     list_of_cols = argument_checker('is_quarterStart', 
                                     {'list_of_cols': list_of_cols, 'all_columns': idf.columns, 'output_mode': output_mode})
-    if list_of_cols:
+    if not list_of_cols:
         return idf
           
     odf = start_of_quarter(idf, list_of_cols, output_mode="append")
@@ -750,7 +750,7 @@ def end_of_quarter(idf, list_of_cols, output_mode="append"):
     """
     list_of_cols = argument_checker('end_of_quarter', 
                                     {'list_of_cols': list_of_cols, 'all_columns': idf.columns, 'output_mode': output_mode})
-    if list_of_cols:
+    if not list_of_cols:
         return idf
         
     odf = idf
@@ -776,7 +776,7 @@ def is_quarterEnd(idf, list_of_cols, output_mode="append"):
     """
     list_of_cols = argument_checker('is_quarterEnd', 
                                     {'list_of_cols': list_of_cols, 'all_columns': idf.columns, 'output_mode': output_mode})
-    if list_of_cols:
+    if not list_of_cols:
         return idf
         
     odf = end_of_quarter(idf, list_of_cols, output_mode="append")
@@ -803,7 +803,7 @@ def is_yearFirstHalf(idf, list_of_cols, output_mode="append"):
     """
     list_of_cols = argument_checker('is_yearFirstHalf', 
                                     {'list_of_cols': list_of_cols, 'all_columns': idf.columns, 'output_mode': output_mode})
-    if list_of_cols:
+    if not list_of_cols:
         return idf
         
     odf = idf
@@ -832,7 +832,7 @@ def is_selectedHour(idf, list_of_cols, start_hour, end_hour, output_mode="append
     list_of_cols = argument_checker('is_selectedHour', 
                                     {'list_of_cols': list_of_cols, 'all_columns': idf.columns, 
                                      'start_hour': start_hour, 'end_hour': end_hour, 'output_mode': output_mode})
-    if list_of_cols:
+    if not list_of_cols:
         return idf
         
     odf = idf
@@ -864,7 +864,7 @@ def is_leapYear(idf, list_of_cols, output_mode="append"):
     """
     list_of_cols = argument_checker('is_leapYear', 
                                     {'list_of_cols': list_of_cols, 'all_columns': idf.columns, 'output_mode': output_mode})
-    if list_of_cols:
+    if not list_of_cols:
         return idf
         
     def check(year):
@@ -896,7 +896,7 @@ def is_weekend(idf, list_of_cols, output_mode="append"):
     """
     list_of_cols = argument_checker('is_weekend', 
                                     {'list_of_cols': list_of_cols, 'all_columns': idf.columns, 'output_mode': output_mode})
-    if list_of_cols:
+    if not list_of_cols:
         return idf
         
     odf = idf
@@ -937,7 +937,7 @@ def window_aggregation(idf, list_of_cols, list_of_aggs, order_col, window_type='
     list_of_cols = argument_checker('window_aggregation', 
                                     {'list_of_cols': list_of_cols, 'all_columns': idf.columns, 'list_of_aggs': list_of_aggs, 
                                     'output_mode': output_mode, 'window_type': window_type, 'window_size': window_size})
-    if list_of_cols:
+    if not list_of_cols:
         return idf
     
     odf = idf
@@ -995,7 +995,7 @@ def lagged_ts(idf, list_of_cols, lag, output_type='ts', tsdiff_unit='days', part
     list_of_cols = argument_checker('lagged_ts', 
                                     {'list_of_cols': list_of_cols, 'all_columns': idf.columns, 
                                      'lag': lag, 'output_type': output_type, 'output_mode': output_mode})
-    if list_of_cols:
+    if not list_of_cols:
         return idf
         
     odf = idf
