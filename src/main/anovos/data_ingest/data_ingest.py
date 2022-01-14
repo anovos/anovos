@@ -22,7 +22,7 @@ def read_dataset(spark, file_path, file_type, file_configs={}):
     return odf
 
 
-def write_dataset(idf, file_path, file_type, file_configs={}):
+def write_dataset(idf, file_path, file_type, file_configs={}, column_order=[]):
     """
     :param idf: Input Dataframe
     :param file_path: Path to output data (directory or filename).
@@ -36,22 +36,33 @@ def write_dataset(idf, file_path, file_type, file_configs={}):
                          mode options - error (default), overwrite, append
                          repartition - None (automatic partitioning) or an integer value ()
                          e.g. {"header":"True","delimiter":",",'compression':'snappy','mode':'overwrite','repartition':'10'}.
+    :param column_order: list of columns in the order in which Dataframe is to be written. If None or [] is specified, then the default order is applied.
     :return: None (Dataframe saved)
     """
+
+    if not column_order: 
+        column_order = idf.columns
+    else:
+        if not isinstance(column_order, list):
+            raise TypeError('Invalid input type for column_order argument')
+        if len(column_order) != len(idf.columns):
+            raise ValueError('Count of column(s) specified in column_order argument do not match Dataframe')
+        diff_cols = [x for x in column_order if x not in set(idf.columns)]
+        if diff_cols:
+            raise ValueError('Column(s) specified in column_order argument not found in Dataframe: ' + str(diff_cols))
 
     mode = file_configs['mode'] if 'mode' in file_configs else 'error'
     repartition = int(file_configs['repartition']) if 'repartition' in file_configs else None
 
     if repartition is None:
-        idf.write.format(file_type).options(**file_configs).save(file_path, mode=mode)
+        idf.select(column_order).write.format(file_type).options(**file_configs).save(file_path, mode=mode)
     else:
         exist_parts = idf.rdd.getNumPartitions()
         req_parts = int(repartition)
         if req_parts > exist_parts:
-            idf.repartition(req_parts).write.format(file_type).options(**file_configs).save(file_path, mode=mode)
+            idf.select(column_order).repartition(req_parts).write.format(file_type).options(**file_configs).save(file_path, mode=mode)
         else:
-            idf.coalesce(req_parts).write.format(file_type).options(**file_configs).save(file_path, mode=mode)
-
+            idf.select(column_order).coalesce(req_parts).write.format(file_type).options(**file_configs).save(file_path, mode=mode)
 
 def concatenate_dataset(*idfs, method_type='name'):
     """
