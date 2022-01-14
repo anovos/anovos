@@ -22,7 +22,7 @@ def read_dataset(spark, file_path, file_type, file_configs={}):
     return odf
 
 
-def write_dataset(idf, file_path, file_type, column_order=[], file_configs={}):
+def write_dataset(idf, file_path, file_type, file_configs={}, column_order=[]):
     """
     :param idf: Input Dataframe
     :param file_path: Path to output data (directory or filename).
@@ -30,13 +30,13 @@ def write_dataset(idf, file_path, file_type, column_order=[], file_configs={}):
     :param file_type: "csv", "parquet", "avro".
                       Avro data source requires an external package to run, which can be configured with
                       spark-submit (--packages org.apache.spark:spark-avro_2.11:2.4.0).
-    :param column_order: list of columns in the order in which Dataframe is to be written. If None or [] is specified, then the default order is applied.
     :param file_configs: This argument is passed in dictionary format as key/value pairs.
                          Some of the potential keys are header, delimiter, mode, compression, repartition.
                          compression options - uncompressed, gzip (doesn't work with avro), snappy (only valid for parquet)
                          mode options - error (default), overwrite, append
                          repartition - None (automatic partitioning) or an integer value ()
                          e.g. {"header":"True","delimiter":",",'compression':'snappy','mode':'overwrite','repartition':'10'}.
+    :param column_order: list of columns in the order in which Dataframe is to be written. If None or [] is specified, then the default order is applied.
     :return: None (Dataframe saved)
     """
 

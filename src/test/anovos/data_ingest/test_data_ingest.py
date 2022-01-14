@@ -19,17 +19,17 @@ def test_read_dataset(spark_session):
 
 def test_write_dataset(spark_session):
     df = read_dataset(spark_session, sample_parquet, "parquet")
-    write_dataset(df, sample_output_path, "parquet", file_configs={'mode': 'overwrite'})
+    write_dataset(df, sample_output_path, "parquet", {'mode': 'overwrite'})
     assert os.path.isfile(sample_output_path + "_SUCCESS")
-    write_dataset(df, sample_output_path, "parquet", None, file_configs={'mode': 'overwrite'})
+    write_dataset(df, sample_output_path, "parquet", {'mode': 'overwrite'}, None)
     assert os.path.isfile(sample_output_path + "_SUCCESS")
-    write_dataset(df, sample_output_path, "parquet", [], file_configs={'mode': 'overwrite'})
+    write_dataset(df, sample_output_path, "parquet", {'mode': 'overwrite'}, [])
     assert os.path.isfile(sample_output_path + "_SUCCESS")
     column_order1 = ['ifa', 'age', 'workclass', 'fnlwgt', 'logfnl', 'education', 'education-num', 'marital-status', 'income', 'occupation', 'relationship', 'race', 'sex', 'capital-gain', 'capital-loss', 'hours-per-week', 'native-country']
-    write_dataset(df, sample_output_path, "parquet", column_order=column_order1, file_configs={'mode': 'overwrite'})
+    write_dataset(df, file_path=sample_output_path, file_type="parquet", file_configs={'mode': 'overwrite'}, column_order=column_order1)
     assert os.path.isfile(sample_output_path + "_SUCCESS")
     column_order2=df.columns
-    write_dataset(df, sample_output_path, "parquet", column_order2, {'mode': 'overwrite'})
+    write_dataset(df, sample_output_path, "parquet", {'mode': 'overwrite'}, column_order2)
     assert os.path.isfile(sample_output_path + "_SUCCESS")
 
 def test_concatenate_dataset(spark_session):
