@@ -256,6 +256,7 @@ def cat_to_num_unsupervised(idf, list_of_cols='all', drop_cols=[], method_type=1
                         In one-hot encoding, every unique value in the column will be added in a form of dummy/binary column.
     :param index_order: "frequencyDesc", "frequencyAsc", "alphabetDesc", "alphabetAsc".
                         Valid only for Label Encoding method_type.
+    :param cardinality_threshold: Defines threshold to skip columns with higher cardinality values from encoding. Default value is 100.
     :param pre_existing_model: Boolean argument – True or False. True if encoding model exists already, False Otherwise.
     :param model_path: If pre_existing_model is True, this argument is path for referring the pre-saved model.
                        If pre_existing_model is False, this argument can be used for saving the model.
@@ -263,6 +264,9 @@ def cat_to_num_unsupervised(idf, list_of_cols='all', drop_cols=[], method_type=1
     :param output_mode: "replace", "append".
                         “replace” option replaces original columns with transformed column. “append” option append transformed
                         column to the input dataset with a postfix "_index" e.g. column X is appended as X_index.
+    :param stats_unique: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
+                         to read pre-saved statistics on unique value count i.e. if measures_of_cardinality or
+                         uniqueCount_computation (data_analyzer.stats_generator module) has been computed & saved before.
     :return: Encoded Dataframe
     """
 
@@ -317,24 +321,39 @@ def cat_to_num_unsupervised(idf, list_of_cols='all', drop_cols=[], method_type=1
         odf_encoded = encoder.fit(odf_indexed).transform(odf_indexed)
 
         odf = odf_encoded
-        selected_cols = odf_encoded.columns
+        def vector_to_array(v):
+            v = DenseVector(v)
+            new_array = list([int(x) for x in v])
+            return new_array
+
+        f_vector_to_array = F.udf(vector_to_array, T.ArrayType(T.IntegerType()))
+
+        if stats_unique != {}:
+            stats_df = read_dataset(spark, **stats_unique)
+        skipped_cols = []
         for i in list_of_cols:
-            uniq_cats = idf.select(i).distinct().count()
-
-            def vector_to_array(v):
-                v = DenseVector(v)
-                new_array = list([int(x) for x in v])
-                return new_array
-
-            f_vector_to_array = F.udf(vector_to_array, T.ArrayType(T.IntegerType()))
-
-            odf = odf.withColumn("tmp", f_vector_to_array(i + '_vec')) \
-                .select(selected_cols + [F.col("tmp")[j].alias(i + "_" + str(j)) for j in range(0, uniq_cats)])
-            if output_mode == 'replace':
-                selected_cols = [e for e in odf.columns if e not in (i, i + '_vec', i + '_index')]
+            if stats_unique == {}:
+                uniq_cats = idf.select(i).distinct().count()
             else:
-                selected_cols = [e for e in odf.columns if e not in (i + '_vec', i + '_index')]
-            odf = odf.select(selected_cols)
+                uniq_cats = stats_df.where(F.col("attribute") == i).select("unique_values").rdd.flatMap(lambda x: x).collect()[0]
+
+            if uniq_cats > cardinality_threshold:
+                skipped_cols.append(i)
+                odf = odf.drop(i + '_vec', i + '_index')
+                continue
+            odf_schema = odf.schema
+            odf_schema = odf_schema.add(T.StructField("tmp",T.ArrayType(T.IntegerType())))
+            for j in range(0, uniq_cats):
+                odf_schema = odf_schema.add(T.StructField(i + "_" + str(j),T.IntegerType()))
+            odf = odf.withColumn("tmp", f_vector_to_array(i + '_vec')).rdd.map(lambda x: (*x, *x["tmp"])).toDF(schema=odf_schema)
+
+            if output_mode == 'replace':
+                odf = odf.drop(i, i + '_vec', i + '_index', 'tmp')
+            else:
+                odf = odf.drop(i + '_vec', i + '_index', 'tmp')
+        if skipped_cols:
+            warnings.warn(
+                "Columns dropped from one-hot encoding due to high cardinality: " + (',').join(skipped_cols))
     else:
         odf = odf_indexed
         for i in list_of_cols:
