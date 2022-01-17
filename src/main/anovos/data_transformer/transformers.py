@@ -236,9 +236,10 @@ def monotonic_binning(spark, idf, list_of_cols='all', drop_cols=[], label_col='l
     return odf
 
 
-def cat_to_num_unsupervised(idf, list_of_cols='all', drop_cols=[], method_type=1, index_order='frequencyDesc',
-                            pre_existing_model=False, model_path="NA", output_mode='replace', print_impact=False):
+def cat_to_num_unsupervised(spark, idf, list_of_cols='all', drop_cols=[], method_type=1, index_order='frequencyDesc', cardinality_threshold=100,
+                            pre_existing_model=False, model_path="NA", output_mode='replace', stats_unique={}, print_impact=False):
     """
+    :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_cols: List of categorical columns to transform e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
