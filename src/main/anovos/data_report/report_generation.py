@@ -1325,7 +1325,7 @@ def anovos_report(master_path, id_col='', label_col='', corr_threshold=0.4, iv_t
         else:
             final_tabs_list.append(i)
 
-    if run_type == "local":
+    if run_type == "local" or "databricks":
 
         final_report = dp.Report(default_template[0], default_template[1], \
                                  dp.Select(blocks=final_tabs_list, type=dp.SelectType.TABS)) \

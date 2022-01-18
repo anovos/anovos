@@ -32,9 +32,11 @@ def save_stats(spark, idf, master_path, function_name, reread=False, run_type="l
     :run_type: local or emr based on the mode of execution. Default value is kept as local
     :reread: option to reread. Default value is kept as False
     """
-
+    
     if run_type == "local":
         local_path = master_path
+    elif run_type == "databricks":
+        local_path = "/dbfs/FileStore/tables/report_stats"
     else:
         local_path = "report_stats"
     Path(local_path).mkdir(parents=True, exist_ok=True)
@@ -300,9 +302,11 @@ def charts_to_objects(spark, idf, list_of_cols='all', drop_cols=[], label_col=No
     cutoffs_path2 = source_path + "/drift_statistics/attribute_binning"
 
     idf_encoded.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
-
+    
     if run_type == "local":
         local_path = master_path
+    elif run_type == "databricks":
+        local_path = "/dbfs/FileStore/tables/report_stats"
     else:
         local_path = "report_stats"
     Path(local_path).mkdir(parents=True, exist_ok=True)

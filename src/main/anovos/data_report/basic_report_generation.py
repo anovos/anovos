@@ -39,7 +39,7 @@ def stats_args(path, func):
     return output
 
 
-def anovos_basic_report(spark, idf, id_col='', label_col='', event_label='', output_path='.', local_or_emr='local',
+def anovos_basic_report(spark, idf, id_col='', label_col='', event_label='', output_path='.', global_run_type='local',
                         print_impact=True):
     """
     :param spark: Spark Session
@@ -48,7 +48,7 @@ def anovos_basic_report(spark, idf, id_col='', label_col='', event_label='', out
     :param label_col: Label/Target column
     :param event_label: Value of (positive) event (i.e label 1)
     :param output_path: File Path for saving metrics and basic report
-    :param local_or_emr: "local" (default), "emr"
+    :param global_run_type: "local" (default), "emr"
                          "emr" if the files are read from or written in AWS s3
     """
     global num_cols
@@ -62,9 +62,11 @@ def anovos_basic_report(spark, idf, id_col='', label_col='', event_label='', out
     AA_funcs = [correlation_matrix, variable_clustering]
     AT_funcs = [IV_calculation, IG_calculation]
     all_funcs = SG_funcs + QC_rows_funcs + QC_cols_funcs + AA_funcs + AT_funcs
-
-    if local_or_emr == "local":
+    
+    if global_run_type == "local":
         local_path = output_path
+    elif global_run_type == "databricks":
+        local_path = "/dbfs/FileStore/tables/report_stats"
     else:
         local_path = "report_stats"
     Path(local_path).mkdir(parents=True, exist_ok=True)
@@ -86,7 +88,7 @@ def anovos_basic_report(spark, idf, id_col='', label_col='', event_label='', out
 
         stats.toPandas().to_csv(ends_with(local_path) + func.__name__ + ".csv", index=False)
 
-        if local_or_emr == 'emr':
+        if global_run_type == 'emr':
             bash_cmd = "aws s3 cp " + ends_with(local_path) + func.__name__ + ".csv " + ends_with(output_path)
             output = subprocess.check_output(['bash', '-c', bash_cmd])
 
@@ -235,6 +237,6 @@ def anovos_basic_report(spark, idf, id_col='', label_col='', event_label='', out
                              dp.Select(blocks=[tab1, tab2, tab3], type=dp.SelectType.TABS)) \
         .save(ends_with(local_path) + "basic_report.html", open=True)
 
-    if local_or_emr == 'emr':
+    if global_run_type == 'emr':
         bash_cmd = "aws s3 cp " + ends_with(local_path) + "basic_report.html " + ends_with(output_path)
         output = subprocess.check_output(['bash', '-c', bash_cmd])
