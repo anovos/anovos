@@ -95,7 +95,7 @@ def stats_args(all_configs, func):
     return output
 
 
-def main(all_configs, local_or_emr):
+def main(all_configs, global_run_type):
     start_main = timeit.default_timer()
     df = ETL(all_configs.get('input_dataset'))
 
@@ -139,7 +139,7 @@ def main(all_configs, local_or_emr):
 
         if (key == 'anovos_basic_report') & (args != None) & args.get('basic_report', False):
             start = timeit.default_timer()
-            anovos_basic_report(spark, df, **args.get('report_args', {}), local_or_emr=local_or_emr)
+            anovos_basic_report(spark, df, **args.get('report_args', {}), global_run_type=global_run_type)
             end = timeit.default_timer()
             print("Basic Report, execution time (in secs) =", round(end - start, 4))
             continue
@@ -152,7 +152,7 @@ def main(all_configs, local_or_emr):
                     f = getattr(stats_generator, m)
                     df_stats = f(spark, df, **args['metric_args'], print_impact=False)
                     if report_inputPath:
-                        save_stats(spark, df_stats, report_inputPath, m, reread=True, run_type=local_or_emr).show(100)
+                        save_stats(spark, df_stats, report_inputPath, m, reread=True, run_type=global_run_type).show(100)
                     else:
                         save(df_stats, write_stats, folder_name="data_analyzer/stats_generator/" + m, reread=True).show(
                             100)
@@ -172,7 +172,7 @@ def main(all_configs, local_or_emr):
                                                                       subkey + "/dataset", reread=True)
                         if report_inputPath:
                             save_stats(spark, df_stats, report_inputPath, subkey, reread=True,
-                                       run_type=local_or_emr).show(100)
+                                       run_type=global_run_type).show(100)
                         else:
                             save(df_stats, write_stats, folder_name="data_analyzer/quality_checker/" +
                                                                     subkey, reread=True).show(100)
@@ -189,7 +189,7 @@ def main(all_configs, local_or_emr):
                         df_stats = f(spark, df, **value, **extra_args, print_impact=False)
                         if report_inputPath:
                             save_stats(spark, df_stats, report_inputPath, subkey, reread=True,
-                                       run_type=local_or_emr).show(100)
+                                       run_type=global_run_type).show(100)
                         else:
                             save(df_stats, write_stats, folder_name="data_analyzer/association_evaluator/" +
                                                                     subkey, reread=True).show(100)
@@ -209,7 +209,7 @@ def main(all_configs, local_or_emr):
                                                                    print_impact=False)
                         if report_inputPath:
                             save_stats(spark, df_stats, report_inputPath, subkey, reread=True,
-                                       run_type=local_or_emr).show(100)
+                                       run_type=global_run_type).show(100)
                         else:
                             save(df_stats, write_stats, folder_name="drift_detector/drift_statistics",
                                  reread=True).show(100)
@@ -226,14 +226,14 @@ def main(all_configs, local_or_emr):
                                                                              print_impact=False)
                         if report_inputPath:
                             save_stats(spark, df_stats, report_inputPath, subkey, reread=True,
-                                       run_type=local_or_emr).show(100)
+                                       run_type=global_run_type).show(100)
                             appended_metric_path = value['configs'].get("appended_metric_path", "")
                             if appended_metric_path:
                                 df_metrics = data_ingest.read_dataset(spark, file_path=appended_metric_path,
                                                                       file_type="csv", file_configs={
                                         "header": True, "mode": 'overwrite'})
                                 save_stats(spark, df_metrics, report_inputPath, "stabilityIndex_metrics", reread=True,
-                                           run_type=local_or_emr).show(100)
+                                           run_type=global_run_type).show(100)
                         else:
                             save(df_stats, write_stats, folder_name="drift_detector/stability_index", reread=True).show(
                                 100)
@@ -248,21 +248,21 @@ def main(all_configs, local_or_emr):
                         start = timeit.default_timer()
                         f = getattr(report_preprocessing, subkey)
                         extra_args = stats_args(all_configs, subkey)
-                        f(spark, df, **value, **extra_args, master_path=report_inputPath, run_type=local_or_emr)
+                        f(spark, df, **value, **extra_args, master_path=report_inputPath, run_type=global_run_type)
                         end = timeit.default_timer()
                         print(key, subkey, ", execution time (in secs) =", round(end - start, 4))
 
             if (key == 'report_generation') & (args != None):
-                anovos_report(**args, run_type=local_or_emr)
+                anovos_report(**args, run_type=global_run_type)
 
     save(df, write_main, folder_name="final_dataset", reread=False)
 
 
 if __name__ == '__main__':
     config_path = sys.argv[1]
-    local_or_emr = sys.argv[2]
+    global_run_type = sys.argv[2]
 
-    if local_or_emr == 'local':
+    if global_run_type == 'local' or 'databricks':
         config_file = open(config_path, 'r')
     else:
         bash_cmd = "aws s3 cp " + config_path + " config.yaml"
@@ -270,4 +270,4 @@ if __name__ == '__main__':
         config_file = open('config.yaml', 'r')
 
     all_configs = yaml.load(config_file, yaml.SafeLoader)
-    main(all_configs, local_or_emr)
+    main(all_configs, global_run_type)
