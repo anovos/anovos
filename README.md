@@ -9,7 +9,9 @@
 [![License](https://img.shields.io/badge/License-Apache_2.0-red.svg?style=plastic)](https://opensource.org/licenses/Apache-2.0)
 [![twitter](https://img.shields.io/badge/Follow--lightgrey?logo=twitter&style=social)](https://twitter.com/ml_anovos)
 [![Slack](https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&style=social)](https://go.mlops.community/slack)
-
+<a href="https://trackgit.com">
+<img src="https://us-central1-trackgit-analytics.cloudfunctions.net/token/ping/kylos34ofpn357d24tky" alt="trackgit-views" />
+</a>
 
 _Anovos_ is an open source library for feature engineering at scale.
 Built by data scientist for the data science community, it provides all capabilities required for data ingestion and transformation.
