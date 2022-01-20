@@ -12,6 +12,7 @@ from anovos.shared.utils import attributeType_segregation
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
 from scipy.stats import variation
+import sympy as sp
 
 
 def drift_statistics(spark, idf_target, idf_source, list_of_cols='all', drop_cols=[], method_type='PSI',
@@ -265,5 +266,67 @@ def stabilityIndex_computation(spark, *idfs, list_of_cols='all', drop_cols=[],
         print("Potential Unstable Attributes:")
         unstable = odf.where(F.col('flagged') == 1)
         unstable.show(unstable.count())
+
+    return odf
+
+def feature_stability_estimation(spark, attribute_stats, attribute_transformation, 
+                                 metric_weightages={'mean': 0.5, 'stddev': 0.3, 'kurtosis': 0.2}):
+    
+    def get_transformation(attribute):
+        return attribute_transformation[attribute]
+    f_get_transformation = F.udf(get_transformation, T.StringType())
+
+    def stats_estimation(attribute, transformation, mean, stddev):
+        first_dev = sp.diff(transformation, attribute)
+        second_dev = sp.diff(transformation, attribute, 2)
+        transformation = sp.parse_expr(transformation)
+
+        est_mean = transformation.subs(attribute, mean) + stddev**2*second_dev.subs(attribute, mean)/2
+        est_var = stddev**2*(first_dev.subs(attribute, mean))**2
+
+        return [float(est_mean), float(est_var)]
+    f_stats_estimation = F.udf(stats_estimation, T.ArrayType(T.FloatType()))
+
+    attribute_estimated_stats = attribute_stats.where(F.col('attribute').isin(list(attribute_transformation.keys())))\
+        .withColumn('transformation', f_get_transformation('attribute'))\
+        .withColumn('estimated_stats', f_stats_estimation('attribute', 'transformation', 'mean', 'stddev'))\
+        .withColumn('estimated_mean', F.col('estimated_stats')[0])\
+        .withColumn('estimated_var', F.col('estimated_stats')[1])\
+        .select('idx', 'attribute', 'transformation', 'estimated_mean', 'estimated_var')
+
+    feature_estimated_stats = attribute_estimated_stats.groupBy('idx')\
+        .agg(F.sum('estimated_mean').alias('feature_mean'), 
+             F.sqrt(F.sum('estimated_var')).alias('feature_stddev'))
+
+    feature_name = ' + '.join(list(attribute_transformation.values())).replace('+ -', '- ')
+    output = [feature_name]
+    for metric in ['feature_mean', 'feature_stddev']:
+        metric_stats = feature_estimated_stats.orderBy('idx')\
+            .select(metric).fillna(np.nan).rdd.flatMap(list).collect()
+        metric_cv = round(float(variation([a for a in metric_stats])), 4) or None
+        output.append(metric_cv)
+    schema = T.StructType([T.StructField("attribute", T.StringType(), True),
+                           T.StructField("mean_cv", T.FloatType(), True),
+                           T.StructField("stddev_cv", T.FloatType(), True)])
+    odf = spark.createDataFrame([output], schema=schema)
+
+    def score_cv(cv, thresholds=[0.03, 0.1, 0.2, 0.5]):
+        if cv is None:
+            return None
+        else:
+            cv = abs(cv)
+            stability_index = [4, 3, 2, 1, 0]
+            for i, thresh in enumerate(thresholds):
+                if cv < thresh:
+                    return stability_index[i]
+            return stability_index[-1]
+
+    f_score_cv = F.udf(score_cv, T.IntegerType())
+
+    odf = odf.replace(np.nan, None).withColumn('mean_si', f_score_cv(F.col('mean_cv'))) \
+        .withColumn('stddev_si', f_score_cv(F.col('stddev_cv'))) \
+        .withColumn('stability_index_lower_bound', F.round((F.col('mean_si') * metric_weightages.get('mean', 0) + 
+                                           F.col('stddev_si') * metric_weightages.get('stddev', 0)), 4))\
+        .withColumn('stability_index_upper_bound', F.col('stability_index_lower_bound') + 4 * metric_weightages.get('kurtosis', 0))
 
     return odf
