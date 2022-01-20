@@ -19,4 +19,4 @@ cython
 soupsieve
 fsspec
 s3fs
-findspark
+findspark<2.0.0
