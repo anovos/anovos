@@ -34,6 +34,7 @@ jobs:
 
       - uses: actions/setup-java@v2.5.0
         with:
+          distribution: 'zulu'
           java-version: ${{ matrix.java }}
 
       - uses: vemonet/setup-spark@v1
