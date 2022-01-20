@@ -53,7 +53,7 @@ Currently, we support:
 - Python 3.7.x
 
 Please note that _Anovos_ is not yet compatible with Apache Spark 3.x or later versions of Python.
-For a more detailed and comprehensive description of the Spark environment expected by _Anovos_, please see [here](https://docs.anovos.ai/docs/setting-up-your-environment/anovos-on-local/).
+For a more detailed and comprehensive description of the Spark environment expected by _Anovos_, please see [here](https://docs.anovos.ai/using-anovos/setting-up/locally.html).
 
 ## Installation
 
@@ -78,7 +78,7 @@ For usage examples, see the provided [interactive guides and Jupyter notebooks](
 ## Roadmap
 
 _Anovos_ is still in the early stages of its development.
-To see what's planned for the upcoming releases, see our [roadmap](https://docs.anovos.ai/docs/anovos-roadmap/).
+To see what's planned for the upcoming releases, see our [roadmap](https://docs.anovos.ai/using-anovos/roadmap.html).
 
 ## Development Version
 
@@ -93,4 +93,4 @@ Please note that this version is frequently updated and might not be fully compa
 # Contribute
 
 We're always happy to discuss and accept improvements to _Anovos_.
-To get started, please refer to our [Contributing to Anovos](https://docs.anovos.ai/community/contributing/) page in the documentation.
+To get started, please refer to our [Contributing to Anovos](https://docs.anovos.ai/community/contributing.html) page in the documentation.
