@@ -20,9 +20,9 @@ def argument_checker(func_name, args):
     if len(list_of_cols) == 0:
         warnings.warn("No timestamp conversion - No column(s) to convert")
         return []
-
-    if args['output_mode'] not in ('replace', 'append'):
-        raise TypeError('Invalid input for output_mode')
+    if func_name not in ['aggregator']:
+        if args['output_mode'] not in ('replace', 'append'):
+            raise TypeError('Invalid input for output_mode')
 
     if func_name in ['timestamp_to_unix', 'unix_to_timestamp']:
         if args['precision'] not in ('ms', 's'):
@@ -35,18 +35,15 @@ def argument_checker(func_name, args):
             raise TypeError('Invalid input for output_type')
 
     if func_name in ['timeUnits_extraction']:
-        all_units = ['hour','minute','second','dayofmonth','dayofweek','dayofyear','weekofyear','month','quarter']
-        if any(x not in all_units for x in args['units']):
+        if any(x not in args['all_units'] for x in args['units']):
             raise TypeError('Invalid input for Unit(s)')
     
     if func_name in ['adding_timeUnits']:
-        all_units = ['hour','minute','second','day','week','month','year']
-        if args['unit'] not in (all_units+[(e+'s') for e in all_units]):
+        if args['unit'] not in (args['all_units']+[(e+'s') for e in args['all_units']]):
             raise TypeError('Invalid input for Unit')
     
     if func_name in ['timestamp_comparison']:
-        all_types = ["greater_than","less_than","greaterThan_equalTo", "lessThan_equalTo"]
-        if args['comparison_type'] not in all_types:
+        if args['comparison_type'] not in args['all_types']:
             raise TypeError('Invalid input for comparison_type')
     
     if func_name in ['is_selectedHour']:
@@ -56,20 +53,19 @@ def argument_checker(func_name, args):
         if args['end_hour'] not in hours:
             raise TypeError('Invalid input for end_hour')
 
-    
-    if func_name in ['window_aggregation']:
-        all_aggs = ['count','min','max','sum','mean','median']
-        if any(x not in all_aggs for x in args['list_of_aggs']):
+    if func_name in ['window_aggregator']:
+        if any(x not in args['all_aggs'] for x in args['list_of_aggs']):
             raise TypeError('Invalid input for Aggregate Function(s)')
         if args['window_type'] not in ('expanding', 'rolling'):
             raise TypeError('Invalid input for Window Type')
         if (args['window_type'] == 'rolling') & (not str(args['window_size']).isnumeric()):
             raise TypeError('Invalid input for Window Size')
     
-    if func_name in ['expanding_window_aggregation']:
-        all_aggs = ['count','min','max','sum','mean','median']
-        if any(x not in all_aggs for x in args['list_of_aggs']):
+    if func_name in ['aggregator']:
+        if any(x not in args['all_aggs'] for x in args['list_of_aggs']):
             raise TypeError('Invalid input for Aggregate Function(s)')
+        if args['time_col'] not in all_columns:
+            raise TypeError('Invalid input for time_col')
 
     if func_name in ['lagged_ts']:
         if not str(args['lag']).isnumeric():
@@ -195,7 +191,7 @@ def timezone_conversion(spark, idf, list_of_cols, given_tz, output_tz, output_mo
     return odf
 
 
-def string_to_timestamp(idf, list_of_cols, date_format="%Y-%m-%d %H:%M:%S", output_type="ts",output_mode="replace"):
+def string_to_timestamp(idf, list_of_cols, input_format="%Y-%m-%d %H:%M:%S", output_type="ts",output_mode="replace"):
     """
     :param spark: Spark Session
     :param idf: Input Dataframe
@@ -227,18 +223,19 @@ def string_to_timestamp(idf, list_of_cols, date_format="%Y-%m-%d %H:%M:%S", outp
     odf = idf
     for i in list_of_cols:
         modify_col = {"replace": i, "append": i+"_ts"}
-        odf = odf.withColumn(modify_col[output_mode], f_conversion(F.col(i),F.lit(date_format)))
+        odf = odf.withColumn(modify_col[output_mode], f_conversion(F.col(i),F.lit(input_format)))
         
     return odf
 
 
-def timestamp_to_string (idf, list_of_cols, date_format="%Y-%m-%d %H:%M:%S", output_mode="replace"):
+def timestamp_to_string (idf, list_of_cols, output_format="%Y-%m-%d %H:%M:%S", output_mode="replace"):
     """
     :param spark: Spark Session
     :param idf: Input Dataframe
     :param list_of_cols: List of columns to transform e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
                          where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+                         Columns must be of Datetime type or String type in "%Y-%m-%d %H:%M:%S" format.
     :param date_format: Format of the output column(s)
     :param output_mode: "replace", "append".
                         “replace” option replaces original columns with derived column. “append” option appends derived
@@ -258,7 +255,7 @@ def timestamp_to_string (idf, list_of_cols, date_format="%Y-%m-%d %H:%M:%S", out
     odf = idf
     for i in list_of_cols:
         modify_col = {"replace": i, "append": i+"_str"}
-        odf = odf.withColumn(modify_col[output_mode], f_conversion(F.col(i),F.lit(date_format)))
+        odf = odf.withColumn(modify_col[output_mode], f_conversion(F.col(i),F.lit(output_format)))
         
     return odf
 
@@ -282,9 +279,9 @@ def dateformat_conversion(idf, list_of_cols, input_format="%Y-%m-%d %H:%M:%S",
     if not list_of_cols:
             return idf
     
-    odf_tmp = string_to_timestamp(idf, list_of_cols, date_format=input_format, output_type="ts", output_mode=output_mode)
+    odf_tmp = string_to_timestamp(idf, list_of_cols, input_format=input_format, output_type="ts", output_mode=output_mode)
     appended_cols = {"append": [col + "_ts" for col in list_of_cols], "replace": list_of_cols}
-    odf = timestamp_to_string(odf_tmp, appended_cols[output_mode], date_format=output_format, output_mode="replace")
+    odf = timestamp_to_string(odf_tmp, appended_cols[output_mode], output_format=output_format, output_mode="replace")
     
     return odf
 
@@ -314,7 +311,7 @@ def timeUnits_extraction(idf, list_of_cols, units, output_mode="append"):
         units = [x.strip() for x in units.split('|')]
         
     list_of_cols = argument_checker('timeUnits_extraction', {'list_of_cols': list_of_cols, 'all_columns': idf.columns, 
-                                                            'output_mode': output_mode, 'units': units})
+                                                            'output_mode': output_mode, 'units': units, 'all_units': all_units})
     if not list_of_cols:
         return idf
 
@@ -418,8 +415,10 @@ def adding_timeUnits(idf, list_of_cols, unit, unit_value, output_mode="append"):
                         e.g. column X is appended as X_adjusted.
     :return: Output Dataframe with derived column
     """
+    all_units = ['hour','minute','second','day','week','month','year']
     list_of_cols = argument_checker('adding_timeUnits', 
-                                    {'list_of_cols': list_of_cols, 'all_columns': idf.columns, 'output_mode': output_mode, 'unit': unit})
+                                    {'list_of_cols': list_of_cols, 'all_columns': idf.columns, 'output_mode': output_mode, 
+                                     'unit': unit, 'all_units': all_units})
     if not list_of_cols:
         return idf
 
@@ -451,9 +450,10 @@ def timestamp_comparison(idf, list_of_cols, comparison_type, comparison_value,
                         e.g. column X is appended as X_compared.
     :return: Output Dataframe with derived column
     """
+    all_types = ["greater_than","less_than","greaterThan_equalTo", "lessThan_equalTo"]
     list_of_cols = argument_checker('timestamp_comparison', 
-                                    {'list_of_cols': list_of_cols, 'all_columns': idf.columns, 
-                                     'output_mode': output_mode, 'comparison_type': comparison_type})
+                                    {'list_of_cols': list_of_cols, 'all_columns': idf.columns, 'output_mode': output_mode, 
+                                    'comparison_type': comparison_type, 'all_types': all_types})
     if not list_of_cols:
         return idf
 
@@ -907,8 +907,62 @@ def is_weekend(idf, list_of_cols, output_mode="append"):
             odf = odf.drop(i)
     return odf
 
-def window_aggregation(idf, list_of_cols, list_of_aggs, order_col, window_type='expanding', 
-                       window_size='unbounded', partition_col='', output_mode='append'):
+def aggregator(idf, list_of_cols, list_of_aggs, time_col, granularity_format='%Y-%m-%d'):
+    """
+    :param idf: Input Dataframe
+    :param list_of_cols: List of columns to aggregate e.g., ["col1","col2"].
+                         Alternatively, columns can be specified in a string format,
+                         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+    :param list_of_aggs: List of aggregate metrics to compute e.g., ["f1","f2"].
+                         Alternatively, metrics can be specified in a string format,
+                         where different metrics are separated by pipe delimiter “|” e.g., "f1|f2".
+                         Supported metrics: 'count', 'min', 'max', 'sum', 'mean', 'median', 'stddev',
+                         'countDistinct', 'sumDistinct', 'collect_list', 'collect_set'.
+    :param time_col: (Timestamp) Column to group by.
+    :param granularity_format: Format to be allied to time_col before groupBy. The default value is 
+                               '%Y-%m-%d', which means grouping by the date component of time_col.
+                               Alternatively, '' can be used if no formatting is necessary.
+                                
+    :return: Dataframe with time_col + aggregated columns
+    """
+    all_aggs = ['count', 'min', 'max', 'sum', 'mean', 'median', 'stddev', 'countDistinct', 'sumDistinct', 
+                'collect_list', 'collect_set']
+    if isinstance(list_of_aggs, str):
+        list_of_aggs = [x.strip() for x in list_of_aggs.split('|')]
+    list_of_cols = argument_checker('aggregator', 
+                                    {'list_of_cols': list_of_cols, 'all_columns': idf.columns, 'list_of_aggs': list_of_aggs, 
+                                     'all_aggs': all_aggs, 'time_col': time_col})
+    if not list_of_cols:
+        return idf
+    
+    if granularity_format != '':
+        idf = timestamp_to_string(idf, time_col, output_format=granularity_format, output_mode="replace")
+
+    def agg_funcs(col, agg):
+        mapping = {'count': F.count(col).alias(col+'_count'),
+                   'min': F.min(col).alias(col+'_min'),
+                   'max': F.max(col).alias(col+'_max'),
+                   'sum': F.sum(col).alias(col+'_sum'),
+                   'mean': F.mean(col).alias(col+'_mean'),
+                   'median': F.expr('percentile_approx('+col+', 0.5)').alias(col+'_median'),
+                   'stddev': F.stddev(col).alias(col+'_stddev'),
+                   'countDistinct': F.countDistinct(col).alias(col+'_countDistinct'),
+                   'sumDistinct': F.sumDistinct(col).alias(col+'_sumDistinct'),
+                   'collect_list': F.collect_list(col).alias(col+'_collect_list'),
+                   'collect_set': F.collect_set(col).alias(col+'_collect_set'),}
+        return mapping[agg]
+    
+    derived_cols = []
+    for i in list_of_cols:
+        for j in list_of_aggs:
+            derived_cols.append(agg_funcs(i, j))
+    odf = idf.groupBy(time_col).agg(*derived_cols)
+
+    return odf
+
+
+def window_aggregator(idf, list_of_cols, list_of_aggs, order_col, window_type='expanding', 
+                      window_size='unbounded', partition_col='', output_mode='append'):
     """
     :param idf: Input Dataframe
     :param list_of_cols: List of columns to aggregate e.g., ["col1","col2"].
@@ -918,7 +972,6 @@ def window_aggregation(idf, list_of_cols, list_of_aggs, order_col, window_type='
                          Alternatively, metrics can be specified in a string format,
                          where different metrics are separated by pipe delimiter “|” e.g., "f1|f2".
                          Supported metrics: 'count','min','max','sum','mean','median'
-                         "all" can be passed to compute 6 aggregate metrics for analysis.
     :param order_col: (Timestamp) Column to order window
     :param window_type: "expanding", "rolling"
                         "expanding" option have a fixed lower bound (first row in the partition)
@@ -934,9 +987,11 @@ def window_aggregation(idf, list_of_cols, list_of_aggs, order_col, window_type='
 
     if isinstance(list_of_aggs, str):
         list_of_aggs = [x.strip() for x in list_of_aggs.split('|')]
-    list_of_cols = argument_checker('window_aggregation', 
-                                    {'list_of_cols': list_of_cols, 'all_columns': idf.columns, 'list_of_aggs': list_of_aggs, 
-                                    'output_mode': output_mode, 'window_type': window_type, 'window_size': window_size})
+    all_aggs = ['count','min','max','sum','mean','median']
+    list_of_cols = argument_checker('window_aggregator', 
+                                    {'list_of_cols': list_of_cols, 'all_columns': idf.columns, 
+                                     'list_of_aggs': list_of_aggs, 'all_aggs': all_aggs, 'output_mode': output_mode, 
+                                     'window_type': window_type, 'window_size': window_size})
     if not list_of_cols:
         return idf
     
