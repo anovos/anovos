@@ -15,7 +15,8 @@ sudo docker build ./docker-stacks/minimal-notebook -t minimal-notebook:"${MY_PYT
 sudo docker build ./docker-stacks/scipy-notebook -t scipy-notebook:"${MY_PYTHON_VERSION}" --build-arg BASE_CONTAINER=minimal-notebook:"${MY_PYTHON_VERSION}"
 
 # Build the Anovos notebook image
-sudo docker build ./docker-stacks/pyspark-notebook -t anovos-notebook:"${MY_SPARK_VERSION}" \
+# TODO: Tag with Anovos version upon release
+sudo docker build ./docker-stacks/pyspark-notebook -t anovos-notebook-"${MY_SPARK_VERSION}" \
   --build-arg BASE_CONTAINER=scipy-notebook:"${MY_PYTHON_VERSION}" \
   --build-arg spark_version="${MY_SPARK_VERSION}" \
   --build-arg spark_checksum="${MY_SPARK_CHECKSUM}" \
@@ -24,5 +25,5 @@ sudo docker build ./docker-stacks/pyspark-notebook -t anovos-notebook:"${MY_SPAR
 
 # Spin up a container and check the versions
 sudo docker run -d --name anovos_notebook anovos-notebook-"${MY_SPARK_VERSION}"
-sudo docker exec -it anovos_examples /bin/bash -c "python --version && spark-submit --version && java -version"
-sudo docker stop anovos_examples
+sudo docker exec -it anovos_notebook /bin/bash -c "python --version && spark-submit --version && java -version"
+sudo docker stop anovos_notebook
