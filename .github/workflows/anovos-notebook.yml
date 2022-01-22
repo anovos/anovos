@@ -3,7 +3,7 @@ name: Anovos Notebook
 on:
   push:
     paths:
-      - 'examples/anovos_notebook'
+      - 'examples/anovos_notebook/**'
 
 
 jobs:

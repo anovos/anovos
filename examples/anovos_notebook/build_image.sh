@@ -14,6 +14,7 @@ sudo docker build ./docker-stacks/base-notebook -t base-notebook:"${MY_PYTHON_VE
 sudo docker build ./docker-stacks/minimal-notebook -t minimal-notebook:"${MY_PYTHON_VERSION}" --build-arg BASE_CONTAINER=base-notebook:"${MY_PYTHON_VERSION}"
 sudo docker build ./docker-stacks/scipy-notebook -t scipy-notebook:"${MY_PYTHON_VERSION}" --build-arg BASE_CONTAINER=minimal-notebook:"${MY_PYTHON_VERSION}"
 
+# Build the Anovos notebook image
 sudo docker build ./docker-stacks/pyspark-notebook -t anovos-notebook:"${MY_SPARK_VERSION}" \
   --build-arg BASE_CONTAINER=scipy-notebook:"${MY_PYTHON_VERSION}" \
   --build-arg spark_version="${MY_SPARK_VERSION}" \
