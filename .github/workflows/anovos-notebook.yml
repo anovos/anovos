@@ -1,0 +1,43 @@
+name: Anovos Notebook
+
+on:
+  push:
+    paths:
+      - 'examples/anovos_notebook'
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - python: '3.7'
+            spark: '2.4.8'
+            checksum: '752C4D4D8FE1D72F5BA01F40D22DF35698585BD17ED4749F6065B0039FF40DB7FF8EA87DC0FB5B1EC03871E427A002581EC12F486392B92B88643D4243908E55'
+            hadoop: '2.7'
+            java: '8'
+          - python: '3.9'
+            spark: '3.2.0'
+            checksum: 'EBE51A449EBD070BE7D3570931044070E53C23076ABAD233B3C51D45A7C99326CF55805EE0D573E6EB7D6A67CFEF1963CD77D6DC07DD2FD70FD60DA9D1F79E5E'
+            hadoop: '3.2'
+            java: '11'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@master
+
+      - name: Build image
+        env:
+          PYTHON_VERSION: ${{ matrix.python }}
+          SPARK_VERSION: ${{ matrix.spark }}
+          SPARK_CHECKSUM: ${{ matrix.checksum }}
+          HADOOP_VERSION: ${{ matrix.hadoop }}
+          JDK_VERSION: ${{ matrix.java }}
+        run: |
+          ./examples/anovos_notebook/build_image.sh
+
+      - name: Push to registry
+        if: github.ref == 'refs/heads/main'
+        run: |
+          echo "TBD"

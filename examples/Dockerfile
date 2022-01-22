@@ -1,4 +1,6 @@
-FROM pyspark-notebook:anovos
+ARG spark_version=2.4.8
+
+FROM anovos-notebook-${spark_version}
 
 WORKDIR /
 USER root
