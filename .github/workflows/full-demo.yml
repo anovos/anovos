@@ -2,9 +2,13 @@ name: Full Demo
 on:
   pull_request:
     types: [opened, ready_for_review]
+    paths:
+      - '!**.md'
   push:
     branches:
       - main
+    paths:
+      - '!**.md'
 
 
 jobs:
