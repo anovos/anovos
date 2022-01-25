@@ -1758,7 +1758,10 @@ def boxcox_transformation(idf, list_of_cols="all", drop_cols=[], boxcox_lambda=N
                       Alternatively, columns can be specified in a string format,
                       where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
     :param boxcox_lambda: Lambda value for box_cox transormation. 
-                          If boxcox_lambda is not None, it will be directly used for the transformation.
+                          If boxcox_lambda is not None, it will be directly used for the transformation. It can be a 
+                          (1) list: each element represents a lambda value for an attribute and the length of the list 
+                          must be the same as the number of columns to transform. 
+                          (2) int/float: all attributes will be assigned the same lambda value.
                           Else, search for the best lambda among [1,-1,0.5,-0.5,2,-2,0.25,-0.25,3,-3,4,-4,5,-5] 
                           for each column and apply the transformation
     :param output_mode: "replace", "append".
