@@ -24,7 +24,7 @@ from pyspark.mllib.stat import Statistics
 from pyspark.ml import Pipeline, PipelineModel
 from pyspark.ml.recommendation import ALS
 from pyspark.ml.evaluation import RegressionEvaluator
-from pyspark.ml.feature import Imputer, ImputerModel, StringIndexer, IndexToString, OneHotEncoderEstimator
+from pyspark.ml.feature import Imputer, ImputerModel, StringIndexer, IndexToString
 from pyspark.ml.feature import VectorAssembler, MinMaxScaler, MinMaxScalerModel, PCA, PCAModel
 from pyspark.ml.linalg import DenseVector
 
