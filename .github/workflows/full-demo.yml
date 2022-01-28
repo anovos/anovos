@@ -1,14 +1,15 @@
 name: Full Demo
 on:
   pull_request:
-    types: [opened, ready_for_review]
+    types: [ opened, ready_for_review ]
     paths:
       - '!**.md'
   push:
     branches:
       - main
-    paths:
-      - '!**.md'
+    paths-ignore:
+      - '**.md'
+      - '.github/**'
 
 
 jobs:
