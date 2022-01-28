@@ -225,7 +225,7 @@ def monotonic_binning(spark, idf, list_of_cols='all', drop_cols=[], label_col='l
 
 
 def cat_to_num_unsupervised(spark, idf, list_of_cols='all', drop_cols=[], method_type=1, index_order='frequencyDesc', cardinality_threshold=100,
-                            pre_existing_model=False, model_path="NA", output_mode='replace', stats_unique={}, print_impact=False):
+                            pre_existing_model=False, model_path="NA", output_mode='replace', print_impact=False):
     """
     :param spark: Spark Session
     :param idf: Input Dataframe
@@ -253,9 +253,6 @@ def cat_to_num_unsupervised(spark, idf, list_of_cols='all', drop_cols=[], method
     :param output_mode: "replace", "append".
                         “replace” option replaces original columns with transformed column. “append” option append transformed
                         column to the input dataset with a postfix "_index" e.g. column X is appended as X_index.
-    :param stats_unique: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
-                         to read pre-saved statistics on unique value count i.e. if measures_of_cardinality or
-                         uniqueCount_computation (data_analyzer.stats_generator module) has been computed & saved before.
     :return: Encoded Dataframe
     """
 
@@ -317,21 +314,15 @@ def cat_to_num_unsupervised(spark, idf, list_of_cols='all', drop_cols=[], method
 
         f_vector_to_array = F.udf(vector_to_array, T.ArrayType(T.IntegerType()))
 
-        if stats_unique != {}:
-            stats_df = read_dataset(spark, **stats_unique)
         skipped_cols = []
         for i in list_of_cols:
-            if stats_unique == {}:
-                uniq_cats = idf.select(i).distinct().count()
-            else:
-                uniq_cats = stats_df.where(F.col("attribute") == i).select("unique_values").rdd.flatMap(lambda x: x).collect()[0]
+            uniq_cats = odf.select(i + "_vec").rdd.flatMap(lambda x: x).collect()[0].size
 
             if uniq_cats > cardinality_threshold:
                 skipped_cols.append(i)
                 odf = odf.drop(i + '_vec', i + '_index')
                 continue
-            odf_schema = odf.schema
-            odf_schema = odf_schema.add(T.StructField("tmp",T.ArrayType(T.IntegerType())))
+            odf_schema = odf.schema.add(T.StructField("tmp", T.ArrayType(T.IntegerType())))
             for j in range(0, uniq_cats):
                 odf_schema = odf_schema.add(T.StructField(i + "_" + str(j),T.IntegerType()))
             odf = odf.withColumn("tmp", f_vector_to_array(i + '_vec')).rdd.map(lambda x: (*x, *x["tmp"])).toDF(schema=odf_schema)
