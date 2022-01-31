@@ -295,7 +295,7 @@ def timeUnits_extraction(idf, list_of_cols, units, output_mode="append"):
     :param units: List of unit(s) to extract. Alternatively, unit(s) can be specified in a string format,
                   where different units are separated by pipe delimiter “|” e.g., "hour|minute".
                   Supported units to extract: 'hour', 'minute', 'second', 'dayofmonth', 'dayofweek', 
-                                              'dayofyear', 'weekofyear', 'month', 'quarter'.
+                                              'dayofyear', 'weekofyear', 'month', 'quarter', 'year'.
                   "all" can be passed to compute all supported metrics.
     :param output_mode: "replace", "append".
                         “replace” option replaces original columns with derived columns with a postfix "_<unit>", 
@@ -304,7 +304,7 @@ def timeUnits_extraction(idf, list_of_cols, units, output_mode="append"):
                         e.g. column X is appended as X_second for units="second".
     :return: Output Dataframe with derived column
     """
-    all_units = ['hour','minute','second','dayofmonth','dayofweek','dayofyear','weekofyear','month','quarter']
+    all_units = ['hour','minute','second','dayofmonth','dayofweek','dayofyear','weekofyear','month','quarter', 'year']
     if units == 'all':
         units = all_units
     if isinstance(units, str):
