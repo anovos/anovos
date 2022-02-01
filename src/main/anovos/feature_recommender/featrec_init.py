@@ -37,6 +37,7 @@ model = SentenceTransformer('all-mpnet-base-v2')
 input_path = 'https://raw.githubusercontent.com/anovos/anovos/feature_recommender_beta/data/feature_recommender/flatten_fr_db.csv'
 df_input = init_featureRecommender(input_path)
 df_groupby = df_input.groupby(['Feature Name', 'Feature Description']).agg(
-    {'Industry': lambda x: ' '.join(set(x.dropna())), 'Usecase': lambda x: ' '.join(set(x.dropna()))}).reset_index()
+    {'Industry': lambda x: ', '.join(set(x.dropna())), 'Usecase': lambda x: ', '.join(set(x.dropna())),
+     'Source': lambda x: ', '.join(set(x.dropna()))}).reset_index()
 list_train, df_rec = recommendationDataPrep(df_groupby, 'Feature Name', 'Feature Description')
-
+list_embedding_train = model.encode(list_train, convert_to_tensor=True)
