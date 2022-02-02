@@ -10,7 +10,9 @@ def flatten_dataframe(idf, fixed_cols):
     :return: Flatten/Melted dataframe
     """
     valid_cols = [e for e in idf.columns if e not in fixed_cols]
-    key_and_val = F.create_map(list(chain.from_iterable([[F.lit(c), F.col(c)] for c in valid_cols])))
+    key_and_val = F.create_map(
+        list(chain.from_iterable([[F.lit(c), F.col(c)] for c in valid_cols]))
+    )
     odf = idf.select(*fixed_cols, F.explode(key_and_val))
     return odf
 
@@ -23,7 +25,7 @@ def transpose_dataframe(idf, fixed_col):
     :return: Transposed dataframe
     """
     idf_flatten = flatten_dataframe(idf, fixed_cols=[fixed_col])
-    odf = idf_flatten.groupBy('key').pivot(fixed_col).agg(F.first('value'))
+    odf = idf_flatten.groupBy("key").pivot(fixed_col).agg(F.first("value"))
     return odf
 
 
@@ -38,9 +40,11 @@ def attributeType_segregation(idf):
     other_cols = []
 
     for i in idf.dtypes:
-        if i[1] == 'string':
+        if i[1] == "string":
             cat_cols.append(i[0])
-        elif (i[1] in ('double', 'int', 'bigint', 'float', 'long')) | (i[1].startswith('decimal')):
+        elif (i[1] in ("double", "int", "bigint", "float", "long")) | (
+            i[1].startswith("decimal")
+        ):
             num_cols.append(i[0])
         else:
             other_cols.append(i[0])
