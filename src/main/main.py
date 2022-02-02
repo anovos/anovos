@@ -264,10 +264,12 @@ if __name__ == '__main__':
 
     if global_run_type == 'local' or 'databricks':
         config_file = open(config_path, 'r')
-    else:
+    elif global_run_type == "emr":
         bash_cmd = "aws s3 cp " + config_path + " config.yaml"
         output = subprocess.check_output(['bash', '-c', bash_cmd])
         config_file = open('config.yaml', 'r')
+    else:
+        raise ValueError("Invalid global_run_type")
 
     all_configs = yaml.load(config_file, yaml.SafeLoader)
     main(all_configs, global_run_type)
