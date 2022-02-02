@@ -111,7 +111,7 @@ def list_featurebyPair(industry, usecase, num_of_feat=100, semantic=True):
     return odf
 
 
-def feature_recommendation(df, name_column, desc_column, suggested_industry='all', suggested_usecase='all',
+def feature_recommendation(df, name_column=None, desc_column=None, suggested_industry='all', suggested_usecase='all',
                            semantic=True, top_n=2):
     if not isinstance(df, pd.DataFrame):
         raise TypeError('Invalid input for df')
@@ -119,29 +119,57 @@ def feature_recommendation(df, name_column, desc_column, suggested_industry='all
         raise TypeError('Invalid input for top_n')
     if top_n > len(list_train):
         raise TypeError('top_n value is too large')
-    if name_column not in df.columns:
-        raise TypeError('Invalid input for name_column')
-    if desc_column not in df.columns:
-        raise TypeError('Invalid input for desc_column')
-    df_out = pd.DataFrame(columns=['Attribute Name', 'Attribute Description', 'Recommended Feature Name',
-                                   'Recommended Feature Description', 'Feature Similarity Score', 'Goal Industry',
-                                   'Goal Usecase',
-                                   'Source'])
     list_user, df_user = recommendationDataPrep(df, name_column, desc_column)
+    if name_column == None:
+        df_out = pd.DataFrame(columns=['Input Attribute Description', 'Recommended Feature Name',
+                                       'Recommended Feature Description', 'Feature Similarity Score', 'Goal Industry',
+                                       'Goal Usecase',
+                                       'Source'])
+    elif desc_column == None:
+        df_out = pd.DataFrame(columns=['Input Attribute Name', 'Recommended Feature Name',
+                                       'Recommended Feature Description', 'Feature Similarity Score', 'Goal Industry',
+                                       'Goal Usecase',
+                                       'Source'])
+    else:
+        df_out = pd.DataFrame(columns=['Input Attribute Name', 'Input Attribute Description', 'Recommended Feature Name',
+                                       'Recommended Feature Description', 'Feature Similarity Score', 'Goal Industry',
+                                       'Goal Usecase',
+                                       'Source'])
     list_embedding_user = model.encode(list_user, convert_to_tensor=True)
     for i, feature in enumerate(list_user):
         cos_scores = util.pytorch_cos_sim(list_embedding_user, list_embedding_train)[i]
         top_results = np.argpartition(-cos_scores, range(top_n))[0:top_n]
         for idx in top_results[0:top_n]:
-            df_append = pd.DataFrame([[df_user[name_column].iloc[i], df_user[desc_column].iloc[i],
-                                       df_rec['Feature Name'].iloc[int(idx)],
-                                       df_rec['Feature Description'].iloc[int(idx)], "%.4f" % (cos_scores[idx]),
-                                       df_rec['Industry'].iloc[int(idx)], df_rec['Usecase'].iloc[int(idx)],
-                                       df_rec['Source'].iloc[int(idx)]]],
-                                     columns=['Attribute Name', 'Attribute Description', 'Recommended Feature Name',
-                                              'Recommended Feature Description', 'Feature Similarity Score',
-                                              'Goal Industry',
-                                              'Goal Usecase', 'Source'])
+            if name_column == None:
+                df_append = pd.DataFrame([[df_user[desc_column].iloc[i],
+                                           df_rec['Feature Name'].iloc[int(idx)],
+                                           df_rec['Feature Description'].iloc[int(idx)], "%.4f" % (cos_scores[idx]),
+                                           df_rec['Industry'].iloc[int(idx)], df_rec['Usecase'].iloc[int(idx)],
+                                           df_rec['Source'].iloc[int(idx)]]],
+                                         columns=['Input Attribute Description', 'Recommended Feature Name',
+                                                  'Recommended Feature Description', 'Feature Similarity Score',
+                                                  'Goal Industry',
+                                                  'Goal Usecase', 'Source'])
+            elif desc_column == None:
+                df_append = pd.DataFrame([[df_user[name_column].iloc[i],
+                                           df_rec['Feature Name'].iloc[int(idx)],
+                                           df_rec['Feature Description'].iloc[int(idx)], "%.4f" % (cos_scores[idx]),
+                                           df_rec['Industry'].iloc[int(idx)], df_rec['Usecase'].iloc[int(idx)],
+                                           df_rec['Source'].iloc[int(idx)]]],
+                                         columns=['Input Attribute Name', 'Recommended Feature Name',
+                                                  'Recommended Feature Description', 'Feature Similarity Score',
+                                                  'Goal Industry',
+                                                  'Goal Usecase', 'Source'])
+            else:
+                df_append = pd.DataFrame([[df_user[name_column].iloc[i], df_user[desc_column].iloc[i],
+                                           df_rec['Feature Name'].iloc[int(idx)],
+                                           df_rec['Feature Description'].iloc[int(idx)], "%.4f" % (cos_scores[idx]),
+                                           df_rec['Industry'].iloc[int(idx)], df_rec['Usecase'].iloc[int(idx)],
+                                           df_rec['Source'].iloc[int(idx)]]],
+                                         columns=['Input Attribute Name', 'Input Attribute Description', 'Recommended Feature Name',
+                                                  'Recommended Feature Description', 'Feature Similarity Score',
+                                                  'Goal Industry',
+                                                  'Goal Usecase', 'Source'])
             df_out = df_out.append(df_append, ignore_index=True)
     if suggested_industry != 'all':
         suggested_industry = processIndustry(suggested_industry, semantic)
@@ -152,7 +180,7 @@ def feature_recommendation(df, name_column, desc_column, suggested_industry='all
     return df_out
 
 
-def fine_attrByRelevance(df, name_column, desc_column, building_corpus, threshold=0.4):
+def fine_attrByRelevance(df, building_corpus, name_column=None, desc_column=None, threshold=0.4):
     if not isinstance(df, pd.DataFrame):
         raise TypeError('Invalid input for df')
     if type(building_corpus) != list:
@@ -163,27 +191,64 @@ def fine_attrByRelevance(df, name_column, desc_column, building_corpus, threshol
         building_corpus[i] = re.sub("[^A-Za-z0-9]+", " ", building_corpus[i])
         building_corpus[i] = camel_case_split(building_corpus[i])
         building_corpus[i] = building_corpus[i].lower().strip()
-    df_out = pd.DataFrame(columns=['Given Feature Desc', 'Recommended Attribute Name',
-                                   'Recommended Attribute Description', 'Attribute Similarity Score'])
+    if name_column == None:
+        df_out = pd.DataFrame(columns=['Input Feature Desc',
+                                       'Recommended Input Attribute Description', 'Input Attribute Similarity Score'])
+    elif desc_column == None:
+        df_out = pd.DataFrame(
+            columns=['Input Feature Desc', 'Recommended Input Attribute Name', 'Input Attribute Similarity Score'])
+    else:
+        df_out = pd.DataFrame(columns=['Input Feature Desc', 'Recommended Input Attribute Name',
+                                       'Recommended Input Attribute Description', 'Input Attribute Similarity Score'])
     list_user, df_user = recommendationDataPrep(df, name_column, desc_column)
     list_embedding_user = model.encode(list_user, convert_to_tensor=True)
     list_embedding_building = model.encode(building_corpus, convert_to_tensor=True)
     for i, feature in enumerate(building_corpus):
-        df_append = pd.DataFrame(columns=['Given Feature Desc', 'Recommended Attribute Name',
-                                          'Recommended Attribute Description', 'Attribute Similarity Score'])
+        if name_column == None:
+            df_append = pd.DataFrame(columns=['Input Feature Desc',
+                                              'Recommended Input Attribute Description', 'Input Attribute Similarity Score'])
+        elif desc_column == None:
+            df_append = pd.DataFrame(
+                columns=['Input Feature Desc', 'Recommended Input Attribute Name', 'Input Attribute Similarity Score'])
+        else:
+            df_append = pd.DataFrame(columns=['Input Feature Desc', 'Recommended Input Attribute Name',
+                                              'Recommended Input Attribute Description', 'Input Attribute Similarity Score'])
         cos_scores = util.pytorch_cos_sim(list_embedding_building, list_embedding_user)[i]
         top_results = np.argpartition(-cos_scores, range(len(list_user)))[0:len(list_user)]
         for idx in top_results[0:len(list_user)]:
             single_score = "%.4f" % (cos_scores[idx])
             if float(single_score) >= threshold:
-                df_append = df_append.append(
-                    {'Given Feature Desc': feature, 'Recommended Attribute Name': df_user[name_column].iloc[int(idx)],
-                     'Recommended Attribute Description': df_user[desc_column].iloc[int(idx)],
-                     'Attribute Similarity Score': single_score}, ignore_index=True)
+                if name_column == None:
+                    df_append = df_append.append(
+                        {'Input Feature Desc': feature,
+                         'Recommended Input Attribute Description': df_user[desc_column].iloc[int(idx)],
+                         'Input Attribute Similarity Score': single_score}, ignore_index=True)
+                elif desc_column == None:
+                    df_append = df_append.append(
+                        {'Input Feature Desc': feature,
+                         'Recommended Input Attribute Name': df_user[name_column].iloc[int(idx)],
+                         'Input Attribute Similarity Score': single_score}, ignore_index=True)
+                else:
+                    df_append = df_append.append(
+                        {'Input Feature Desc': feature,
+                         'Recommended Input Attribute Name': df_user[name_column].iloc[int(idx)],
+                         'Recommended Input Attribute Description': df_user[desc_column].iloc[int(idx)],
+                         'Input Attribute Similarity Score': single_score}, ignore_index=True)
         if len(df_append) == 0:
-            df_append = df_append.append(
-                {'Given Feature Desc': feature, 'Recommended Attribute Name': 'Null',
-                 'Recommended Attribute Description': 'Null',
-                 'Attribute Similarity Score': 'Null'}, ignore_index=True)
+            if name_column == None:
+                df_append = df_append.append(
+                    {'Input Feature Desc': feature,
+                     'Recommended Input Attribute Description': 'Null',
+                     'Input Attribute Similarity Score': 'Null'}, ignore_index=True)
+            elif desc_column == None:
+                df_append = df_append.append(
+                    {'Input Feature Desc': feature,
+                     'Recommended Input Attribute Name': 'Null',
+                     'Input Attribute Similarity Score': 'Null'}, ignore_index=True)
+            else:
+                df_append = df_append.append(
+                    {'Input Feature Desc': feature, 'Recommended Input Attribute Name': 'Null',
+                     'Recommended Input Attribute Description': 'Null',
+                     'Input Attribute Similarity Score': 'Null'}, ignore_index=True)
         df_out = df_out.append(df_append, ignore_index=True)
     return df_out
