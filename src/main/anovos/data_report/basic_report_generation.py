@@ -48,8 +48,9 @@ def anovos_basic_report(spark, idf, id_col='', label_col='', event_label='', out
     :param label_col: Label/Target column
     :param event_label: Value of (positive) event (i.e label 1)
     :param output_path: File Path for saving metrics and basic report
-    :param global_run_type: "local" (default), "emr"
+    :param global_run_type: "local" (default), "emr", "databricks"
                          "emr" if the files are read from or written in AWS s3
+                         "databricks" if the files are read from or written in dbfs in azure databricks
     """
     global num_cols
     global cat_cols
@@ -63,12 +64,23 @@ def anovos_basic_report(spark, idf, id_col='', label_col='', event_label='', out
     AT_funcs = [IV_calculation, IG_calculation]
     all_funcs = SG_funcs + QC_rows_funcs + QC_cols_funcs + AA_funcs + AT_funcs
     
+    def output_to_local(output_path):
+        punctuations=':'
+        for x in output_path:
+            if x in punctuations:
+                local_path = output_path.replace(x, "")
+                local_path='/'+local_path
+        return local_path
+    
     if global_run_type == "local":
         local_path = output_path
     elif global_run_type == "databricks":
-        local_path = "/dbfs/FileStore/tables/report_stats"
-    else:
+        local_path = output_to_local(output_path)
+    elif global_run_type == "emr":
         local_path = "report_stats"
+    else:
+        raise ValueError("Invalid global_run_type")
+        
     Path(local_path).mkdir(parents=True, exist_ok=True)
 
     for func in all_funcs:
