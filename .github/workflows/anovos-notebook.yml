@@ -1,16 +1,16 @@
-name: Anovos Example Notebooks
+name: Examples & Notebooks Docker Images
 
 on:
   release:
   push:
-#    paths:
-#      - 'examples/**'
-#    branches:
-#      - main
+    paths:
+      - 'examples/**'
+    branches:
+      - main
 
 
 jobs:
-  notebook:
+  notebooks:
     runs-on: ubuntu-latest
     environment: DOCKER_HUB_CREDENTIALS
     strategy:

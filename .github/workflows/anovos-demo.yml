@@ -1,12 +1,12 @@
-name: Anovos Demo
+name: Anovos Demo Docker Images
 
 on:
   release:
   push:
-#    paths:
-#      - 'demo/**'
-#    branches:
-#      - main
+    paths:
+      - 'demo/**'
+    branches:
+      - main
 
 
 jobs:
