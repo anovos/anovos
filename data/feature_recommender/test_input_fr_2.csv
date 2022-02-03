@@ -1,4 +1,4 @@
-Feature Name,Feature Description,Industry,Usecase
+Name,Desc,Industry,Usecase
 key,a unique identifier for each trip,Transportation,Ridepooling Pricing
 fare_amount,the cost of each trip in usd,Transportation,Ridepooling Pricing
 pickup_datetime,date and time where the meter was engaged,Transportation,Ridepooling Pricing
