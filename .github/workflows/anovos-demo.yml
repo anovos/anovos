@@ -3,8 +3,8 @@ name: Anovos Demo
 on:
   release:
   push:
-    paths:
-      - 'demo/**'
+#    paths:
+#      - 'demo/**'
 #    branches:
 #      - main
 

@@ -3,8 +3,8 @@ name: Anovos Notebook
 on:
   release:
   push:
-    paths:
-      - 'examples/anovos_notebook/**'
+#    paths:
+#      - 'examples/anovos_notebook/**'
 #    branches:
 #      - main
 
