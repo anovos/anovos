@@ -1,16 +1,16 @@
-name: Anovos Notebook
+name: Anovos Example Notebooks
 
 on:
   release:
   push:
 #    paths:
-#      - 'examples/anovos_notebook/**'
+#      - 'examples/**'
 #    branches:
 #      - main
 
 
 jobs:
-  build:
+  notebook:
     runs-on: ubuntu-latest
     environment: DOCKER_HUB_CREDENTIALS
     strategy:
@@ -58,3 +58,33 @@ jobs:
           tags: latest ${{ github.ref_name }}
           registry: docker.io/anovos
 
+  examples:
+    needs:
+      - notebooks
+    runs-on: ubuntu-latest
+    environment: DOCKER_HUB_CREDENTIALS
+    strategy:
+      matrix:
+        include:
+          - spark: '2.4.8'
+          - spark: '3.2.0'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@master
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v1.12.0
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v2
+        with:
+          context: examples
+          file: examples/Dockerfile
+          build-args: |
+            spark_version=${{ matrix.spark }}
+          push: ${{ startsWith(github.ref, 'refs/tags') }}
+          tags: anovos-examples-${{ matrix.spark }}:${{ github.ref_name }}
