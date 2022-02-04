@@ -433,12 +433,16 @@ def cat_to_num_unsupervised(
 
         skipped_cols = []
         for i in list_of_cols:
-            uniq_cats = odf.select(i + "_vec").rdd.flatMap(lambda x: x).collect()[0].size
+            uniq_cats = (
+                odf.select(i + "_vec").rdd.flatMap(lambda x: x).collect()[0].size
+            )
             if uniq_cats > cardinality_threshold:
                 skipped_cols.append(i)
                 odf = odf.drop(i + "_vec", i + "_index")
                 continue
-            odf_schema = odf.schema.add(T.StructField("tmp", T.ArrayType(T.IntegerType())))
+            odf_schema = odf.schema.add(
+                T.StructField("tmp", T.ArrayType(T.IntegerType()))
+            )
             for j in range(0, uniq_cats):
                 odf_schema = odf_schema.add(
                     T.StructField(i + "_" + str(j), T.IntegerType())
