@@ -9,6 +9,7 @@ jobs:
   build:
     name: Build the Python distributions
     runs-on: ubuntu-latest
+    environment: PYPI_ENV
     steps:
       - uses: actions/setup-python@v2
         with:
@@ -50,8 +51,8 @@ jobs:
       - name: Publish distribution 📦 to Test PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          user: __token__
-          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+          user: ${{ secrets.TEST_PYPI_API_USERNAME }}
+          password: ${{ secrets.TEST_PYPI_API_PASSWORD }}
           repository_url: https://test.pypi.org/legacy/
           packages_dir: .
 
@@ -59,6 +60,6 @@ jobs:
         if: startsWith(github.ref, 'refs/tags')
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
+          user: ${{ secrets.PYPI_USERNAME }}
+          password: ${{ secrets.PYPI_PASSWORD }}
           packages_dir: .
