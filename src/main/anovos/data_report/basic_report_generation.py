@@ -109,16 +109,16 @@ def anovos_basic_report(
     ]
     AA_funcs = [correlation_matrix, variable_clustering]
     AT_funcs = [IV_calculation, IG_calculation]
-    all_funcs = SG_funcs + QC_rows_funcs + QC_cols_funcs + AA_funcs + AT_funcs    
+    all_funcs = SG_funcs + QC_rows_funcs + QC_cols_funcs + AA_funcs + AT_funcs
 
     def output_to_local(output_path):
-        punctuations=":"
+        punctuations = ":"
         for x in output_path:
             if x in punctuations:
                 local_path = output_path.replace(x, "")
                 local_path = "/" + local_path
         return local_path
- 
+
     if global_run_type == "local":
         local_path = output_path
     elif global_run_type == "databricks":

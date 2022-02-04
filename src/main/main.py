@@ -171,7 +171,7 @@ def main(all_configs, global_run_type):
             start = timeit.default_timer()
             anovos_basic_report(
                 spark,
-                df, 
+                df,
                 **args.get("report_args", {}),
                 global_run_type=global_run_type
             )
