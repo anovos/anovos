@@ -345,7 +345,7 @@ def cat_to_num_unsupervised(spark, idf, list_of_cols='all', drop_cols=[], method
                 indexerModel.write().overwrite().save(model_path + "/cat_to_num_unsupervised/indexer")
         idf_indexed = indexerModel.transform(idf_indexed)
 
-    odf_indexed = idf_id.join(idf_indexed.drop(*list_of_cols),'tempID', 'left_outer')
+    odf_indexed = idf_id.join(idf_indexed.drop(*list_of_cols),'tempID', 'left_outer').drop('tempID')
     odf_indexed.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
    
     if method_type == 0:
@@ -440,7 +440,7 @@ def cat_to_num_supervised(spark, idf, list_of_cols='all', drop_cols=[], label_co
                                for each column) exists already, False Otherwise.
     :param model_path: If pre_existing_model is True, this argument is path for referring the pre-saved model.
                        If pre_existing_model is False, this argument can be used for saving the model.
-                       Default "NA" means there is neither pre-existing model nor there is a need to save one.
+                       Default "NA" is used to save the model for optimization purpose.
     :param output_mode: "replace", "append".
                          “replace” option replaces original columns with transformed column. “append” option append transformed
                          column to the input dataset with a postfix "_encoded" e.g. column X is appended as X_encoded.
@@ -464,7 +464,9 @@ def cat_to_num_supervised(spark, idf, list_of_cols='all', drop_cols=[], label_co
     if (label_col not in idf.columns):
         raise TypeError('Invalid input for Label Column')
     
-    odf = idf
+    
+    idf_id = idf.withColumn("tempID", F.monotonically_increasing_id())
+    odf_partial = idf_id.select(["tempID"] + list_of_cols)
 
     for index, i in enumerate(list_of_cols):
         if pre_existing_model:
@@ -474,15 +476,16 @@ def cat_to_num_supervised(spark, idf, list_of_cols='all', drop_cols=[], label_co
                 .groupBy(i).pivot(label_col).count().fillna(0)\
                 .withColumn(i + '_encoded', F.round(F.col("1")/(F.col("1")+F.col("0")), 4))\
                 .drop(*["1", "0"])
+            df_tmp.coalesce(1).write.csv(model_path + "/cat_to_num_supervised/" + i, header=True, mode='overwrite')
+            df_tmp = spark.read.csv(model_path + "/cat_to_num_supervised/" + i, header=True, inferSchema=True)
         
         if df_tmp.count() > 1:
-            odf = odf.join(df_tmp, i, 'left_outer')
+            odf_partial = odf_partial.join(df_tmp, i, 'left_outer')
         else:
-            odf = odf.crossJoin(df_tmp)
-
-        if (pre_existing_model == False) & (model_path != "NA"):
-            df_tmp.coalesce(1).write.csv(model_path+ "/cat_to_num_supervised/" + i, header=True, mode='overwrite')
-
+            odf_partial = odf_partial.crossJoin(df_tmp)
+    
+    odf = idf_id.join(odf_partial.drop(*list_of_cols),'tempID', 'left_outer').drop('tempID')
+    
     if output_mode =='replace':
         for i in list_of_cols:
             odf = odf.drop(i).withColumnRenamed(i + '_encoded', i)
