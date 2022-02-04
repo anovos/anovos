@@ -712,25 +712,39 @@ def normalization(idf, list_of_cols='all', drop_cols=[], pre_existing_model=Fals
     if output_mode not in ('replace', 'append'):
         raise TypeError('Invalid input for output_mode')
     
+    idf_id = idf.withColumn("tempID", F.monotonically_increasing_id())
+    idf_partial = idf_id.select(["tempID"] + list_of_cols)
+    
     assembler = VectorAssembler(inputCols=list_of_cols, outputCol="list_of_cols_vector", handleInvalid="keep")
-    assembled_data = assembler.transform(idf) 
+    assembled_data = assembler.transform(idf_partial) 
     if pre_existing_model:
         scalerModel = MinMaxScalerModel.load(model_path+"/normalization")
     else:
         scaler = MinMaxScaler(inputCol="list_of_cols_vector", outputCol="list_of_cols_scaled")
         scalerModel = scaler.fit(assembled_data)
+        
+        if (model_path != "NA"):
+            scalerModel.write().overwrite().save(model_path+"/normalization")
+        
     scaledData = scalerModel.transform(assembled_data)
-    
-    if (pre_existing_model == False) & (model_path != "NA"):
-        scalerModel.write().overwrite().save(model_path+"/normalization")
     
     def vector_to_array(v):
         return v.toArray().tolist()
     f_vector_to_array = F.udf(vector_to_array, T.ArrayType(T.FloatType()))
-    odf = scaledData.withColumn("list_of_cols_array", f_vector_to_array('list_of_cols_scaled')).drop(*['list_of_cols_scaled',"list_of_cols_vector"])
-    odf = odf.select(idf.columns + [(F.when(F.isnan(F.col("list_of_cols_array")[i]),None)\
-                                     .otherwise(F.col("list_of_cols_array")[i])).alias(list_of_cols[i]+"_scaled") \
-                                     for i in range(len(list_of_cols))]).drop("list_of_cols_array")
+    
+    odf_partial = scaledData.withColumn("list_of_cols_array", f_vector_to_array('list_of_cols_scaled'))\
+                    .drop(*['list_of_cols_scaled',"list_of_cols_vector"])
+    
+    odf_schema = odf_partial.schema
+    for i in list_of_cols:
+        odf_schema = odf_schema.add(T.StructField(i + "_scaled",T.FloatType()))
+    odf_partial = odf_partial.rdd.map(lambda x: (*x, *x["list_of_cols_array"]))\
+                            .toDF(schema=odf_schema).drop("list_of_cols_array")
+    
+    odf = idf_id.join(odf_partial.drop(*list_of_cols),'tempID', 'left_outer')\
+                .select(idf.columns + [(F.when(F.isnan(F.col(i+"_scaled")),None)\
+                                     .otherwise(F.col(i+"_scaled"))).alias(i+"_scaled") \
+                                     for i in list_of_cols])
     if output_mode =='replace':
         for i in list_of_cols:
             odf = odf.drop(i).withColumnRenamed(i+"_scaled",i)
