@@ -122,18 +122,18 @@ def feature_recommendation(df, name_column=None, desc_column=None, suggested_ind
     list_user, df_user = recommendationDataPrep(df, name_column, desc_column)
     if name_column == None:
         df_out = pd.DataFrame(columns=['Input Attribute Description', 'Recommended Feature Name',
-                                       'Recommended Feature Description', 'Feature Similarity Score', 'Goal Industry',
-                                       'Goal Usecase',
+                                       'Recommended Feature Description', 'Feature Similarity Score', 'Industry',
+                                       'Usecase',
                                        'Source'])
     elif desc_column == None:
         df_out = pd.DataFrame(columns=['Input Attribute Name', 'Recommended Feature Name',
-                                       'Recommended Feature Description', 'Feature Similarity Score', 'Goal Industry',
-                                       'Goal Usecase',
+                                       'Recommended Feature Description', 'Feature Similarity Score', 'Industry',
+                                       'Usecase',
                                        'Source'])
     else:
         df_out = pd.DataFrame(columns=['Input Attribute Name', 'Input Attribute Description', 'Recommended Feature Name',
-                                       'Recommended Feature Description', 'Feature Similarity Score', 'Goal Industry',
-                                       'Goal Usecase',
+                                       'Recommended Feature Description', 'Feature Similarity Score', 'Industry',
+                                       'Usecase',
                                        'Source'])
     list_embedding_user = model.encode(list_user, convert_to_tensor=True)
     for i, feature in enumerate(list_user):
@@ -148,8 +148,8 @@ def feature_recommendation(df, name_column=None, desc_column=None, suggested_ind
                                            df_rec['Source'].iloc[int(idx)]]],
                                          columns=['Input Attribute Description', 'Recommended Feature Name',
                                                   'Recommended Feature Description', 'Feature Similarity Score',
-                                                  'Goal Industry',
-                                                  'Goal Usecase', 'Source'])
+                                                  'Industry',
+                                                  'Usecase', 'Source'])
             elif desc_column == None:
                 df_append = pd.DataFrame([[df_user[name_column].iloc[i],
                                            df_rec['Feature Name'].iloc[int(idx)],
@@ -158,8 +158,8 @@ def feature_recommendation(df, name_column=None, desc_column=None, suggested_ind
                                            df_rec['Source'].iloc[int(idx)]]],
                                          columns=['Input Attribute Name', 'Recommended Feature Name',
                                                   'Recommended Feature Description', 'Feature Similarity Score',
-                                                  'Goal Industry',
-                                                  'Goal Usecase', 'Source'])
+                                                  'Industry',
+                                                  'Usecase', 'Source'])
             else:
                 df_append = pd.DataFrame([[df_user[name_column].iloc[i], df_user[desc_column].iloc[i],
                                            df_rec['Feature Name'].iloc[int(idx)],
@@ -168,15 +168,15 @@ def feature_recommendation(df, name_column=None, desc_column=None, suggested_ind
                                            df_rec['Source'].iloc[int(idx)]]],
                                          columns=['Input Attribute Name', 'Input Attribute Description', 'Recommended Feature Name',
                                                   'Recommended Feature Description', 'Feature Similarity Score',
-                                                  'Goal Industry',
-                                                  'Goal Usecase', 'Source'])
+                                                  'Industry',
+                                                  'Usecase', 'Source'])
             df_out = df_out.append(df_append, ignore_index=True)
     if suggested_industry != 'all':
         suggested_industry = processIndustry(suggested_industry, semantic)
-        df_out = df_out[df_out['Goal Industry'].str.contains(suggested_industry)].reset_index(drop=True)
+        df_out = df_out[df_out['Industry'].str.contains(suggested_industry)].reset_index(drop=True)
     if suggested_usecase != 'all':
         suggested_usecase = processUsecase(suggested_usecase, semantic)
-        df_out = df_out[df_out['Goal Usecase'].str.contains(suggested_usecase)].reset_index(drop=True)
+        df_out = df_out[df_out['Usecase'].str.contains(suggested_usecase)].reset_index(drop=True)
     return df_out
 
 
