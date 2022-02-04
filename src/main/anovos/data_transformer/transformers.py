@@ -2,8 +2,6 @@
 import pyspark
 import warnings
 from packaging import version
-
-import pyspark
 from anovos.data_analyzer.stats_generator import missingCount_computation, uniqueCount_computation
 from anovos.data_ingest.data_ingest import read_dataset
 from anovos.shared.utils import attributeType_segregation, get_dtype
@@ -252,8 +250,10 @@ def monotonic_binning(spark, idf, list_of_cols='all', drop_cols=[], label_col='l
     return odf
 
 
-def cat_to_num_unsupervised(spark, idf, list_of_cols='all', drop_cols=[], method_type=1, index_order='frequencyDesc', cardinality_threshold=100,
-                            pre_existing_model=False, model_path="NA", output_mode='replace', stats_unique={}, print_impact=False):
+def cat_to_num_unsupervised(spark, idf, list_of_cols='all', drop_cols=[], method_type=1, index_order='frequencyDesc',
+                            cardinality_threshold=100,
+                            pre_existing_model=False, model_path="NA", output_mode='replace', stats_unique={},
+                            print_impact=False):
     """
     :param spark: Spark Session
     :param idf: Input Dataframe
@@ -310,34 +310,57 @@ def cat_to_num_unsupervised(spark, idf, list_of_cols='all', drop_cols=[], method
     if output_mode not in ('replace', 'append'):
         raise TypeError('Invalid input for output_mode')
 
-    if pre_existing_model:
-        pipelineModel = PipelineModel.load(model_path + "/cat_to_num_unsupervised/indexer")
+    list_of_cols_vec = []
+    list_of_cols_idx = []
+    for i in list_of_cols:
+        list_of_cols_vec.append(i + "_vec")
+        list_of_cols_idx.append(i + "_index")
+    idf_id = idf.withColumn("tempID", F.monotonically_increasing_id())
+    idf_indexed = idf_id.select(["tempID"] + list_of_cols)
+    if version.parse(pyspark.__version__) < version.parse("3.0.0"):
+        for idx, i in enumerate(list_of_cols):
+            if pre_existing_model:
+                indexerModel = StringIndexerModel.load(model_path + "/cat_to_num_unsupervised/indexer-model/" + i)
+            else:
+                stringIndexer = StringIndexer(inputCol=i, outputCol=i + '_index',
+                                              stringOrderType=index_order, handleInvalid='keep')
+                indexerModel = stringIndexer.fit(idf.select(i))
+
+                if (model_path != "NA"):
+                    indexerModel.write().overwrite().save(model_path + "/cat_to_num_unsupervised/indexer-model/" + i)
+
+            idf_indexed = indexerModel.transform(idf_indexed)
+
+            if idx % 5 == 0:
+                idf_indexed.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
+
     else:
-        stages = []
-        for i in list_of_cols:
-            stringIndexer = StringIndexer(inputCol=i, outputCol=i + '_index',
+        if pre_existing_model:
+            indexerModel = StringIndexerModel.load(model_path + "/cat_to_num_unsupervised/indexer")
+        else:
+            stringIndexer = StringIndexer(inputCols=list_of_cols, outputCols=list_of_cols_idx,
                                           stringOrderType=index_order, handleInvalid='keep')
-            stages += [stringIndexer]
-        pipeline = Pipeline(stages=stages)
-        pipelineModel = pipeline.fit(idf)
+            indexerModel = stringIndexer.fit(idf_indexed)
+            if (model_path != "NA"):
+                indexerModel.write().overwrite().save(model_path + "/cat_to_num_unsupervised/indexer")
+        idf_indexed = indexerModel.transform(idf_indexed)
 
-    odf_indexed = pipelineModel.transform(idf)
-
+    odf_indexed = idf_id.join(idf_indexed.drop(*list_of_cols),'tempID', 'left_outer')
+    odf_indexed.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
+   
     if method_type == 0:
-        list_of_cols_vec = []
-        list_of_cols_idx = []
-        for i in list_of_cols:
-            list_of_cols_vec.append(i + "_vec")
-            list_of_cols_idx.append(i + "_index")
         if pre_existing_model:
             encoder = OneHotEncoder.load(model_path + "/cat_to_num_unsupervised/encoder")
         else:
             encoder = OneHotEncoder(inputCols=list_of_cols_idx, outputCols=list_of_cols_vec,
-                                             handleInvalid='keep')
+                                    handleInvalid='keep')
+            if (model_path != "NA"):
+                encoder.write().overwrite().save(model_path + "/cat_to_num_unsupervised/encoder")
 
         odf_encoded = encoder.fit(odf_indexed).transform(odf_indexed)
 
         odf = odf_encoded
+
         def vector_to_array(v):
             v = DenseVector(v)
             new_array = list([int(x) for x in v])
@@ -352,22 +375,25 @@ def cat_to_num_unsupervised(spark, idf, list_of_cols='all', drop_cols=[], method
             if stats_unique == {}:
                 uniq_cats = idf.select(i).distinct().count()
             else:
-                uniq_cats = stats_df.where(F.col("attribute") == i).select("unique_values").rdd.flatMap(lambda x: x).collect()[0]
+                uniq_cats = \
+                stats_df.where(F.col("attribute") == i).select("unique_values").rdd.flatMap(lambda x: x).collect()[0]
 
             if uniq_cats > cardinality_threshold:
                 skipped_cols.append(i)
                 odf = odf.drop(i + '_vec', i + '_index')
                 continue
             odf_schema = odf.schema
-            odf_schema = odf_schema.add(T.StructField("tmp",T.ArrayType(T.IntegerType())))
+            odf_schema = odf_schema.add(T.StructField("tmp", T.ArrayType(T.IntegerType())))
             for j in range(0, uniq_cats):
-                odf_schema = odf_schema.add(T.StructField(i + "_" + str(j),T.IntegerType()))
-            odf = odf.withColumn("tmp", f_vector_to_array(i + '_vec')).rdd.map(lambda x: (*x, *x["tmp"])).toDF(schema=odf_schema)
+                odf_schema = odf_schema.add(T.StructField(i + "_" + str(j), T.IntegerType()))
+            odf = odf.withColumn("tmp", f_vector_to_array(i + '_vec'))\
+                     .rdd.map(lambda x: (*x, *x["tmp"])).toDF(schema=odf_schema)
 
             if output_mode == 'replace':
                 odf = odf.drop(i, i + '_vec', i + '_index', 'tmp')
             else:
                 odf = odf.drop(i + '_vec', i + '_index', 'tmp')
+
         if skipped_cols:
             warnings.warn(
                 "Columns dropped from one-hot encoding due to high cardinality: " + (',').join(skipped_cols))
@@ -380,11 +406,6 @@ def cat_to_num_unsupervised(spark, idf, list_of_cols='all', drop_cols=[], method
             for i in list_of_cols:
                 odf = odf.drop(i).withColumnRenamed(i + '_index', i)
             odf = odf.select(idf.columns)
-
-    if (pre_existing_model == False) & (model_path != "NA"):
-        pipelineModel.write().overwrite().save(model_path + "/cat_to_num_unsupervised/indexer")
-        if method_type == 0:
-            encoder.write().overwrite().save(model_path + "/cat_to_num_unsupervised/encoder")
 
     if (print_impact == True) & (method_type == 1):
         print("Before")
