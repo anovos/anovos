@@ -170,7 +170,10 @@ def main(all_configs, global_run_type):
         ):
             start = timeit.default_timer()
             anovos_basic_report(
-                spark, df, **args.get("report_args", {}), global_run_type=global_run_type
+                spark,
+                df, 
+                **args.get("report_args", {}),
+                global_run_type=global_run_type
             )
             end = timeit.default_timer()
             print("Basic Report, execution time (in secs) =", round(end - start, 4))
@@ -403,12 +406,12 @@ if __name__ == "__main__":
     config_path = sys.argv[1]
     global_run_type = sys.argv[2]
 
-    if global_run_type == 'local' or 'databricks':
-        config_file = open(config_path, 'r')
+    if global_run_type == "local" or "databricks":
+        config_file = open(config_path, "r")
     elif global_run_type == "emr":
         bash_cmd = "aws s3 cp " + config_path + " config.yaml"
-        output = subprocess.check_output(['bash', '-c', bash_cmd])
-        config_file = open('config.yaml', 'r')
+        output = subprocess.check_output(["bash", "-c", bash_cmd])
+        config_file = open("config.yaml", "r")
     else:
         raise ValueError("Invalid global_run_type")
 

@@ -26,13 +26,12 @@ num_cols = []
 cat_cols = []
 
 def master_to_local(master_path):
-    punctuations=':'
+    punctuations = ":"
     for x in master_path:
         if x in punctuations:
             local_path = master_path.replace(x, "")
-            local_path='/'+local_path
+            local_path = "/" + local_path
     return local_path
-
 
 def save_stats(spark, idf, master_path, function_name, reread=False, run_type="local"):
     """
@@ -52,7 +51,7 @@ def save_stats(spark, idf, master_path, function_name, reread=False, run_type="l
         local_path = "report_stats"
     else:
         raise ValueError("Invalid run_type")
-        
+
     Path(local_path).mkdir(parents=True, exist_ok=True)
 
     idf.toPandas().to_csv(ends_with(local_path) + function_name + ".csv", index=False)
@@ -470,7 +469,7 @@ def charts_to_objects(
     cutoffs_path2 = source_path + "/drift_statistics/attribute_binning"
 
     idf_encoded.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
-    
+ 
     if run_type == "local":
         local_path = master_path
     elif run_type == "databricks":
@@ -479,7 +478,7 @@ def charts_to_objects(
         local_path = "report_stats"
     else:
         raise ValueError("Invalid run_type")
-        
+ 
     Path(local_path).mkdir(parents=True, exist_ok=True)
 
     for idx, col in enumerate(list_of_cols):
