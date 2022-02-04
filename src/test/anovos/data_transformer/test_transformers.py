@@ -10,7 +10,7 @@ sample_parquet = "./data/test_dataset/part-00001-3eb0f7bb-05c2-46ec-8913-23ba231
 #scaling
 def test_z_standardization(spark_session):
     df = read_dataset(spark_session, sample_parquet, "parquet")
-    odf = z_standardization(spark, df)
+    odf = z_standardization(spark_session, df)
     odf_stddev_dict = odf.describe().where(F.col("summary") == "stddev").toPandas().to_dict('list')
     assert round(float(odf_stddev_dict['age'][0])) == 1.0
     assert round(float(odf_stddev_dict['fnlwgt'][0])) == 1.0
@@ -18,7 +18,7 @@ def test_z_standardization(spark_session):
 
 def test_IQR_standardization(spark_session):
     df = read_dataset(spark_session, sample_parquet, "parquet")
-    odf = IQR_standardization(spark, df)
+    odf = IQR_standardization(spark_session, df)
     odf_median_dict = odf.summary().where(F.col("summary") == "50%").toPandas().to_dict('list')
     assert round(float(odf_median_dict['age'][0])) == 0.0
     assert round(float(odf_median_dict['fnlwgt'][0])) == 0.0
