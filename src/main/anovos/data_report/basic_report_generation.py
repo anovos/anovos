@@ -66,8 +66,6 @@ def stats_args(path, func):
     return output
 
 
-def anovos_basic_report(spark, idf, id_col='', label_col='', event_label='', output_path='.', global_run_type='local',
-                        print_impact=True):
 def anovos_basic_report(
     spark,
     idf,
@@ -150,10 +148,6 @@ def anovos_basic_report(
         stats.toPandas().to_csv(
             ends_with(local_path) + func.__name__ + ".csv", index=False
         )
-
-        if global_run_type == 'emr':
-            bash_cmd = "aws s3 cp " + ends_with(local_path) + func.__name__ + ".csv " + ends_with(output_path)
-            output = subprocess.check_output(['bash', '-c', bash_cmd])
 
         if global_run_type == "emr":
             bash_cmd = (
@@ -464,24 +458,6 @@ def anovos_basic_report(
     tab3 = dp.Group(
         dp.Text("# "),
         dp.Text(
-            "*This section analyzes the interaction between different attributes and/or the relationship between an attribute & the binary target variable.*"), \
-        dp.Text("# "), \
-        dp.Text("# "), \
-        dp.Text("### Association Matrix & Plot"), \
-        dp.Select(blocks=AA_content, type=dp.SelectType.DROPDOWN), \
-        dp.Text("### "), \
-        dp.Text("## "), \
-        dp.Text("## "), \
-        dp.Text("## "), \
-        label="Attribute Associations")
-
-    basic_report = dp.Report(default_template[0], default_template[1], \
-                             dp.Select(blocks=[tab1, tab2, tab3], type=dp.SelectType.TABS)) \
-        .save(ends_with(local_path) + "basic_report.html", open=True)
-
-    if global_run_type == 'emr':
-        bash_cmd = "aws s3 cp " + ends_with(local_path) + "basic_report.html " + ends_with(output_path)
-        output = subprocess.check_output(['bash', '-c', bash_cmd])
             "*This section analyzes the interaction between different attributes and/or the relationship between an attribute & the binary target variable.*"
         ),
         dp.Text("# "),

@@ -169,8 +169,6 @@ def main(all_configs, global_run_type):
             & args.get("basic_report", False)
         ):
             start = timeit.default_timer()
-            anovos_basic_report(spark, df, **args.get('report_args', {}), global_run_type=global_run_type)
-
             anovos_basic_report(
                 spark, df, **args.get("report_args", {}), global_run_type=global_run_type
             )
@@ -186,7 +184,6 @@ def main(all_configs, global_run_type):
                     f = getattr(stats_generator, m)
                     df_stats = f(spark, df, **args["metric_args"], print_impact=False)
                     if report_inputPath:
-                        save_stats(spark, df_stats, report_inputPath, m, reread=True, run_type=global_run_type).show(100)
                         save_stats(
                             spark,
                             df_stats,
@@ -225,8 +222,6 @@ def main(all_configs, global_run_type):
                             reread=True,
                         )
                         if report_inputPath:
-                            save_stats(spark, df_stats, report_inputPath, subkey, reread=True,
-                                       run_type=global_run_type).show(100)
                             save_stats(
                                 spark,
                                 df_stats,
@@ -261,8 +256,6 @@ def main(all_configs, global_run_type):
                             spark, df, **value, **extra_args, print_impact=False
                         )
                         if report_inputPath:
-                            save_stats(spark, df_stats, report_inputPath, subkey, reread=True,
-                                       run_type=global_run_type).show(100)
                             save_stats(
                                 spark,
                                 df_stats,
@@ -300,8 +293,6 @@ def main(all_configs, global_run_type):
                             spark, df, source, **value["configs"], print_impact=False
                         )
                         if report_inputPath:
-                            save_stats(spark, df_stats, report_inputPath, subkey, reread=True,
-                                       run_type=global_run_type).show(100)
                             save_stats(
                                 spark,
                                 df_stats,
@@ -335,15 +326,6 @@ def main(all_configs, global_run_type):
                             spark, *idfs, **value["configs"], print_impact=False
                         )
                         if report_inputPath:
-                            save_stats(spark, df_stats, report_inputPath, subkey, reread=True,
-                                       run_type=global_run_type).show(100)
-                            appended_metric_path = value['configs'].get("appended_metric_path", "")
-                            if appended_metric_path:
-                                df_metrics = data_ingest.read_dataset(spark, file_path=appended_metric_path,
-                                                                      file_type="csv", file_configs={
-                                        "header": True, "mode": 'overwrite'})
-                                save_stats(spark, df_metrics, report_inputPath, "stabilityIndex_metrics", reread=True,
-                                           run_type=global_run_type).show(100)
                             save_stats(
                                 spark,
                                 df_stats,
@@ -395,12 +377,6 @@ def main(all_configs, global_run_type):
                         start = timeit.default_timer()
                         f = getattr(report_preprocessing, subkey)
                         extra_args = stats_args(all_configs, subkey)
-                        f(spark, df, **value, **extra_args, master_path=report_inputPath, run_type=global_run_type)
-                        end = timeit.default_timer()
-                        print(key, subkey, ", execution time (in secs) =", round(end - start, 4))
-
-            if (key == 'report_generation') & (args != None):
-                anovos_report(**args, run_type=global_run_type)
                         f(
                             spark,
                             df,
@@ -433,14 +409,6 @@ if __name__ == "__main__":
         bash_cmd = "aws s3 cp " + config_path + " config.yaml"
         output = subprocess.check_output(['bash', '-c', bash_cmd])
         config_file = open('config.yaml', 'r')
-    else:
-        raise ValueError("Invalid global_run_type")
-    if global_run_type == 'local' or 'databricks':
-        config_file = open(config_path, "r")
-    elif global_run_type == "emr":
-        bash_cmd = "aws s3 cp " + config_path + " config.yaml"
-        output = subprocess.check_output(["bash", "-c", bash_cmd])
-        config_file = open("config.yaml", "r")
     else:
         raise ValueError("Invalid global_run_type")
 
