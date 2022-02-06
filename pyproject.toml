@@ -1,0 +1,31 @@
+[tool]
+[tool.poetry]
+name = "anovos"
+version = "0.1"
+description = "An Open Source tool for Feature Engineering in Machine Learning"
+keywords = ["machine", "learning", "open", "source", "feature", "engineering", "analytics"]
+homepage = "https://github.com/anovos/anovos.git"
+authors = ["Team Anovos <info@anovos.ai>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.7.1,<4.0.0"
+boto3 = "*"
+cython = "*"
+datapane = "==0.12.0"
+findspark = "<2.0.0"
+fsspec = "*"
+matplotlib = ">=3.4.3"
+numpy = ">=1.20.0"
+pandas = ">=1.2.5"
+plotly = ">=5.2.1"
+popmon = "*"
+pyarrow = "<6.0.0"
+pybind11 = "*"
+pytest = "*"
+s3fs = "*"
+s3path = "*"
+scikit-learn = "*"
+scipy = "*"
+soupsieve = "*"
+varclushi = "*"

@@ -16,10 +16,13 @@ COPY bin/datapane_install ./datapane_install
 RUN ln -s /usr/bin/python3 /usr/bin/python \
     && python3.7 -m pip install pip --upgrade pip \
     && pip3 install "./datapane_install/datapane-0.12.0.tar.gz" \
+    && pip3 install poetry
     && cp ./datapane_install/local-report-base* /usr/local/lib/python3.7/dist-packages/datapane/resources/local_report
 
-COPY requirements.txt .
-RUN python3 -m pip install -r requirements.txt
+# @TODO we might need to proceed with multistage building in the future
+# https://github.com/python-poetry/poetry/issues/1178
+COPY pyproject.toml poetry.lock .
+RUN poetry install --no-ansi
 
 COPY config/log4j.properties .
 COPY config/configs.yaml .
