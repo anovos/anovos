@@ -1039,6 +1039,7 @@ def invalidEntries_detection(
         "none",
         "undefined",
         "blank",
+        "unknown"
     ]
     specialChars_vocab = [
         "&",
@@ -1086,17 +1087,10 @@ def invalidEntries_detection(
                 if l >= 3:
                     for i in range(1, l):
                         if ord(e[i]) - ord(e[i - 1]) != 1:
-                            output.append(0)
                             check = 1
                             break
-                    if check == 1:
-                        continue
-                    else:
+                    if check == 0:
                         output.append(1)
-                        continue
-                else:
-                    output.append(0)
-                    continue
 
             if detection_type in ("manual", "both"):
                 e = str(e).lower().strip()
