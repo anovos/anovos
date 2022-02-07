@@ -52,7 +52,7 @@ import os
 import copy
 import pickle
 import random
-import tempfil
+import tempfile
 import subprocess
 import pandas as pd
 import numpy as np
