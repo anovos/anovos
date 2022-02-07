@@ -10,7 +10,7 @@ from anovos.data_ingest.data_ingest import read_dataset
 from anovos.shared.utils import attributeType_segregation, get_dtype
 from pyspark.ml import Pipeline, PipelineModel
 from pyspark.ml.feature import Imputer, ImputerModel
-from pyspark.ml.feature import StringIndexer
+from pyspark.ml.feature import StringIndexer, StringIndexerModel
 
 if version.parse(pyspark.__version__) < version.parse("3.0.0"):
     from pyspark.ml.feature import OneHotEncoderEstimator as OneHotEncoder
@@ -1506,11 +1506,8 @@ def imputation_sklearn(
         odf_rest = odf_rest.drop("features")
 
     if pre_existing_model:
-        odf = (
-            idf.select(["id"] + [e for e in idf.columns if e not in list_of_cols])
-            .join(odf_rest, "id", "left_outer")
-            .drop("id")
-        )
+        odf = odf_rest
+    
     elif idf_rest.count() == 0:
         odf = (
             idf.select(["id"] + [e for e in idf.columns if e not in list_of_cols])
@@ -2607,7 +2604,7 @@ def feature_transformation(
     for i in list_of_cols:
         modify_col = get_col_name(i)
         odf = odf.withColumn(modify_col, transformation_function[method_type](F.col(i)))
-        output_cols.append(i)
+        output_cols.append(modify_col)
 
     if print_impact:
         print("Before:")
