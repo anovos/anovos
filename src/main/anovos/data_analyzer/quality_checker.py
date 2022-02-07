@@ -1091,10 +1091,11 @@ def invalidEntries_detection(
                             break
                     if check == 0:
                         output.append(1)
-
+                        continue
+            
+            check = 0
             if detection_type in ("manual", "both"):
                 e = str(e).lower().strip()
-                check = 0
                 for regex in invalid_entries:
                     p = re.compile(regex)
                     if partial_match:
@@ -1107,8 +1108,8 @@ def invalidEntries_detection(
                             check = 1
                             output.append(1)
                             break
-                if check == 0:
-                    output.append(0)
+            if check == 0:
+                output.append(0)
 
         return output
 
