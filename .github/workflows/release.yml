@@ -9,7 +9,6 @@ jobs:
   build:
     name: Build the Python distributions
     runs-on: ubuntu-latest
-    environment: PYPI_ENV
     steps:
       - uses: actions/setup-python@v2
         with:
@@ -38,6 +37,7 @@ jobs:
     needs:
       - build
     runs-on: ubuntu-latest
+    environment: PYPI_ENV
     steps:
       - name: Download distribution
         uses: actions/download-artifact@v2
