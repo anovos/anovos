@@ -1491,7 +1491,7 @@ def imputation_sklearn(
 
     if pre_existing_model:
         odf = odf_rest
-    
+
     elif idf_rest.count() == 0:
         odf = (
             idf.select(["id"] + [e for e in idf.columns if e not in list_of_cols])
