@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+
 from anovos.shared.utils import ends_with
 
 global_theme = px.colors.sequential.Plasma
@@ -624,9 +625,9 @@ def executive_summary_gen(
     try:
         biasedness_df = pd.read_csv(ends_with(master_path) + "biasedness_detection.csv")
         if "treated" in biasedness_df:
-            x7 = list(df.query("`treated`>0").attribute.values)
+            x7 = list(biasedness_df.query("`treated`>0").attribute.values)
         else:
-            x7 = list(df.query("`flagged`>0").attribute.values)
+            x7 = list(biasedness_df.query("`flagged`>0").attribute.values)
         if len(x7) > 0:
             x7_1 = ["High Biasedness", x7]
         else:
@@ -674,7 +675,7 @@ def executive_summary_gen(
         if len(x10) > 0:
             x10_1 = ["Significant Attributes", x10]
         else:
-            x10_1["Significant Attributes", None]
+            x10_1 = ["Significant Attributes", None]
     except:
         x10_1 = ["Significant Attributes", None]
 
