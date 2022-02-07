@@ -11,17 +11,26 @@ from pyspark import SQLContext
 from pyspark.sql import SparkSession
 
 if version.parse(pyspark.__version__) < version.parse("3.0.0"):
-    SPARK_JARS_PACKAGES = ["io.github.histogrammar:histogrammar_2.11:1.0.20",
-                           "io.github.histogrammar:histogrammar-sparksql_2.11:1.0.20",
-                           "org.apache.spark:spark-avro_2.11:" + str(pyspark.__version__)]
+    SPARK_JARS_PACKAGES = [
+        "io.github.histogrammar:histogrammar_2.11:1.0.20",
+        "io.github.histogrammar:histogrammar-sparksql_2.11:1.0.20",
+        "org.apache.spark:spark-avro_2.11:" + str(pyspark.__version__),
+    ]
 else:
-    SPARK_JARS_PACKAGES = ["io.github.histogrammar:histogrammar_2.12:1.0.20",
-                           "io.github.histogrammar:histogrammar-sparksql_2.12:1.0.20",
-                           "org.apache.spark:spark-avro_2.12:" + str(pyspark.__version__)]
+    SPARK_JARS_PACKAGES = [
+        "io.github.histogrammar:histogrammar_2.12:1.0.20",
+        "io.github.histogrammar:histogrammar-sparksql_2.12:1.0.20",
+        "org.apache.spark:spark-avro_2.12:" + str(pyspark.__version__),
+    ]
 
 
-def init_spark(app_name='anovos', master='local[*]',
-               jars_packages=None, py_files=None, spark_config=None):
+def init_spark(
+    app_name="anovos",
+    master="local[*]",
+    jars_packages=None,
+    py_files=None,
+    spark_config=None,
+):
     """
     :param app_name: Name of Spark app.
     :param master: Cluster connection details
@@ -33,8 +42,8 @@ def init_spark(app_name='anovos', master='local[*]',
     """
 
     # detect execution environment
-    flag_repl = not (hasattr(__main__, '__file__'))
-    flag_debug = 'DEBUG' in environ.keys()
+    flag_repl = not (hasattr(__main__, "__file__"))
+    flag_debug = "DEBUG" in environ.keys()
 
     if not (flag_repl or flag_debug):
         spark_builder = SparkSession.builder.appName(app_name)
@@ -42,12 +51,12 @@ def init_spark(app_name='anovos', master='local[*]',
         spark_builder = SparkSession.builder.master(master).appName(app_name)
 
     if jars_packages is not None and jars_packages:
-        spark_jars_packages = ','.join(list(jars_packages))
-        spark_builder.config('spark.jars.packages', spark_jars_packages)
+        spark_jars_packages = ",".join(list(jars_packages))
+        spark_builder.config("spark.jars.packages", spark_jars_packages)
 
     if py_files is not None and py_files:
-        spark_files = ','.join(list(py_files))
-        spark_builder.config('spark.files', spark_files)
+        spark_files = ",".join(list(py_files))
+        spark_builder.config("spark.files", spark_files)
 
     if spark_config is not None and spark_config:
         for key, val in spark_config.items():
@@ -60,14 +69,18 @@ def init_spark(app_name='anovos', master='local[*]',
     return _spark, _spark_context, _sql_context
 
 
-configs = {'app_name': 'Anovos_pipeline',
-           'jars_packages': SPARK_JARS_PACKAGES,
-           'py_files': [],
-           'spark_config': {'spark.sql.session.timeZone': 'GMT',
-                             'spark.python.profile': 'false',
-                             'spark.yarn.appMasterEnv.ARROW_PRE_0_15_IPC_FORMAT': '1',
-                             'spark.executorEnv.ARROW_PRE_0_15_IPC_FORMAT': '1',
-                             'spark.sql.session.timeZone': 'GMT',
-                             'spark.python.profile': 'false'}}
+configs = {
+    "app_name": "Anovos_pipeline",
+    "jars_packages": SPARK_JARS_PACKAGES,
+    "py_files": [],
+    "spark_config": {
+        "spark.sql.session.timeZone": "GMT",
+        "spark.python.profile": "false",
+        "spark.yarn.appMasterEnv.ARROW_PRE_0_15_IPC_FORMAT": "1",
+        "spark.executorEnv.ARROW_PRE_0_15_IPC_FORMAT": "1",
+        "spark.sql.session.timeZone": "GMT",
+        "spark.python.profile": "false",
+    },
+}
 
 spark, sc, sqlContext = init_spark(**configs)
