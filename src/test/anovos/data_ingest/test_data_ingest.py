@@ -4,7 +4,7 @@ import pyspark.sql.functions as F
 import pytest
 from pyspark.sql import SparkSession
 
-from src.main.anovos.data_ingest.data_ingest import (
+from anovos.data_ingest.data_ingest import (
     read_dataset,
     write_dataset,
     concatenate_dataset,

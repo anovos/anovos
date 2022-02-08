@@ -1,7 +1,7 @@
 import pytest
 from pyspark.sql import SparkSession
 
-from src.main.anovos.shared.spark import init_spark, SPARK_JARS_PACKAGES
+from anovos.shared.spark import init_spark, SPARK_JARS_PACKAGES
 
 
 @pytest.fixture(scope="session")

@@ -1,9 +1,7 @@
 import __main__
 import findspark
 from os import environ
-
 from packaging import version
-
 findspark.init()
 
 import pyspark

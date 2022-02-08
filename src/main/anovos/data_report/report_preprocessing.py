@@ -10,14 +10,14 @@ from pyspark.sql import functions as F
 from pyspark.sql import types as T
 from pyspark.sql.window import Window
 
-from src.main.anovos.data_analyzer.stats_generator import uniqueCount_computation
-from src.main.anovos.data_ingest.data_ingest import read_dataset
-from src.main.anovos.data_transformer.transformers import (
+from anovos.data_analyzer.stats_generator import uniqueCount_computation
+from anovos.data_ingest.data_ingest import read_dataset
+from anovos.data_transformer.transformers import (
     outlier_categories,
     imputation_MMM,
     attribute_binning,
 )
-from src.main.anovos.shared.utils import attributeType_segregation, ends_with
+from anovos.shared.utils import attributeType_segregation, ends_with
 
 global_theme = px.colors.sequential.Plasma
 global_theme_r = px.colors.sequential.Plasma_r

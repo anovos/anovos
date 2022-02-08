@@ -1,7 +1,7 @@
 import pytest
 from pyspark.sql import functions as F
 
-from src.main.anovos.data_analyzer.stats_generator import (
+from anovos.data_analyzer.stats_generator import (
     missingCount_computation,
     uniqueCount_computation,
     mode_computation,

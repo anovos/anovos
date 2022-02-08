@@ -9,15 +9,15 @@ from pyspark.sql import Window
 from pyspark.sql import functions as F
 from varclushi import VarClusHi
 
-from src.main.anovos.data_analyzer.stats_generator import uniqueCount_computation
-from src.main.anovos.data_ingest.data_ingest import read_dataset
-from src.main.anovos.data_transformer.transformers import (
+from anovos.data_analyzer.stats_generator import uniqueCount_computation
+from anovos.data_ingest.data_ingest import read_dataset
+from anovos.data_transformer.transformers import (
     attribute_binning,
     monotonic_binning,
     cat_to_num_unsupervised,
     imputation_MMM,
 )
-from src.main.anovos.shared.utils import attributeType_segregation
+from anovos.shared.utils import attributeType_segregation
 
 
 def correlation_matrix(

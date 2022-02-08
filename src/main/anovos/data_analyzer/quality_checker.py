@@ -5,7 +5,7 @@ import warnings
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
 
-from src.main.anovos.data_analyzer.stats_generator import (
+from anovos.data_analyzer.stats_generator import (
     uniqueCount_computation,
     missingCount_computation,
     mode_computation,

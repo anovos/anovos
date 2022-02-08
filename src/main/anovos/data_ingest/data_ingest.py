@@ -1,8 +1,7 @@
 # coding=utf-8
-from src.main.anovos.shared.utils import pairwise_reduce
-from pyspark.sql import DataFrame
 import pyspark.sql.functions as F
-
+from pyspark.sql import DataFrame
+from anovos.shared.utils import pairwise_reduce
 
 def read_dataset(spark, file_path, file_type, file_configs={}):
     """

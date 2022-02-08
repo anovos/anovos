@@ -6,7 +6,7 @@ from pyspark.mllib.stat import Statistics
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
 
-from src.main.anovos.shared.utils import transpose_dataframe, attributeType_segregation
+from anovos.shared.utils import transpose_dataframe, attributeType_segregation
 
 
 def global_summary(spark, idf, list_of_cols="all", drop_cols=[], print_impact=True):

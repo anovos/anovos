@@ -10,9 +10,9 @@ from pyspark.sql import functions as F
 from pyspark.sql import types as T
 from scipy.stats import variation
 
-from src.main.anovos.data_ingest.data_ingest import concatenate_dataset
-from src.main.anovos.data_transformer.transformers import attribute_binning
-from src.main.anovos.shared.utils import attributeType_segregation
+from anovos.data_ingest.data_ingest import concatenate_dataset
+from anovos.data_transformer.transformers import attribute_binning
+from anovos.shared.utils import attributeType_segregation
 
 
 def drift_statistics(

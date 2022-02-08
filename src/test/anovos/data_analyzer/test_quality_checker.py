@@ -2,7 +2,7 @@ import pyspark.sql.functions as F
 import pytest
 from pyspark.sql import SparkSession
 
-from src.main.anovos.data_analyzer.quality_checker import (
+from anovos.data_analyzer.quality_checker import (
     duplicate_detection,
     invalidEntries_detection,
     IDness_detection,
@@ -11,7 +11,7 @@ from src.main.anovos.data_analyzer.quality_checker import (
     nullRows_detection,
     outlier_detection
 )
-from src.main.anovos.data_transformer.transformers import imputation_MMM
+from anovos.data_transformer.transformers import imputation_MMM
 
 sample_parquet = "./data/test_dataset/part-00000-3eb0f7bb-05c2-46ec-8913-23ba231d2734-c000.snappy.parquet"
 sample_csv = "./data/test_dataset/part-00000-8beb3930-8a44-4b7b-906b-a6deca466d9f-c000.csv"

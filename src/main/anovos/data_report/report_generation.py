@@ -1264,10 +1264,10 @@ def attribute_associations(
     else:
 
         if len(all_charts_num_2_) == 0 and len(all_charts_cat_2_) == 0:
-            target_assciation_rep = dp.Text("##")
+            target_association_rep = dp.Text("##")
         else:
             if len(all_charts_num_2_) > 0 and len(all_charts_cat_2_) == 0:
-                target_assciation_rep = dp.Group(
+                target_association_rep = dp.Group(
                     dp.Text("### Attribute to Target Association"),
                     dp.Text(
                         "*Bivariate Distribution considering the event captured across different attribute splits (or categories)*"
@@ -1277,7 +1277,7 @@ def attribute_associations(
                 )
 
             elif len(all_charts_num_2_) == 0 and len(all_charts_cat_2_) > 0:
-                target_assciation_rep = dp.Group(
+                target_association_rep = dp.Group(
                     dp.Text("### Attribute to Target Association"),
                     dp.Text(
                         "*Bivariate Distribution considering the event captured across different attribute splits (or categories)*"
@@ -1287,7 +1287,7 @@ def attribute_associations(
                 )
 
             else:
-                target_assciation_rep = dp.Group(
+                target_association_rep = dp.Group(
                     dp.Text("### Attribute to Target Association"),
                     dp.Select(
                         blocks=[
@@ -1322,7 +1322,7 @@ def attribute_associations(
                 "*This section analyzes the interaction between different attributes and/or the relationship between an attribute & the binary target variable.*"
             ),
             dp.Text("## "),
-            target_assciation_rep,
+            target_association_rep,
             dp.Text("## "),
             dp.Text("## "),
             label="Attribute Associations",
@@ -1346,7 +1346,7 @@ def attribute_associations(
             ),
             dp.Text("### "),
             dp.Text("## "),
-            target_assciation_rep,
+            target_association_rep,
             dp.Text("## "),
             dp.Text("## "),
             label="Attribute Associations",

@@ -1,8 +1,8 @@
-import pyspark.sql.functions as F
 import pytest
+import pyspark.sql.functions as F
 from pyspark.sql import SparkSession
 
-from src.main.anovos.data_analyzer.association_evaluator import (
+from anovos.data_analyzer.association_evaluator import (
     IV_calculation,
     IG_calculation,
     variable_clustering,

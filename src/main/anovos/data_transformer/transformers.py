@@ -558,7 +558,7 @@ def cat_to_num_unsupervised(
                 odf = odf.drop(i).withColumnRenamed(i + "_index", i)
             odf = odf.select(idf.columns)
 
-    if (print_impact == True) & (method_type == 1):
+    if (print_impact) & (method_type == 1):
         print("Before")
         idf.describe().where(F.col("summary").isin("count", "min", "max")).show(
             3, False
