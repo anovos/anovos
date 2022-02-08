@@ -6,7 +6,7 @@ on:
       - 'requirements.txt'
       - 'src/**'
       - '!**.md'
-
+      - '!.github/**'
 
 jobs:
   test:
