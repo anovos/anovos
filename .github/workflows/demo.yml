@@ -1,7 +1,8 @@
 name: Demo
 on:
   push:
-
+    paths:
+      - '!**.md'
 
 jobs:
   run-demo:
