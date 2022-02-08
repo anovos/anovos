@@ -15,20 +15,41 @@ on:
 jobs:
   run-demo:
     runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        include:
+          - python: '3.7'
+            spark: '2.4.8'
+            hadoop: '2.7'
+            java: '8'
+            experimental: false
+          - python: '3.9'
+            spark: '3.1.2'
+            hadoop: '3.2'
+            java: '11'
+            experimental: true
+          - python: '3.9'
+            spark: '3.2.0'
+            hadoop: '3.2'
+            java: '11'
+            experimental: true
     steps:
       - uses: actions/setup-python@v2
         with:
-          python-version: '3.7'
+          python-version: ${{ matrix.python }}
 
       - uses: actions/setup-java@v2.5.0
         with:
           distribution: 'zulu'
-          java-version: '8'
+          java-version: ${{ matrix.java }}
 
       - uses: vemonet/setup-spark@v1
         with:
-          spark-version: '2.4.8'
-          hadoop-version: '2.7'
+          spark-version: ${{ matrix.spark }}
+          hadoop-version: ${{ matrix.hadoop }}
 
       - name: Checkout code
         uses: actions/checkout@master

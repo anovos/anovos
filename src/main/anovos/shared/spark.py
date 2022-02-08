@@ -76,6 +76,10 @@ configs = {
     "spark_config": {
         "spark.sql.session.timeZone": "GMT",
         "spark.python.profile": "false",
+        "spark.yarn.appMasterEnv.ARROW_PRE_0_15_IPC_FORMAT": "1",
+        "spark.executorEnv.ARROW_PRE_0_15_IPC_FORMAT": "1",
+        "spark.sql.session.timeZone": "GMT",
+        "spark.python.profile": "false",
     },
 }
 

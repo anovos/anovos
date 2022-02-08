@@ -12,6 +12,9 @@ pybind11
 popmon
 varclushi
 pytest
+coverage
+py4j
+tensorflow
 cython
 soupsieve
 fsspec

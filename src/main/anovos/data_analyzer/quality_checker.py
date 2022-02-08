@@ -929,6 +929,9 @@ def invalidEntries_detection(
     idf,
     list_of_cols="all",
     drop_cols=[],
+    detection_type="auto",
+    invalid_entries=[],
+    partial_match=False,
     treatment=False,
     treatment_method="null_replacement",
     treatment_configs={},
@@ -950,6 +953,10 @@ def invalidEntries_detection(
     :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
                       Alternatively, columns can be specified in a string format,
                       where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+    :param detection_type: "auto","manual","both"
+    :param invalid_entries: List of values or regex patterns to be classified as invalid.
+                            Valid only for "auto" or "both" detection type.
+    :param partial_match: Boolean argument – True or False. If True, values with substring same as invalid_entries is declared invalid.
     :param treatment: Boolean argument – True or False. If True, invalid values are replaced by Null.
     :param treatment_method: "MMM", "null_replacement", "column_removal" (more methods to be added soon).
                              MMM (Mean Median Mode) replaces invalid value by the measure of central tendency (mode for
@@ -1032,6 +1039,7 @@ def invalidEntries_detection(
         "none",
         "undefined",
         "blank",
+        "unknown",
     ]
     specialChars_vocab = [
         "&",
@@ -1061,34 +1069,48 @@ def invalidEntries_detection(
             if e is None:
                 output.append(None)
                 continue
-            e = str(e).lower().strip()
-            # Null & Special Chars Search
-            if e in (null_vocab + specialChars_vocab):
-                output.append(1)
-                continue
-            # Consecutive Identical Chars Search
-            regex = "\\b([a-zA-Z0-9])\\1\\1+\\b"
-            p = re.compile(regex)
-            if re.search(p, e):
-                output.append(1)
-                continue
-            # Ordered Chars Search
-            l = len(e)
-            check = 0
-            if l >= 3:
-                for i in range(1, l):
-                    if ord(e[i]) - ord(e[i - 1]) != 1:
-                        output.append(0)
-                        check = 1
-                        break
-                if check == 1:
-                    continue
-                else:
+            if detection_type in ("auto", "both"):
+                e = str(e).lower().strip()
+                # Null & Special Chars Search
+                if e in (null_vocab + specialChars_vocab):
                     output.append(1)
                     continue
-            else:
+                # Consecutive Identical Chars Search
+                regex = "\\b([a-zA-Z0-9])\\1\\1+\\b"
+                p = re.compile(regex)
+                if re.search(p, e):
+                    output.append(1)
+                    continue
+                # Ordered Chars Search
+                l = len(e)
+                check = 0
+                if l >= 3:
+                    for i in range(1, l):
+                        if ord(e[i]) - ord(e[i - 1]) != 1:
+                            check = 1
+                            break
+                    if check == 0:
+                        output.append(1)
+                        continue
+
+            check = 0
+            if detection_type in ("manual", "both"):
+                e = str(e).lower().strip()
+                for regex in invalid_entries:
+                    p = re.compile(regex)
+                    if partial_match:
+                        if re.search(p, e):
+                            check = 1
+                            output.append(1)
+                            break
+                    else:
+                        if p.fullmatch(e):
+                            check = 1
+                            output.append(1)
+                            break
+            if check == 0:
                 output.append(0)
-                continue
+
         return output
 
     f_detect = F.udf(detect, T.ArrayType(T.LongType()))
