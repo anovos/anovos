@@ -28,5 +28,6 @@ jobs:
       - name: Lint with Black
         uses: psf/black@stable
         with:
-          options: "--check --verbose --diff"
+          options: "--check --verbose --diff --exclude="
           src: "./src/main"
+          exclude: ^./src/main/anovos/shared/spark.py

@@ -1,5 +1,6 @@
 import __main__
 import findspark
+
 findspark.init()
 
 from os import environ
@@ -33,7 +34,8 @@ def init_spark(
     """
     :param app_name: Name of Spark app.
     :param master: Cluster connection details
-                   Defaults to local[*] which means to run Spark locally with as many worker threads as logical cores on the machine.
+                   Defaults to local[*] which means to run Spark locally with as many worker threads
+                   as logical cores on the machine.
     :param jars_packages: List of Spark JAR package names.
     :param py_files: List of files to send to Spark cluster (master and workers).
     :param spark_config: Dictionary of config key-value pairs.
