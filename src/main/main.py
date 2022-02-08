@@ -109,7 +109,7 @@ def stats_args(all_configs, func):
     return output
 
 
-def main(all_configs, local_or_emr):
+def main(all_configs, global_run_type):
     start_main = timeit.default_timer()
     df = ETL(all_configs.get("input_dataset"))
 
@@ -170,7 +170,10 @@ def main(all_configs, local_or_emr):
         ):
             start = timeit.default_timer()
             anovos_basic_report(
-                spark, df, **args.get("report_args", {}), local_or_emr=local_or_emr
+                spark,
+                df,
+                **args.get("report_args", {}),
+                global_run_type=global_run_type
             )
             end = timeit.default_timer()
             print("Basic Report, execution time (in secs) =", round(end - start, 4))
@@ -190,7 +193,7 @@ def main(all_configs, local_or_emr):
                             report_inputPath,
                             m,
                             reread=True,
-                            run_type=local_or_emr,
+                            run_type=global_run_type,
                         ).show(100)
                     else:
                         save(
@@ -228,7 +231,7 @@ def main(all_configs, local_or_emr):
                                 report_inputPath,
                                 subkey,
                                 reread=True,
-                                run_type=local_or_emr,
+                                run_type=global_run_type,
                             ).show(100)
                         else:
                             save(
@@ -262,7 +265,7 @@ def main(all_configs, local_or_emr):
                                 report_inputPath,
                                 subkey,
                                 reread=True,
-                                run_type=local_or_emr,
+                                run_type=global_run_type,
                             ).show(100)
                         else:
                             save(
@@ -299,7 +302,7 @@ def main(all_configs, local_or_emr):
                                 report_inputPath,
                                 subkey,
                                 reread=True,
-                                run_type=local_or_emr,
+                                run_type=global_run_type,
                             ).show(100)
                         else:
                             save(
@@ -332,7 +335,7 @@ def main(all_configs, local_or_emr):
                                 report_inputPath,
                                 subkey,
                                 reread=True,
-                                run_type=local_or_emr,
+                                run_type=global_run_type,
                             ).show(100)
                             appended_metric_path = value["configs"].get(
                                 "appended_metric_path", ""
@@ -350,7 +353,7 @@ def main(all_configs, local_or_emr):
                                     report_inputPath,
                                     "stabilityIndex_metrics",
                                     reread=True,
-                                    run_type=local_or_emr,
+                                    run_type=global_run_type,
                                 ).show(100)
                         else:
                             save(
@@ -383,7 +386,7 @@ def main(all_configs, local_or_emr):
                             **value,
                             **extra_args,
                             master_path=report_inputPath,
-                            run_type=local_or_emr
+                            run_type=global_run_type
                         )
                         end = timeit.default_timer()
                         print(
@@ -394,21 +397,23 @@ def main(all_configs, local_or_emr):
                         )
 
             if (key == "report_generation") & (args != None):
-                anovos_report(**args, run_type=local_or_emr)
+                anovos_report(**args, run_type=global_run_type)
 
     save(df, write_main, folder_name="final_dataset", reread=False)
 
 
 if __name__ == "__main__":
     config_path = sys.argv[1]
-    local_or_emr = sys.argv[2]
+    global_run_type = sys.argv[2]
 
-    if local_or_emr == "local":
+    if global_run_type == "local" or "databricks":
         config_file = open(config_path, "r")
-    else:
+    elif global_run_type == "emr":
         bash_cmd = "aws s3 cp " + config_path + " config.yaml"
         output = subprocess.check_output(["bash", "-c", bash_cmd])
         config_file = open("config.yaml", "r")
+    else:
+        raise ValueError("Invalid global_run_type")
 
     all_configs = yaml.load(config_file, yaml.SafeLoader)
-    main(all_configs, local_or_emr)
+    main(all_configs, global_run_type)

@@ -73,7 +73,7 @@ def anovos_basic_report(
     label_col="",
     event_label="",
     output_path=".",
-    local_or_emr="local",
+    global_run_type="local",
     print_impact=True,
 ):
     """
@@ -83,8 +83,9 @@ def anovos_basic_report(
     :param label_col: Label/Target column
     :param event_label: Value of (positive) event (i.e label 1)
     :param output_path: File Path for saving metrics and basic report
-    :param local_or_emr: "local" (default), "emr"
+    :param global_run_type: "local" (default), "emr", "databricks"
                          "emr" if the files are read from or written in AWS s3
+                         "databricks" if the files are read from or written in dbfs in azure databricks
     """
     global num_cols
     global cat_cols
@@ -110,10 +111,23 @@ def anovos_basic_report(
     AT_funcs = [IV_calculation, IG_calculation]
     all_funcs = SG_funcs + QC_rows_funcs + QC_cols_funcs + AA_funcs + AT_funcs
 
-    if local_or_emr == "local":
+    def output_to_local(output_path):
+        punctuations = ":"
+        for x in output_path:
+            if x in punctuations:
+                local_path = output_path.replace(x, "")
+                local_path = "/" + local_path
+        return local_path
+
+    if global_run_type == "local":
         local_path = output_path
-    else:
+    elif global_run_type == "databricks":
+        local_path = output_to_local(output_path)
+    elif global_run_type == "emr":
         local_path = "report_stats"
+    else:
+        raise ValueError("Invalid global_run_type")
+
     Path(local_path).mkdir(parents=True, exist_ok=True)
 
     for func in all_funcs:
@@ -135,7 +149,7 @@ def anovos_basic_report(
             ends_with(local_path) + func.__name__ + ".csv", index=False
         )
 
-        if local_or_emr == "emr":
+        if global_run_type == "emr":
             bash_cmd = (
                 "aws s3 cp "
                 + ends_with(local_path)
@@ -463,7 +477,7 @@ def anovos_basic_report(
         dp.Select(blocks=[tab1, tab2, tab3], type=dp.SelectType.TABS),
     ).save(ends_with(local_path) + "basic_report.html", open=True)
 
-    if local_or_emr == "emr":
+    if global_run_type == "emr":
         bash_cmd = (
             "aws s3 cp "
             + ends_with(local_path)

@@ -1848,7 +1848,7 @@ def anovos_report(
     :param drift_threshold_model: threshold which the user is specifying for tagging an attribute to be drifted or not
     :param dataDict_path: Data dictionary path. Default value is kept as None.
     :param metricDict_path: Metric dictionary path. Default value is kept as None.
-    :param run_type: local or emr option. Default is kept as local
+    :param run_type: local or emr or databricks option. Default is kept as local
     :param final_report_path: Path where the report will be saved.
     """
 
@@ -2173,7 +2173,7 @@ def anovos_report(
         else:
             final_tabs_list.append(i)
 
-    if run_type == "local":
+    if run_type == "local" or "databricks":
 
         final_report = dp.Report(
             default_template[0],
@@ -2181,7 +2181,7 @@ def anovos_report(
             dp.Select(blocks=final_tabs_list, type=dp.SelectType.TABS),
         ).save(ends_with(final_report_path) + "ml_anovos_report.html", open=True)
 
-    else:
+    elif run_type == "emr":
 
         final_report = dp.Report(
             default_template[0],
@@ -2191,5 +2191,7 @@ def anovos_report(
 
         bash_cmd = "aws s3 cp ml_anovos_report.html " + ends_with(final_report_path)
         output = subprocess.check_output(["bash", "-c", bash_cmd])
+    else:
+        raise ValueError("Invalid run_type")
 
     print("Report generated successfully at the specified location")
