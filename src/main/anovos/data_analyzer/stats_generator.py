@@ -73,7 +73,7 @@ def global_summary(spark, idf, list_of_cols="all", drop_cols=[], print_impact=Tr
 
 
 def missingCount_computation(
-        spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
+    spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
 ):
     """
     :param spark: Spark Session
@@ -105,13 +105,13 @@ def missingCount_computation(
     idf_stats = idf.select(list_of_cols).summary("count")
     odf = (
         transpose_dataframe(idf_stats, "summary")
-            .withColumn(
+        .withColumn(
             "missing_count", F.lit(idf.count()) - F.col("count").cast(T.LongType())
         )
-            .withColumn(
+        .withColumn(
             "missing_pct", F.round(F.col("missing_count") / F.lit(idf.count()), 4)
         )
-            .select(F.col("key").alias("attribute"), "missing_count", "missing_pct")
+        .select(F.col("key").alias("attribute"), "missing_count", "missing_pct")
     )
     if print_impact:
         odf.show(len(list_of_cols))
@@ -119,7 +119,7 @@ def missingCount_computation(
 
 
 def nonzeroCount_computation(
-        spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
+    spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
 ):
     """
     :param spark: Spark Session
@@ -174,7 +174,7 @@ def nonzeroCount_computation(
 
 
 def measures_of_counts(
-        spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
+    spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
 ):
     """
     :param spark: Spark Session
@@ -206,16 +206,16 @@ def measures_of_counts(
 
     odf = (
         transpose_dataframe(idf.select(list_of_cols).summary("count"), "summary")
-            .select(
+        .select(
             F.col("key").alias("attribute"),
             F.col("count").cast(T.LongType()).alias("fill_count"),
         )
-            .withColumn("fill_pct", F.round(F.col("fill_count") / F.lit(idf.count()), 4))
-            .withColumn(
+        .withColumn("fill_pct", F.round(F.col("fill_count") / F.lit(idf.count()), 4))
+        .withColumn(
             "missing_count", F.lit(idf.count()) - F.col("fill_count").cast(T.LongType())
         )
-            .withColumn("missing_pct", F.round(1 - F.col("fill_pct"), 4))
-            .join(nonzeroCount_computation(spark, idf, num_cols), "attribute", "full_outer")
+        .withColumn("missing_pct", F.round(1 - F.col("fill_pct"), 4))
+        .join(nonzeroCount_computation(spark, idf, num_cols), "attribute", "full_outer")
     )
 
     if print_impact:
@@ -295,7 +295,7 @@ def mode_computation(spark, idf, list_of_cols="all", drop_cols=[], print_impact=
 
 
 def measures_of_centralTendency(
-        spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
+    spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
 ):
     """
     :param spark: Spark Session
@@ -325,15 +325,18 @@ def measures_of_centralTendency(
         raise TypeError("Invalid input for Column(s)")
 
     odf = (
-        transpose_dataframe(idf.select(list_of_cols).summary("mean", "50%", "count"), "summary")
-            .withColumn("mean", F.round(F.col("mean").cast(T.DoubleType()), 4))
-            .withColumn("median", F.round(F.col("50%").cast(T.DoubleType()), 4))
-            .withColumnRenamed("key", "attribute")
-            .join(mode_computation(spark, idf, list_of_cols), "attribute", "full_outer")
-            .withColumn(
+        transpose_dataframe(
+            idf.select(list_of_cols).summary("mean", "50%", "count"), "summary"
+        )
+        .withColumn("mean", F.round(F.col("mean").cast(T.DoubleType()), 4))
+        .withColumn("median", F.round(F.col("50%").cast(T.DoubleType()), 4))
+        .withColumnRenamed("key", "attribute")
+        .join(mode_computation(spark, idf, list_of_cols), "attribute", "full_outer")
+        .withColumn(
             "mode_pct",
             F.round(F.col("mode_rows") / F.col("count").cast(T.DoubleType()), 4),
-        ).select("attribute", "mean", "median", "mode", "mode_rows", "mode_pct")
+        )
+        .select("attribute", "mean", "median", "mode", "mode_rows", "mode_pct")
     )
 
     if print_impact:
@@ -342,7 +345,7 @@ def measures_of_centralTendency(
 
 
 def uniqueCount_computation(
-        spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
+    spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
 ):
     """
     :param spark: Spark Session
@@ -398,7 +401,7 @@ def uniqueCount_computation(
 
 
 def measures_of_cardinality(
-        spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
+    spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
 ):
     """
     :param spark: Spark Session
@@ -443,19 +446,19 @@ def measures_of_cardinality(
 
     odf = (
         uniqueCount_computation(spark, idf, list_of_cols)
-            .join(
+        .join(
             missingCount_computation(spark, idf, list_of_cols),
             "attribute",
             "full_outer",
         )
-            .withColumn(
+        .withColumn(
             "IDness",
             F.round(
                 F.col("unique_values") / (F.lit(idf.count()) - F.col("missing_count")),
                 4,
             ),
         )
-            .select("attribute", "unique_values", "IDness")
+        .select("attribute", "unique_values", "IDness")
     )
     if print_impact:
         odf.show(len(list_of_cols))
@@ -463,7 +466,7 @@ def measures_of_cardinality(
 
 
 def measures_of_dispersion(
-        spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
+    spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
 ):
     """
     :param spark: Spark Session
@@ -513,12 +516,12 @@ def measures_of_dispersion(
             ),
             "summary",
         )
-            .withColumn("stddev", F.round(F.col("stddev").cast(T.DoubleType()), 4))
-            .withColumn("variance", F.round(F.col("stddev") * F.col("stddev"), 4))
-            .withColumn("range", F.round(F.col("max") - F.col("min"), 4))
-            .withColumn("cov", F.round(F.col("stddev") / F.col("mean"), 4))
-            .withColumn("IQR", F.round(F.col("75%") - F.col("25%"), 4))
-            .select(
+        .withColumn("stddev", F.round(F.col("stddev").cast(T.DoubleType()), 4))
+        .withColumn("variance", F.round(F.col("stddev") * F.col("stddev"), 4))
+        .withColumn("range", F.round(F.col("max") - F.col("min"), 4))
+        .withColumn("cov", F.round(F.col("stddev") / F.col("mean"), 4))
+        .withColumn("IQR", F.round(F.col("75%") - F.col("25%"), 4))
+        .select(
             F.col("key").alias("attribute"), "stddev", "variance", "cov", "IQR", "range"
         )
     )
@@ -528,7 +531,7 @@ def measures_of_dispersion(
 
 
 def measures_of_percentiles(
-        spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
+    spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
 ):
     """
     :param spark: Spark Session
@@ -637,8 +640,8 @@ def measures_of_shape(spark, idf, list_of_cols="all", drop_cols=[], print_impact
         shapes.append([i, s, k])
     odf = (
         spark.createDataFrame(shapes, schema=("attribute", "skewness", "kurtosis"))
-            .withColumn("skewness", F.round(F.col("skewness"), 4))
-            .withColumn("kurtosis", F.round(F.col("kurtosis"), 4))
+        .withColumn("skewness", F.round(F.col("skewness"), 4))
+        .withColumn("kurtosis", F.round(F.col("kurtosis"), 4))
     )
     if print_impact:
         odf.show(len(list_of_cols))

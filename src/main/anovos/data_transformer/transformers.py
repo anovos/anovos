@@ -60,6 +60,7 @@ from scipy import stats
 from itertools import chain
 
 
+
 def attribute_binning(
     spark,
     idf,
@@ -152,21 +153,21 @@ def attribute_binning(
             bin_cutoffs = []
             for i in list_of_cols:
                 max_val = (
-                    idf.select(F.col(i))
-                    .groupBy()
-                    .max()
-                    .rdd.flatMap(lambda x: x)
-                    .collect()
-                    + [None]
+                        idf.select(F.col(i))
+                        .groupBy()
+                        .max()
+                        .rdd.flatMap(lambda x: x)
+                        .collect()
+                        + [None]
                 )[0]
 
                 min_val = (
-                    idf.select(F.col(i))
-                    .groupBy()
-                    .min()
-                    .rdd.flatMap(lambda x: x)
-                    .collect()
-                    + [None]
+                        idf.select(F.col(i))
+                        .groupBy()
+                        .min()
+                        .rdd.flatMap(lambda x: x)
+                        .collect()
+                        + [None]
                 )[0]
 
                 bin_cutoff = []
@@ -197,9 +198,9 @@ def attribute_binning(
                         return "<= " + str(round(bin_cutoffs[index][i], 4))
                     else:
                         return (
-                            str(round(bin_cutoffs[index][j - 1], 4))
+                            str(round(bin_cutoffs[index][i - 1], 4))
                             + "-"
-                            + str(round(bin_cutoffs[index][j], 4))
+                            + str(round(bin_cutoffs[index][i], 4))
                         )
             else:
                 next
@@ -357,17 +358,17 @@ def monotonic_binning(
 
 
 def cat_to_num_unsupervised(
-        spark,
-        idf,
-        list_of_cols="all",
-        drop_cols=[],
-        method_type=1,
-        index_order="frequencyDesc",
-        cardinality_threshold=100,
-        pre_existing_model=False,
-        model_path="NA",
-        output_mode="replace",
-        print_impact=False,
+    spark,
+    idf,
+    list_of_cols="all",
+    drop_cols=[],
+    method_type=1,
+    index_order="frequencyDesc",
+    cardinality_threshold=100,
+    pre_existing_model=False,
+    model_path="NA",
+    output_mode="replace",
+    print_impact=False,
 ):
     """
     :param spark: Spark Session

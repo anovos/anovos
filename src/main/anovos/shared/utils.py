@@ -43,7 +43,7 @@ def attributeType_segregation(idf):
         if i[1] == "string":
             cat_cols.append(i[0])
         elif (i[1] in ("double", "int", "bigint", "float", "long")) | (
-                i[1].startswith("decimal")
+            i[1].startswith("decimal")
         ):
             num_cols.append(i[0])
         else:

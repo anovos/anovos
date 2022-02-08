@@ -164,10 +164,10 @@ def nullRows_detection(
 
     odf_print = (
         odf_tmp.groupBy("null_cols_count", "flagged")
-            .agg(F.count(F.lit(1)).alias("row_count"))
-            .withColumn("row_pct", F.round(F.col("row_count") / float(idf.count()), 4))
-            .select("null_cols_count", "row_count", "row_pct", "flagged")
-            .orderBy("null_cols_count")
+        .agg(F.count(F.lit(1)).alias("row_count"))
+        .withColumn("row_pct", F.round(F.col("row_count") / float(idf.count()), 4))
+        .select("null_cols_count", "row_count", "row_pct", "flagged")
+        .orderBy("null_cols_count")
     )
 
     if treatment:
@@ -286,6 +286,7 @@ def nullColumns_detection(
         treatment = False
     else:
         raise TypeError("Non-Boolean input for treatment")
+
     if treatment_method not in ("MMM", "row_removal", "column_removal"):
         raise TypeError("Invalid input for method_type")
 

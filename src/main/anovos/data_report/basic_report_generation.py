@@ -36,9 +36,12 @@ global_theme_r = px.colors.sequential.Plasma_r
 global_plot_bg_color = "rgba(0,0,0,0)"
 global_paper_bg_color = "rgba(0,0,0,0)"
 
-default_template = dp.HTML(
-    '<html><img src="https://mobilewalla-anovos.s3.amazonaws.com/anovos.png" style="height:100px;display:flex;margin:auto;float:right"></img></html>'
-), dp.Text("# ML-Anovos Report")
+default_template = (
+    dp.HTML(
+        '<html><img src="https://mobilewalla-anovos.s3.amazonaws.com/anovos.png" style="height:100px;display:flex;margin:auto;float:right"></img></html>'
+    ),
+    dp.Text("# ML-Anovos Report"),
+)
 
 
 def stats_args(path, func):
@@ -295,34 +298,21 @@ def anovos_basic_report(
                 + "**"
             )
             total_rows_count = (
-                " No. of Rows: **"
-                + str(
-                    format(
-                        int(stats[stats["metric"] == "rows_count"].value.values), ","
-                    )
-                )
-                + "**"
-            )
+                    " No. of Rows: **"
+                    + str(format(int(stats[stats["metric"] == "rows_count"].value.values), ","))
+                    + "**")
+
             duplicate_rows_count = (
-                " No. of Duplicate Rows: **"
-                + str(
-                    format(
-                        int(stats[stats["metric"] == "duplicate_rows"].value.values),
-                        ",",
-                    )
-                )
-                + "**"
-            )
+                    " No. of Duplicate Rows: **"
+                    + str(format(int(stats[stats["metric"] == "duplicate_rows"].value.values),",",))
+                    + "**")
+
             duplicate_rows_pct = (
-                " Percentage of Duplicate Rows: **"
-                + str(
-                    float(
-                        stats[stats["metric"] == "duplicate_pct"].value.values * 100.0
-                    )
-                )
-                + " %"
-                + "**"
-            )
+                    " Percentage of Duplicate Rows: **"
+                    + str(float(stats[stats["metric"] == "duplicate_pct"].value.values * 100.0))
+                    + " %"
+                    + "**")
+
             QCrow_content.append(
                 [
                     dp.Text("### " + str(remove_u_score(i.__name__))),

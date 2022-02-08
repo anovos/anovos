@@ -21,7 +21,7 @@ from anovos.shared.utils import attributeType_segregation
 
 
 def correlation_matrix(
-        spark, idf, list_of_cols="all", drop_cols=[], stats_unique={}, print_impact=False
+    spark, idf, list_of_cols="all", drop_cols=[], stats_unique={}, print_impact=False
 ):
     """
     :param spark: Spark Session
@@ -55,18 +55,18 @@ def correlation_matrix(
     if stats_unique == {}:
         remove_cols = (
             uniqueCount_computation(spark, idf, list_of_cols)
-                .where(F.col("unique_values") < 2)
-                .select("attribute")
-                .rdd.flatMap(lambda x: x)
-                .collect()
+            .where(F.col("unique_values") < 2)
+            .select("attribute")
+            .rdd.flatMap(lambda x: x)
+            .collect()
         )
     else:
         remove_cols = (
             read_dataset(spark, **stats_unique)
-                .where(F.col("unique_values") < 2)
-                .select("attribute")
-                .rdd.flatMap(lambda x: x)
-                .collect()
+            .where(F.col("unique_values") < 2)
+            .select("attribute")
+            .rdd.flatMap(lambda x: x)
+            .collect()
         )
 
     list_of_cols = list(
@@ -84,8 +84,8 @@ def correlation_matrix(
     list_of_cols.sort()
     odf = (
         spark.createDataFrame(odf_pd)
-            .select(["attribute"] + list_of_cols)
-            .orderBy("attribute")
+        .select(["attribute"] + list_of_cols)
+        .orderBy("attribute")
     )
 
     if print_impact:
@@ -95,14 +95,14 @@ def correlation_matrix(
 
 
 def variable_clustering(
-        spark,
-        idf,
-        list_of_cols="all",
-        drop_cols=[],
-        sample_size=100000,
-        stats_unique={},
-        stats_mode={},
-        print_impact=False,
+    spark,
+    idf,
+    list_of_cols="all",
+    drop_cols=[],
+    sample_size=100000,
+    stats_unique={},
+    stats_mode={},
+    print_impact=False,
 ):
     """
     :param spark: Spark Session
@@ -148,18 +148,18 @@ def variable_clustering(
     if stats_unique == {}:
         remove_cols = (
             uniqueCount_computation(spark, idf_sample, list_of_cols)
-                .where(F.col("unique_values") < 2)
-                .select("attribute")
-                .rdd.flatMap(lambda x: x)
-                .collect()
+            .where(F.col("unique_values") < 2)
+            .select("attribute")
+            .rdd.flatMap(lambda x: x)
+            .collect()
         )
     else:
         remove_cols = (
             read_dataset(spark, **stats_unique)
-                .where(F.col("unique_values") < 2)
-                .select("attribute")
-                .rdd.flatMap(lambda x: x)
-                .collect()
+            .where(F.col("unique_values") < 2)
+            .select("attribute")
+            .rdd.flatMap(lambda x: x)
+            .collect()
         )
 
     list_of_cols = [e for e in list_of_cols if e not in remove_cols]
@@ -190,18 +190,18 @@ def variable_clustering(
 
 
 def IV_calculation(
-        spark,
-        idf,
-        list_of_cols="all",
-        drop_cols=[],
-        label_col="label",
-        event_label=1,
-        encoding_configs={
-            "bin_method": "equal_frequency",
-            "bin_size": 10,
-            "monotonicity_check": 0,
-        },
-        print_impact=False,
+    spark,
+    idf,
+    list_of_cols="all",
+    drop_cols=[],
+    label_col="label",
+    event_label=1,
+    encoding_configs={
+        "bin_method": "equal_frequency",
+        "bin_size": 10,
+        "monotonicity_check": 0,
+    },
+    print_impact=False,
 ):
     """
     :param spark: Spark Session
@@ -273,19 +273,19 @@ def IV_calculation(
     for col in list_of_cols:
         df_iv = (
             idf_encoded.groupBy(col, label_col)
-                .count()
-                .withColumn(
+            .count()
+            .withColumn(
                 label_col, F.when(F.col(label_col) == event_label, 1).otherwise(0)
             )
-                .groupBy(col)
-                .pivot(label_col)
-                .sum("count")
-                .fillna(0.5)
-                .withColumn("event_pct", F.col("1") / F.sum("1").over(Window.partitionBy()))
-                .withColumn(
+            .groupBy(col)
+            .pivot(label_col)
+            .sum("count")
+            .fillna(0.5)
+            .withColumn("event_pct", F.col("1") / F.sum("1").over(Window.partitionBy()))
+            .withColumn(
                 "nonevent_pct", F.col("0") / F.sum("0").over(Window.partitionBy())
             )
-                .withColumn(
+            .withColumn(
                 "iv",
                 (F.col("nonevent_pct") - F.col("event_pct"))
                 * F.log(F.col("nonevent_pct") / F.col("event_pct")),
@@ -296,8 +296,8 @@ def IV_calculation(
 
     odf = (
         spark.createDataFrame(output, ["attribute", "iv"])
-            .withColumn("iv", F.round(F.col("iv"), 4))
-            .orderBy(F.desc("iv"))
+        .withColumn("iv", F.round(F.col("iv"), 4))
+        .orderBy(F.desc("iv"))
     )
     if print_impact:
         odf.show(odf.count())
@@ -306,18 +306,18 @@ def IV_calculation(
 
 
 def IG_calculation(
-        spark,
-        idf,
-        list_of_cols="all",
-        drop_cols=[],
-        label_col="label",
-        event_label=1,
-        encoding_configs={
-            "bin_method": "equal_frequency",
-            "bin_size": 10,
-            "monotonicity_check": 0,
-        },
-        print_impact=False,
+    spark,
+    idf,
+    list_of_cols="all",
+    drop_cols=[],
+    label_col="label",
+    event_label=1,
+    encoding_configs={
+        "bin_method": "equal_frequency",
+        "bin_size": 10,
+        "monotonicity_check": 0,
+    },
+    print_impact=False,
 ):
     """
     :param spark: Spark Session
@@ -384,30 +384,31 @@ def IG_calculation(
     output = []
     total_event = idf.where(F.col(label_col) == event_label).count() / idf.count()
     total_entropy = -(
-            total_event * math.log2(total_event)
-            + ((1 - total_event) * math.log2((1 - total_event)))
+        total_event * math.log2(total_event)
+        + ((1 - total_event) * math.log2((1 - total_event)))
     )
     for col in list_of_cols:
         idf_entropy = (
             idf_encoded.withColumn(
                 label_col, F.when(F.col(label_col) == event_label, 1).otherwise(0)
             )
-                .groupBy(col)
-                .agg(
+            .groupBy(col)
+            .agg(
                 F.sum(F.col(label_col)).alias("event_count"),
                 F.count(F.col(label_col)).alias("total_count"),
             )
-                .dropna()
-                .withColumn("event_pct", F.col("event_count") / F.col("total_count"))
-                .withColumn(
+            .dropna()
+            .withColumn("event_pct", F.col("event_count") / F.col("total_count"))
+            .withColumn(
                 "segment_pct",
                 F.col("total_count") / F.sum("total_count").over(Window.partitionBy()),
-            ).withColumn(
+            )
+            .withColumn(
                 "entropy",
                 -F.col("segment_pct")
                 * (
-                        (F.col("event_pct") * F.log2(F.col("event_pct")))
-                        + ((1 - F.col("event_pct")) * F.log2((1 - F.col("event_pct"))))
+                    (F.col("event_pct") * F.log2(F.col("event_pct")))
+                    + ((1 - F.col("event_pct")) * F.log2((1 - F.col("event_pct"))))
                 ),
             )
         )
@@ -418,8 +419,9 @@ def IG_calculation(
         output.append([col, ig_value])
 
     odf = (
-        spark.createDataFrame(output, ["attribute", "ig"]).withColumn("ig", F.round(F.col("ig"), 4)).orderBy(
-            F.desc("ig"))
+        spark.createDataFrame(output, ["attribute", "ig"])
+        .withColumn("ig", F.round(F.col("ig"), 4))
+        .orderBy(F.desc("ig"))
     )
     if print_impact:
         odf.show(odf.count())

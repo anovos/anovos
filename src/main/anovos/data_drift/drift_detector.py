@@ -16,18 +16,18 @@ from anovos.shared.utils import attributeType_segregation
 
 
 def drift_statistics(
-        spark,
-        idf_target,
-        idf_source,
-        list_of_cols="all",
-        drop_cols=[],
-        method_type="PSI",
-        bin_method="equal_range",
-        bin_size=10,
-        threshold=0.1,
-        pre_existing_source=False,
-        source_path="NA",
-        print_impact=False,
+    spark,
+    idf_target,
+    idf_source,
+    list_of_cols="all",
+    drop_cols=[],
+    method_type="PSI",
+    bin_method="equal_range",
+    bin_size=10,
+    threshold=0.1,
+    pre_existing_source=False,
+    source_path="NA",
+    print_impact=False,
 ):
     """
     :param spark: Spark Session
@@ -73,7 +73,7 @@ def drift_statistics(
     list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in idf_target.columns for x in list_of_cols) | (
-            len(list_of_cols) == 0
+        len(list_of_cols) == 0
     ):
         raise TypeError("Invalid input for Column(s)")
 
@@ -147,8 +147,8 @@ def drift_statistics(
         else:
             x = (
                 source_bin.groupBy(i)
-                    .agg((F.count(i) / idf_source.count()).alias("p"))
-                    .fillna(-1)
+                .agg((F.count(i) / idf_source.count()).alias("p"))
+                .fillna(-1)
             )
             x.coalesce(1).write.csv(
                 source_path + "/drift_statistics/frequency_counts/" + i,
@@ -158,15 +158,15 @@ def drift_statistics(
 
         y = (
             target_bin.groupBy(i)
-                .agg((F.count(i) / idf_target.count()).alias("q"))
-                .fillna(-1)
+            .agg((F.count(i) / idf_target.count()).alias("q"))
+            .fillna(-1)
         )
 
         xy = (
             x.join(y, i, "full_outer")
-                .fillna(0.0001, subset=["p", "q"])
-                .replace(0, 0.0001)
-                .orderBy(i)
+            .fillna(0.0001, subset=["p", "q"])
+            .replace(0, 0.0001)
+            .orderBy(i)
         )
         p = np.array(xy.select("p").rdd.flatMap(lambda x: x).collect())
         q = np.array(xy.select("q").rdd.flatMap(lambda x: x).collect())
@@ -193,8 +193,8 @@ def drift_statistics(
         spark.createDataFrame(
             pd.DataFrame.from_dict(output, orient="index").transpose()
         )
-            .select(["attribute"] + method_type + ["flagged"])
-            .orderBy(F.desc("flagged"))
+        .select(["attribute"] + method_type + ["flagged"])
+        .orderBy(F.desc("flagged"))
     )
 
     if print_impact:
@@ -208,15 +208,15 @@ def drift_statistics(
 
 
 def stabilityIndex_computation(
-        spark,
-        *idfs,
-        list_of_cols="all",
-        drop_cols=[],
-        metric_weightages={"mean": 0.5, "stddev": 0.3, "kurtosis": 0.2},
-        existing_metric_path="",
-        appended_metric_path="",
-        threshold=1,
-        print_impact=False
+    spark,
+    *idfs,
+    list_of_cols="all",
+    drop_cols=[],
+    metric_weightages={"mean": 0.5, "stddev": 0.3, "kurtosis": 0.2},
+    existing_metric_path="",
+    appended_metric_path="",
+    threshold=1,
+    print_impact=False
 ):
     """
     :param spark: Spark Session
@@ -256,13 +256,13 @@ def stabilityIndex_computation(
     if any(x not in num_cols for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError("Invalid input for Column(s)")
     if (
-            round(
-                metric_weightages.get("mean", 0)
-                + metric_weightages.get("stddev", 0)
-                + metric_weightages.get("kurtosis", 0),
-                3,
-            )
-            != 1
+        round(
+            metric_weightages.get("mean", 0)
+            + metric_weightages.get("stddev", 0)
+            + metric_weightages.get("kurtosis", 0),
+            3,
+        )
+        != 1
     ):
         raise ValueError(
             "Invalid input for metric weightages. Either metric name is incorrect or sum of metric weightages is not 1.0"
@@ -313,11 +313,11 @@ def stabilityIndex_computation(
         for metric in ["mean", "stddev", "kurtosis"]:
             metric_stats = (
                 appended_metric_df.where(F.col("attribute") == i)
-                    .orderBy("idx")
-                    .select(metric)
-                    .fillna(np.nan)
-                    .rdd.flatMap(list)
-                    .collect()
+                .orderBy("idx")
+                .select(metric)
+                .fillna(np.nan)
+                .rdd.flatMap(list)
+                .collect()
             )
             metric_cv = round(float(variation([a for a in metric_stats])), 4) or None
             i_output.append(metric_cv)
@@ -349,21 +349,21 @@ def stabilityIndex_computation(
 
     odf = (
         odf.replace(np.nan, None)
-            .withColumn("mean_si", f_score_cv(F.col("mean_cv")))
-            .withColumn("stddev_si", f_score_cv(F.col("stddev_cv")))
-            .withColumn("kurtosis_si", f_score_cv(F.col("kurtosis_cv")))
-            .withColumn(
+        .withColumn("mean_si", f_score_cv(F.col("mean_cv")))
+        .withColumn("stddev_si", f_score_cv(F.col("stddev_cv")))
+        .withColumn("kurtosis_si", f_score_cv(F.col("kurtosis_cv")))
+        .withColumn(
             "stability_index",
             F.round(
                 (
-                        F.col("mean_si") * metric_weightages.get("mean", 0)
-                        + F.col("stddev_si") * metric_weightages.get("stddev", 0)
-                        + F.col("kurtosis_si") * metric_weightages.get("kurtosis", 0)
+                    F.col("mean_si") * metric_weightages.get("mean", 0)
+                    + F.col("stddev_si") * metric_weightages.get("stddev", 0)
+                    + F.col("kurtosis_si") * metric_weightages.get("kurtosis", 0)
                 ),
                 4,
             ),
         )
-            .withColumn(
+        .withColumn(
             "flagged",
             F.when(
                 (F.col("stability_index") < threshold)

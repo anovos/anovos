@@ -2,6 +2,7 @@ import __main__
 import findspark
 from os import environ
 from packaging import version
+
 findspark.init()
 
 import pyspark
@@ -22,11 +23,11 @@ else:
 
 
 def init_spark(
-        app_name="anovos",
-        master="local[*]",
-        jars_packages=None,
-        py_files=None,
-        spark_config=None,
+    app_name="anovos",
+    master="local[*]",
+    jars_packages=None,
+    py_files=None,
+    spark_config=None,
 ):
     """
     :param app_name: Name of Spark app.

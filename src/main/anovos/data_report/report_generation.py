@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+from loguru import logger
 
 from anovos.shared.utils import ends_with
 
@@ -15,9 +16,17 @@ global_theme_r = px.colors.sequential.Plasma_r
 global_plot_bg_color = "rgba(0,0,0,0)"
 global_paper_bg_color = "rgba(0,0,0,0)"
 
-default_template = dp.HTML(
-    '<html><img src="https://mobilewalla-anovos.s3.amazonaws.com/anovos.png" style="height:100px;display:flex;margin:auto;float:right"></img></html>'
-), dp.Text("# ML-Anovos Report")
+default_template = (
+    dp.HTML(
+        """
+        <html>
+            <img src="https://mobilewalla-anovos.s3.amazonaws.com/anovos.png"
+                style="height:100px;display:flex;margin:auto;float:right" 
+            />
+        </html>"""
+    ),
+    dp.Text("# ML-Anovos Report"),
+)
 
 
 def remove_u_score(col):
@@ -109,7 +118,7 @@ def line_chart_gen_stability(df1, df2, col):
             y="stddev",
             markers=True,
             title="CV of Stddev is "
-                  + str(list(df2[df2["attribute"] == col].stddev_cv.values)[0]),
+            + str(list(df2[df2["attribute"] == col].stddev_cv.values)[0]),
         )
         f3.update_traces(line_color=global_theme[6], marker=dict(size=14))
         f3.layout.plot_bgcolor = global_plot_bg_color
@@ -121,7 +130,7 @@ def line_chart_gen_stability(df1, df2, col):
             y="kurtosis",
             markers=True,
             title="CV of Kurtosis is "
-                  + str(list(df2[df2["attribute"] == col].kurtosis_cv.values)[0]),
+            + str(list(df2[df2["attribute"] == col].kurtosis_cv.values)[0]),
         )
         f4.update_traces(line_color=global_theme[4], marker=dict(size=14))
         f4.layout.plot_bgcolor = global_plot_bg_color
@@ -147,11 +156,11 @@ def data_analyzer_output(master_path, avl_recs_tab, tab_name):
     :param tab_name: Analysis tab from association_evaluator / quality_checker / stats_generator
 
     """
-
     df_list = []
+    df_plot_list = []
+    # @FIXME: unused variables
     txt_list = []
     plot_list = []
-    df_plot_list = []
 
     avl_recs_tab = [x for x in avl_recs_tab if "global_summary" not in x]
 
@@ -165,61 +174,36 @@ def data_analyzer_output(master_path, avl_recs_tab, tab_name):
                 duplicate_recs = pd.read_csv(
                     ends_with(master_path) + str(i) + ".csv"
                 ).round(3)
-                unique_rows_count = (
-                    " No. Of Unique Rows: **"
-                    + str(
-                        format(
-                            int(
-                                duplicate_recs[
-                                    duplicate_recs["metric"] == "unique_rows_count"
-                                ].value.values
-                            ),
-                            ",",
-                        )
-                    )
-                    + "**"
+                _unique_rows_count = int(
+                    duplicate_recs[
+                        duplicate_recs["metric"] == "unique_rows_count"
+                    ].value.values
                 )
-                rows_count = (
-                    " No. of Rows: **"
-                    + str(
-                        format(
-                            int(
-                                duplicate_recs[
-                                    duplicate_recs["metric"] == "rows_count"
-                                ].value.values
-                            ),
-                            ",",
-                        )
-                    )
-                    + "**"
+                _rows_count = int(
+                    duplicate_recs[
+                        duplicate_recs["metric"] == "rows_count"
+                    ].value.values
                 )
+                _duplicate_rows_count = int(
+                    duplicate_recs[
+                        duplicate_recs["metric"] == "duplicate_rows"
+                    ].value.values
+                )
+                _duplicate_pct = float(
+                    duplicate_recs[
+                        duplicate_recs["metric"] == "duplicate_pct"
+                    ].value.values
+                    * 100.0
+                )
+
+                unique_rows_count = f" No. Of Unique Rows: ** {_unique_rows_count}, **"
+                # @FIXME: variable names exists in outer scope
+                rows_count = f" No. of Rows: ** {_rows_count}, **"
                 duplicate_rows = (
-                    " No. of Duplicate Rows: **"
-                    + str(
-                        format(
-                            int(
-                                duplicate_recs[
-                                    duplicate_recs["metric"] == "duplicate_rows"
-                                ].value.values
-                            ),
-                            ",",
-                        )
-                    )
-                    + "**"
+                    f" No. of Duplicate Rows: ** {_duplicate_rows_count}, **"
                 )
-                duplicate_pct = (
-                    " Percentage of Duplicate Rows: **"
-                    + str(
-                        float(
-                            duplicate_recs[
-                                duplicate_recs["metric"] == "duplicate_pct"
-                            ].value.values
-                            * 100.0
-                        )
-                    )
-                    + " %"
-                    + "**"
-                )
+                duplicate_pct = f" Percentage of Duplicate Rows: ** {_duplicate_pct}%**"
+
                 df_list.append(
                     [
                         dp.Text("### " + str(remove_u_score(i))),
@@ -281,7 +265,7 @@ def data_analyzer_output(master_path, avl_recs_tab, tab_name):
                     )
                     fig.layout.plot_bgcolor = global_plot_bg_color
                     fig.layout.paper_bgcolor = global_paper_bg_color
-                    #                     fig.update_layout(title_text=str("Correlation Plot "))
+                    # fig.update_layout(title_text=str("Correlation Plot "))
                     df_plot_list.append(
                         dp.Group(
                             dp.Text("##"),
@@ -305,10 +289,10 @@ def data_analyzer_output(master_path, avl_recs_tab, tab_name):
                         values="RS_Ratio",
                         color_discrete_sequence=global_theme,
                     )
-                    #                     fig.update_layout(title_text=str("Distribution of homogenous variable across Clusters"))
+                    # fig.update_layout(title_text=str("Distribution of homogenous variable across Clusters"))
                     fig.layout.plot_bgcolor = global_plot_bg_color
                     fig.layout.paper_bgcolor = global_paper_bg_color
-                    #                     fig.update_layout(title_text=str("Variable Clustering Plot "))
+                    # fig.update_layout(title_text=str("Variable Clustering Plot "))
                     fig.layout.autosize = True
                     df_plot_list.append(
                         dp.Group(
@@ -326,6 +310,7 @@ def data_analyzer_output(master_path, avl_recs_tab, tab_name):
                         df_list_ = pd.read_csv(
                             ends_with(master_path) + str(j) + ".csv"
                         ).round(3)
+
                         col_nm = [
                             x for x in list(df_list_.columns) if "attribute" not in x
                         ]
@@ -339,7 +324,7 @@ def data_analyzer_output(master_path, avl_recs_tab, tab_name):
                         )
                         fig.layout.plot_bgcolor = global_plot_bg_color
                         fig.layout.paper_bgcolor = global_paper_bg_color
-                        #                         fig.update_layout(title_text=str("Representation of " + str(remove_u_score(j))))
+                        # fig.update_layout(title_text=str("Representation of " + str(remove_u_score(j))))
                         fig.layout.autosize = True
                         df_plot_list.append(
                             dp.Group(
@@ -350,7 +335,8 @@ def data_analyzer_output(master_path, avl_recs_tab, tab_name):
                                 rows=3,
                             )
                         )
-                    except:
+                    except Exception as e:
+                        logger.error(f"processing failed, error {e}")
                         pass
 
             if len(avl_recs_tab) == 1:
@@ -483,10 +469,8 @@ def executive_summary_gen(
         obj_dtls = json.load(
             open(ends_with(master_path) + "freqDist_" + str(label_col))
         )
-
         # @FIXME: never used local variable
         text_val = list(list(obj_dtls.values())[0][0].items())[8][1]
-
         x_val = list(list(obj_dtls.values())[0][0].items())[11][1]
         y_val = list(list(obj_dtls.values())[0][0].items())[13][1]
         label_fig_ = go.Figure(
@@ -509,7 +493,8 @@ def executive_summary_gen(
 
         label_fig_.layout.plot_bgcolor = global_plot_bg_color
         label_fig_.layout.paper_bgcolor = global_paper_bg_color
-    except:
+    except Exception as e:
+        logger.error(f"processing failed, error {e}")
         label_fig_ = None
 
     a1 = (
@@ -555,7 +540,8 @@ def executive_summary_gen(
             x1_1 = ["High Variance", x1]
         else:
             x1_1 = ["High Variance", None]
-    except:
+    except Exception as e:
+        logger.error(f"processing failed, error {e}")
         x1_1 = ["High Variance", None]
 
     try:
@@ -568,7 +554,8 @@ def executive_summary_gen(
             x2_1 = ["Positive Skewness", x2]
         else:
             x2_1 = ["Positive Skewness", None]
-    except:
+    except Exception as e:
+        logger.error(f"processing failed, error {e}")
         x2_1 = ["Positive Skewness", None]
 
     try:
@@ -581,7 +568,8 @@ def executive_summary_gen(
             x3_1 = ["Negative Skewness", x3]
         else:
             x3_1 = ["Negative Skewness", None]
-    except:
+    except Exception as e:
+        logger.error(f"processing failed, error {e}")
         x3_1 = ["Negative Skewness", None]
 
     try:
@@ -595,7 +583,8 @@ def executive_summary_gen(
         else:
             x4_1 = ["High Kurtosis", None]
 
-    except:
+    except Exception as e:
+        logger.error(f"processing failed, error {e}")
         x4_1 = ["High Kurtosis", None]
 
     try:
@@ -608,7 +597,8 @@ def executive_summary_gen(
             x5_1 = ["Low Kurtosis", x5]
         else:
             x5_1 = ["Low Kurtosis", None]
-    except:
+    except Exception as e:
+        logger.error(f"processing failed, error {e}")
         x5_1 = ["Low Kurtosis", None]
 
     try:
@@ -621,7 +611,8 @@ def executive_summary_gen(
             x6_1 = ["Low Fill Rates", x6]
         else:
             x6_1 = ["Low Fill Rates", None]
-    except:
+    except Exception as e:
+        logger.error(f"processing failed, error {e}")
         x6_1 = ["Low Fill Rates", None]
 
     try:
@@ -634,7 +625,8 @@ def executive_summary_gen(
             x7_1 = ["High Biasedness", x7]
         else:
             x7_1 = ["High Biasedness", None]
-    except:
+    except Exception as e:
+        logger.error(f"processing failed, error {e}")
         x7_1 = ["High Biasedness", None]
 
     try:
@@ -647,7 +639,8 @@ def executive_summary_gen(
             x8_1 = ["Outliers", x8]
         else:
             x8_1 = ["Outliers", None]
-    except:
+    except Exception as e:
+        logger.error(f"processing failed, error {e}")
         x8_1 = ["Outliers", None]
 
     try:
@@ -656,6 +649,7 @@ def executive_summary_gen(
         corr_matrx = corr_matrx.where(
             np.triu(np.ones(corr_matrx.shape), k=1).astype(np.bool)
         )
+
         to_drop = [
             column
             for column in corr_matrx.columns
@@ -665,7 +659,8 @@ def executive_summary_gen(
             x9_1 = ["High Correlation", to_drop]
         else:
             x9_1 = ["High Correlation", None]
-    except:
+    except Exception as e:
+        logger.error(f"processing failed, error {e}")
         x9_1 = ["High Correlation", None]
 
     try:
@@ -678,7 +673,8 @@ def executive_summary_gen(
             x10_1 = ["Significant Attributes", x10]
         else:
             x10_1 = ["Significant Attributes", None]
-    except:
+    except Exception as e:
+        logger.error(f"processing failed, error {e}")
         x10_1 = ["Significant Attributes", None]
 
     blank_list_df = []
@@ -686,7 +682,8 @@ def executive_summary_gen(
         try:
             for j in i[1]:
                 blank_list_df.append([i[0], j])
-        except:
+        except Exception as e:
+            logger.error(f"processing failed, error {e}")
             blank_list_df.append([i[0], "NA"])
 
     list_n = []
@@ -697,9 +694,11 @@ def executive_summary_gen(
     ).split(",")
     remainder_cols = list(set(all_cols) - set(x1.Attribute.values))
     total_metrics = set(list(x1.Metric.values))
+
     for i in remainder_cols:
         for j in total_metrics:
             list_n.append([j, i])
+
     x2 = pd.DataFrame(list_n, columns=["Metric", "Attribute"])
     x2["Value"] = "✘"
     x = x1.append(x2, ignore_index=True)
@@ -721,6 +720,7 @@ def executive_summary_gen(
             ]
         ]
     )
+
     x = x[x.Attribute.values != "NA"]
 
     if ds_ind[0] == 1 and ds_ind[1] >= 0.5:
@@ -845,6 +845,7 @@ def executive_summary_gen(
     return report
 
 
+# @FIXME: rename variables with their corresponding within the config files
 def wiki_generator(
     master_path, dataDict_path=None, metricDict_path=None, print_report=False
 ):
@@ -854,22 +855,30 @@ def wiki_generator(
     :param metricDict_path: Metric dictionary path. Default value is kept as None.
     :param print_report: Printing option flexibility. Default value is kept as False.
     """
-
     try:
         datatype_df = pd.read_csv(ends_with(master_path) + "data_type.csv")
-    except:
+    except FileNotFoundError:
+        logger.error(
+            f"file {master_path}/data_type.csv doesn't exist, cannot read datatypes"
+        )
+    except Exception:
+        logger.info("generate an empty dataframe with columns attribute and data_type ")
         datatype_df = pd.DataFrame(columns=["attribute", "data_type"], index=range(1))
 
     try:
         data_dict = pd.read_csv(dataDict_path).merge(
             datatype_df, how="outer", on="attribute"
         )
-    except:
+    except FileNotFoundError:
+        logger.error(f"file {dataDict_path} doesn't exist, cannot read data dict")
+    except Exception:
         data_dict = datatype_df
 
     try:
         metric_dict = pd.read_csv(metricDict_path)
-    except:
+    except FileNotFoundError:
+        logger.error(f"file {metricDict_path} doesn't exist, cannot read metrics dict")
+    except Exception:
         metric_dict = pd.DataFrame(
             columns=[
                 "Section Category",
@@ -883,7 +892,10 @@ def wiki_generator(
     report = dp.Group(
         dp.Text("# "),
         dp.Text(
-            "*A quick reference to the attributes from the dataset (Data Dictionary) and the metrics computed in the report (Metric Dictionary).*"
+            """
+            *A quick reference to the attributes from the dataset (Data Dictionary) 
+            and the metrics computed in the report (Metric Dictionary).*
+            """
         ),
         dp.Text("# "),
         dp.Text("# "),
@@ -932,19 +944,16 @@ def descriptive_statistics(
     :param all_charts_cat_1_: Categorical charts (barplot) all collated in a list format supported as per datapane objects
     :param print_report: Printing option flexibility. Default value is kept as False.
     """
-
     if "global_summary" in avl_recs_SG:
         cnt = 0
     else:
         cnt = 1
 
     if len(missing_recs_SG) + cnt == len(SG_tabs):
-
         return "null_report"
 
     else:
         if "global_summary" in avl_recs_SG:
-
             l1 = dp.Group(
                 dp.Text("# "),
                 dp.Text(
@@ -1270,7 +1279,10 @@ def attribute_associations(
                 target_association_rep = dp.Group(
                     dp.Text("### Attribute to Target Association"),
                     dp.Text(
-                        "*Bivariate Distribution considering the event captured across different attribute splits (or categories)*"
+                        """
+                        *Bivariate Distribution considering the event captured across different 
+                        attribute splits (or categories)*
+                        """
                     ),
                     dp.Select(blocks=all_charts_num_2_, type=dp.SelectType.DROPDOWN),
                     label="Numerical",
@@ -1280,7 +1292,10 @@ def attribute_associations(
                 target_association_rep = dp.Group(
                     dp.Text("### Attribute to Target Association"),
                     dp.Text(
-                        "*Bivariate Distribution considering the event captured across different attribute splits (or categories)*"
+                        """
+                        *Bivariate Distribution considering the event captured across different 
+                        attribute splits (or categories)*
+                        """
                     ),
                     dp.Select(blocks=all_charts_cat_2_, type=dp.SelectType.DROPDOWN),
                     label="Categorical",
@@ -1309,7 +1324,10 @@ def attribute_associations(
                         type=dp.SelectType.TABS,
                     ),
                     dp.Text(
-                        "*Event Rate is defined as % of event label (i.e. label 1) in a bin or a categorical value of an attribute.*"
+                        """
+                        *Event Rate is defined as % of event label (i.e. label 1) in a bin or a categorical 
+                        value of an attribute.*
+                        """
                     ),
                     dp.Text("# "),
                 )
@@ -1319,7 +1337,10 @@ def attribute_associations(
         report = dp.Group(
             dp.Text("# "),
             dp.Text(
-                "*This section analyzes the interaction between different attributes and/or the relationship between an attribute & the binary target variable.*"
+                """
+                *This section analyzes the interaction between different attributes and/or the relationship between 
+                an attribute & the binary target variable.*
+                """
             ),
             dp.Text("## "),
             target_association_rep,
@@ -1333,7 +1354,10 @@ def attribute_associations(
         report = dp.Group(
             dp.Text("# "),
             dp.Text(
-                "*This section analyzes the interaction between different attributes and/or the relationship between an attribute & the binary target variable.*"
+                """
+                *This section analyzes the interaction between different attributes and/or the relationship between
+                 an attribute & the binary target variable.*
+                 """
             ),
             dp.Text("# "),
             dp.Text("# "),
@@ -1482,7 +1506,10 @@ def data_drift_stability(
             :param len_feats: count of attributes passed for analysis
             """
             if drifted_feats == 0:
-                text = "*Drift barometer does not indicate any drift in the underlying data. Please refer to the metric values as displayed in the above table & comparison plot for better understanding*"
+                text = """
+                *Drift barometer does not indicate any drift in the underlying data. Please refer to the metric 
+                values as displayed in the above table & comparison plot for better understanding*
+                """
             elif drifted_feats == 1:
                 text = (
                     "*Drift barometer indicates that "
@@ -1524,7 +1551,10 @@ def data_drift_stability(
             report = dp.Group(
                 dp.Text("# "),
                 dp.Text(
-                    "*This section examines the dataset stability wrt the baseline dataset (via computing drift statistics) and/or wrt the historical datasets (via computing stability index).*"
+                    """
+                    *This section examines the dataset stability wrt the baseline dataset (via computing drift 
+                    statistics) and/or wrt the historical datasets (via computing stability index).*
+                    """
                 ),
                 dp.Text("# "),
                 dp.Text("# "),
@@ -1546,7 +1576,10 @@ def data_drift_stability(
             report = dp.Group(
                 dp.Text("# "),
                 dp.Text(
-                    "*This section examines the dataset stability wrt the baseline dataset (via computing drift statistics) and/or wrt the historical datasets (via computing stability index).*"
+                    """
+                    *This section examines the dataset stability wrt the baseline dataset (via computing drift 
+                    statistics) and/or wrt the historical datasets (via computing stability index).*
+                    """
                 ),
                 dp.Text("# "),
                 dp.Text("# "),
@@ -1560,7 +1593,10 @@ def data_drift_stability(
                 dp.Text("##"),
                 dp.Select(blocks=all_drift_charts_, type=dp.SelectType.DROPDOWN),
                 dp.Text(
-                    "*Source & Target datasets were compared to see the % deviation at decile level for numerical attributes and at individual category level for categorical attributes*"
+                    """
+                    *Source & Target datasets were compared to see the % deviation at decile level for numerical 
+                    attributes and at individual category level for categorical attributes*
+                    """
                 ),
                 dp.Text("###  "),
                 dp.Text("###  "),
@@ -1581,7 +1617,10 @@ def data_drift_stability(
             report = dp.Group(
                 dp.Text("# "),
                 dp.Text(
-                    "*This section examines the dataset stability wrt the baseline dataset (via computing drift statistics) and/or wrt the historical datasets (via computing stability index).*"
+                    """
+                    *This section examines the dataset stability wrt the baseline dataset (via computing drift 
+                    statistics) and/or wrt the historical datasets (via computing stability index).*
+                    """
                 ),
                 dp.Text("# "),
                 dp.Text("# "),
@@ -1620,7 +1659,10 @@ def data_drift_stability(
             report = dp.Group(
                 dp.Text("# "),
                 dp.Text(
-                    "*This section examines the dataset stability wrt the baseline dataset (via computing drift statistics) and/or wrt the historical datasets (via computing stability index).*"
+                    """
+                    *This section examines the dataset stability wrt the baseline dataset (via computing drift 
+                    statistics) and/or wrt the historical datasets (via computing stability index).*
+                    """
                 ),
                 dp.Text("# "),
                 dp.Text("# "),
@@ -1634,7 +1676,10 @@ def data_drift_stability(
                 dp.Text("##"),
                 dp.Select(blocks=all_drift_charts_, type=dp.SelectType.DROPDOWN),
                 dp.Text(
-                    "*Source & Target datasets were compared to see the % deviation at decile level for numerical attributes and at individual category level for categorical attributes*"
+                    """
+                    *Source & Target datasets were compared to see the % deviation at decile level for numerical 
+                    attributes and at individual category level for categorical attributes*
+                    """
                 ),
                 dp.Text("###  "),
                 dp.Text("###  "),
@@ -1665,7 +1710,10 @@ def data_drift_stability(
             report = dp.Group(
                 dp.Text("# "),
                 dp.Text(
-                    "*This section examines the dataset stability wrt the baseline dataset (via computing drift statistics) and/or wrt the historical datasets (via computing stability index).*"
+                    """
+                    *This section examines the dataset stability wrt the baseline dataset (via computing drift 
+                    statistics) and/or wrt the historical datasets (via computing stability index).*
+                    """
                 ),
                 dp.Text("# "),
                 dp.Text("# "),
@@ -1711,7 +1759,10 @@ def data_drift_stability(
         report = dp.Group(
             dp.Text("# "),
             dp.Text(
-                "*This section examines the dataset stability wrt the baseline dataset (via computing drift statistics) and/or wrt the historical datasets (via computing stability index).*"
+                """
+                *This section examines the dataset stability wrt the baseline dataset (via computing drift statistics) 
+                and/or wrt the historical datasets (via computing stability index).*
+                """
             ),
             dp.Text("# "),
             dp.Text("# "),
@@ -1738,7 +1789,10 @@ def data_drift_stability(
             report = dp.Group(
                 dp.Text("# "),
                 dp.Text(
-                    "*This section examines the dataset stability wrt the baseline dataset (via computing drift statistics) and/or wrt the historical datasets (via computing stability index).*"
+                    """
+                    *This section examines the dataset stability wrt the baseline dataset (via computing drift 
+                    statistics) and/or wrt the historical datasets (via computing stability index).*
+                    """
                 ),
                 dp.Text("# "),
                 dp.Text("# "),
@@ -1752,7 +1806,10 @@ def data_drift_stability(
                 dp.Text("##"),
                 dp.Select(blocks=all_drift_charts_, type=dp.SelectType.DROPDOWN),
                 dp.Text(
-                    "*Source & Target datasets were compared to see the % deviation at decile level for numerical attributes and at individual category level for categorical attributes*"
+                    """
+                    *Source & Target datasets were compared to see the % deviation at decile level for numerical 
+                    attributes and at individual category level for categorical attributes*
+                    """
                 ),
                 dp.Text("###  "),
                 dp.Text("###  "),
@@ -1784,7 +1841,10 @@ def data_drift_stability(
             report = dp.Group(
                 dp.Text("# "),
                 dp.Text(
-                    "*This section examines the dataset stability wrt the baseline dataset (via computing drift statistics) and/or wrt the historical datasets (via computing stability index).*"
+                    """
+                    *This section examines the dataset stability wrt the baseline dataset (via computing drift 
+                    statistics) and/or wrt the historical datasets (via computing stability index).*
+                    """
                 ),
                 dp.Text("# "),
                 dp.Text("# "),
