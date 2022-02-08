@@ -183,17 +183,17 @@ def nullRows_detection(
 
 
 def nullColumns_detection(
-        spark,
-        idf,
-        list_of_cols="missing",
-        drop_cols=[],
-        treatment=False,
-        treatment_method="row_removal",
-        treatment_configs={},
-        stats_missing={},
-        stats_unique={},
-        stats_mode={},
-        print_impact=False,
+    spark,
+    idf,
+    list_of_cols="missing",
+    drop_cols=[],
+    treatment=False,
+    treatment_method="row_removal",
+    treatment_configs={},
+    stats_missing={},
+    stats_unique={},
+    stats_mode={},
+    print_impact=False,
 ):
     """
     :param spark: Spark Session
