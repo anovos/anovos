@@ -1,9 +1,10 @@
 import __main__
 import findspark
+findspark.init()
+
 from os import environ
 from packaging import version
-
-findspark.init()
+from loguru import logger
 
 import pyspark
 from pyspark.sql import SQLContext, SparkSession
@@ -38,7 +39,7 @@ def init_spark(
     :param spark_config: Dictionary of config key-value pairs.
     :return: A tuple of references to the Spark Session, Spark Context & SQL Context.
     """
-
+    logger.info(f"Getting spark session, context and sql context app_name: {app_name}")
     # detect execution environment
     flag_repl = not (hasattr(__main__, "__file__"))
     flag_debug = "DEBUG" in environ.keys()
