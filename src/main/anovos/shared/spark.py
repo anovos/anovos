@@ -1,14 +1,13 @@
-from os import environ
-from packaging import version
-
+import __main__
 import findspark
+from os import environ
+
+from packaging import version
 
 findspark.init()
 
-import __main__
 import pyspark
-from pyspark import SQLContext
-from pyspark.sql import SparkSession
+from pyspark.sql import SQLContext, SparkSession
 
 if version.parse(pyspark.__version__) < version.parse("3.0.0"):
     SPARK_JARS_PACKAGES = [
@@ -25,11 +24,11 @@ else:
 
 
 def init_spark(
-    app_name="anovos",
-    master="local[*]",
-    jars_packages=None,
-    py_files=None,
-    spark_config=None,
+        app_name="anovos",
+        master="local[*]",
+        jars_packages=None,
+        py_files=None,
+        spark_config=None,
 ):
     """
     :param app_name: Name of Spark app.

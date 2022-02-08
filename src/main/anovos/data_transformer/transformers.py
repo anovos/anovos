@@ -85,7 +85,7 @@ def attribute_binning(
     :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
                       Alternatively, columns can be specified in a string format,
                       where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    :param bin_method: "equal_frequency", "equal_range".
+    :param method_type: "equal_frequency", "equal_range".
                         In "equal_range" method, each bin is of equal size/width and in "equal_frequency", each bin has
                         equal no. of rows, though the width of bins may vary.
     :param bin_size: Number of bins.
@@ -100,14 +100,17 @@ def attribute_binning(
     :param output_mode: "replace", "append".
                         “replace” option replaces original columns with transformed column. “append” option append transformed
                         column to the input dataset with a postfix "_binned" e.g. column X is appended as X_binned.
+    :param print_impact: True, False
     :return: Binned Dataframe
     """
 
     num_cols = attributeType_segregation(idf)[0]
     if list_of_cols == "all":
         list_of_cols = num_cols
+
     if isinstance(list_of_cols, str):
         list_of_cols = [x.strip() for x in list_of_cols.split("|")]
+
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split("|")]
 
@@ -115,14 +118,17 @@ def attribute_binning(
 
     if any(x not in num_cols for x in list_of_cols):
         raise TypeError("Invalid input for Column(s)")
+
     if len(list_of_cols) == 0:
         warnings.warn("No Binning Performed - No numerical column(s) to transform")
         return idf
 
     if method_type not in ("equal_frequency", "equal_range"):
         raise TypeError("Invalid input for method_type")
+
     if bin_size < 2:
         raise TypeError("Invalid input for bin_size")
+
     if output_mode not in ("replace", "append"):
         raise TypeError("Invalid input for output_mode")
 
@@ -131,10 +137,7 @@ def attribute_binning(
         bin_cutoffs = []
         for i in list_of_cols:
             mapped_value = (
-                df_model.where(F.col("attribute") == i)
-                .select("parameters")
-                .rdd.flatMap(lambda x: x)
-                .collect()[0]
+                df_model.where(F.col("attribute") == i).select("parameters").rdd.flatMap(lambda x: x).collect()[0]
             )
             bin_cutoffs.append(mapped_value)
     else:
@@ -156,6 +159,7 @@ def attribute_binning(
                     .collect()
                     + [None]
                 )[0]
+
                 min_val = (
                     idf.select(F.col(i))
                     .groupBy()
@@ -164,7 +168,9 @@ def attribute_binning(
                     .collect()
                     + [None]
                 )[0]
+
                 bin_cutoff = []
+
                 if max_val:
                     bin_width = (max_val - min_val) / bin_size
                     for j in range(1, bin_size):
@@ -175,18 +181,20 @@ def attribute_binning(
             df_model = spark.createDataFrame(
                 zip(list_of_cols, bin_cutoffs), schema=["attribute", "parameters"]
             )
+
             df_model.write.parquet(model_path + "/attribute_binning", mode="overwrite")
 
     def bucket_label(value, index):
         if value is None:
             return None
-        for j in range(0, len(bin_cutoffs[index])):
-            if value <= bin_cutoffs[index][j]:
+
+        for i in range(0, len(bin_cutoffs[index])):
+            if value <= bin_cutoffs[index][i]:
                 if bin_dtype == "numerical":
-                    return j + 1
+                    return i + 1
                 else:
-                    if j == 0:
-                        return "<= " + str(round(bin_cutoffs[index][j], 4))
+                    if i == 0:
+                        return "<= " + str(round(bin_cutoffs[index][i], 4))
                     else:
                         return (
                             str(round(bin_cutoffs[index][j - 1], 4))
@@ -349,17 +357,17 @@ def monotonic_binning(
 
 
 def cat_to_num_unsupervised(
-    spark,
-    idf,
-    list_of_cols="all",
-    drop_cols=[],
-    method_type=1,
-    index_order="frequencyDesc",
-    cardinality_threshold=100,
-    pre_existing_model=False,
-    model_path="NA",
-    output_mode="replace",
-    print_impact=False,
+        spark,
+        idf,
+        list_of_cols="all",
+        drop_cols=[],
+        method_type=1,
+        index_order="frequencyDesc",
+        cardinality_threshold=100,
+        pre_existing_model=False,
+        model_path="NA",
+        output_mode="replace",
+        print_impact=False,
 ):
     """
     :param spark: Spark Session
@@ -388,6 +396,7 @@ def cat_to_num_unsupervised(
     :param output_mode: "replace", "append".
                         “replace” option replaces original columns with transformed column. “append” option append transformed
                         column to the input dataset with a postfix "_index" e.g. column X is appended as X_index.
+    :param print_impact:  true, False,
     :return: Encoded Dataframe
     """
 
@@ -513,10 +522,12 @@ def cat_to_num_unsupervised(
             odf_schema = odf.schema.add(
                 T.StructField("tmp", T.ArrayType(T.IntegerType()))
             )
+
             for j in range(0, uniq_cats):
                 odf_schema = odf_schema.add(
                     T.StructField(i + "_" + str(j), T.IntegerType())
                 )
+
             odf = (
                 odf.withColumn("tmp", f_vector_to_array(i + "_vec"))
                 .rdd.map(lambda x: (*x, *x["tmp"]))
@@ -1073,6 +1084,7 @@ def imputation_MMM(
     :param stats_mode: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
                        to read pre-saved statistics on most frequently seen values i.e. if measures_of_centralTendency or
                        mode_computation (data_analyzer.stats_generator module) has been computed & saved before.
+    :param print_impact: True, False
     :return: Imputed Dataframe
     """
     if stats_missing == {}:
@@ -1096,7 +1108,7 @@ def imputation_MMM(
     else:
         raise TypeError("Non-Boolean input for pre_existing_model")
 
-    if (len(missing_cols) == 0) & (pre_existing_model == False) & (model_path == "NA"):
+    if (len(missing_cols) == 0) & (not pre_existing_model) & (model_path == "NA"):
         return idf
 
     num_cols, cat_cols, other_cols = attributeType_segregation(idf)
@@ -1185,7 +1197,7 @@ def imputation_MMM(
 
         else:  # For mean, median imputation
             # Building new imputer model or uploading the existing model
-            if pre_existing_model == True:
+            if pre_existing_model:
                 imputerModel = ImputerModel.load(
                     model_path + "/imputation_MMM/num_imputer-model"
                 )
@@ -1204,7 +1216,7 @@ def imputation_MMM(
                 odf = odf.withColumn(i, F.col(i).cast(j))
 
             # Saving model if required
-            if (pre_existing_model == False) & (model_path != "NA"):
+            if (not pre_existing_model) & (model_path != "NA"):
                 imputerModel.write().overwrite().save(
                     model_path + "/imputation_MMM/num_imputer-model"
                 )
@@ -1257,7 +1269,7 @@ def imputation_MMM(
                 F.when(F.col(i).isNull(), parameters[index]).otherwise(F.col(i)),
             )
 
-        if (pre_existing_model == False) & (model_path != "NA"):
+        if (not pre_existing_model) & (model_path != "NA"):
             df_model = spark.createDataFrame(
                 zip(cat_cols, parameters), schema=["attribute", "parameters"]
             )
@@ -2796,7 +2808,7 @@ def outlier_categories(
     if output_mode not in ("replace", "append"):
         raise TypeError("Invalid input for output_mode")
 
-    if pre_existing_model == True:
+    if pre_existing_model:
         df_model = spark.read.csv(
             model_path + "/outlier_categories", header=True, inferSchema=True
         )
@@ -2852,7 +2864,7 @@ def outlier_categories(
                 ).otherwise("others"),
             )
 
-    if (pre_existing_model == False) & (model_path != "NA"):
+    if (not pre_existing_model) & (model_path != "NA"):
         df_model.repartition(1).write.csv(
             model_path + "/outlier_categories", header=True, mode="overwrite"
         )

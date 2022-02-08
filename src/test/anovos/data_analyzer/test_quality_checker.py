@@ -1,5 +1,17 @@
+import pyspark.sql.functions as F
 import pytest
-from anovos.data_analyzer.quality_checker import *
+from pyspark.sql import SparkSession
+
+from src.main.anovos.data_analyzer.quality_checker import (
+    duplicate_detection,
+    invalidEntries_detection,
+    IDness_detection,
+    biasedness_detection,
+    nullColumns_detection,
+    nullRows_detection,
+    outlier_detection
+)
+from src.main.anovos.data_transformer.transformers import imputation_MMM
 
 sample_parquet = "./data/test_dataset/part-00000-3eb0f7bb-05c2-46ec-8913-23ba231d2734-c000.snappy.parquet"
 sample_csv = "./data/test_dataset/part-00000-8beb3930-8a44-4b7b-906b-a6deca466d9f-c000.csv"
@@ -8,7 +20,7 @@ sample_output_path = "./data/tmp/output/"
 
 
 @pytest.mark.usefixtures("spark_session")
-def test_nullRows_detection(spark_session):
+def test_nullRows_detection(spark_session: SparkSession):
     test_df = spark_session.createDataFrame(
         [
             ('27520a', 51, 9000, 'HS-grad'),
@@ -34,7 +46,7 @@ def test_nullRows_detection(spark_session):
     assert result_df[1].where(F.col("null_cols_count") == 2).toPandas().to_dict('list')['treated'][0] == 1
 
 
-def test_duplicate_detection(spark_session):
+def test_duplicate_detection(spark_session: SparkSession):
     test_df1 = spark_session.createDataFrame(
         [
             ('27520a', 51, 9000, 'HS-grad'),
@@ -59,7 +71,7 @@ def test_duplicate_detection(spark_session):
     assert result_df1[1].where(F.col("metric") == "duplicate_pct").toPandas().to_dict('list')['value'][0] == 0.20
 
 
-def test_invalidEntries_detection(spark_session):
+def test_invalidEntries_detection(spark_session: SparkSession):
     test_df2 = spark_session.createDataFrame(
         [
             ('27520a', 51, 9000, 'HS-grad'),
@@ -84,7 +96,7 @@ def test_invalidEntries_detection(spark_session):
     assert result_df2[1].where(F.col("attribute") == "education").toPandas().to_dict('list')['invalid_pct'][0] == 0.2
 
 
-def test_IDness_detection(spark_session):
+def test_IDness_detection(spark_session: SparkSession):
     test_df3 = spark_session.createDataFrame(
         [
             ('27520a', 51, 9000, 'HS-grad'),
@@ -114,7 +126,7 @@ def test_IDness_detection(spark_session):
     assert result_df3[1].where(F.col("attribute") == "education").toPandas().to_dict('list')['treated'][0] == 1
 
 
-def test_biasedness_detection(spark_session):
+def test_biasedness_detection(spark_session: SparkSession):
     test_df4 = spark_session.createDataFrame(
         [
             ('27520a', 51, 9000, 'HS-grad'),
@@ -145,7 +157,7 @@ def test_biasedness_detection(spark_session):
     assert result_df4[1].where(F.col("attribute") == "education").toPandas().to_dict('list')['treated'][0] == 1
 
 
-def test_imputation_MMM(spark_session):
+def test_imputation_MMM(spark_session: SparkSession):
     test_df5 = spark_session.createDataFrame(
         [
             ('27520a', 51, 8000, 'HS-grad'),
@@ -165,11 +177,11 @@ def test_imputation_MMM(spark_session):
     result_df5 = imputation_MMM(spark_session, test_df5)
 
     assert result_df5.count() == 6
-    assert result_df5.where(F.col("ifa") == "11a").toPandas().to_dict('list')['income'][0] == 8000
+    assert result_df5.where(F.col("ifa") == "11a").toPandas().to_dicimputation_MMMt('list')['income'][0] == 8000
     assert result_df5.where(F.col("ifa") == "11a").toPandas().to_dict('list')['education'][0] == 'HS-grad'
 
 
-def test_nullColumns_detection(spark_session):
+def test_nullColumns_detection(spark_session: SparkSession):
     test_df6 = spark_session.createDataFrame(
         [
             ('27520a', 51, 9000, 'HS-grad'),
@@ -194,7 +206,7 @@ def test_nullColumns_detection(spark_session):
     assert result_df6[1].where(F.col("attribute") == "income").toPandas().to_dict('list')['missing_pct'][0] == 0.25
 
 
-def test_outlier_detection(spark_session):
+def test_outlier_detection(spark_session: SparkSession):
     test_df7 = spark_session.read.parquet(sample_parquet)
     test_df7 = test_df7.withColumn('label',
                                    F.when(F.col('income') == '<=50K', F.lit(0.0)).when(F.col('income') == '>50K',

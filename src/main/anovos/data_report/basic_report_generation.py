@@ -86,6 +86,7 @@ def anovos_basic_report(
     :param global_run_type: "local" (default), "emr", "databricks"
                          "emr" if the files are read from or written in AWS s3
                          "databricks" if the files are read from or written in dbfs in azure databricks
+    : param print_impact: True, False.
     """
     global num_cols
     global cat_cols
@@ -157,7 +158,7 @@ def anovos_basic_report(
                 + ".csv "
                 + ends_with(output_path)
             )
-            output = subprocess.check_output(["bash", "-c", bash_cmd])
+            subprocess.check_output(["bash", "-c", bash_cmd])
 
         if print_impact:
             print(func.__name__, ":\n")
@@ -455,6 +456,7 @@ def anovos_basic_report(
                     )
                 )
 
+    # @TODO: is there better templating approach such as jinja
     tab3 = dp.Group(
         dp.Text("# "),
         dp.Text(
@@ -471,7 +473,7 @@ def anovos_basic_report(
         label="Attribute Associations",
     )
 
-    basic_report = dp.Report(
+    dp.Report(
         default_template[0],
         default_template[1],
         dp.Select(blocks=[tab1, tab2, tab3], type=dp.SelectType.TABS),
@@ -484,4 +486,4 @@ def anovos_basic_report(
             + "basic_report.html "
             + ends_with(output_path)
         )
-        output = subprocess.check_output(["bash", "-c", bash_cmd])
+        subprocess.check_output(["bash", "-c", bash_cmd])

@@ -1,13 +1,11 @@
 ---
-name: Bug report
-about: Create a report to help us improve
-title: ''
+name: Bug report about: Create a report to help us improve title: ''
 labels: ''
 assignees: ''
 
 ---
 
-## Expected Behavior 
+## Expected Behavior
 
 ## Current Behavior
 

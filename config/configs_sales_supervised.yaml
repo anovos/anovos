@@ -10,7 +10,7 @@ input_dataset:
       header: True
       delimiter: ","
       inferSchema: True
-  delete_column: ['Outlet_Identifier']
+  delete_column: [ 'Outlet_Identifier' ]
   select_column: null
 
 
@@ -24,45 +24,45 @@ anovos_basic_report:
 
 #if anovos_basic_report.basic_report is True, then all configs below are ignored.
 stats_generator:
-  metric: ['global_summary','measures_of_counts','measures_of_centralTendency','measures_of_cardinality'
-            ,'measures_of_percentiles','measures_of_dispersion','measures_of_shape']
+  metric: [ 'global_summary','measures_of_counts','measures_of_centralTendency','measures_of_cardinality'
+    ,       'measures_of_percentiles','measures_of_dispersion','measures_of_shape' ]
   metric_args:
     list_of_cols: all
-    drop_cols: ['Item_Identifier']
+    drop_cols: [ 'Item_Identifier' ]
 
 quality_checker:
   duplicate_detection:
     list_of_cols: all
-    drop_cols: ['Item_Identifier']
+    drop_cols: [ 'Item_Identifier' ]
     treatment: True
   
   nullRows_detection:
     list_of_cols: all
-    drop_cols: []
+    drop_cols: [ ]
     treatment: True
     treatment_threshold: 0.75
   
   invalidEntries_detection:
     list_of_cols: all
-    drop_cols: ['Item_Identifier']
+    drop_cols: [ 'Item_Identifier' ]
     treatment: True
     output_mode: replace
   
   IDness_detection:
     list_of_cols: all
-    drop_cols: ['Item_Identifier']
+    drop_cols: [ 'Item_Identifier' ]
     treatment: True
     treatment_threshold: 0.9
   
   biasedness_detection:
     list_of_cols: all
-    drop_cols: ['sales']
+    drop_cols: [ 'sales' ]
     treatment: True
     treatment_threshold: 0.98
 
   outlier_detection:
     list_of_cols: all
-    drop_cols: ['Item_Identifier','sales']
+    drop_cols: [ 'Item_Identifier','sales' ]
     detection_side: upper
     detection_configs:
       pctile_lower: 0.05
@@ -80,7 +80,7 @@ quality_checker:
 
   nullColumns_detection:
     list_of_cols: all
-    drop_cols: ['Item_Identifier','sales']
+    drop_cols: [ 'Item_Identifier','sales' ]
     treatment: True
     treatment_method: MMM
     treatment_configs:
@@ -94,7 +94,7 @@ association_evaluator:
 
   correlation_matrix:
     list_of_cols: all
-    drop_cols: ['Item_Identifier']
+    drop_cols: [ 'Item_Identifier' ]
   
   IV_calculation:
     list_of_cols: all
@@ -125,7 +125,7 @@ drift_detector:
   drift_statistics:
     configs:
       list_of_cols: all
-      drop_cols: ['Item_Identifier','sales']
+      drop_cols: [ 'Item_Identifier','sales' ]
       method_type: all
       threshold: 0.1
       bin_method: equal_range
@@ -141,7 +141,7 @@ drift_detector:
           header: True
           delimiter: ","
           inferSchema: True
-      delete_column: ['Outlet_Identifier']
+      delete_column: [ 'Outlet_Identifier' ]
       select_column: null
 
   stabilityIndex_computation:
@@ -150,7 +150,7 @@ drift_detector:
       metric_weightages:
         mean: 0.5
         stddev: 0.3
-        kurtosis: 0.2 
+        kurtosis: 0.2
       existing_metric_path: ''
       appended_metric_path: 'si_metrics'
       threshold: 2
@@ -171,7 +171,7 @@ drift_detector:
         file_configs:
           header: True
           delimiter: ","
-          inferSchema: 
+          inferSchema:
 
     dataset3:
       read_dataset:
@@ -236,7 +236,7 @@ drift_detector:
           delimiter: ","
           inferSchema: True
 
-        
+
 report_preprocessing:
   master_path: 'report_stats'
   charts_to_objects:
@@ -274,7 +274,7 @@ write_main:
   file_type: parquet
   file_configs:
     mode: overwrite
-    
+
 write_stats:
   file_path: "stats"
   file_type: parquet

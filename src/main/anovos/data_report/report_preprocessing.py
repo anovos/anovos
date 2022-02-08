@@ -6,17 +6,18 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import pyspark
-from anovos.data_analyzer.stats_generator import uniqueCount_computation
-from anovos.data_ingest.data_ingest import read_dataset
-from anovos.data_transformer.transformers import (
+from pyspark.sql import functions as F
+from pyspark.sql import types as T
+from pyspark.sql.window import Window
+
+from src.main.anovos.data_analyzer.stats_generator import uniqueCount_computation
+from src.main.anovos.data_ingest.data_ingest import read_dataset
+from src.main.anovos.data_transformer.transformers import (
     outlier_categories,
     imputation_MMM,
     attribute_binning,
 )
-from anovos.shared.utils import attributeType_segregation, ends_with
-from pyspark.sql import functions as F
-from pyspark.sql import types as T
-from pyspark.sql.window import Window
+from src.main.anovos.shared.utils import attributeType_segregation, ends_with
 
 global_theme = px.colors.sequential.Plasma
 global_theme_r = px.colors.sequential.Plasma_r
@@ -60,13 +61,14 @@ def save_stats(spark, idf, master_path, function_name, reread=False, run_type="l
 
     if run_type == "emr":
         bash_cmd = (
-            "aws s3 cp "
-            + ends_with(local_path)
-            + function_name
-            + ".csv "
-            + ends_with(master_path)
+                "aws s3 cp "
+                + ends_with(local_path)
+                + function_name
+                + ".csv "
+                + ends_with(master_path)
         )
-        output = subprocess.check_output(["bash", "-c", bash_cmd])
+
+        subprocess.check_output(["bash", "-c", bash_cmd])
 
     if reread:
         odf = spark.read.csv(
@@ -104,10 +106,10 @@ def binRange_to_binIdx(spark, col, cutoffs_path):
     """
     bin_cutoffs = (
         spark.read.parquet(cutoffs_path)
-        .where(F.col("attribute") == col)
-        .select("parameters")
-        .rdd.flatMap(lambda x: x)
-        .collect()[0]
+            .where(F.col("attribute") == col)
+            .select("parameters")
+            .rdd.flatMap(lambda x: x)
+            .collect()[0]
     )
     bin_ranges = []
     max_cat = len(bin_cutoffs) + 1
@@ -137,12 +139,12 @@ def plot_frequency(spark, idf, col, cutoffs_path):
     """
     odf = (
         idf.groupBy(col)
-        .count()
-        .withColumn(
+            .count()
+            .withColumn(
             "count_%",
             100 * (F.col("count") / F.sum("count").over(Window.partitionBy())),
         )
-        .withColumn(col, f_edit_binRange(col))
+            .withColumn(col, f_edit_binRange(col))
     )
 
     if col in cat_cols:
@@ -153,9 +155,9 @@ def plot_frequency(spark, idf, col, cutoffs_path):
         mapping = binRange_to_binIdx(spark, col, cutoffs_path)
         odf_pd = (
             odf.join(mapping, col, "left_outer")
-            .orderBy("bin_idx")
-            .toPandas()
-            .fillna("Missing")
+                .orderBy("bin_idx")
+                .toPandas()
+                .fillna("Missing")
         )
 
     fig = px.bar(
@@ -221,13 +223,13 @@ def plot_eventRate(spark, idf, col, label_col, event_label, cutoffs_path):
         idf.withColumn(
             label_col, F.when(F.col(label_col) == event_label, 1).otherwise(0)
         )
-        .groupBy(col)
-        .pivot(label_col)
-        .count()
-        .fillna(0, subset=["0", "1"])
-        .withColumn("event_rate", 100 * (F.col("1") / (F.col("0") + F.col("1"))))
-        .withColumn("attribute_name", F.lit(col))
-        .withColumn(col, f_edit_binRange(col))
+            .groupBy(col)
+            .pivot(label_col)
+            .count()
+            .fillna(0, subset=["0", "1"])
+            .withColumn("event_rate", 100 * (F.col("1") / (F.col("0") + F.col("1"))))
+            .withColumn("attribute_name", F.lit(col))
+            .withColumn(col, f_edit_binRange(col))
     )
 
     if col in cat_cols:
@@ -272,8 +274,8 @@ def plot_comparative_drift(spark, idf, source, col, cutoffs_path):
 
     odf = (
         idf.groupBy(col)
-        .agg((F.count(col) / idf.count()).alias("countpct_target"))
-        .fillna(np.nan, subset=[col])
+            .agg((F.count(col) / idf.count()).alias("countpct_target"))
+            .fillna(np.nan, subset=[col])
     )
 
     if col in cat_cols:
@@ -285,32 +287,32 @@ def plot_comparative_drift(spark, idf, source, col, cutoffs_path):
                 col,
                 "full_outer",
             )
-            .orderBy("countpct_target", ascending=False)
-            .toPandas()
+                .orderBy("countpct_target", ascending=False)
+                .toPandas()
         )
 
     if col in num_cols:
         mapping = binRange_to_binIdx(spark, col, cutoffs_path)
         odf_pd = (
             odf.join(mapping, col, "left_outer")
-            .fillna(np.nan, subset=["bin_idx"])
-            .join(
+                .fillna(np.nan, subset=["bin_idx"])
+                .join(
                 source.fillna(np.nan, subset=[col]).select(
                     F.col(col).alias("bin_idx"), F.col("p").alias("countpct_source")
                 ),
                 "bin_idx",
                 "full_outer",
             )
-            .orderBy("bin_idx")
-            .toPandas()
+                .orderBy("bin_idx")
+                .toPandas()
         )
 
     odf_pd.fillna(
         {col: "Missing", "countpct_source": 0, "countpct_target": 0}, inplace=True
     )
     odf_pd["%_diff"] = (
-        (odf_pd["countpct_target"] / odf_pd["countpct_source"]) - 1
-    ) * 100
+                               (odf_pd["countpct_target"] / odf_pd["countpct_source"]) - 1
+                       ) * 100
     fig = go.Figure()
     fig.add_bar(
         y=list(odf_pd.countpct_source.values),
@@ -350,20 +352,20 @@ def plot_comparative_drift(spark, idf, source, col, cutoffs_path):
 
 
 def charts_to_objects(
-    spark,
-    idf,
-    list_of_cols="all",
-    drop_cols=[],
-    label_col=None,
-    event_label=1,
-    bin_method="equal_range",
-    bin_size=10,
-    coverage=1.0,
-    drift_detector=False,
-    source_path="NA",
-    master_path=".",
-    stats_unique={},
-    run_type="local",
+        spark,
+        idf,
+        list_of_cols="all",
+        drop_cols=[],
+        label_col=None,
+        event_label=1,
+        bin_method="equal_range",
+        bin_size=10,
+        coverage=1.0,
+        drift_detector=False,
+        source_path="NA",
+        master_path=".",
+        stats_unique={},
+        run_type="local",
 ):
     """
     :param spark: Spark Session
@@ -395,18 +397,18 @@ def charts_to_objects(
     if stats_unique == {}:
         remove_cols = (
             uniqueCount_computation(spark, idf, list_of_cols)
-            .where(F.col("unique_values") < 2)
-            .select("attribute")
-            .rdd.flatMap(lambda x: x)
-            .collect()
+                .where(F.col("unique_values") < 2)
+                .select("attribute")
+                .rdd.flatMap(lambda x: x)
+                .collect()
         )
     else:
         remove_cols = (
             read_dataset(spark, **stats_unique)
-            .where(F.col("unique_values") < 2)
-            .select("attribute")
-            .rdd.flatMap(lambda x: x)
-            .collect()
+                .where(F.col("unique_values") < 2)
+                .select("attribute")
+                .rdd.flatMap(lambda x: x)
+                .collect()
         )
 
     list_of_cols = list(
@@ -429,9 +431,9 @@ def charts_to_objects(
         encoding_model_exists = True
         binned_cols = (
             spark.read.parquet(source_path + "/drift_statistics/attribute_binning")
-            .select("attribute")
-            .rdd.flatMap(lambda x: x)
-            .collect()
+                .select("attribute")
+                .rdd.flatMap(lambda x: x)
+                .collect()
         )
         to_be_binned = [e for e in num_cols if e not in binned_cols]
     else:
@@ -504,7 +506,7 @@ def charts_to_objects(
             if drift_detector:
                 try:
                     frequency_path = (
-                        source_path + "/drift_statistics/frequency_counts/" + col
+                            source_path + "/drift_statistics/frequency_counts/" + col
                     )
                     idf_source = spark.read.csv(
                         frequency_path, header=True, inferSchema=True
@@ -542,7 +544,7 @@ def charts_to_objects(
             if drift_detector:
                 try:
                     frequency_path = (
-                        source_path + "/drift_statistics/frequency_counts/" + col
+                            source_path + "/drift_statistics/frequency_counts/" + col
                     )
                     idf_source = spark.read.csv(
                         frequency_path, header=True, inferSchema=True
@@ -564,9 +566,10 @@ def charts_to_objects(
 
     if run_type == "emr":
         bash_cmd = (
-            "aws s3 cp --recursive "
-            + ends_with(local_path)
-            + " "
-            + ends_with(master_path)
+                "aws s3 cp --recursive "
+                + ends_with(local_path)
+                + " "
+                + ends_with(master_path)
         )
-        output = subprocess.check_output(["bash", "-c", bash_cmd])
+
+        subprocess.check_output(["bash", "-c", bash_cmd])

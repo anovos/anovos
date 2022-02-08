@@ -2,7 +2,10 @@
 import re
 import warnings
 
-from anovos.data_analyzer.stats_generator import (
+from pyspark.sql import functions as F
+from pyspark.sql import types as T
+
+from src.main.anovos.data_analyzer.stats_generator import (
     uniqueCount_computation,
     missingCount_computation,
     mode_computation,
@@ -15,8 +18,6 @@ from anovos.shared.utils import (
     transpose_dataframe,
     get_dtype,
 )
-from pyspark.sql import functions as F
-from pyspark.sql import types as T
 
 
 def duplicate_detection(
@@ -110,6 +111,7 @@ def nullRows_detection(
                                 If % of null columns is above the threshold for a row, it is removed from the dataframe.
                                 There is no row removal if the threshold is 1.0. And if the threshold is 0, all rows with
                                 null value are removed.
+    :param print_impact: True, False.
     :return: (Output Dataframe, Metric Dataframe)
               Output Dataframe is the dataframe after row removal if treated, else original input dataframe.
               Metric Dataframe is of schema [null_cols_count, row_count, row_pct, flagged/treated]. null_cols_count is defined as
@@ -162,10 +164,10 @@ def nullRows_detection(
 
     odf_print = (
         odf_tmp.groupBy("null_cols_count", "flagged")
-        .agg(F.count(F.lit(1)).alias("row_count"))
-        .withColumn("row_pct", F.round(F.col("row_count") / float(idf.count()), 4))
-        .select("null_cols_count", "row_count", "row_pct", "flagged")
-        .orderBy("null_cols_count")
+            .agg(F.count(F.lit(1)).alias("row_count"))
+            .withColumn("row_pct", F.round(F.col("row_count") / float(idf.count()), 4))
+            .select("null_cols_count", "row_count", "row_pct", "flagged")
+            .orderBy("null_cols_count")
     )
 
     if treatment:
@@ -181,17 +183,17 @@ def nullRows_detection(
 
 
 def nullColumns_detection(
-    spark,
-    idf,
-    list_of_cols="missing",
-    drop_cols=[],
-    treatment=False,
-    treatment_method="row_removal",
-    treatment_configs={},
-    stats_missing={},
-    stats_unique={},
-    stats_mode={},
-    print_impact=False,
+        spark,
+        idf,
+        list_of_cols="missing",
+        drop_cols=[],
+        treatment=False,
+        treatment_method="row_removal",
+        treatment_configs={},
+        stats_missing={},
+        stats_unique={},
+        stats_mode={},
+        print_impact=False,
 ):
     """
     :param spark: Spark Session
@@ -230,6 +232,7 @@ def nullColumns_detection(
     :param stats_mode: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
                        to read pre-saved statistics on most frequently seen values i.e. if measures_of_centralTendency or
                        mode_computation (data_analyzer.stats_generator module) has been computed & saved before.
+    :param print_impact: True,False.
     :return: (Output Dataframe, Metric Dataframe)
               Output Dataframe is the imputed dataframe if treated, else original input dataframe.
               Metric Dataframe is of schema [attribute, missing_count, missing_pct]. missing_count is number of rows
@@ -319,8 +322,10 @@ def nullColumns_detection(
                 .collect()
             )
             list_of_cols = [e for e in list_of_cols if e not in remove_cols]
+
             if treatment_threshold:
                 list_of_cols = [e for e in threshold_cols if e not in remove_cols]
+
             odf = idf.dropna(subset=list_of_cols)
 
             if print_impact:
@@ -432,6 +437,7 @@ def outlier_detection(
     :param stats_unique: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
                          to read pre-saved statistics on unique value count i.e. if measures_of_cardinality or
                          uniqueCount_computation (data_analyzer.stats_generator module) has been computed & saved before.
+    :param print_impact: True, False.
     :return: (Output Dataframe, Metric Dataframe)
               Output Dataframe is the imputed dataframe if treated, else original input dataframe.
               Metric Dataframe is of schema [attribute, lower_outliers, upper_outliers]. lower_outliers is no. of outliers
@@ -675,7 +681,7 @@ def outlier_detection(
             else:
                 odf = odf.drop(i + "_outliered")
 
-    if not (treatment):
+    if not treatment:
         odf = idf
 
     odf_print = spark.createDataFrame(
@@ -718,6 +724,7 @@ def IDness_detection(
     :param stats_unique: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
                          to read pre-saved statistics on unique value count i.e. if measures_of_cardinality or
                          uniqueCount_computation (data_analyzer.stats_generator module) has been computed & saved before.
+    :param print_impact: True,False.
     :return: (Output Dataframe, Metric Dataframe)
               Output Dataframe is the dataframe after column removal if treated, else original input dataframe.
               Metric Dataframe is of schema [attribute, unique_values, IDness, flagged/treated]. unique_values is no. of distinct
@@ -969,9 +976,13 @@ def invalidEntries_detection(
                               For value replacement, by MMM, arguments corresponding to imputation_MMM function (transformer module) are provided,
                               where each key is an argument from imputation_MMM function.
                               For null_replacement, this argument can be skipped.
+    :param stats_missing
+    :param stats_unique
+    :param stats_mode
     :param output_mode: "replace", "append".
                         “replace” option replaces original columns with treated column. “append” option append treated
                         column to the input dataset with a postfix "_invalid" e.g. column X is appended as X_invalid.
+    :param print_impact: True, False.
     :return: (Output Dataframe, Metric Dataframe)
               Output Dataframe is the dataframe after treatment if applicable, else original input dataframe.
               Metric Dataframe is of schema [attribute, invalid_entries, invalid_count, invalid_pct].
@@ -1041,7 +1052,7 @@ def invalidEntries_detection(
         "blank",
         "unknown",
     ]
-    specialChars_vocab = [
+    special_chars_vocab = [
         "&",
         "$",
         ";",
@@ -1072,7 +1083,7 @@ def invalidEntries_detection(
             if detection_type in ("auto", "both"):
                 e = str(e).lower().strip()
                 # Null & Special Chars Search
-                if e in (null_vocab + specialChars_vocab):
+                if e in (null_vocab + special_chars_vocab):
                     output.append(1)
                     continue
                 # Consecutive Identical Chars Search

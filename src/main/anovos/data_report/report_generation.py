@@ -109,7 +109,7 @@ def line_chart_gen_stability(df1, df2, col):
             y="stddev",
             markers=True,
             title="CV of Stddev is "
-            + str(list(df2[df2["attribute"] == col].stddev_cv.values)[0]),
+                  + str(list(df2[df2["attribute"] == col].stddev_cv.values)[0]),
         )
         f3.update_traces(line_color=global_theme[6], marker=dict(size=14))
         f3.layout.plot_bgcolor = global_plot_bg_color
@@ -121,7 +121,7 @@ def line_chart_gen_stability(df1, df2, col):
             y="kurtosis",
             markers=True,
             title="CV of Kurtosis is "
-            + str(list(df2[df2["attribute"] == col].kurtosis_cv.values)[0]),
+                  + str(list(df2[df2["attribute"] == col].kurtosis_cv.values)[0]),
         )
         f4.update_traces(line_color=global_theme[4], marker=dict(size=14))
         f4.layout.plot_bgcolor = global_plot_bg_color
@@ -484,7 +484,9 @@ def executive_summary_gen(
             open(ends_with(master_path) + "freqDist_" + str(label_col))
         )
 
+        # @FIXME: never used local variable
         text_val = list(list(obj_dtls.values())[0][0].items())[8][1]
+
         x_val = list(list(obj_dtls.values())[0][0].items())[11][1]
         y_val = list(list(obj_dtls.values())[0][0].items())[13][1]
         label_fig_ = go.Figure(
@@ -1262,10 +1264,10 @@ def attribute_associations(
     else:
 
         if len(all_charts_num_2_) == 0 and len(all_charts_cat_2_) == 0:
-            l = dp.Text("##")
+            target_assciation_rep = dp.Text("##")
         else:
             if len(all_charts_num_2_) > 0 and len(all_charts_cat_2_) == 0:
-                l = dp.Group(
+                target_assciation_rep = dp.Group(
                     dp.Text("### Attribute to Target Association"),
                     dp.Text(
                         "*Bivariate Distribution considering the event captured across different attribute splits (or categories)*"
@@ -1275,7 +1277,7 @@ def attribute_associations(
                 )
 
             elif len(all_charts_num_2_) == 0 and len(all_charts_cat_2_) > 0:
-                l = dp.Group(
+                target_assciation_rep = dp.Group(
                     dp.Text("### Attribute to Target Association"),
                     dp.Text(
                         "*Bivariate Distribution considering the event captured across different attribute splits (or categories)*"
@@ -1285,7 +1287,7 @@ def attribute_associations(
                 )
 
             else:
-                l = dp.Group(
+                target_assciation_rep = dp.Group(
                     dp.Text("### Attribute to Target Association"),
                     dp.Select(
                         blocks=[
@@ -1320,7 +1322,7 @@ def attribute_associations(
                 "*This section analyzes the interaction between different attributes and/or the relationship between an attribute & the binary target variable.*"
             ),
             dp.Text("## "),
-            l,
+            target_assciation_rep,
             dp.Text("## "),
             dp.Text("## "),
             label="Attribute Associations",
@@ -1344,7 +1346,7 @@ def attribute_associations(
             ),
             dp.Text("### "),
             dp.Text("## "),
-            l,
+            target_assciation_rep,
             dp.Text("## "),
             dp.Text("## "),
             label="Attribute Associations",
@@ -1373,7 +1375,6 @@ def data_drift_stability(
     :param drift_threshold_model: threshold which the user is specifying for tagging an attribute to be drifted or not
     :param all_drift_charts_: Charts (histogram/barplot) all collated in a list format supported as per datapane objects
     :param print_report: Printing option flexibility. Default value is kept as False.
-
     """
 
     line_chart_list = []
@@ -1860,7 +1861,7 @@ def anovos_report(
             + ends_with("report_stats")
         )
         master_path = "report_stats"
-        output = subprocess.check_output(["bash", "-c", bash_cmd])
+        subprocess.check_output(["bash", "-c", bash_cmd])
 
     if "global_summary.csv" not in os.listdir(master_path):
         print(
@@ -2175,7 +2176,7 @@ def anovos_report(
 
     if run_type == "local" or "databricks":
 
-        final_report = dp.Report(
+        dp.Report(
             default_template[0],
             default_template[1],
             dp.Select(blocks=final_tabs_list, type=dp.SelectType.TABS),
@@ -2183,14 +2184,14 @@ def anovos_report(
 
     elif run_type == "emr":
 
-        final_report = dp.Report(
+        dp.Report(
             default_template[0],
             default_template[1],
             dp.Select(blocks=final_tabs_list, type=dp.SelectType.TABS),
         ).save("ml_anovos_report.html", open=True)
 
         bash_cmd = "aws s3 cp ml_anovos_report.html " + ends_with(final_report_path)
-        output = subprocess.check_output(["bash", "-c", bash_cmd])
+        subprocess.check_output(["bash", "-c", bash_cmd])
     else:
         raise ValueError("Invalid run_type")
 

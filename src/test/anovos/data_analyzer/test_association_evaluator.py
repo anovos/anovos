@@ -1,5 +1,13 @@
+import pyspark.sql.functions as F
 import pytest
-from anovos.data_analyzer.association_evaluator import *
+from pyspark.sql import SparkSession
+
+from src.main.anovos.data_analyzer.association_evaluator import (
+    IV_calculation,
+    IG_calculation,
+    variable_clustering,
+    correlation_matrix
+)
 
 sample_parquet = "./data/test_dataset/part-00000-3eb0f7bb-05c2-46ec-8913-23ba231d2734-c000.snappy.parquet"
 sample_csv = "./data/test_dataset/part-00000-8beb3930-8a44-4b7b-906b-a6deca466d9f-c000.csv"
@@ -8,7 +16,7 @@ sample_output_path = "./data/tmp/output/"
 
 
 @pytest.mark.usefixtures("spark_session")
-def test_IV_calculation(spark_session):
+def test_IV_calculation(spark_session: SparkSession):
     test_df = spark_session.read.parquet(sample_parquet)
     test_df = test_df.withColumn('label', F.when(F.col('income') == '<=50K', F.lit(0.0)).when(F.col('income') == '>50K',
                                                                                               F.lit(1.0))).drop(
@@ -33,7 +41,7 @@ def test_IV_calculation(spark_session):
     assert result_df.where(F.col("attribute") == "workclass").toPandas().to_dict('list')['iv'][0] == 0.1669
 
 
-def test_IG_calculation(spark_session):
+def test_IG_calculation(spark_session: SparkSession):
     test_df = spark_session.read.parquet(sample_parquet)
     test_df = test_df.withColumn('label', F.when(F.col('income') == '<=50K', F.lit(0.0)).when(F.col('income') == '>50K',
                                                                                               F.lit(1.0))).drop(
@@ -58,7 +66,7 @@ def test_IG_calculation(spark_session):
     assert result_df1.where(F.col("attribute") == "workclass").toPandas().to_dict('list')['ig'][0] == 0.0223
 
 
-def test_variable_clustering(spark_session):
+def test_variable_clustering(spark_session: SparkSession):
     test_df = spark_session.read.parquet(sample_parquet)
     test_df = test_df.withColumn('label', F.when(F.col('income') == '<=50K', F.lit(0.0)).when(F.col('income') == '>50K',
                                                                                               F.lit(1.0))).drop(
@@ -73,34 +81,37 @@ def test_variable_clustering(spark_session):
     assert result_df2.count() == 15
     assert len(result_df2.columns) == 3
     assert \
-    result_df2.where((F.col("cluster") == 0) & (F.col("attribute") == "relationship")).toPandas().to_dict('list')[
-        'RS_Ratio'][0] == 0.3409
+        result_df2.where((F.col("cluster") == 0) & (F.col("attribute") == "relationship")).toPandas().to_dict('list')[
+            'RS_Ratio'][0] == 0.3409
     assert \
-    result_df2.where((F.col("cluster") == 0) & (F.col("attribute") == "sex")).toPandas().to_dict('list')['RS_Ratio'][
-        0] == 0.3378
+        result_df2.where((F.col("cluster") == 0) & (F.col("attribute") == "sex")).toPandas().to_dict('list')[
+            'RS_Ratio'][
+            0] == 0.3378
     assert \
-    result_df2.where((F.col("cluster") == 0) & (F.col("attribute") == "marital-status")).toPandas().to_dict('list')[
-        'RS_Ratio'][0] == 0.4693
+        result_df2.where((F.col("cluster") == 0) & (F.col("attribute") == "marital-status")).toPandas().to_dict('list')[
+            'RS_Ratio'][0] == 0.4693
     assert \
-    result_df2.where((F.col("cluster") == 0) & (F.col("attribute") == "hours-per-week")).toPandas().to_dict('list')[
-        'RS_Ratio'][0] == 0.8106
+        result_df2.where((F.col("cluster") == 0) & (F.col("attribute") == "hours-per-week")).toPandas().to_dict('list')[
+            'RS_Ratio'][0] == 0.8106
     assert \
-    result_df2.where((F.col("cluster") == 1) & (F.col("attribute") == "fnlwgt")).toPandas().to_dict('list')['RS_Ratio'][
-        0] == 0.2262
+        result_df2.where((F.col("cluster") == 1) & (F.col("attribute") == "fnlwgt")).toPandas().to_dict('list')[
+            'RS_Ratio'][
+            0] == 0.2262
     assert \
-    result_df2.where((F.col("cluster") == 1) & (F.col("attribute") == "logfnl")).toPandas().to_dict('list')['RS_Ratio'][
-        0] == 0.2257
+        result_df2.where((F.col("cluster") == 1) & (F.col("attribute") == "logfnl")).toPandas().to_dict('list')[
+            'RS_Ratio'][
+            0] == 0.2257
     assert \
-    result_df2.where((F.col("cluster") == 2) & (F.col("attribute") == "capital-loss")).toPandas().to_dict('list')[
-        'RS_Ratio'][0] == 0.9185
+        result_df2.where((F.col("cluster") == 2) & (F.col("attribute") == "capital-loss")).toPandas().to_dict('list')[
+            'RS_Ratio'][0] == 0.9185
     assert \
-    result_df2.where((F.col("cluster") == 2) & (F.col("attribute") == "education-num")).toPandas().to_dict('list')[
-        'RS_Ratio'][0] == 0.3483
+        result_df2.where((F.col("cluster") == 2) & (F.col("attribute") == "education-num")).toPandas().to_dict('list')[
+            'RS_Ratio'][0] == 0.3483
     assert result_df2.where((F.col("cluster") == 2) & (F.col("attribute") == "occupation")).toPandas().to_dict('list')[
                'RS_Ratio'][0] == 0.3690
 
 
-def test_correlation_matrix(spark_session):
+def test_correlation_matrix(spark_session: SparkSession):
     test_df = spark_session.read.parquet(sample_parquet)
     test_df = test_df.withColumn('label', F.when(F.col('income') == '<=50K', F.lit(0.0)).when(F.col('income') == '>50K',
                                                                                               F.lit(1.0))).drop(
