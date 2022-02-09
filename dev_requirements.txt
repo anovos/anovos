@@ -5,3 +5,4 @@ mypy==0.812
 pytest-cov==2.11.1
 isort==5.7.0
 flake8==4.0.1
+pyspark>=2.4.3,<=3.2.1
