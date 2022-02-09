@@ -1,13 +1,11 @@
-import pyspark
-from pyspark import SparkContext, SparkConf, SQLContext
-from pyspark.sql import functions as F
-from pyspark.sql import types as T
-import sys
-import datetime
-from datetime import datetime as dt
-from pyspark.sql import Window
 import calendar
 import warnings
+
+from pyspark.sql import Window
+from pyspark.sql import functions as F
+from pyspark.sql import types as T
+
+from datetime import datetime as dt
 
 
 def argument_checker(func_name, args):

@@ -1,11 +1,12 @@
 # coding=utf-8
 import warnings
 
-from anovos.shared.utils import transpose_dataframe, attributeType_segregation
 from pyspark.mllib.linalg import Vectors
 from pyspark.mllib.stat import Statistics
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
+
+from anovos.shared.utils import transpose_dataframe, attributeType_segregation
 
 
 def global_summary(spark, idf, list_of_cols="all", drop_cols=[], print_impact=True):
@@ -21,6 +22,7 @@ def global_summary(spark, idf, list_of_cols="all", drop_cols=[], print_impact=Tr
     :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
                       Alternatively, columns can be specified in a string format,
                       where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+    :param print_impact: True, False
     :return: Dataframe [metric, value]
     """
     if list_of_cols == "all":
@@ -357,6 +359,7 @@ def uniqueCount_computation(
     :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
                       Alternatively, columns can be specified in a string format,
                       where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+    :param print_impact: True, False
     :return: Dataframe [attribute, unique_values]
     """
     if list_of_cols == "all":

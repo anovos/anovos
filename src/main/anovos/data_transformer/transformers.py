@@ -1,28 +1,29 @@
 # coding=utf-8
-import pyspark
+import copy
+import os
+import pickle
+import random
+import subprocess
+import tempfile
 import warnings
+from itertools import chain
+
+import numpy as np
+import pandas as pd
+import pyspark
 from packaging import version
-from anovos.data_analyzer.stats_generator import (
-    missingCount_computation,
-    uniqueCount_computation,
-)
-from anovos.data_ingest.data_ingest import read_dataset
-from anovos.shared.utils import attributeType_segregation, get_dtype
-from pyspark.ml import Pipeline, PipelineModel
-from pyspark.ml.feature import Imputer, ImputerModel
-from pyspark.ml.feature import StringIndexer, StringIndexerModel
+from scipy import stats
 
 if version.parse(pyspark.__version__) < version.parse("3.0.0"):
     from pyspark.ml.feature import OneHotEncoderEstimator as OneHotEncoder
 else:
     from pyspark.ml.feature import OneHotEncoder
 
-from pyspark.ml.linalg import DenseVector
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
 from pyspark.sql.window import Window
 from pyspark.mllib.stat import Statistics
-from pyspark.ml import Pipeline, PipelineModel
+from pyspark.ml.feature import StringIndexerModel
 from pyspark.ml.recommendation import ALS
 from pyspark.ml.evaluation import RegressionEvaluator
 from pyspark.ml.feature import Imputer, ImputerModel, StringIndexer, IndexToString
@@ -42,22 +43,17 @@ from anovos.data_analyzer.stats_generator import (
 from anovos.data_ingest.data_ingest import read_dataset, recast_column
 from anovos.shared.utils import attributeType_segregation, get_dtype
 
-from sklearn.experimental import enable_iterative_imputer
+# check the following issue for more details
+# https://github.com/scikit-learn/scikit-learn/issues/16833
+# explicitly require this experimental feature
+from sklearn.experimental import enable_iterative_imputer  # noqa
+
+#  now you can import normally from sklearn.impute
 from sklearn.impute import KNNImputer, IterativeImputer
 
 import tensorflow
-from tensorflow.keras.models import Sequential, load_model, save_model, Model
+from tensorflow.keras.models import load_model, Model
 from tensorflow.keras.layers import Dense, Input, BatchNormalization, LeakyReLU
-import os
-import copy
-import pickle
-import random
-import tempfile
-import subprocess
-import pandas as pd
-import numpy as np
-from scipy import stats
-from itertools import chain
 
 
 def attribute_binning(
@@ -85,7 +81,7 @@ def attribute_binning(
     :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
                       Alternatively, columns can be specified in a string format,
                       where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    :param bin_method: "equal_frequency", "equal_range".
+    :param method_type: "equal_frequency", "equal_range".
                         In "equal_range" method, each bin is of equal size/width and in "equal_frequency", each bin has
                         equal no. of rows, though the width of bins may vary.
     :param bin_size: Number of bins.
@@ -100,14 +96,17 @@ def attribute_binning(
     :param output_mode: "replace", "append".
                         “replace” option replaces original columns with transformed column. “append” option append transformed
                         column to the input dataset with a postfix "_binned" e.g. column X is appended as X_binned.
+    :param print_impact: True, False
     :return: Binned Dataframe
     """
 
     num_cols = attributeType_segregation(idf)[0]
     if list_of_cols == "all":
         list_of_cols = num_cols
+
     if isinstance(list_of_cols, str):
         list_of_cols = [x.strip() for x in list_of_cols.split("|")]
+
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split("|")]
 
@@ -115,14 +114,17 @@ def attribute_binning(
 
     if any(x not in num_cols for x in list_of_cols):
         raise TypeError("Invalid input for Column(s)")
+
     if len(list_of_cols) == 0:
         warnings.warn("No Binning Performed - No numerical column(s) to transform")
         return idf
 
     if method_type not in ("equal_frequency", "equal_range"):
         raise TypeError("Invalid input for method_type")
+
     if bin_size < 2:
         raise TypeError("Invalid input for bin_size")
+
     if output_mode not in ("replace", "append"):
         raise TypeError("Invalid input for output_mode")
 
@@ -156,6 +158,7 @@ def attribute_binning(
                     .collect()
                     + [None]
                 )[0]
+
                 min_val = (
                     idf.select(F.col(i))
                     .groupBy()
@@ -164,7 +167,9 @@ def attribute_binning(
                     .collect()
                     + [None]
                 )[0]
+
                 bin_cutoff = []
+
                 if max_val:
                     bin_width = (max_val - min_val) / bin_size
                     for j in range(1, bin_size):
@@ -175,23 +180,25 @@ def attribute_binning(
             df_model = spark.createDataFrame(
                 zip(list_of_cols, bin_cutoffs), schema=["attribute", "parameters"]
             )
+
             df_model.write.parquet(model_path + "/attribute_binning", mode="overwrite")
 
     def bucket_label(value, index):
         if value is None:
             return None
-        for j in range(0, len(bin_cutoffs[index])):
-            if value <= bin_cutoffs[index][j]:
+
+        for i in range(0, len(bin_cutoffs[index])):
+            if value <= bin_cutoffs[index][i]:
                 if bin_dtype == "numerical":
-                    return j + 1
+                    return i + 1
                 else:
-                    if j == 0:
-                        return "<= " + str(round(bin_cutoffs[index][j], 4))
+                    if i == 0:
+                        return "<= " + str(round(bin_cutoffs[index][i], 4))
                     else:
                         return (
-                            str(round(bin_cutoffs[index][j - 1], 4))
+                            str(round(bin_cutoffs[index][i - 1], 4))
                             + "-"
-                            + str(round(bin_cutoffs[index][j], 4))
+                            + str(round(bin_cutoffs[index][i], 4))
                         )
             else:
                 next
@@ -388,6 +395,7 @@ def cat_to_num_unsupervised(
     :param output_mode: "replace", "append".
                         “replace” option replaces original columns with transformed column. “append” option append transformed
                         column to the input dataset with a postfix "_index" e.g. column X is appended as X_index.
+    :param print_impact:  true, False,
     :return: Encoded Dataframe
     """
 
@@ -513,10 +521,12 @@ def cat_to_num_unsupervised(
             odf_schema = odf.schema.add(
                 T.StructField("tmp", T.ArrayType(T.IntegerType()))
             )
+
             for j in range(0, uniq_cats):
                 odf_schema = odf_schema.add(
                     T.StructField(i + "_" + str(j), T.IntegerType())
                 )
+
             odf = (
                 odf.withColumn("tmp", f_vector_to_array(i + "_vec"))
                 .rdd.map(lambda x: (*x, *x["tmp"]))
@@ -547,7 +557,7 @@ def cat_to_num_unsupervised(
                 odf = odf.drop(i).withColumnRenamed(i + "_index", i)
             odf = odf.select(idf.columns)
 
-    if (print_impact == True) & (method_type == 1):
+    if (print_impact) & (method_type == 1):
         print("Before")
         idf.describe().where(F.col("summary").isin("count", "min", "max")).show(
             3, False
@@ -777,7 +787,7 @@ def z_standardization(
                 modify_col, (F.col(i) - parameters[index][0]) / parameters[index][1]
             )
 
-    if (pre_existing_model == False) & (model_path != "NA"):
+    if (not pre_existing_model) & (model_path != "NA"):
         df_model = spark.createDataFrame(
             zip(list_of_cols, parameters), schema=["feature", "parameters"]
         )
@@ -889,7 +899,7 @@ def IQR_standardization(
                 / (parameters[index][2] - parameters[index][0]),
             )
 
-    if (pre_existing_model == False) & (model_path != "NA"):
+    if (not pre_existing_model) & (model_path != "NA"):
         df_model = spark.createDataFrame(
             zip(list_of_cols, parameters), schema=["feature", "parameters"]
         )
@@ -1073,6 +1083,7 @@ def imputation_MMM(
     :param stats_mode: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
                        to read pre-saved statistics on most frequently seen values i.e. if measures_of_centralTendency or
                        mode_computation (data_analyzer.stats_generator module) has been computed & saved before.
+    :param print_impact: True, False
     :return: Imputed Dataframe
     """
     if stats_missing == {}:
@@ -1096,7 +1107,7 @@ def imputation_MMM(
     else:
         raise TypeError("Non-Boolean input for pre_existing_model")
 
-    if (len(missing_cols) == 0) & (pre_existing_model == False) & (model_path == "NA"):
+    if (len(missing_cols) == 0) & (not pre_existing_model) & (model_path == "NA"):
         return idf
 
     num_cols, cat_cols, other_cols = attributeType_segregation(idf)
@@ -1185,7 +1196,7 @@ def imputation_MMM(
 
         else:  # For mean, median imputation
             # Building new imputer model or uploading the existing model
-            if pre_existing_model == True:
+            if pre_existing_model:
                 imputerModel = ImputerModel.load(
                     model_path + "/imputation_MMM/num_imputer-model"
                 )
@@ -1204,7 +1215,7 @@ def imputation_MMM(
                 odf = odf.withColumn(i, F.col(i).cast(j))
 
             # Saving model if required
-            if (pre_existing_model == False) & (model_path != "NA"):
+            if (not pre_existing_model) & (model_path != "NA"):
                 imputerModel.write().overwrite().save(
                     model_path + "/imputation_MMM/num_imputer-model"
                 )
@@ -1257,7 +1268,7 @@ def imputation_MMM(
                 F.when(F.col(i).isNull(), parameters[index]).otherwise(F.col(i)),
             )
 
-        if (pre_existing_model == False) & (model_path != "NA"):
+        if (not pre_existing_model) & (model_path != "NA"):
             df_model = spark.createDataFrame(
                 zip(cat_cols, parameters), schema=["attribute", "parameters"]
             )
@@ -1409,7 +1420,7 @@ def imputation_sklearn(
         raise TypeError("Non-Boolean input for pre_existing_model")
     if (
         (len([e for e in list_of_cols if e in missing_cols]) == 0)
-        & (pre_existing_model == False)
+        & (not pre_existing_model)
         & (model_path == "NA")
     ):
         warnings.warn(
@@ -1448,7 +1459,7 @@ def imputation_sklearn(
             imputer = IterativeImputer()
             imputer.fit(idf_pd.drop(columns=["id"]))
 
-        if (pre_existing_model == False) & (model_path != "NA"):
+        if (not pre_existing_model) & (model_path != "NA"):
             if emr_mode:
                 pickle.dump(imputer, open("imputation_sklearn.sav", "wb"))
                 bash_cmd = (
@@ -2172,7 +2183,7 @@ def autoencoder_latentFeatures(
             validation_data=(X_test, X_test),
         )
 
-        if (pre_existing_model == False) & (model_path != "NA"):
+        if (not pre_existing_model) & (model_path != "NA"):
             if emr_mode:
                 encoder.save("encoder.h5")
                 model.save("model.h5")
@@ -2418,7 +2429,7 @@ def PCA_latentFeatures(
 
         pca = PCA(k=n, inputCol="features", outputCol="features_pca")
         pcaModel = pca.fit(assembled_data)
-        if (pre_existing_model == False) & (model_path != "NA"):
+        if (not pre_existing_model) & (model_path != "NA"):
             pcaModel.write().overwrite().save(
                 model_path + "/PCA_latentFeatures/pcaModel_path"
             )
@@ -2796,7 +2807,7 @@ def outlier_categories(
     if output_mode not in ("replace", "append"):
         raise TypeError("Invalid input for output_mode")
 
-    if pre_existing_model == True:
+    if pre_existing_model:
         df_model = spark.read.csv(
             model_path + "/outlier_categories", header=True, inferSchema=True
         )
@@ -2852,7 +2863,7 @@ def outlier_categories(
                 ).otherwise("others"),
             )
 
-    if (pre_existing_model == False) & (model_path != "NA"):
+    if (not pre_existing_model) & (model_path != "NA"):
         df_model.repartition(1).write.csv(
             model_path + "/outlier_categories", header=True, mode="overwrite"
         )

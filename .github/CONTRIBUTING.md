@@ -1,12 +1,16 @@
-Welcome to the Anovos Community! We're excited to bring the immense experience of the Mobilewalla team to the data science community, and we'd love to have you join us! Here you'll find all the details you need to get started as an Anovos contributor.
+Welcome to the Anovos Community! We're excited to bring the immense experience of the Mobilewalla team to the data
+science community, and we'd love to have you join us! Here you'll find all the details you need to get started as an
+Anovos contributor.
 
 ## Getting Started with Anovos
 
 Anovos is an open source project that brings automation to the feature engineering process.
 
-To get Anovos up and running on your local machine, follow the [Getting Started Guide](https://docs.anovos.ai/gettingstarted)
+To get Anovos up and running on your local machine, follow
+the [Getting Started Guide](https://docs.anovos.ai/gettingstarted)
 
-All repos, sample data, and notebooks you need are located in the  [Anovos Github Organization](https://github.com/anovos)
+All repos, sample data, and notebooks you need are located in
+the  [Anovos Github Organization](https://github.com/anovos)
 
 ## How To Get Involved
 
@@ -20,11 +24,13 @@ We love your input! We want to make contributing to this project as easy and tra
 - Contributing to the docs
 - Giving talks about Anovos at Meetups, conferences and webinars
 
-The latest information about how to interact with the project maintainers and broader community is kept in [COMMUNICATION.md](https://github.com/anovos/communication.md).
+The latest information about how to interact with the project maintainers and broader community is kept
+in [COMMUNICATION.md](https://github.com/anovos/communication.md).
 
 ## Contribute to Anovos
 
-Pull requests are the best way to propose changes to the codebase. We use GitHub flow and everything happens through pull requests. We welcome your pull requests; to make it simple, here are the steps to contribute:
+Pull requests are the best way to propose changes to the codebase. We use GitHub flow and everything happens through
+pull requests. We welcome your pull requests; to make it simple, here are the steps to contribute:
 
 - Fork the repo you're updating and create your branch from main.
 - If you've added code that should be tested, add tests.
@@ -32,16 +38,21 @@ Pull requests are the best way to propose changes to the codebase. We use GitHub
 - Ensure the test suite passes.
 - Issue that pull request!
 
-Any contributions you make will be under the Apache Software License
-In short, when you submit code changes, your submissions are understood to be under the same Apache License that covers the project. Feel free to contact the maintainers if that's a concern.
+Any contributions you make will be under the Apache Software License In short, when you submit code changes, your
+submissions are understood to be under the same Apache License that covers the project. Feel free to contact the
+maintainers if that's a concern.
 
 ### Write Thorough Commit Messages
 
-Help reviewers know what you're contributing by writing good commit messages. To standardize how things are done, your first line of your commit is your _subject_, followed by a blank line, then a message describing what the commit does. We use the following guidelines suggested [by Chris Beams](https://chris.beams.io/posts/git-commit/):
+Help reviewers know what you're contributing by writing good commit messages. To standardize how things are done, your
+first line of your commit is your _subject_, followed by a blank line, then a message describing what the commit does.
+We use the following guidelines suggested [by Chris Beams](https://chris.beams.io/posts/git-commit/):
 
 #### Commit messages
 
-The first line of the commit message is the _subject_, this should be followed by a blank line and then a message describing the intent and purpose of the commit. These guidelines are based upon a [post by Chris Beams](https://chris.beams.io/posts/git-commit/).
+The first line of the commit message is the _subject_, this should be followed by a blank line and then a message
+describing the intent and purpose of the commit. These guidelines are based upon
+a [post by Chris Beams](https://chris.beams.io/posts/git-commit/).
 
 When you commit, you are accepting our DCO:
 
@@ -104,7 +115,8 @@ Update the documentation for page X so including fixing A, B, C and D and F.
 
 > This example will be truncated in the GitHub UI and via `git log --oneline`
 
-If you would like to ammend your commit follow this guide: [Git: Rewriting History](https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History)
+If you would like to ammend your commit follow this
+guide: [Git: Rewriting History](https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History)
 
 ## Report bugs using GitHub's issues
 
@@ -112,4 +124,5 @@ All bugs are tracked using Github issues. If you find something that needs to be
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under its Apache License, adhere to the Developer Certificate of Origin, and adhere to our code of conduct.
+By contributing, you agree that your contributions will be licensed under its Apache License, adhere to the Developer
+Certificate of Origin, and adhere to our code of conduct.

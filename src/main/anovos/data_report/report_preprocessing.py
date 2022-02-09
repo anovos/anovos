@@ -6,6 +6,11 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import pyspark
+from loguru import logger
+from pyspark.sql import functions as F
+from pyspark.sql import types as T
+from pyspark.sql.window import Window
+
 from anovos.data_analyzer.stats_generator import uniqueCount_computation
 from anovos.data_ingest.data_ingest import read_dataset
 from anovos.data_transformer.transformers import (
@@ -14,9 +19,6 @@ from anovos.data_transformer.transformers import (
     attribute_binning,
 )
 from anovos.shared.utils import attributeType_segregation, ends_with
-from pyspark.sql import functions as F
-from pyspark.sql import types as T
-from pyspark.sql.window import Window
 
 global_theme = px.colors.sequential.Plasma
 global_theme_r = px.colors.sequential.Plasma_r
@@ -66,7 +68,8 @@ def save_stats(spark, idf, master_path, function_name, reread=False, run_type="l
             + ".csv "
             + ends_with(master_path)
         )
-        output = subprocess.check_output(["bash", "-c", bash_cmd])
+
+        subprocess.check_output(["bash", "-c", bash_cmd])
 
     if reread:
         odf = spark.read.csv(
@@ -79,7 +82,8 @@ def save_stats(spark, idf, master_path, function_name, reread=False, run_type="l
 
 def edit_binRange(col):
     """
-    :param col: The column which is passed as input and needs to be treated. The generated output will not contain any range whose value at either side is the same.
+    :param col: The column which is passed as input and needs to be treated. T
+    he generated output will not contain any range whose value at either side is the same.
     """
     try:
         list_col = col.split("-")
@@ -88,7 +92,8 @@ def edit_binRange(col):
             return deduped_col[0]
         else:
             return col
-    except:
+    except Exception as e:
+        logger.error(f"processing failed during edit_binRange, error {e}")
         pass
 
 
@@ -131,7 +136,8 @@ def binRange_to_binIdx(spark, col, cutoffs_path):
 def plot_frequency(spark, idf, col, cutoffs_path):
     """
     :param spark: Spark Session
-    :param idf: Input dataframe which would be referred for producing the frequency charts in form of bar plots / histograms
+    :param idf: Input dataframe which would be referred for producing the frequency charts in form of
+                bar plots / histograms
     :param col: Analysis column
     :param cutoffs_path: Path containing the range cut offs details for the analysis column
     """
@@ -269,7 +275,6 @@ def plot_comparative_drift(spark, idf, source, col, cutoffs_path):
     :param col: Analysis column
     :param sourcecutoffs_path: Path containing the range cut offs details for the analysis column
     """
-
     odf = (
         idf.groupBy(col)
         .agg((F.count(col) / idf.count()).alias("countpct_target"))
@@ -513,7 +518,8 @@ def charts_to_objects(
                         spark, idf_encoded, idf_source, col, cutoffs_path
                     )
                     f.write_json(ends_with(local_path) + "drift_" + col)
-                except:
+                except Exception as e:
+                    logger.error(f"processing failed during drift detection, error {e}")
                     pass
 
         if col in num_cols:
@@ -555,7 +561,8 @@ def charts_to_objects(
                         cutoffs_path,
                     )
                     f.write_json(ends_with(local_path) + "drift_" + col)
-                except:
+                except Exception as e:
+                    logger.error(f"processing failed during drift detection, error {e}")
                     pass
 
     pd.DataFrame(idf.dtypes, columns=["attribute", "data_type"]).to_csv(
@@ -569,4 +576,5 @@ def charts_to_objects(
             + " "
             + ends_with(master_path)
         )
-        output = subprocess.check_output(["bash", "-c", bash_cmd])
+
+        subprocess.check_output(["bash", "-c", bash_cmd])

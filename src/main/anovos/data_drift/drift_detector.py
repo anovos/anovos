@@ -6,12 +6,13 @@ import math
 import numpy as np
 import pandas as pd
 import pyspark
-from anovos.data_ingest.data_ingest import concatenate_dataset
-from anovos.data_transformer.transformers import attribute_binning
-from anovos.shared.utils import attributeType_segregation
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
 from scipy.stats import variation
+
+from anovos.data_ingest.data_ingest import concatenate_dataset
+from anovos.data_transformer.transformers import attribute_binning
+from anovos.shared.utils import attributeType_segregation
 
 
 def drift_statistics(
@@ -41,7 +42,7 @@ def drift_statistics(
     :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
                       Alternatively, columns can be specified in a string format,
                       where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    :param method: "PSI", "JSD", "HD", "KS","all".
+    :param method_type: "PSI", "JSD", "HD", "KS","all".
                    "all" can be passed to calculate all drift metrics.
                     One or more methods can be passed in a form of list or string where different metrics are separated
                     by pipe delimiter “|” e.g. ["PSI", "JSD"] or "PSI|JSD"
@@ -56,6 +57,7 @@ def drift_statistics(
                         The drift_statistics folder will have attribute_binning (binning model) & frequency_counts sub-folders.
                         If pre_existing_source is True, this argument is path for referring the drift_statistics folder.
                         Default "NA" for temporarily saving source dataset attribute_binning folder.
+    :param print_impact: True, False
     :return: Output Dataframe [attribute, *metric, flagged]
              Number of columns will be dependent on method argument. There will be one column for each drift method/metric.
     """

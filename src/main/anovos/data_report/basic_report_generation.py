@@ -4,6 +4,7 @@ from pathlib import Path
 import datapane as dp
 import pandas as pd
 import plotly.express as px
+
 from anovos.data_analyzer.association_evaluator import (
     correlation_matrix,
     variable_clustering,
@@ -35,9 +36,17 @@ global_theme_r = px.colors.sequential.Plasma_r
 global_plot_bg_color = "rgba(0,0,0,0)"
 global_paper_bg_color = "rgba(0,0,0,0)"
 
-default_template = dp.HTML(
-    '<html><img src="https://mobilewalla-anovos.s3.amazonaws.com/anovos.png" style="height:100px;display:flex;margin:auto;float:right"></img></html>'
-), dp.Text("# ML-Anovos Report")
+default_template = (
+    dp.HTML(
+        """
+        <html>
+            <img src="https://mobilewalla-anovos.s3.amazonaws.com/anovos.png" 
+                 style="height:100px;display:flex;margin:auto;float:right"/>
+        </html>
+        """
+    ),
+    dp.Text("# ML-Anovos Report"),
+)
 
 
 def stats_args(path, func):
@@ -86,6 +95,7 @@ def anovos_basic_report(
     :param global_run_type: "local" (default), "emr", "databricks"
                          "emr" if the files are read from or written in AWS s3
                          "databricks" if the files are read from or written in dbfs in azure databricks
+    : param print_impact: True, False.
     """
     global num_cols
     global cat_cols
@@ -157,7 +167,7 @@ def anovos_basic_report(
                 + ".csv "
                 + ends_with(output_path)
             )
-            output = subprocess.check_output(["bash", "-c", bash_cmd])
+            subprocess.check_output(["bash", "-c", bash_cmd])
 
         if print_impact:
             print(func.__name__, ":\n")
@@ -301,6 +311,7 @@ def anovos_basic_report(
                 )
                 + "**"
             )
+
             duplicate_rows_count = (
                 " No. of Duplicate Rows: **"
                 + str(
@@ -311,6 +322,7 @@ def anovos_basic_report(
                 )
                 + "**"
             )
+
             duplicate_rows_pct = (
                 " Percentage of Duplicate Rows: **"
                 + str(
@@ -321,6 +333,7 @@ def anovos_basic_report(
                 + " %"
                 + "**"
             )
+
             QCrow_content.append(
                 [
                     dp.Text("### " + str(remove_u_score(i.__name__))),
@@ -455,10 +468,14 @@ def anovos_basic_report(
                     )
                 )
 
+    # @TODO: is there better templating approach such as jinja
     tab3 = dp.Group(
         dp.Text("# "),
         dp.Text(
-            "*This section analyzes the interaction between different attributes and/or the relationship between an attribute & the binary target variable.*"
+            """
+            *This section analyzes the interaction between different attributes and/or the relationship 
+            between an attribute & the binary target variable.*
+            """
         ),
         dp.Text("# "),
         dp.Text("# "),
@@ -471,7 +488,7 @@ def anovos_basic_report(
         label="Attribute Associations",
     )
 
-    basic_report = dp.Report(
+    dp.Report(
         default_template[0],
         default_template[1],
         dp.Select(blocks=[tab1, tab2, tab3], type=dp.SelectType.TABS),
@@ -484,4 +501,4 @@ def anovos_basic_report(
             + "basic_report.html "
             + ends_with(output_path)
         )
-        output = subprocess.check_output(["bash", "-c", bash_cmd])
+        subprocess.check_output(["bash", "-c", bash_cmd])

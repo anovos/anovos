@@ -1,9 +1,7 @@
 name: Full Demo
 on:
   pull_request:
-    types: [ opened, ready_for_review ]
-    paths:
-      - '!**.md'
+    types: [opened, ready_for_review]
   push:
     branches:
       - main
