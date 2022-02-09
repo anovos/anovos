@@ -173,8 +173,8 @@ drift_detector:
   drift_statistics:
     configs:
       list_of_cols: all
-      drop_cols: [ 'ifa','income' ]
-      method_type: all
+      drop_cols: ['ifa','income']
+      methods_type: all
       threshold: 0.1
       bin_method: equal_range
       bin_size: 10

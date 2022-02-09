@@ -174,7 +174,7 @@ drift_detector:
     configs:
       list_of_cols: all
       drop_cols: ['ifa']
-      method_type: all
+      methods_type: all
       threshold: 0.1
       bin_method: equal_range
       bin_size: 10

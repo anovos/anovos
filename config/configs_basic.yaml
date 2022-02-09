@@ -72,8 +72,8 @@ anovos_basic_report:
 
 #if anovos_basic_report.basic_report is True, then all configs below are ignored.
 stats_generator:
-  metric: [ 'global_summary','measures_of_counts','measures_of_centralTendency','measures_of_cardinality'
-    ,       'measures_of_percentiles','measures_of_dispersion','measures_of_shape' ]
+  metric: ['global_summary','measures_of_counts','measures_of_centralTendency','measures_of_cardinality'
+            ,'measures_of_percentiles','measures_of_dispersion','measures_of_shape']
   metric_args:
     list_of_cols: all
     drop_cols: [ 'ifa' ]
@@ -173,8 +173,8 @@ drift_detector:
   drift_statistics:
     configs:
       list_of_cols: all
-      drop_cols: [ 'ifa','income' ]
-      method_type: all
+      drop_cols: ['ifa','income']
+      methods_type: all
       threshold: 0.1
       bin_method: equal_range
       bin_size: 10
