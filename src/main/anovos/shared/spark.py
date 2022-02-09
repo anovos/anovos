@@ -1,6 +1,5 @@
 import __main__
 import findspark
-
 findspark.init()
 
 from os import environ

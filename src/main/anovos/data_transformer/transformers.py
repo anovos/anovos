@@ -1,28 +1,29 @@
 # coding=utf-8
-import pyspark
+import copy
+import os
+import pickle
+import random
+import subprocess
+import tempfile
 import warnings
+from itertools import chain
+
+import numpy as np
+import pandas as pd
+import pyspark
 from packaging import version
-from anovos.data_analyzer.stats_generator import (
-    missingCount_computation,
-    uniqueCount_computation,
-)
-from anovos.data_ingest.data_ingest import read_dataset
-from anovos.shared.utils import attributeType_segregation, get_dtype
-from pyspark.ml import Pipeline, PipelineModel
-from pyspark.ml.feature import Imputer, ImputerModel
-from pyspark.ml.feature import StringIndexer, StringIndexerModel
+from scipy import stats
 
 if version.parse(pyspark.__version__) < version.parse("3.0.0"):
     from pyspark.ml.feature import OneHotEncoderEstimator as OneHotEncoder
 else:
     from pyspark.ml.feature import OneHotEncoder
 
-from pyspark.ml.linalg import DenseVector
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
 from pyspark.sql.window import Window
 from pyspark.mllib.stat import Statistics
-from pyspark.ml import Pipeline, PipelineModel
+from pyspark.ml.feature import StringIndexerModel
 from pyspark.ml.recommendation import ALS
 from pyspark.ml.evaluation import RegressionEvaluator
 from pyspark.ml.feature import Imputer, ImputerModel, StringIndexer, IndexToString
@@ -42,22 +43,12 @@ from anovos.data_analyzer.stats_generator import (
 from anovos.data_ingest.data_ingest import read_dataset, recast_column
 from anovos.shared.utils import attributeType_segregation, get_dtype
 
-from sklearn.experimental import enable_iterative_imputer
 from sklearn.impute import KNNImputer, IterativeImputer
 
 import tensorflow
-from tensorflow.keras.models import Sequential, load_model, save_model, Model
+from tensorflow.keras.models import load_model, Model
 from tensorflow.keras.layers import Dense, Input, BatchNormalization, LeakyReLU
-import os
-import copy
-import pickle
-import random
-import tempfile
-import subprocess
-import pandas as pd
-import numpy as np
-from scipy import stats
-from itertools import chain
+
 
 
 def attribute_binning(
@@ -791,7 +782,7 @@ def z_standardization(
                 modify_col, (F.col(i) - parameters[index][0]) / parameters[index][1]
             )
 
-    if (pre_existing_model == False) & (model_path != "NA"):
+    if (not pre_existing_model) & (model_path != "NA"):
         df_model = spark.createDataFrame(
             zip(list_of_cols, parameters), schema=["feature", "parameters"]
         )
@@ -903,7 +894,7 @@ def IQR_standardization(
                 / (parameters[index][2] - parameters[index][0]),
             )
 
-    if (pre_existing_model == False) & (model_path != "NA"):
+    if (not pre_existing_model) & (model_path != "NA"):
         df_model = spark.createDataFrame(
             zip(list_of_cols, parameters), schema=["feature", "parameters"]
         )
@@ -1424,7 +1415,7 @@ def imputation_sklearn(
         raise TypeError("Non-Boolean input for pre_existing_model")
     if (
         (len([e for e in list_of_cols if e in missing_cols]) == 0)
-        & (pre_existing_model == False)
+        & (not pre_existing_model)
         & (model_path == "NA")
     ):
         warnings.warn(
@@ -1463,7 +1454,7 @@ def imputation_sklearn(
             imputer = IterativeImputer()
             imputer.fit(idf_pd.drop(columns=["id"]))
 
-        if (pre_existing_model == False) & (model_path != "NA"):
+        if (not pre_existing_model) & (model_path != "NA"):
             if emr_mode:
                 pickle.dump(imputer, open("imputation_sklearn.sav", "wb"))
                 bash_cmd = (
@@ -2187,7 +2178,7 @@ def autoencoder_latentFeatures(
             validation_data=(X_test, X_test),
         )
 
-        if (pre_existing_model == False) & (model_path != "NA"):
+        if (not pre_existing_model) & (model_path != "NA"):
             if emr_mode:
                 encoder.save("encoder.h5")
                 model.save("model.h5")
@@ -2433,7 +2424,7 @@ def PCA_latentFeatures(
 
         pca = PCA(k=n, inputCol="features", outputCol="features_pca")
         pcaModel = pca.fit(assembled_data)
-        if (pre_existing_model == False) & (model_path != "NA"):
+        if (not pre_existing_model) & (model_path != "NA"):
             pcaModel.write().overwrite().save(
                 model_path + "/PCA_latentFeatures/pcaModel_path"
             )
