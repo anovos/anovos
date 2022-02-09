@@ -1,3 +1,5 @@
 [flake8]
-exclude = .git,__pycache__,data,demo,jars,examples,.idea,venv,.tox,.parquet,.json.gz,.csv
 max-line-length = 127
+max-complexity = 10
+statistics = True
+exclude = .git,__pycache__,data,demo,jars,examples,.idea,venv,.tox,.parquet,.json.gz,.csv

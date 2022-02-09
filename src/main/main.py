@@ -94,15 +94,15 @@ def stats_args(configs, func):
                         read["file_configs"]["inferSchema"] = True
 
                     read["file_path"] = (
-                            read["file_path"]
-                            + "/data_analyzer/stats_generator/"
-                            + args_to_statsfunc[arg]
+                        read["file_path"]
+                        + "/data_analyzer/stats_generator/"
+                        + args_to_statsfunc[arg]
                     )
                     result[arg] = read
             else:
                 result[arg] = {
                     "file_path": (
-                            report_input_path + "/" + args_to_statsfunc[arg] + ".csv"
+                        report_input_path + "/" + args_to_statsfunc[arg] + ".csv"
                     ),
                     "file_type": "csv",
                     "file_configs": {"header": True, "inferSchema": True},
@@ -166,9 +166,9 @@ def main(all_configs, global_run_type):
             continue
 
         if (
-                (key == "anovos_basic_report")
-                & (args is not None)
-                & args.get("basic_report", False)
+            (key == "anovos_basic_report")
+            & (args is not None)
+            & args.get("basic_report", False)
         ):
             start = timeit.default_timer()
             anovos_basic_report(
@@ -222,8 +222,8 @@ def main(all_configs, global_run_type):
                             df,
                             write_intermediate,
                             folder_name="data_analyzer/quality_checker/"
-                                        + subkey
-                                        + "/dataset",
+                            + subkey
+                            + "/dataset",
                             reread=True,
                         )
                         if report_inputPath:
@@ -274,7 +274,7 @@ def main(all_configs, global_run_type):
                                 df_stats,
                                 write_stats,
                                 folder_name="data_analyzer/association_evaluator/"
-                                            + subkey,
+                                + subkey,
                                 reread=True,
                             ).show(100)
                         end = timeit.default_timer()

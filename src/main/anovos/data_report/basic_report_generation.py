@@ -303,20 +303,36 @@ def anovos_basic_report(
                 + "**"
             )
             total_rows_count = (
-                    " No. of Rows: **"
-                    + str(format(int(stats[stats["metric"] == "rows_count"].value.values), ","))
-                    + "**")
+                " No. of Rows: **"
+                + str(
+                    format(
+                        int(stats[stats["metric"] == "rows_count"].value.values), ","
+                    )
+                )
+                + "**"
+            )
 
             duplicate_rows_count = (
-                    " No. of Duplicate Rows: **"
-                    + str(format(int(stats[stats["metric"] == "duplicate_rows"].value.values),",",))
-                    + "**")
+                " No. of Duplicate Rows: **"
+                + str(
+                    format(
+                        int(stats[stats["metric"] == "duplicate_rows"].value.values),
+                        ",",
+                    )
+                )
+                + "**"
+            )
 
             duplicate_rows_pct = (
-                    " Percentage of Duplicate Rows: **"
-                    + str(float(stats[stats["metric"] == "duplicate_pct"].value.values * 100.0))
-                    + " %"
-                    + "**")
+                " Percentage of Duplicate Rows: **"
+                + str(
+                    float(
+                        stats[stats["metric"] == "duplicate_pct"].value.values * 100.0
+                    )
+                )
+                + " %"
+                + "**"
+            )
 
             QCrow_content.append(
                 [

@@ -60,7 +60,6 @@ from scipy import stats
 from itertools import chain
 
 
-
 def attribute_binning(
     spark,
     idf,
@@ -138,7 +137,10 @@ def attribute_binning(
         bin_cutoffs = []
         for i in list_of_cols:
             mapped_value = (
-                df_model.where(F.col("attribute") == i).select("parameters").rdd.flatMap(lambda x: x).collect()[0]
+                df_model.where(F.col("attribute") == i)
+                .select("parameters")
+                .rdd.flatMap(lambda x: x)
+                .collect()[0]
             )
             bin_cutoffs.append(mapped_value)
     else:
@@ -153,21 +155,21 @@ def attribute_binning(
             bin_cutoffs = []
             for i in list_of_cols:
                 max_val = (
-                        idf.select(F.col(i))
-                        .groupBy()
-                        .max()
-                        .rdd.flatMap(lambda x: x)
-                        .collect()
-                        + [None]
+                    idf.select(F.col(i))
+                    .groupBy()
+                    .max()
+                    .rdd.flatMap(lambda x: x)
+                    .collect()
+                    + [None]
                 )[0]
 
                 min_val = (
-                        idf.select(F.col(i))
-                        .groupBy()
-                        .min()
-                        .rdd.flatMap(lambda x: x)
-                        .collect()
-                        + [None]
+                    idf.select(F.col(i))
+                    .groupBy()
+                    .min()
+                    .rdd.flatMap(lambda x: x)
+                    .collect()
+                    + [None]
                 )[0]
 
                 bin_cutoff = []
@@ -2570,9 +2572,9 @@ def feature_transformation(
         "powOfN": (lambda x: F.pow(N, x)),
         "sqrt": F.sqrt,
         "cbrt": F.cbrt,
-        "sq": (lambda x: x**2),
-        "cb": (lambda x: x**3),
-        "toPowerN": (lambda x: x**N),
+        "sq": (lambda x: x ** 2),
+        "cb": (lambda x: x ** 3),
+        "toPowerN": (lambda x: x ** N),
         "sin": F.sin,
         "cos": F.cos,
         "tan": F.tan,

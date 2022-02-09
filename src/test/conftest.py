@@ -4,7 +4,7 @@ import sys
 import pytest
 from pyspark.sql import SparkSession
 
-SRC_DIR = pathlib.Path(__file__).parent.parent / 'main'
+SRC_DIR = pathlib.Path(__file__).parent.parent / "main"
 sys.path.insert(0, str(SRC_DIR.absolute()))
 
 from anovos.shared.spark import init_spark, SPARK_JARS_PACKAGES
