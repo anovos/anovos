@@ -19,7 +19,7 @@ cython
 soupsieve
 fsspec
 s3fs
-findspark<2.0.0
+findspark<3.0.0
 loguru==0.6.0
 pyaml==21.10.1
 
