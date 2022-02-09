@@ -1,14 +1,13 @@
 import __main__
 from os import environ
-from packaging import version
-from loguru import logger
 
 import findspark
+from loguru import logger
+from packaging import version
 
 findspark.init()
-
-import pyspark  # noqa: E402
-from pyspark.sql import SQLContext, SparkSession  # noqa: E402
+import pyspark
+from pyspark.sql import SQLContext, SparkSession
 
 if version.parse(pyspark.__version__) < version.parse("3.0.0"):
     SPARK_JARS_PACKAGES = [
