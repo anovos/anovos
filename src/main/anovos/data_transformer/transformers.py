@@ -43,6 +43,11 @@ from anovos.data_analyzer.stats_generator import (
 from anovos.data_ingest.data_ingest import read_dataset, recast_column
 from anovos.shared.utils import attributeType_segregation, get_dtype
 
+# check the following issue for more details
+# https://github.com/scikit-learn/scikit-learn/issues/16833
+# explicitly require this experimental feature
+from sklearn.experimental import enable_iterative_imputer  # noqa
+#  now you can import normally from sklearn.impute
 from sklearn.impute import KNNImputer, IterativeImputer
 
 import tensorflow
