@@ -422,9 +422,7 @@ def test_imputation_MMM(spark_session: SparkSession):
 
     assert result_df5.count() == 6
     assert (
-        result_df5.where(F.col("ifa") == "11a")
-        .toPandas()
-        .to_dict("list")["income"][0]
+        result_df5.where(F.col("ifa") == "11a").toPandas().to_dict("list")["income"][0]
         == 8000
     )
     assert (

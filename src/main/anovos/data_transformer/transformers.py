@@ -47,13 +47,13 @@ from anovos.shared.utils import attributeType_segregation, get_dtype
 # https://github.com/scikit-learn/scikit-learn/issues/16833
 # explicitly require this experimental feature
 from sklearn.experimental import enable_iterative_imputer  # noqa
+
 #  now you can import normally from sklearn.impute
 from sklearn.impute import KNNImputer, IterativeImputer
 
 import tensorflow
 from tensorflow.keras.models import load_model, Model
 from tensorflow.keras.layers import Dense, Input, BatchNormalization, LeakyReLU
-
 
 
 def attribute_binning(

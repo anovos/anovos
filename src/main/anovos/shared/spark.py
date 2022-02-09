@@ -1,13 +1,14 @@
 import __main__
-import findspark
-findspark.init()
-
 from os import environ
 from packaging import version
 from loguru import logger
 
-import pyspark
-from pyspark.sql import SQLContext, SparkSession
+import findspark
+
+findspark.init()
+
+import pyspark  # noqa: E402
+from pyspark.sql import SQLContext, SparkSession  # noqa: E402
 
 if version.parse(pyspark.__version__) < version.parse("3.0.0"):
     SPARK_JARS_PACKAGES = [
@@ -41,6 +42,7 @@ def init_spark(
     :return: A tuple of references to the Spark Session, Spark Context & SQL Context.
     """
     logger.info(f"Getting spark session, context and sql context app_name: {app_name}")
+
     # detect execution environment
     flag_repl = not (hasattr(__main__, "__file__"))
     flag_debug = "DEBUG" in environ.keys()
