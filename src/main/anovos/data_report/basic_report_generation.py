@@ -38,7 +38,12 @@ global_paper_bg_color = "rgba(0,0,0,0)"
 
 default_template = (
     dp.HTML(
-        '<html><img src="https://mobilewalla-anovos.s3.amazonaws.com/anovos.png" style="height:100px;display:flex;margin:auto;float:right"></img></html>'
+        """
+        <html>
+            <img src="https://mobilewalla-anovos.s3.amazonaws.com/anovos.png" 
+                 style="height:100px;display:flex;margin:auto;float:right"/>
+        </html>
+        """
     ),
     dp.Text("# ML-Anovos Report"),
 )
@@ -451,7 +456,10 @@ def anovos_basic_report(
     tab3 = dp.Group(
         dp.Text("# "),
         dp.Text(
-            "*This section analyzes the interaction between different attributes and/or the relationship between an attribute & the binary target variable.*"
+            """
+            *This section analyzes the interaction between different attributes and/or the relationship 
+            between an attribute & the binary target variable.*
+            """
         ),
         dp.Text("# "),
         dp.Text("# "),
