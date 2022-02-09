@@ -3,6 +3,12 @@ import itertools
 import math
 
 import pyspark
+from phik.phik import spark_phik_matrix_from_hist2d_dict
+from popmon.analysis.hist_numpy import get_2dgrid
+from pyspark.sql import Window
+from pyspark.sql import functions as F
+from varclushi import VarClusHi
+
 from anovos.data_analyzer.stats_generator import uniqueCount_computation
 from anovos.data_ingest.data_ingest import read_dataset
 from anovos.data_transformer.transformers import (
@@ -12,11 +18,6 @@ from anovos.data_transformer.transformers import (
     imputation_MMM,
 )
 from anovos.shared.utils import attributeType_segregation
-from phik.phik import spark_phik_matrix_from_hist2d_dict
-from popmon.analysis.hist_numpy import get_2dgrid
-from pyspark.sql import Window
-from pyspark.sql import functions as F
-from varclushi import VarClusHi
 
 
 def correlation_matrix(
@@ -123,6 +124,7 @@ def variable_clustering(
     :param stats_mode: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
                        to read pre-saved statistics on most frequently seen values i.e. if measures_of_centralTendency or
                        mode_computation (data_analyzer.stats_generator module) has been computed & saved before.
+    :param print_impact: True, False
     :return: Dataframe [Cluster, Attribute, RS_Ratio]
              Attributes similar to each other are grouped together with the same cluster id.
              Attribute with the lowest (1 — RS_Ratio) can be chosen as a representative of the cluster.
@@ -221,6 +223,7 @@ def IV_calculation(
                              "bin_method" i.e. method of binning - "equal_frequency" or "equal_range" and
                              "monotonicity_check" 1 for monotonic binning else 0. monotonicity_check of 1 will
                              dynamically calculate the bin_size ensuring monotonic nature but can be expensive operation.
+    :param print_impact: True, False
     :return: Dataframe [attribute, iv]
     """
 
@@ -230,8 +233,10 @@ def IV_calculation(
     if list_of_cols == "all":
         num_cols, cat_cols, other_cols = attributeType_segregation(idf)
         list_of_cols = num_cols + cat_cols
+
     if isinstance(list_of_cols, str):
         list_of_cols = [x.strip() for x in list_of_cols.split("|")]
+
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split("|")]
 
@@ -241,6 +246,7 @@ def IV_calculation(
 
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError("Invalid input for Column(s)")
+
     if idf.where(F.col(label_col) == event_label).count() == 0:
         raise TypeError("Invalid input for Event Label Value")
 
@@ -333,6 +339,7 @@ def IG_calculation(
                              "bin_method" i.e. method of binning - "equal_frequency" or "equal_range" and
                              "monotonicity_check" 1 for monotonic binning else 0. monotonicity_check of 1 will
                              dynamically calculate the bin_size ensuring monotonic nature but can be expensive operation.
+    :param print_impact: True, False
     :return: Dataframe [attribute, ig]
     """
 

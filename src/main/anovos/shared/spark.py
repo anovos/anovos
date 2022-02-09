@@ -1,14 +1,13 @@
+import __main__
 from os import environ
-from packaging import version
 
 import findspark
+from loguru import logger
+from packaging import version
 
 findspark.init()
-
-import __main__
 import pyspark
-from pyspark import SQLContext
-from pyspark.sql import SparkSession
+from pyspark.sql import SQLContext, SparkSession
 
 if version.parse(pyspark.__version__) < version.parse("3.0.0"):
     SPARK_JARS_PACKAGES = [
@@ -34,12 +33,14 @@ def init_spark(
     """
     :param app_name: Name of Spark app.
     :param master: Cluster connection details
-                   Defaults to local[*] which means to run Spark locally with as many worker threads as logical cores on the machine.
+                   Defaults to local[*] which means to run Spark locally with as many worker threads
+                   as logical cores on the machine.
     :param jars_packages: List of Spark JAR package names.
     :param py_files: List of files to send to Spark cluster (master and workers).
     :param spark_config: Dictionary of config key-value pairs.
     :return: A tuple of references to the Spark Session, Spark Context & SQL Context.
     """
+    logger.info(f"Getting spark session, context and sql context app_name: {app_name}")
 
     # detect execution environment
     flag_repl = not (hasattr(__main__, "__file__"))
@@ -74,6 +75,10 @@ configs = {
     "jars_packages": SPARK_JARS_PACKAGES,
     "py_files": [],
     "spark_config": {
+        "spark.sql.session.timeZone": "GMT",
+        "spark.python.profile": "false",
+        "spark.yarn.appMasterEnv.ARROW_PRE_0_15_IPC_FORMAT": "1",
+        "spark.executorEnv.ARROW_PRE_0_15_IPC_FORMAT": "1",
         "spark.sql.session.timeZone": "GMT",
         "spark.python.profile": "false",
     },
