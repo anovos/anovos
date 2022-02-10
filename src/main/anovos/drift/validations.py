@@ -1,7 +1,7 @@
 from anovos.shared.utils import attributeType_segregation
 
 
-class CheckListOfCols:
+class CheckListOfCols(object):
     def __init__(
         self,
         func,
@@ -40,7 +40,7 @@ class CheckListOfCols:
         return self.func
 
 
-class CheckDistDistanceMethods:
+class CheckDistDistanceMethods(object):
     def __init__(self, func, argument_name="methods_types"):
         self.func = func
         self.argument_name = argument_name
