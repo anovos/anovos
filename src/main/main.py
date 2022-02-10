@@ -8,7 +8,7 @@ import yaml
 from anovos.data_analyzer import association_evaluator
 from anovos.data_analyzer import quality_checker
 from anovos.data_analyzer import stats_generator
-from anovos.data_drift import drift_detector
+from anovos.drift import detector
 from anovos.data_ingest import data_ingest
 from anovos.data_report import report_preprocessing
 from anovos.data_report.basic_report_generation import anovos_basic_report
@@ -294,7 +294,7 @@ def main(all_configs, global_run_type):
                             source = ETL(value.get("source_dataset"))
                         else:
                             source = None
-                        df_stats = drift_detector.drift_statistics(
+                        df_stats = detector.statistics(
                             spark, df, source, **value["configs"], print_impact=False
                         )
                         if report_inputPath:
@@ -321,13 +321,13 @@ def main(all_configs, global_run_type):
                             round(end - start, 4),
                         )
 
-                    if (subkey == "stabilityIndex_computation") & (value is not None):
+                    if (subkey == "stability_index") & (value is not None):
                         start = timeit.default_timer()
                         idfs = []
                         for k in [e for e in value.keys() if e not in "configs"]:
                             tmp = ETL(value.get(k))
                             idfs.append(tmp)
-                        df_stats = drift_detector.stabilityIndex_computation(
+                        df_stats = detector.stability_index_computation(
                             spark, *idfs, **value["configs"], print_impact=False
                         )
                         if report_inputPath:
