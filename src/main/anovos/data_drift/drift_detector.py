@@ -9,6 +9,7 @@ import pyspark
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
 from scipy.stats import variation
+import sympy as sp
 
 from anovos.data_ingest.data_ingest import concatenate_dataset
 from anovos.data_transformer.transformers import attribute_binning
@@ -379,5 +380,169 @@ def stabilityIndex_computation(
         print("Potential Unstable Attributes:")
         unstable = odf.where(F.col("flagged") == 1)
         unstable.show(unstable.count())
+
+    return odf
+
+
+def feature_stability_estimation(
+    spark,
+    attribute_stats,
+    attribute_transformation,
+    metric_weightages={"mean": 0.5, "stddev": 0.3, "kurtosis": 0.2},
+):
+    """
+    :param spark: Spark Session
+    :param attribute_stats: Spark dataframe. The intermediate dataframe saved by running function
+                            stabilityIndex_computation with schema [idx, attribute, mean, stddev, kurtosis].
+                            It should contain all the attributes used in argument attribute_transformation.
+
+    :param attribute_transformation: Takes input in dictionary format: each key-value combination represents one
+                                     new feature. Each key is a string containing all the attributes involved in
+                                     the new feature seperated by '|'. Each value is the transformation of the
+                                     attributes in string. For example, {'X|Y|Z': 'X**2+Y/Z', 'A': 'log(A)'}
+    :param metric_weightages: Takes input in dictionary format with keys being the metric name - "mean","stdev","kurtosis"
+                              and value being the weightage of the metric (between 0 and 1). Sum of all weightages must be 1.
+    :return: Dataframe [feature_formula, mean_cv, stddev_cv, mean_si, stddev_si, stability_index_lower_bound, stability_index_upper_bound].
+             *_cv is coefficient of variation for each metric. *_si is stability index for each metric.
+             stability_index_lower_bound and stability_index_upper_bound form a range for estimated stability index.
+    """
+
+    def stats_estimation(attributes, transformation, mean, stddev):
+        attribute_means = list(zip(attributes, mean))
+        first_dev = []
+        second_dev = []
+        est_mean = 0
+        est_var = 0
+        for attr, s in zip(attributes, stddev):
+            first_dev = sp.diff(transformation, attr)
+            second_dev = sp.diff(transformation, attr, 2)
+
+            est_mean += s**2 * second_dev.subs(attribute_means) / 2
+            est_var += s**2 * (first_dev.subs(attribute_means)) ** 2
+
+        transformation = sp.parse_expr(transformation)
+        est_mean += transformation.subs(attribute_means)
+
+        return [float(est_mean), float(est_var)]
+
+    f_stats_estimation = F.udf(stats_estimation, T.ArrayType(T.FloatType()))
+
+    index = (
+        attribute_stats.select("idx")
+        .distinct()
+        .orderBy("idx")
+        .rdd.flatMap(list)
+        .collect()
+    )
+    attribute_names = list(attribute_transformation.keys())
+    transformations = list(attribute_transformation.values())
+
+    feature_metric = []
+    for attributes, transformation in zip(attribute_names, transformations):
+        attributes = attributes.split("|")
+        for idx in index:
+            attr_mean_list, attr_stddev_list = [], []
+            for attr in attributes:
+                df_temp = attribute_stats.where(
+                    (F.col("idx") == idx) & (F.col("attribute") == attr)
+                )
+                attr_mean_list.append(
+                    df_temp.select("mean").rdd.flatMap(lambda x: x).collect()[0]
+                )
+                attr_stddev_list.append(
+                    df_temp.select("stddev").rdd.flatMap(lambda x: x).collect()[0]
+                )
+            feature_metric.append(
+                [idx, transformation, attributes, attr_mean_list, attr_stddev_list]
+            )
+
+    schema = T.StructType(
+        [
+            T.StructField("idx", T.IntegerType(), True),
+            T.StructField("transformation", T.StringType(), True),
+            T.StructField("attributes", T.ArrayType(T.StringType()), True),
+            T.StructField("attr_mean_list", T.ArrayType(T.FloatType()), True),
+            T.StructField("attr_stddev_list", T.ArrayType(T.FloatType()), True),
+        ]
+    )
+
+    df_feature_metric = (
+        spark.createDataFrame(feature_metric, schema=schema)
+        .withColumn(
+            "est_feature_stats",
+            f_stats_estimation(
+                "attributes", "transformation", "attr_mean_list", "attr_stddev_list"
+            ),
+        )
+        .withColumn("est_feature_mean", F.col("est_feature_stats")[0])
+        .withColumn("est_feature_stddev", F.sqrt(F.col("est_feature_stats")[1]))
+        .select(
+            "idx",
+            "attributes",
+            "transformation",
+            "est_feature_mean",
+            "est_feature_stddev",
+        )
+    )
+
+    output = []
+    for idx, i in enumerate(transformations):
+        i_output = [i]
+        for metric in ["est_feature_mean", "est_feature_stddev"]:
+            metric_stats = (
+                df_feature_metric.where(F.col("transformation") == i)
+                .orderBy("idx")
+                .select(metric)
+                .fillna(np.nan)
+                .rdd.flatMap(list)
+                .collect()
+            )
+            metric_cv = round(float(variation([a for a in metric_stats])), 4) or None
+            i_output.append(metric_cv)
+        output.append(i_output)
+
+    schema = T.StructType(
+        [
+            T.StructField("feature_formula", T.StringType(), True),
+            T.StructField("mean_cv", T.FloatType(), True),
+            T.StructField("stddev_cv", T.FloatType(), True),
+        ]
+    )
+
+    odf = spark.createDataFrame(output, schema=schema)
+
+    def score_cv(cv, thresholds=[0.03, 0.1, 0.2, 0.5]):
+        if cv is None:
+            return None
+        else:
+            cv = abs(cv)
+            stability_index = [4, 3, 2, 1, 0]
+            for i, thresh in enumerate(thresholds):
+                if cv < thresh:
+                    return stability_index[i]
+            return stability_index[-1]
+
+    f_score_cv = F.udf(score_cv, T.IntegerType())
+
+    odf = (
+        odf.replace(np.nan, None)
+        .withColumn("mean_si", f_score_cv(F.col("mean_cv")))
+        .withColumn("stddev_si", f_score_cv(F.col("stddev_cv")))
+        .withColumn(
+            "stability_index_lower_bound",
+            F.round(
+                (
+                    F.col("mean_si") * metric_weightages.get("mean", 0)
+                    + F.col("stddev_si") * metric_weightages.get("stddev", 0)
+                ),
+                4,
+            ),
+        )
+        .withColumn(
+            "stability_index_upper_bound",
+            F.col("stability_index_lower_bound")
+            + 4 * metric_weightages.get("kurtosis", 0),
+        )
+    )
 
     return odf
