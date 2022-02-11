@@ -18,7 +18,6 @@ clean-build:
 	rm -rf run_anovos*
 	rm -rf dist/
 	rm -rf ml_anovos_report.html
-	rm -rf ./*.whl
 	rm -rf ./docker-stacks
 
 clean-pyc:
@@ -39,7 +38,6 @@ test:
 	coverage html
 
 build: clean
-	cp ./bin/*.whl ./
 	cp ./demo/Dockerfile* ./
 	cp ./demo/run_anovos* ./
 	rm -rf ./dist && mkdir ./dist && mkdir ./dist/data && mkdir ./dist/output
