@@ -439,13 +439,17 @@ def feature_stability_estimation(
 
     feature_metric = []
     for attributes, transformation in zip(attribute_names, transformations):
-        attributes = attributes.split("|")
+        attributes = [x.strip() for x in attributes.split("|")]
         for idx in index:
             attr_mean_list, attr_stddev_list = [], []
             for attr in attributes:
                 df_temp = attribute_stats.where(
                     (F.col("idx") == idx) & (F.col("attribute") == attr)
                 )
+                if df_temp.count() == 0:
+                    raise TypeError(
+                        "Invalid input for attribute_stats: all involved attributes must have available statistics across all time periods (idx)"
+                    )
                 attr_mean_list.append(
                     df_temp.select("mean").rdd.flatMap(lambda x: x).collect()[0]
                 )
@@ -531,17 +535,18 @@ def feature_stability_estimation(
         .withColumn(
             "stability_index_lower_bound",
             F.round(
-                (
-                    F.col("mean_si") * metric_weightages.get("mean", 0)
-                    + F.col("stddev_si") * metric_weightages.get("stddev", 0)
-                ),
+                F.col("mean_si") * metric_weightages.get("mean", 0)
+                + F.col("stddev_si") * metric_weightages.get("stddev", 0),
                 4,
             ),
         )
         .withColumn(
             "stability_index_upper_bound",
-            F.col("stability_index_lower_bound")
-            + 4 * metric_weightages.get("kurtosis", 0),
+            F.round(
+                F.col("stability_index_lower_bound")
+                + 4 * metric_weightages.get("kurtosis", 0),
+                4,
+            ),
         )
     )
 
