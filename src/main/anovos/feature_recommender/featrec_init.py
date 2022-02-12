@@ -1,12 +1,6 @@
-import pandas as pd
-from sentence_transformers import SentenceTransformer
+from anovos.feature_recommender.feature_exploration import *
 from re import finditer
 import copy
-
-
-def init_featureRecommender(input_path):
-    df_final = pd.read_csv(input_path)
-    return df_final
 
 
 def camel_case_split(identifier):
@@ -17,7 +11,7 @@ def camel_case_split(identifier):
     return a
 
 
-def recommendationDataPrep(df, name_column, desc_column):
+def recommendation_data_prep(df, name_column, desc_column):
     if not isinstance(df, pd.DataFrame):
         raise TypeError('Invalid input for df')
     if name_column not in df.columns and name_column != None:
@@ -46,11 +40,8 @@ def recommendationDataPrep(df, name_column, desc_column):
     return list_corpus, df_prep
 
 
-model = SentenceTransformer('all-mpnet-base-v2')
-input_path = 'https://raw.githubusercontent.com/anovos/anovos/feature_recommender_beta/data/feature_recommender/flatten_fr_db.csv'
-df_input = init_featureRecommender(input_path)
 df_groupby = df_input.groupby(['Feature Name', 'Feature Description']).agg(
     {'Industry': lambda x: ', '.join(set(x.dropna())), 'Usecase': lambda x: ', '.join(set(x.dropna())),
      'Source': lambda x: ', '.join(set(x.dropna()))}).reset_index()
-list_train, df_rec = recommendationDataPrep(df_groupby, 'Feature Name', 'Feature Description')
+list_train, df_rec = recommendation_data_prep(df_groupby, 'Feature Name', 'Feature Description')
 list_embedding_train = model.encode(list_train, convert_to_tensor=True)
