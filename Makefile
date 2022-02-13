@@ -1,3 +1,7 @@
+DOCKER_REGISTRY=anovos
+IMAGE_NAME=anovos
+IMAGE_TAG=latest
+
 help:
 	@echo "clean - remove all build, test, coverage and Python artifacts"
 	@echo "clean-pyc - remove Python file artifacts"
@@ -36,6 +40,22 @@ test:
 	-coverage run --source=. -m pytest src/test
 	coverage report
 	coverage html
+
+
+test-docker:
+	@if [  docker images -q ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} 2> /dev/null  == ""  ]; then\
+		docker run --rm  $(docker build . -t ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}) make test;\
+	else\
+		docker run --rm  ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} make test;\
+ 	fi
+
+test-if:
+	@if [ "test" = "test" ]; then\
+        echo "Hello world";\
+    else\
+      	echo "hi";\
+    fi
+
 
 build: clean
 	cp ./demo/Dockerfile* ./
