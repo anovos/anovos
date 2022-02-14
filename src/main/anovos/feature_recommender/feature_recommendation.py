@@ -241,9 +241,9 @@ def find_attr_by_relevance(df, building_corpus, name_column=None, desc_column=No
 
 def sankey_visualization(df, industry_included=False, usecase_included=False):
     """
-    :param df: Input DataFrame. This DataFrame needs to be feature_recommender or find_attr_by_relevance output, or in the same format.
+    :param df: Input DataFrame. This DataFrame needs to be output of feature_recommendation or find_attr_by_relevance, or in the same format.
     :param industry_included: Whether the plot needs to include industry mapping or not (boolean). Default is False
-    :param usecase_included: Whether the plot needs to include industry mapping or not (boolean). Default is False
+    :param usecase_included: Whether the plot needs to include usecase mapping or not (boolean). Default is False
     :return: Sankey plot
     """
     fr_proper_col_list = [
