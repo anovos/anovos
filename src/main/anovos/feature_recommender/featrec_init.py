@@ -3,15 +3,26 @@ from re import finditer
 import copy
 
 
-def camel_case_split(identifier):
-    a = ''
-    matches = finditer('.+?(?:(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|$)', identifier)
+def camel_case_split(input):
+    """
+    :param input: Input needs to be cleaned (string)
+    :return: Processed Input (string)
+    """
+    processed_input = ''
+    matches = finditer('.+?(?:(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|$)', input)
     for m in matches:
-        a += str(m.group(0)) + str(' ')
-    return a
+        processed_input += str(m.group(0)) + str(' ')
+    return processed_input
 
 
 def recommendation_data_prep(df, name_column, desc_column):
+    """
+    :param df: Input DataFrame
+    :param name_column: Input column name in Input DataFrame (string)
+    :param desc_column: Input column description in Input DataFrame (string)
+    :return list_corpus: List of prepared data for Feature Recommender functions
+    :return df_prep: Processed DataFrame for Feature Recommender functions
+    """
     if not isinstance(df, pd.DataFrame):
         raise TypeError('Invalid input for df')
     if name_column not in df.columns and name_column != None:

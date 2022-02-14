@@ -9,23 +9,37 @@ df_input = pd.read_csv(input_path)
 
 
 def list_all_industry():
+    """
+    :return: DataFrame
+    """
     odf_uni = df_input['Industry'].unique()
     odf = pd.DataFrame(odf_uni, columns=['Industry'])
     return odf
 
 
 def list_all_usecase():
+    """
+    :return: DataFrame
+    """
     odf_uni = df_input['Usecase'].unique()
     odf = pd.DataFrame(odf_uni, columns=['Usecase'])
     return odf
 
 
 def list_all_pair():
+    """
+    :return: DataFrame
+    """
     odf = df_input[['Industry', 'Usecase']].drop_duplicates(keep='last', ignore_index=True)
     return odf
 
 
 def process_usecase(usecase, semantic):
+    """
+    :param usecase: Input usecase (string)
+    :param semantic: Input semantic (boolean) - Whether the input needs to go through semantic matching or not. Default is True.
+    :return: Processed Usecase(string)
+    """
     if type(semantic) != bool:
         raise TypeError('Invalid input for semantic')
     if type(usecase) != str:
@@ -46,6 +60,11 @@ def process_usecase(usecase, semantic):
 
 
 def process_industry(industry, semantic):
+    """
+    :param industry: Input industry (string)
+    :param semantic: Input semantic (boolean) - Whether the input needs to go through semantic matching or not. Default is True.
+    :return: Processed Industry(string)
+    """
     if type(semantic) != bool:
         raise TypeError('Invalid input for semantic')
     if type(industry) != str:
@@ -67,18 +86,34 @@ def process_industry(industry, semantic):
 
 
 def list_usecase_by_industry(industry, semantic=True):
+    """
+    :param industry: Input industry (string)
+    :param semantic: Input semantic (boolean) - Whether the input needs to go through semantic matching or not. Default is True.
+    :return: DataFrame
+    """
     industry = process_industry(industry, semantic)
     odf = df_input.loc[df_input['Industry'] == industry][['Usecase']].drop_duplicates(keep='last', ignore_index=True)
     return odf
 
 
 def list_industry_by_usecase(usecase, semantic=True):
+    """
+    :param usecase: Input usecase (string)
+    :param semantic: Input semantic (boolean) - Whether the input needs to go through semantic matching or not. Default is True.
+    :return: DataFrame
+    """
     usecase = process_usecase(usecase, semantic)
     odf = df_input.loc[df_input['Usecase'] == usecase][['Industry']].drop_duplicates(keep='last', ignore_index=True)
     return odf
 
 
 def list_feature_by_industry(industry, num_of_feat=100, semantic=True):
+    """
+    :param industry: Input industry (string)
+    :param num_of_feat: Number of features displayed (integer). Default is 100.
+    :param semantic: Input semantic (boolean) - Whether the input needs to go through semantic matching or not. Default is True.
+    :return: DataFrame
+    """
     if type(num_of_feat) != int or num_of_feat < 0:
         if num_of_feat != 'all':
             raise TypeError('Invalid input for num_of_feat')
@@ -96,6 +131,12 @@ def list_feature_by_industry(industry, num_of_feat=100, semantic=True):
 
 
 def list_feature_by_usecase(usecase, num_of_feat=100, semantic=True):
+    """
+    :param usecase: Input usecase (string)
+    :param num_of_feat: Number of features displayed (integer). Default is 100.
+    :param semantic: Input semantic (boolean) - Whether the input needs to go through semantic matching or not. Default is True.
+    :return: DataFrame
+    """
     if type(num_of_feat) != int or num_of_feat < 0:
         if num_of_feat != 'all':
             raise TypeError('Invalid input for num_of_feat')
@@ -113,6 +154,13 @@ def list_feature_by_usecase(usecase, num_of_feat=100, semantic=True):
 
 
 def list_feature_by_pair(industry, usecase, num_of_feat=100, semantic=True):
+    """
+    :param industry: Input industry (string)
+    :param usecase: Input usecase (string)
+    :param num_of_feat: Number of features displayed (integer). Default is 100.
+    :param semantic: Input semantic (boolean) - Whether the input needs to go through semantic matching or not. Default is True.
+    :return: DataFrame
+    """
     if type(num_of_feat) != int or num_of_feat < 0:
         if num_of_feat != 'all':
             raise TypeError('Invalid input for num_of_feat')

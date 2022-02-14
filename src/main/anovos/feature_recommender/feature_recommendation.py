@@ -7,12 +7,27 @@ import matplotlib.pyplot as plt
 
 def feature_recommendation(df, name_column=None, desc_column=None, suggested_industry='all', suggested_usecase='all',
                            semantic=True, top_n=2, threshold=0.3):
+    """
+    :param df: Input DataFrame - Attribute Dictionary
+    :param name_column: Input column name for Attribute Name in Input DataFrame (string). Default is None.
+    :param desc_column: Input column name for Attribute Description in Input DataFrame (string). Default is None.
+    :param suggested_industry: Input suggested Industry (string). Default is 'all', meaning all Industries available.
+    :param suggested_usecase: Input suggested Usecase (string). Default is 'all', meaning all Usecases available.
+    :param semantic: Input semantic (boolean) - Whether the input needs to go through semantic matching or not. Default is True.
+    :param top_n: Number of feature displayed (int). Default is 2
+    :param threshold: Input threshold value (float). Default is 0.3
+    :return: DataFrame with Recommended Features
+    """
     if not isinstance(df, pd.DataFrame):
         raise TypeError('Invalid input for df')
     if type(top_n) != int or top_n < 0:
         raise TypeError('Invalid input for top_n')
     if top_n > len(list_train):
         raise TypeError('top_n value is too large')
+    if type(threshold) != float:
+        raise TypeError('Invalid input for building_corpus')
+    if threshold < 0 or threshold > 1:
+        raise TypeError('Invalid input for threshold. Threshold value is between 0 and 1')
     list_user, df_user = recommendation_data_prep(df, name_column, desc_column)
 
     if suggested_industry != 'all' and suggested_industry == 'all':
@@ -136,11 +151,23 @@ def feature_recommendation(df, name_column=None, desc_column=None, suggested_ind
     return df_out
 
 
-def fine_attr_by_relevance(df, building_corpus, name_column=None, desc_column=None, threshold=0.3):
+def find_attr_by_relevance(df, building_corpus, name_column=None, desc_column=None, threshold=0.3):
+    """
+    :param df: Input DataFrame - Attribute Dictionary
+    :param building_corpus: Input Feature Description (list)
+    :param name_column: Input column name for Attribute Name in Input DataFrame (string). Default is None.
+    :param desc_column: Input column name for Attribute Description in Input DataFrame (string). Default is None.
+    :param threshold: Input threshold value (float). Default is 0.3
+    :return: DataFrame with Input Feature Description and Input Attribute matching
+    """
     if not isinstance(df, pd.DataFrame):
         raise TypeError('Invalid input for df')
     if type(building_corpus) != list:
         raise TypeError('Invalid input for building_corpus')
+    if type(threshold) != float:
+        raise TypeError('Invalid input for building_corpus')
+    if threshold < 0 or threshold > 1:
+        raise TypeError('Invalid input for threshold. Threshold value is between 0 and 1')
     for i in range(len(building_corpus)):
         if type(building_corpus[i]) != str:
             raise TypeError('Invalid input inside building_corpus:', building_corpus[i])
@@ -213,6 +240,12 @@ def fine_attr_by_relevance(df, building_corpus, name_column=None, desc_column=No
 
 
 def sankey_visualization(df, industry_included=False, usecase_included=False):
+    """
+    :param df: Input DataFrame. This DataFrame needs to be feature_recommender or find_attr_by_relevance output, or in the same format.
+    :param industry_included: Whether the plot needs to include industry mapping or not (boolean). Default is False
+    :param usecase_included: Whether the plot needs to include industry mapping or not (boolean). Default is False
+    :return: Sankey plot
+    """
     fr_proper_col_list = [
         'Recommended Feature Name', 'Recommended Feature Description',
         'Feature Similarity Score', 'Industry', 'Usecase', 'Source'
@@ -246,7 +279,7 @@ def sankey_visualization(df, industry_included=False, usecase_included=False):
         name_score = 'Input Attribute Similarity Score'
         if industry_included != False or usecase_included != False:
             print(
-                'Input is fine_attr_by_relevance output DataFrame. There is no suggested Industry and/or Usecase.'
+                'Input is find_attr_by_relevance output DataFrame. There is no suggested Industry and/or Usecase.'
             )
         industry_included = False
         usecase_included = False
