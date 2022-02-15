@@ -2056,11 +2056,11 @@ def autoencoder_latentFeatures(
     if stats_missing == {}:
         missing_df = missingCount_computation(spark, idf, list_of_cols)
         missing_df.write.parquet(
-            "intermediate_data/PCA_latentFeatures/missingCount_computation",
+            "intermediate_data/autoencoder_latentFeatures/missingCount_computation",
             mode="overwrite",
         )
         stats_missing = {
-            "file_path": "intermediate_data/PCA_latentFeatures/missingCount_computation",
+            "file_path": "intermediate_data/autoencoder_latentFeatures/missingCount_computation",
             "file_type": "parquet",
         }
     else:
@@ -2114,11 +2114,11 @@ def autoencoder_latentFeatures(
             .withColumn("attribute", F.concat(F.col("attribute"), F.lit("_scaled")))
         )
         missing_df_scaled.write.parquet(
-            "intermediate_data/PCA_latentFeatures/missingCount_computation_scaled",
+            "intermediate_data/autoencoder_latentFeatures/missingCount_computation_scaled",
             mode="overwrite",
         )
         stats_missing_scaled = {
-            "file_path": "intermediate_data/PCA_latentFeatures/missingCount_computation_scaled",
+            "file_path": "intermediate_data/autoencoder_latentFeatures/missingCount_computation_scaled",
             "file_type": "parquet",
         }
         idf_imputed = f(
@@ -2243,28 +2243,20 @@ def autoencoder_latentFeatures(
 
         return predict_pandas_udf
 
-    if output_mode == "append":
-        odf = idf_imputed.withColumn(
-            "predicted_output",
-            compute_output_pandas_udf(model_wrapper)(*list_of_cols_scaled),
-        ).select(
-            idf.columns
-            + [
-                F.col("predicted_output")[j].alias("latent_" + str(j))
-                for j in range(0, n_bottleneck)
-            ]
-        )
-    else:
-        odf = idf_imputed.withColumn(
-            "predicted_output",
-            compute_output_pandas_udf(model_wrapper)(*list_of_cols_scaled),
-        ).select(
-            [e for e in idf.columns if e not in list_of_cols]
-            + [
-                F.col("predicted_output")[j].alias("latent_" + str(j))
-                for j in range(0, n_bottleneck)
-            ]
-        )
+    odf = idf_imputed.withColumn(
+        "predicted_output",
+        compute_output_pandas_udf(model_wrapper)(*list_of_cols_scaled),
+    )
+    odf_schema = odf.schema
+    for i in range(0, n_bottleneck):
+        odf_schema = odf_schema.add(T.StructField("latent_" + str(i), T.FloatType()))
+    odf = (
+        odf.rdd.map(lambda x: (*x, *x["predicted_output"]))
+        .toDF(schema=odf_schema)
+        .drop("predicted_output")
+    )
+    if output_mode == "replace":
+        odf = odf.drop(*list_of_cols)
 
     if print_impact:
         output_cols = ["latent_" + str(j) for j in range(0, n_bottleneck)]
@@ -2418,6 +2410,8 @@ def PCA_latentFeatures(
     else:
         idf_imputed = idf_standardized.dropna(subset=list_of_cols_scaled)
 
+    idf_imputed.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
+
     assembler = VectorAssembler(inputCols=list_of_cols_scaled, outputCol="features")
     assembled_data = assembler.transform(idf_imputed)
 
@@ -2449,36 +2443,24 @@ def PCA_latentFeatures(
 
     f_vector_to_array = F.udf(vector_to_array, T.ArrayType(T.FloatType()))
 
-    if output_mode == "append":
-        odf = (
-            pcaModel.transform(assembled_data)
-            .withColumn("features_pca_array", f_vector_to_array("features_pca"))
-            .select(
-                idf.columns
-                + [
-                    F.col("features_pca_array")[j].alias("latent_" + str(j))
-                    for j in range(0, n)
-                ]
-            )
-            .replace(
-                float("nan"), None, subset=["latent_" + str(j) for j in range(0, n)]
-            )
-        )
-    else:
-        odf = (
-            pcaModel.transform(assembled_data)
-            .withColumn("features_pca_array", f_vector_to_array("features_pca"))
-            .select(
-                [e for e in idf.columns if e not in list_of_cols]
-                + [
-                    F.col("features_pca_array")[j].alias("latent_" + str(j))
-                    for j in range(0, n)
-                ]
-            )
-            .replace(
-                float("nan"), None, subset=["latent_" + str(j) for j in range(0, n)]
-            )
-        )
+    odf = (
+        pcaModel.transform(assembled_data)
+        .withColumn("features_pca_array", f_vector_to_array("features_pca"))
+        .drop("features_pca")
+    )
+
+    odf_schema = odf.schema
+    for i in range(0, n):
+        odf_schema = odf_schema.add(T.StructField("latent_" + str(i), T.FloatType()))
+    odf = (
+        odf.rdd.map(lambda x: (*x, *x["features_pca_array"]))
+        .toDF(schema=odf_schema)
+        .drop("features_pca_array")
+        .replace(float("nan"), None, subset=["latent_" + str(j) for j in range(0, n)])
+    )
+
+    if output_mode == "replace":
+        odf = odf.drop(*list_of_cols)
 
     if print_impact:
         print("Explained Variance: ", round(np.sum(pcaModel.explainedVariance[0:n]), 4))
