@@ -2,7 +2,7 @@ pytest==7.0.1
 black==22.1.0
 pylint==2.7.2
 mypy==0.931
-pytest-cov==2.11.1
+pytest-cov==3.0.0
 isort==5.10.1
 flake8==4.0.1
 pyspark>=2.4.3,<=3.2.1
