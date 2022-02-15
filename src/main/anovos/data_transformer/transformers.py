@@ -395,7 +395,7 @@ def cat_to_num_unsupervised(
     :param output_mode: "replace", "append".
                         “replace” option replaces original columns with transformed column. “append” option append transformed
                         column to the input dataset with a postfix "_index" e.g. column X is appended as X_index.
-    :param print_impact:  true, False,
+    :param print_impact: True, False
     :return: Encoded Dataframe
     """
 
@@ -609,6 +609,7 @@ def cat_to_num_supervised(
     :param output_mode: "replace", "append".
                          “replace” option replaces original columns with transformed column. “append” option append transformed
                          column to the input dataset with a postfix "_encoded" e.g. column X is appended as X_encoded.
+    :param print_impact: True, False
     :return: Transformed Dataframe
     """
 
@@ -727,6 +728,7 @@ def z_standardization(
     :param output_mode: "replace", "append".
                         “replace” option replaces original columns with transformed column. “append” option append transformed
                         column to the input dataset with a postfix "_scaled" e.g. column X is appended as X_scaled.
+    :param print_impact: True, False
     :return: Scaled Dataframe
     """
     num_cols = attributeType_segregation(idf)[0]
@@ -839,6 +841,7 @@ def IQR_standardization(
     :param output_mode: "replace", "append".
                         “replace” option replaces original columns with transformed column. “append” option append transformed
                         column to the input dataset with a postfix "_scaled" e.g. column X is appended as X_scaled.
+    :param print_impact: True, False
     :return: Scaled Dataframe
     """
     num_cols = attributeType_segregation(idf)[0]
@@ -949,6 +952,7 @@ def normalization(
     :param output_mode: "replace", "append".
                         “replace” option replaces original columns with transformed column. “append” option append transformed
                         column to the input dataset with a postfix "_scaled" e.g. column X is appended as X_scaled.
+    :param print_impact: True, False
     :return: Scaled Dataframe
     """
     num_cols = attributeType_segregation(idf)[0]
@@ -1361,6 +1365,7 @@ def imputation_sklearn(
                           to read pre-saved statistics on missing count/pct i.e. if measures_of_counts or
                           missingCount_computation (data_analyzer.stats_generator module) has been computed & saved before.
     :param emr_mode: Boolean argument – True or False. True if it is run on EMR, False otherwise.
+    :param print_impact: True, False
     :return: Imputed Dataframe
     """
 
@@ -1591,6 +1596,7 @@ def imputation_matrixFactorization(
     :param stats_missing: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
                           to read pre-saved statistics on missing count/pct i.e. if measures_of_counts or
                           missingCount_computation (data_analyzer.stats_generator module) has been computed & saved before.
+    :param print_impact: True, False
     :return: Imputed Dataframe
     """
 
@@ -1793,6 +1799,7 @@ def auto_imputation(
     :param output_mode: "replace", "append".
                          “replace” option replaces original columns with transformed column. “append” option append transformed
                          column to the input dataset with a postfix "_imputed" e.g. column X is appended as X_imputed.
+    :param print_impact: True, False
     :return: Name of the best Imputation Technique
     """
 
@@ -2027,6 +2034,7 @@ def autoencoder_latentFeatures(
                         “replace” option replaces original columns with transformed columns: latent_<col_index>.
                         “append” option append transformed columns with format latent_<col_index> to the input dataset,
                         e.g. latent_0, latent_1 will be appended if reduction_params=2.
+    :param print_impact: True, False
     :return: Dataframe with Latent Features.
     """
 
@@ -2313,6 +2321,7 @@ def PCA_latentFeatures(
                         “replace” option replaces original columns with transformed columns: latent_<col_index>.
                         “append” option append transformed columns with format latent_<col_index> to the input dataset,
                         e.g. latent_0, latent_1.
+    :param print_impact: True, False
     :return:  Dataframe with Latent Features.
     """
 
@@ -2510,6 +2519,7 @@ def feature_transformation(
                         “replace” option replaces original columns with transformed columns.
                         “append” option append transformed columns with a postfix (E.g. "_ln", "_powOf<N>")
                         to the input dataset.
+    :param print_impact: True, False
     :return:  Dataframe with encoded columns.
     """
 
@@ -2640,6 +2650,7 @@ def boxcox_transformation(
                         “replace” option replaces original columns with transformed columns.
                         “append” option append transformed columns with a postfix "_bxcx_<lambda>"
                         to the input dataset.
+    :param print_impact: True, False
     :return:  Dataframe with encoded columns.
     """
 
@@ -2779,6 +2790,7 @@ def outlier_categories(
     :param output_mode: "replace", "append".
                         “replace” option replaces original columns with transformed column. “append” option append transformed
                         column to the input dataset with a postfix "_outliered" e.g. column X is appended as X_outliered.
+    :param print_impact: True, False
     :return: Dataframe after outlier treatment
     """
 
@@ -2891,6 +2903,8 @@ def expression_parser(idf, list_of_expr, postfix="", print_impact=False):
                          where different expressions are separated by pipe delimiter “|” e.g., "expr1|expr2".
     :param postfix: postfix for new feature name.Naming convention "f" + expression_index + postfix
                     e.g. with postfix of "new", new added features are named as f0new, f1new etc.
+    :param print_impact: True, False
+    :return: Output Dataframe appended with expression-derived attributes
     """
     if isinstance(list_of_expr, str):
         list_of_expr = [x.strip() for x in list_of_expr.split("|")]

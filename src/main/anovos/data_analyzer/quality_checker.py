@@ -36,6 +36,7 @@ def duplicate_detection(
                       Alternatively, columns can be specified in a string format,
                       where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
     :param treatment: Boolean argument – True or False. If True, duplicate rows are removed from the input dataframe.
+    :param print_impact: True, False
     :return: (Output Dataframe, Metric Dataframe)
               Output Dataframe is de-duplicated dataframe if treated, else original input dataframe.
               Metric Dataframe is of schema [metric, value] and contains metrics - number of rows, number of unique rows,
@@ -835,6 +836,7 @@ def biasedness_detection(
     :param stats_mode: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
                        to read pre-saved statistics on most frequently seen values i.e. if measures_of_centralTendency or
                        mode_computation (data_analyzer.stats_generator module) has been computed & saved before.
+    :param print_impact: True, False
     :return: (Output Dataframe, Metric Dataframe)
               Output Dataframe is the dataframe after column removal if treated, else original input dataframe.
               Metric Dataframe is of schema [attribute, mode, mode_rows, mode_pct, flagged/treated]. mode is the most frequently seen value,
@@ -972,14 +974,20 @@ def invalidEntries_detection(
                              null_replacement removes all values with any invalid values as null.
                              column_removal remove a column if % of rows with invalid value is above a threshold (defined
                              by key "treatment_threshold" under treatment_configs argument).
-     :param treatment_configs: Takes input in dictionary format.
+    :param treatment_configs: Takes input in dictionary format.
                               For column_removal treatment, key ‘treatment_threshold’ is provided with a value between 0 to 1.
                               For value replacement, by MMM, arguments corresponding to imputation_MMM function (transformer module) are provided,
                               where each key is an argument from imputation_MMM function.
                               For null_replacement, this argument can be skipped.
-    :param stats_missing
-    :param stats_unique
-    :param stats_mode
+    :param stats_missing: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
+                          to read pre-saved statistics on missing count/pct i.e. if measures_of_counts or
+                          missingCount_computation (data_analyzer.stats_generator module) has been computed & saved before.
+    :param stats_unique: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
+                         to read pre-saved statistics on unique value count i.e. if measures_of_cardinality or
+                         uniqueCount_computation (data_analyzer.stats_generator module) has been computed & saved before.
+    :param stats_mode: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
+                       to read pre-saved statistics on most frequently seen values i.e. if measures_of_centralTendency or
+                       mode_computation (data_analyzer.stats_generator module) has been computed & saved before.
     :param output_mode: "replace", "append".
                         “replace” option replaces original columns with treated column. “append” option append treated
                         column to the input dataset with a postfix "_invalid" e.g. column X is appended as X_invalid.

@@ -95,7 +95,8 @@ def anovos_basic_report(
     :param global_run_type: "local" (default), "emr", "databricks"
                          "emr" if the files are read from or written in AWS s3
                          "databricks" if the files are read from or written in dbfs in azure databricks
-    : param print_impact: True, False.
+    :param print_impact: True, False.
+    :return None
     """
     global num_cols
     global cat_cols
