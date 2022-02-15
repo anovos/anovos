@@ -2,7 +2,7 @@ cython
 
 pandas>=1.2.5
 numpy>=1.20.0
-scipy<1.8.0
+scipy<1.9.0
 scikit-learn>=1.0.0
 
 matplotlib>=3.4.3
