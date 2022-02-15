@@ -15,13 +15,11 @@ from anovos.data_ingest.data_ingest import concatenate_dataset
 from anovos.data_transformer.transformers import attribute_binning
 from anovos.shared.utils import attributeType_segregation
 from .distances import hellinger, psi, js_divergence, ks
-from .validations import CheckDistDistanceMethods, CheckListOfCols
+from .validations import check_distance_method, check_list_of_columns
 
 
-@CheckDistDistanceMethods(argument_name="methods_type")
-@CheckListOfCols(
-    arg_cols="list_of_cols", arg_idf_target="idf_target", arg_drop_cols="drop_cols"
-)
+@check_distance_method
+@check_list_of_columns
 def statistics(
     spark: SparkSession,
     idf_target: DataFrame,
