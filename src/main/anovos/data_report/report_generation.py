@@ -2233,7 +2233,7 @@ def anovos_report(
         else:
             final_tabs_list.append(i)
 
-    if run_type in ("local","databricks"):
+    if run_type in ("local", "databricks"):
 
         dp.Report(
             default_template[0],
