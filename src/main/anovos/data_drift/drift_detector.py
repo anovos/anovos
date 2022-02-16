@@ -239,6 +239,9 @@ def stabilityIndex_computation(
     :param appended_metric_path: This argument is path for saving input dataframes metrics after appending to the
                                  historical datasets' metrics.
     :param threshold: A column is flagged if the stability index is below the threshold, which varies between 0 to 4.
+                      The following criteria can be used to classifiy stability_index (SI): very unstable: 0≤SI<1,
+                      unstable: 1≤SI<2, marginally stable: 2≤SI<3, stable: 3≤SI<3.5 and very stable: 3.5≤SI≤4.
+    :param print_impact: True, False
     :return: Dataframe [attribute, mean_si, stddev_si, kurtosis_si, mean_cv, stddev_cv, kurtosis_cv, stability_index].
              *_cv is coefficient of variation for each metric. *_si is stability index for each metric.
              stability_index is net weighted stability index based on the individual metrics' stability index.
@@ -389,6 +392,8 @@ def feature_stability_estimation(
     attribute_stats,
     attribute_transformation,
     metric_weightages={"mean": 0.5, "stddev": 0.3, "kurtosis": 0.2},
+    threshold=1,
+    print_impact=False,
 ):
     """
     :param spark: Spark Session
@@ -402,9 +407,16 @@ def feature_stability_estimation(
                                      attributes in string. For example, {'X|Y|Z': 'X**2+Y/Z', 'A': 'log(A)'}
     :param metric_weightages: Takes input in dictionary format with keys being the metric name - "mean","stdev","kurtosis"
                               and value being the weightage of the metric (between 0 and 1). Sum of all weightages must be 1.
-    :return: Dataframe [feature_formula, mean_cv, stddev_cv, mean_si, stddev_si, stability_index_lower_bound, stability_index_upper_bound].
+    :param threshold: A column is flagged if the stability index is below the threshold, which varies between 0 to 4.
+                      The following criteria can be used to classifiy stability_index (SI): very unstable: 0≤SI<1,
+                      unstable: 1≤SI<2, marginally stable: 2≤SI<3, stable: 3≤SI<3.5 and very stable: 3.5≤SI≤4.
+    :param print_impact: True, False
+    :return: Dataframe [feature_formula, mean_cv, stddev_cv, mean_si, stddev_si, stability_index_lower_bound,
+             stability_index_upper_bound, flagged_lower, flagged_upper].
              *_cv is coefficient of variation for each metric. *_si is stability index for each metric.
              stability_index_lower_bound and stability_index_upper_bound form a range for estimated stability index.
+             flagged_lower and flagged_upper indicate whether the feature is potentially unstable based on the lower
+             and uppder bounds for stability index .
     """
 
     def stats_estimation(attributes, transformation, mean, stddev):
@@ -548,6 +560,30 @@ def feature_stability_estimation(
                 4,
             ),
         )
+        .withColumn(
+            "flagged_lower",
+            F.when(
+                (F.col("stability_index_lower_bound") < threshold)
+                | (F.col("stability_index_lower_bound").isNull()),
+                1,
+            ).otherwise(0),
+        )
+        .withColumn(
+            "flagged_upper",
+            F.when(
+                (F.col("stability_index_upper_bound") < threshold)
+                | (F.col("stability_index_upper_bound").isNull()),
+                1,
+            ).otherwise(0),
+        )
     )
+
+    if print_impact:
+        print("All Features:")
+        odf.show(len(attribute_names), False)
+
+        print("Potential Unstable Features Identified by Both Lower and Upper Bounds:")
+        unstable = odf.where(F.col("flagged_upper") == 1)
+        unstable.show(unstable.count())
 
     return odf
