@@ -1,12 +1,11 @@
 import os
 import pytest
+from pytest import approx
 from pyspark.sql import functions as F
-from anovos.data_ingest.data_ingest import *
-from anovos.data_transformer.transformers import *
-
+from anovos.data_ingest.data_ingest import read_dataset
+from anovos.data_transformer.transformers import attribute_binning, monotonic_binning, cat_to_num_unsupervised, cat_to_num_supervised, z_standardization, IQR_standardization, normalization, imputation_MMM, imputation_sklearn, imputation_matrixFactorization, auto_imputation, autoencoder_latentFeatures, PCA_latentFeatures, feature_transformation, boxcox_transformation, outlier_categories
 sample_parquet = "./data/test_dataset/part-00001-3eb0f7bb-05c2-46ec-8913-23ba231d2734-c000.snappy.parquet"
 
-@pytest.mark.usefixtures("spark_session")
 #scaling
 def test_z_standardization(spark_session):
     df = read_dataset(spark_session, sample_parquet, "parquet")
@@ -102,17 +101,17 @@ def test_feature_transformation(spark_session):
     df = read_dataset(spark_session, sample_parquet, "parquet")
     odf = feature_transformation(df)
     odf_pd=odf.where(F.col("ifa") == "27520a").toPandas()
-    assert round(odf_pd["age"][0]) == 7
-    assert round(odf_pd["fnlwgt"][0]) == 400
-    assert round(odf_pd["hours-per-week"][0]) == 4
+    assert approx(odf_pd["age"][0])==7.14142842854285
+    assert approx(odf_pd["fnlwgt"][0])==399.6936326738268
+    assert approx(odf_pd["hours-per-week"][0])==4.47213595499958
     
 def test_boxcox_transformation(spark_session):
     df = read_dataset(spark_session, sample_parquet, "parquet")
     odf = boxcox_transformation(df,drop_cols=["capital-gain","capital-loss"], boxcox_lambda=0.5)
     odf_pd=odf.where(F.col("ifa") == "27520a").toPandas()
-    assert round(odf_pd["age"][0]) == 7
-    assert round(odf_pd["fnlwgt"][0]) == 400
-    assert round(odf_pd["hours-per-week"][0]) == 4  
+    assert approx(odf_pd["age"][0])==7.14142842854285
+    assert approx(odf_pd["fnlwgt"][0])==399.6936326738268
+    assert approx(odf_pd["hours-per-week"][0])==4.47213595499958 
 
 def test_outlier_categories(spark_session):
     df = read_dataset(spark_session, sample_parquet, "parquet")
