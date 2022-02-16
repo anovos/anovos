@@ -1148,7 +1148,7 @@ def invalidEntries_detection(
                 if sum(match_valid_entries) == 0:
                     check = 1
                     output.append(1)
-                       
+
             if check == 0:
                 output.append(0)
 
