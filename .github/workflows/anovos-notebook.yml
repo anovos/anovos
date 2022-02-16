@@ -50,6 +50,10 @@ jobs:
           JDK_VERSION: ${{ matrix.java }}
         run: |
           ./examples/anovos_notebook/build_image.sh
+
+      - name: Tag image
+        if: startsWith(github.ref, 'refs/tags')
+        run: |
           echo "${{ steps.meta.outputs.tags }}" | xargs -n 1 docker tag anovos-notebook-${{ matrix.spark }}
 
       - name: Log in to Docker Hub
