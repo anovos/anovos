@@ -5,7 +5,7 @@ import copy
 
 def camel_case_split(input):
     """
-    :param input: Input needs to be cleaned (string)
+    :param input: Input (string) which requires cleaning
     :return: Processed Input (string)
     """
     processed_input = ''
@@ -18,8 +18,8 @@ def camel_case_split(input):
 def recommendation_data_prep(df, name_column, desc_column):
     """
     :param df: Input DataFrame
-    :param name_column: Input column name in Input DataFrame (string)
-    :param desc_column: Input column description in Input DataFrame (string)
+    :param name_column: Column name of Input DataFrame attribute/ feature name (string)
+    :param desc_column: Column name of Input DataFrame attribute/ feature description (string)
     :return list_corpus: List of prepared data for Feature Recommender functions
     :return df_prep: Processed DataFrame for Feature Recommender functions
     """
@@ -50,9 +50,13 @@ def recommendation_data_prep(df, name_column, desc_column):
     list_corpus = df_prep_com.to_list()
     return list_corpus, df_prep
 
-
-df_groupby = df_input.groupby(['Feature Name', 'Feature Description']).agg(
-    {'Industry': lambda x: ', '.join(set(x.dropna())), 'Usecase': lambda x: ', '.join(set(x.dropna())),
-     'Source': lambda x: ', '.join(set(x.dropna()))}).reset_index()
-list_train, df_rec = recommendation_data_prep(df_groupby, 'Feature Name', 'Feature Description')
+feature_name_column = str(df_input.columns.tolist()[0])
+feature_desc_column = str(df_input.columns.tolist()[1])
+industry_column = str(df_input.columns.tolist()[2])
+usecase_column = str(df_input.columns.tolist()[3])
+source_column = str(df_input.columns.tolist()[4])
+df_groupby = df_input.groupby([feature_name_column, feature_desc_column]).agg(
+    {industry_column: lambda x: ', '.join(set(x.dropna())), usecase_column: lambda x: ', '.join(set(x.dropna())),
+     source_column: lambda x: ', '.join(set(x.dropna()))}).reset_index()
+list_train, df_rec = recommendation_data_prep(df_groupby, feature_name_column, feature_name_column)
 list_embedding_train = model.encode(list_train, convert_to_tensor=True)
