@@ -64,9 +64,9 @@ jobs:
           verbose: true
 
       - name: Publish distribution 📦 to PyPI
-       uses: pypa/gh-action-pypi-publish@release/v1
-       with:
-         user: ${{ secrets.PYPI_USERNAME }}
-         password: ${{ secrets.PYPI_PASSWORD }}
-         packages_dir: .
-         verbose: true
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: ${{ secrets.PYPI_USERNAME }}
+          password: ${{ secrets.PYPI_PASSWORD }}
+          packages_dir: .
+          verbose: true
