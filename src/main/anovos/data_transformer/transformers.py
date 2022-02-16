@@ -2384,7 +2384,7 @@ def PCA_latentFeatures(
     idf_imputed.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
 
     assembler = VectorAssembler(inputCols=list_of_cols_scaled, outputCol="features")
-    assembled_data = assembler.transform(idf_imputed)
+    assembled_data = assembler.transform(idf_imputed).drop(*list_of_cols_scaled)
 
     if pre_existing_model:
         pca = PCA.load(model_path + "/PCA_latentFeatures/pca_path")
@@ -2417,7 +2417,7 @@ def PCA_latentFeatures(
     odf = (
         pcaModel.transform(assembled_data)
         .withColumn("features_pca_array", f_vector_to_array("features_pca"))
-        .drop("features_pca")
+        .drop(*["features", "features_pca"])
     )
 
     odf_schema = odf.schema
