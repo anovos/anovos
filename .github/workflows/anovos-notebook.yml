@@ -2,6 +2,7 @@ name: Examples & Notebooks Docker Images
 
 on:
   release:
+    types: [published]
   push:
     paths:
       - 'examples/**'

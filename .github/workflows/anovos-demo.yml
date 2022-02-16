@@ -2,6 +2,7 @@ name: Anovos Demo Docker Images
 
 on:
   release:
+    types: [published]
   push:
     paths:
       - 'demo/**'
