@@ -1450,22 +1450,19 @@ def imputation_sklearn(
         idf_rest = idf
     else:
         sample_ratio = min(1.0, float(sample_size) / idf.count())
-        idf = idf.withColumn("id", F.monotonically_increasing_id())
         idf_model = idf.sample(False, sample_ratio, 0)
-        idf_rest = idf.subtract(idf_model)
-        idf_pd = idf_model.select(["id"] + list_of_cols).toPandas()
+        idf_pd = idf_model.select(list_of_cols).toPandas()
 
         if method_type == "KNN":
             imputer = KNNImputer(
                 n_neighbors=5, weights="uniform", metric="nan_euclidean"
             )
-            imputer.fit(idf_pd.drop(columns=["id"]))
         if method_type == "regression":
             imputer = IterativeImputer()
-            imputer.fit(idf_pd.drop(columns=["id"]))
+        imputer.fit(idf_pd)
 
-        if (not pre_existing_model) & (model_path != "NA"):
-            if run_type == "emr":
+        if (pre_existing_model == False) & (model_path != "NA"):
+            if emr_mode:
                 pickle.dump(imputer, open("imputation_sklearn.sav", "wb"))
                 bash_cmd = (
                     "aws s3 cp imputation_sklearn.sav "
@@ -1473,68 +1470,42 @@ def imputation_sklearn(
                     + "/imputation_sklearn.sav"
                 )
                 output = subprocess.check_output(["bash", "-c", bash_cmd])
+                imputer = pickle.load(open("imputation_sklearn.sav", "rb"))
             else:
                 local_path = model_path + "/imputation_sklearn.sav"
                 os.makedirs(os.path.dirname(local_path), exist_ok=True)
                 pickle.dump(imputer, open(local_path, "wb"))
+                imputer = pickle.load(
+                    open(model_path + "/imputation_sklearn.sav", "rb")
+                )
 
-        pred = imputer.transform(idf_pd.drop(columns=["id"]))
-        output = pd.concat([pd.Series(list(pred)), idf_pd], axis=1)
-        output.rename(columns={0: "features"}, inplace=True)
-        output.features = output.features.map(lambda x: [float(e) for e in x])
-        odf_model = spark.createDataFrame(output)
-        for index, i in enumerate(list_of_cols):
-            modify_col = (i + "_imputed") if (output_mode == "append") else i
-            odf_model = odf_model.withColumn(modify_col, F.col("features")[index])
-        odf_model = odf_model.drop("features")
-        for i in odf_model.columns:
-            odf_model = odf_model.withColumn(
-                i, F.when(F.isnan(F.col(i)), None).otherwise(F.col(i))
-            )
+    @F.pandas_udf(returnType=T.ArrayType(T.DoubleType()))
+    def prediction(*cols):
+        X = pd.concat(cols, axis=1)
+        return pd.Series(row.tolist() for row in imputer.transform(X))
 
-    if idf_rest.count() > 0:
+    odf = idf.withColumn("features", prediction(*list_of_cols))
+    odf.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
 
-        @F.pandas_udf(returnType=T.ArrayType(T.DoubleType()))
-        def prediction(*cols):
-            X = pd.concat(cols, axis=1)
-            return pd.Series(row.tolist() for row in imputer.transform(X))
-
-        odf_rest = idf_rest.withColumn("features", prediction(*list_of_cols))
-        for index, i in enumerate(list_of_cols):
-            modify_col = (i + "_imputed") if (output_mode == "append") else i
-            odf_rest = odf_rest.withColumn(modify_col, F.col("features")[index])
-        odf_rest = odf_rest.drop("features")
-
-    if pre_existing_model:
-        odf = odf_rest
-
-    elif idf_rest.count() == 0:
-        odf = (
-            idf.select(["id"] + [e for e in idf.columns if e not in list_of_cols])
-            .join(odf_model, "id", "left_outer")
-            .drop("id")
-        )
-    else:
-        odf = (
-            idf.select(["id"] + [e for e in idf.columns if e not in list_of_cols])
-            .join(
-                odf_model.union(odf_rest.select(odf_model.columns)), "id", "left_outer"
-            )
-            .drop("id")
-        )
-
+    odf_schema = odf.schema
     for i in list_of_cols:
-        if (i not in missing_cols) & (output_mode == "append"):
-            odf = odf.drop(i + "_imputed")
+        odf_schema = odf_schema.add(T.StructField(i + "_imputed", T.FloatType()))
+    odf = (
+        odf.rdd.map(lambda x: (*x, *x["features"]))
+        .toDF(schema=odf_schema)
+        .drop("features")
+    )
 
-    if output_mode == "replace":
-        odf_cols = idf.drop("id").columns
-    else:
-        output_cols = [
-            (i + "_imputed") for i in [e for e in list_of_cols if e in missing_cols]
-        ]
-        odf_cols = idf.drop("id").columns + output_cols
-    odf = odf.select(odf_cols)
+    output_cols = []
+    for i in list_of_cols:
+        if output_mode == "append":
+            if i not in missing_cols:
+                odf = odf.drop(i + "_imputed")
+            else:
+                output_cols.append(i + "_imputed")
+        else:
+            odf = odf.drop(i).withColumnRenamed(i + "_imputed", i)
+    odf = odf.select(idf.columns + output_cols)
 
     if print_impact:
         if output_mode == "replace":
