@@ -1964,7 +1964,7 @@ def auto_imputation(
                 RegressionEvaluator(
                     metricName="rmse", labelCol="val", predictionCol="pred"
                 ).evaluate(idf_joined)
-            ) / pred_mean
+            ) / abs(pred_mean)
             nrmse += i_nrmse
         nrmse_all.append(nrmse)
 
@@ -2273,7 +2273,7 @@ def PCA_latentFeatures(
     explained_variance_cutoff=0.95,
     pre_existing_model=False,
     model_path="NA",
-    standardization=False,
+    standardization=True,
     standardization_configs={"pre_existing_model": False, "model_path": "NA"},
     imputation=False,
     imputation_configs={"imputation_function": "imputation_MMM"},
