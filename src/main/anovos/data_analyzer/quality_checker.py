@@ -941,6 +941,7 @@ def invalidEntries_detection(
     drop_cols=[],
     detection_type="auto",
     invalid_entries=[],
+    valid_entries=[],
     partial_match=False,
     treatment=False,
     treatment_method="null_replacement",
@@ -966,6 +967,8 @@ def invalidEntries_detection(
     :param detection_type: "auto","manual","both"
     :param invalid_entries: List of values or regex patterns to be classified as invalid.
                             Valid only for "auto" or "both" detection type.
+    :param valid_entries: List of values or regex patterns such that a value will be classified as invalid if it
+                          does not match any value or regex pattern in it. Valid only for "auto" or "both" detection type.
     :param partial_match: Boolean argument – True or False. If True, values with substring same as invalid_entries is declared invalid.
     :param treatment: Boolean argument – True or False. If True, invalid values are replaced by Null.
     :param treatment_method: "MMM", "null_replacement", "column_removal" (more methods to be added soon).
@@ -1128,6 +1131,24 @@ def invalidEntries_detection(
                             check = 1
                             output.append(1)
                             break
+
+                match_valid_entries = []
+                for regex in valid_entries:
+                    p = re.compile(regex)
+                    if partial_match:
+                        if re.search(p, e):
+                            match_valid_entries.append(1)
+                        else:
+                            match_valid_entries.append(0)
+                    else:
+                        if p.fullmatch(e):
+                            match_valid_entries.append(1)
+                        else:
+                            match_valid_entries.append(0)
+                if sum(match_valid_entries) == 0:
+                    check = 1
+                    output.append(1)
+                       
             if check == 0:
                 output.append(0)
 
