@@ -1461,8 +1461,8 @@ def imputation_sklearn(
             imputer = IterativeImputer()
         imputer.fit(idf_pd)
 
-        if (pre_existing_model == False) & (model_path != "NA"):
-            if emr_mode:
+        if (not pre_existing_model) & (model_path != "NA"):
+            if run_type == "emr":
                 pickle.dump(imputer, open("imputation_sklearn.sav", "wb"))
                 bash_cmd = (
                     "aws s3 cp imputation_sklearn.sav "
