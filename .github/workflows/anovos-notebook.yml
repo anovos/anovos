@@ -88,4 +88,4 @@ jobs:
           build-args: |
             spark_version=${{ matrix.spark }}
           push: ${{ startsWith(github.ref, 'refs/tags') }}
-          tags: anovos-examples-${{ matrix.spark }}:${{ github.ref_name }}
+          tags: anovos/anovos-examples-${{ matrix.spark }}:${{ github.ref_name }}

@@ -35,4 +35,4 @@ jobs:
           context: .
           file: Dockerfile
           push: ${{ startsWith(github.ref, 'refs/tags') }}
-          tags: anovos-spark-demo:${{ github.ref_name }}
+          tags: anovos/anovos-spark-demo:${{ github.ref_name }}
