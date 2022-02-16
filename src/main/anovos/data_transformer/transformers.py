@@ -1332,7 +1332,7 @@ def imputation_sklearn(
     model_path="NA",
     output_mode="replace",
     stats_missing={},
-    emr_mode=False,
+    run_type="local",
     print_impact=False,
 ):
     """
@@ -1364,7 +1364,7 @@ def imputation_sklearn(
     :param stats_missing: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
                           to read pre-saved statistics on missing count/pct i.e. if measures_of_counts or
                           missingCount_computation (data_analyzer.stats_generator module) has been computed & saved before.
-    :param emr_mode: Boolean argument – True or False. True if it is run on EMR, False otherwise.
+    :param run_type: "local", "emr"
     :param print_impact: True, False
     :return: Imputed Dataframe
     """
@@ -1441,7 +1441,7 @@ def imputation_sklearn(
         raise TypeError("Invalid input for output_mode")
 
     if pre_existing_model:
-        if emr_mode:
+        if run_type == "emr":
             bash_cmd = "aws s3 cp " + model_path + "/imputation_sklearn.sav ."
             output = subprocess.check_output(["bash", "-c", bash_cmd])
             imputer = pickle.load(open("imputation_sklearn.sav", "rb"))
@@ -1465,7 +1465,7 @@ def imputation_sklearn(
             imputer.fit(idf_pd.drop(columns=["id"]))
 
         if (not pre_existing_model) & (model_path != "NA"):
-            if emr_mode:
+            if run_type == "emr":
                 pickle.dump(imputer, open("imputation_sklearn.sav", "wb"))
                 bash_cmd = (
                     "aws s3 cp imputation_sklearn.sav "
@@ -1995,7 +1995,7 @@ def autoencoder_latentFeatures(
     imputation_configs={"imputation_function": "imputation_MMM"},
     stats_missing={},
     output_mode="replace",
-    emr_mode=False,
+    run_type="local",
     print_impact=False,
 ):
     """
@@ -2029,11 +2029,11 @@ def autoencoder_latentFeatures(
     :param stats_missing: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
                           to read pre-saved statistics on missing count/pct i.e. if measures_of_counts or
                           missingCount_computation (data_analyzer.stats_generator module) has been computed & saved before.
-    :param emr_mode: Boolean argument – True or False. True if it is run on EMR, False otherwise.
     :param output_mode: "replace", "append".
                         “replace” option replaces original columns with transformed columns: latent_<col_index>.
                         “append” option append transformed columns with format latent_<col_index> to the input dataset,
                         e.g. latent_0, latent_1 will be appended if reduction_params=2.
+    :param run_type: "local", "emr"
     :param print_impact: True, False
     :return: Dataframe with Latent Features.
     """
@@ -2138,7 +2138,7 @@ def autoencoder_latentFeatures(
         n_bottleneck = int(reduction_params)
 
     if pre_existing_model:
-        if emr_mode:
+        if run_type == "emr":
             bash_cmd = (
                 "aws s3 cp " + model_path + "/autoencoders_latentFeatures/encoder.h5 ."
             )
@@ -2192,7 +2192,7 @@ def autoencoder_latentFeatures(
         )
 
         if (not pre_existing_model) & (model_path != "NA"):
-            if emr_mode:
+            if run_type == "emr":
                 encoder.save("encoder.h5")
                 model.save("model.h5")
                 bash_cmd = (
