@@ -1,15 +1,15 @@
 #!/bin/bash
 
-cp ../config/log4j.properties ${SPARK_HOME}/conf/
+cp ../config/log4j.properties "${SPARK_HOME}/conf/"
 
 
-spark_version="`spark-shell <<< sc.version | grep res0 | cut -f4 -d" "`"
+spark_version="$(spark-shell <<< sc.version | grep res0 | cut -f4 -d" ")"
 echo "Spark version is ${spark_version}"
 spark3_version="3.0.0"
 
 function version_ge() { test "$(echo "$@" | tr " " "\n" | sort -rV | head -n 1)" == "$1"; }
 
-if version_ge $spark_version $spark3_version; then
+if version_ge "${spark_version}" "${spark3_version}"; then
 	avro_package="org.apache.spark:spark-avro_2.12:${spark_version}"
 	histogrammar_jar="histogrammar_2.12-1.0.20.jar"
 	histogrammar_sql_jar="histogrammar-sparksql_2.12-1.0.20.jar"
@@ -37,7 +37,7 @@ spark-submit \
 --conf spark.executor.heartbeatInterval=12000s \
 --conf spark.dynamicAllocation.executorIdleTimeout=12000s \
 --conf spark.port.maxRetries=200 \
---packages ${avro_package} \
+--packages "${avro_package}" \
 --conf spark.yarn.maxAppAttempts=1 \
 --jars ../jars/${histogrammar_jar},../jars/${histogrammar_sql_jar} \
 --py-files anovos.zip \
