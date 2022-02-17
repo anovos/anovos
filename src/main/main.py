@@ -169,6 +169,20 @@ def main(all_configs, run_type):
             print(key, ", execution time (in secs) =", round(end - start, 4))
             continue
 
+        if (key == "timeseries_analyzer") & (args is not None):
+            start = timeit.default_timer()
+            
+            auto_detection = args.get("auto_detection",None)
+            id_col = args.get("id_col",None)
+            
+            if auto_detection:
+                df = ts_preprocess(spark,df, id_col,output_path=report_inputPath,run_type=run_type)
+            else:
+                pass
+            end = timeit.default_timer()
+            print(key, ", execution time (in secs) =", round(end - start, 4))
+            continue
+
         if (
             (key == "anovos_basic_report")
             & (args is not None)
