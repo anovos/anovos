@@ -72,7 +72,7 @@ input_dataset:
 #     output_path: report_stats
 
 timeseries_analyzer:
-  auto_detection: False
+  auto_detection: True
   id_col: 'ifa'
 
 #if anovos_basic_report.basic_report is True, then all configs below are ignored.
