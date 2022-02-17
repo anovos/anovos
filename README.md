@@ -19,7 +19,7 @@ productivity and helps them build more resilient and better performing models.
 # Quick Start
 
 The easiest way to try out _Anovos_ and explore its capabilities is through the provided
-[examples](/examples) that you can run via Docker without the need to install anything on your local machine:
+[examples](/examples) that you can run via Docker without the need to install anything on your local machine. To install Docker in your local machine please refer the following [guide](https://docs.docker.com/desktop/).
 
 ```bash
 # Launch an anovos-examples Docker container
