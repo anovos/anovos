@@ -19,7 +19,13 @@ productivity and helps them build more resilient and better performing models.
 # Quick Start
 
 The easiest way to try out _Anovos_ and explore its capabilities is through the provided
-[examples](/examples) that you can run via Docker without the need to install anything on your local machine. To install Docker in your local machine please refer the following [guide](https://docs.docker.com/desktop/).
+[examples](/examples) that you can run via Docker without the need to install anything on your local machine. To install Docker in your local machine please refer the following [guide](https://docs.docker.com/desktop/). Set docker preferences as follows if resources permit:
+1. CPUs - 6
+2. Memory - 8.0 GB
+3. Swap - 1GB
+4. Disk Image Size - 24 GB
+
+Once the docker is up & running, use following command in your terminal to launch the anovos-examples docker container
 
 ```bash
 # Launch an anovos-examples Docker container
