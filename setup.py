@@ -17,7 +17,7 @@ setup(
         "anovos.data_transformer",
         "anovos.data_ingest",
         "anovos.data_analyzer",
-        "anovos.data_drift",
+        "anovos.drift",
         "anovos.data_report",
     ],
     description="An Open Source tool for Feature Engineering in Machine Learning",
