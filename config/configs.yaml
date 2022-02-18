@@ -198,7 +198,7 @@ drift_detector:
         list_of_cols: [ 'age','education_num' ]
         list_of_dtypes: [ 'float','float' ]
 
-  stabilityIndex_computation:
+  stability_index:
 
     configs:
       metric_weightages:

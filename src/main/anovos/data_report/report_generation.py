@@ -380,7 +380,7 @@ def drift_stability_ind(
         missing_recs_drift: Missing files from the drift tab
         drift_tab: "drift_statistics"
     missing_recs_stability: Missing files from the stability tab
-        stability_tab:"stabilityIndex_computation, stabilityIndex_metrics"
+        stability_tab:"stability_index_computation, stabilityIndex_metrics"
 
     """
 
@@ -392,7 +392,7 @@ def drift_stability_ind(
     if len(missing_recs_stability) == len(stability_tab):
         stability_ind = 0
     elif ("stabilityIndex_metrics" in missing_recs_stability) and (
-        "stabilityIndex_computation" not in missing_recs_stability
+        "stability_index_computation" not in missing_recs_stability
     ):
 
         stability_ind = 0.5
@@ -1977,7 +1977,7 @@ def anovos_report(
         "variable_clustering",
     ]
     drift_tab = ["drift_statistics"]
-    stability_tab = ["stabilityIndex_computation", "stabilityIndex_metrics"]
+    stability_tab = ["stability_index_computation", "stabilityIndex_metrics"]
     avl_SG, avl_QC, avl_AE = [], [], []
 
     stability_interpretation_table = pd.DataFrame(
@@ -2169,7 +2169,7 @@ def anovos_report(
         )
         df_stability["idx"] = df_stability["idx"].astype(str).apply(lambda x: "df" + x)
         n_df_stability = str(df_stability["idx"].nunique())
-        df_si_ = pd.read_csv(ends_with(master_path) + "stabilityIndex_computation.csv")
+        df_si_ = pd.read_csv(ends_with(master_path) + "stability_index_computation.csv")
         df_si = df_si_[
             [
                 "attribute",
@@ -2184,7 +2184,7 @@ def anovos_report(
         total_unstable_attr = list(df_si_.attribute.values)
 
     elif ds_ind[1] == 0.5:
-        df_si_ = pd.read_csv(ends_with(master_path) + "stabilityIndex_computation.csv")
+        df_si_ = pd.read_csv(ends_with(master_path) + "stability_index_computation.csv")
         df_si = df_si_[
             [
                 "attribute",
