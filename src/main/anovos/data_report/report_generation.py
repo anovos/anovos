@@ -2312,9 +2312,13 @@ def ts_stats(base_path):
     return c0,c1,c2,c3,c4,c5,c6
 
 
-def ts_viz_generate(master_path):
+def ts_viz_generate(master_path,print_report=False):
 
-    c0,c1,c2,c3,c4,c5,c6 = ts_stats(master_path)
+    try:
+        c0,c1,c2,c3,c4,c5,c6 = ts_stats(master_path)
+
+    except:
+        return "null_report"
 
     stats_df =  c0.merge(c1,on="attributes",how="left")\
                   .merge(c2,on="attributes",how="left")\
@@ -2347,7 +2351,14 @@ def ts_viz_generate(master_path):
                         dp.Text("#"),label="Time Series Analyzer")
 
 
+    if print_report:
+        dp.Report(default_template[0], default_template[1], report).save(
+            ends_with(master_path) + "time_series_analyzer.html", open=True
+        )
+
     return report
+
+
 
 def anovos_report(
     master_path,
