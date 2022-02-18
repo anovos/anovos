@@ -1,7 +1,8 @@
 # coding=utf-8
-from anovos.shared.utils import pairwise_reduce
+import pyspark.sql.functions as F
 from pyspark.sql import DataFrame
-from pyspark.sql import functions as F
+
+from anovos.shared.utils import pairwise_reduce
 
 
 def read_dataset(spark, file_path, file_type, file_configs={}):
@@ -22,7 +23,7 @@ def read_dataset(spark, file_path, file_type, file_configs={}):
     return odf
 
 
-def write_dataset(idf, file_path, file_type, file_configs={}):
+def write_dataset(idf, file_path, file_type, file_configs={}, column_order=[]):
     """
     :param idf: Input Dataframe
     :param file_path: Path to output data (directory or filename).
@@ -36,24 +37,49 @@ def write_dataset(idf, file_path, file_type, file_configs={}):
                          mode options - error (default), overwrite, append
                          repartition - None (automatic partitioning) or an integer value ()
                          e.g. {"header":"True","delimiter":",",'compression':'snappy','mode':'overwrite','repartition':'10'}.
+    :param column_order: list of columns in the order in which Dataframe is to be written. If None or [] is specified, then the default order is applied.
     :return: None (Dataframe saved)
     """
 
-    mode = file_configs['mode'] if 'mode' in file_configs else 'error'
-    repartition = int(file_configs['repartition']) if 'repartition' in file_configs else None
+    if not column_order:
+        column_order = idf.columns
+    else:
+        if not isinstance(column_order, list):
+            raise TypeError("Invalid input type for column_order argument")
+        if len(column_order) != len(idf.columns):
+            raise ValueError(
+                "Count of column(s) specified in column_order argument do not match Dataframe"
+            )
+        diff_cols = [x for x in column_order if x not in set(idf.columns)]
+        if diff_cols:
+            raise ValueError(
+                "Column(s) specified in column_order argument not found in Dataframe: "
+                + str(diff_cols)
+            )
+
+    mode = file_configs["mode"] if "mode" in file_configs else "error"
+    repartition = (
+        int(file_configs["repartition"]) if "repartition" in file_configs else None
+    )
 
     if repartition is None:
-        idf.write.format(file_type).options(**file_configs).save(file_path, mode=mode)
+        idf.select(column_order).write.format(file_type).options(**file_configs).save(
+            file_path, mode=mode
+        )
     else:
         exist_parts = idf.rdd.getNumPartitions()
         req_parts = int(repartition)
         if req_parts > exist_parts:
-            idf.repartition(req_parts).write.format(file_type).options(**file_configs).save(file_path, mode=mode)
+            idf.select(column_order).repartition(req_parts).write.format(
+                file_type
+            ).options(**file_configs).save(file_path, mode=mode)
         else:
-            idf.coalesce(req_parts).write.format(file_type).options(**file_configs).save(file_path, mode=mode)
+            idf.select(column_order).coalesce(req_parts).write.format(
+                file_type
+            ).options(**file_configs).save(file_path, mode=mode)
 
 
-def concatenate_dataset(*idfs, method_type='name'):
+def concatenate_dataset(*idfs, method_type="name"):
     """
     :param dfs: All dataframes to be concatenated (with the first dataframe columns)
     :param method_type: "index", "name".
@@ -64,10 +90,12 @@ def concatenate_dataset(*idfs, method_type='name'):
                         and will throw error if any column in first dataframe is not available in any of other dataframes.
     :return: Concatenated Dataframe
     """
-    if (method_type not in ['index', 'name']):
-        raise TypeError('Invalid input for concatenate_dataset method')
-    if method_type == 'name':
-        odf = pairwise_reduce(lambda idf1, idf2: idf1.union(idf2.select(idf1.columns)), idfs)
+    if method_type not in ["index", "name"]:
+        raise TypeError("Invalid input for concatenate_dataset method")
+    if method_type == "name":
+        odf = pairwise_reduce(
+            lambda idf1, idf2: idf1.union(idf2.select(idf1.columns)), idfs
+        )
         # odf = reduce(DataFrame.unionByName, idfs) # only if exact no. of columns
     else:
         odf = pairwise_reduce(DataFrame.union, idfs)
@@ -84,8 +112,10 @@ def join_dataset(*idfs, join_cols, join_type):
     :return: Joined Dataframe
     """
     if isinstance(join_cols, str):
-        join_cols = [x.strip() for x in join_cols.split('|')]
-    odf = pairwise_reduce(lambda idf1, idf2: idf1.join(idf2, join_cols, join_type), idfs)
+        join_cols = [x.strip() for x in join_cols.split("|")]
+    odf = pairwise_reduce(
+        lambda idf1, idf2: idf1.join(idf2, join_cols, join_type), idfs
+    )
     return odf
 
 
@@ -98,7 +128,7 @@ def delete_column(idf, list_of_cols, print_impact=False):
     :return: Dataframe after dropping columns
     """
     if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
+        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
     list_of_cols = list(set(list_of_cols))
 
     odf = idf.drop(*list_of_cols)
@@ -120,7 +150,7 @@ def select_column(idf, list_of_cols, print_impact=False):
     :return: Dataframe with the selected columns
     """
     if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
+        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
     list_of_cols = list(set(list_of_cols))
 
     odf = idf.select(list_of_cols)
@@ -147,9 +177,9 @@ def rename_column(idf, list_of_cols, list_of_newcols, print_impact=False):
     :return: Dataframe with revised column names
     """
     if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
+        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
     if isinstance(list_of_newcols, str):
-        list_of_newcols = [x.strip() for x in list_of_newcols.split('|')]
+        list_of_newcols = [x.strip() for x in list_of_newcols.split("|")]
 
     mapping = dict(zip(list_of_cols, list_of_newcols))
     odf = idf.select([F.col(i).alias(mapping.get(i, i)) for i in idf.columns])
@@ -177,9 +207,9 @@ def recast_column(idf, list_of_cols, list_of_dtypes, print_impact=False):
     :return: Dataframe with revised datatypes
     """
     if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split('|')]
+        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
     if isinstance(list_of_dtypes, str):
-        list_of_dtypes = [x.strip() for x in list_of_dtypes.split('|')]
+        list_of_dtypes = [x.strip() for x in list_of_dtypes.split("|")]
 
     odf = idf
     for i, j in zip(list_of_cols, list_of_dtypes):

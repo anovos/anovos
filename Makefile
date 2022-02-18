@@ -1,3 +1,7 @@
+DOCKER_REGISTRY=anovos
+IMAGE_NAME=anovos
+IMAGE_TAG=latest
+
 help:
 	@echo "clean - remove all build, test, coverage and Python artifacts"
 	@echo "clean-pyc - remove Python file artifacts"
@@ -18,7 +22,6 @@ clean-build:
 	rm -rf run_anovos*
 	rm -rf dist/
 	rm -rf ml_anovos_report.html
-	rm -rf ./*.whl
 	rm -rf ./docker-stacks
 
 clean-pyc:
@@ -38,8 +41,23 @@ test:
 	coverage report
 	coverage html
 
+
+test-docker:
+	@if [  docker images -q ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} 2> /dev/null  == ""  ]; then\
+		docker run --rm  $(docker build . -t ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}) make test;\
+	else\
+		docker run --rm  ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} make test;\
+ 	fi
+
+test-if:
+	@if [ "test" = "test" ]; then\
+        echo "Hello world";\
+    else\
+      	echo "hi";\
+    fi
+
+
 build: clean
-	cp ./bin/*.whl ./
 	cp ./demo/Dockerfile* ./
 	cp ./demo/run_anovos* ./
 	rm -rf ./dist && mkdir ./dist && mkdir ./dist/data && mkdir ./dist/output
