@@ -1464,7 +1464,7 @@ def data_drift_stability(
         ),
 
         fig_metric_drift.update_layout(
-            legend=dict(orientation="h", x=0.5, yanchor="top", xanchor="center")
+            legend=dict(orientation="h", x=0.5, yanchor="bottom", xanchor="center")
         )
         fig_metric_drift.layout.plot_bgcolor = global_plot_bg_color
         fig_metric_drift.layout.paper_bgcolor = global_paper_bg_color
@@ -1937,7 +1937,7 @@ def plotSeasonalDecompose(base_path,x_col,y_col,metric_col="median",title="Seaso
         fig.update_xaxes(gridcolor=px.colors.sequential.Greys[1])
         fig.update_yaxes(gridcolor=px.colors.sequential.Greys[1])
         fig.update_layout(autosize=True,width=2000,height = 800)
-        fig.update_layout(legend=dict(orientation="h", x=0.5, yanchor="top", xanchor="center"))
+        fig.update_layout(legend=dict(orientation="h", x=0.5, yanchor="bottom", xanchor="center"))
 
         return fig
 
@@ -2033,7 +2033,7 @@ def gen_time_series_plots(base_path,x_col,y_col,time_cat):
     fig.layout.paper_bgcolor = global_paper_bg_color
     fig.update_xaxes(gridcolor=px.colors.sequential.Greys[1])
     fig.update_yaxes(gridcolor=px.colors.sequential.Greys[1])
-    fig.update_layout(legend=dict(orientation="h", x=0.5, yanchor="top", xanchor="center"))
+    fig.update_layout(legend=dict(orientation="h", x=0.5, yanchor="bottom", xanchor="center"))
 
     return fig
 
@@ -2224,7 +2224,7 @@ def ts_viz_3_1(base_path,x_col,y_col):
         fig.update_xaxes(gridcolor=px.colors.sequential.Greys[1])
         fig.update_yaxes(gridcolor=px.colors.sequential.Greys[1])
         fig.update_layout(autosize=True,width=2000,height = 400)
-        fig.update_layout(legend=dict(orientation="h", x=0.5, yanchor="top", xanchor="center"))
+        fig.update_layout(legend=dict(orientation="h", x=0.5, yanchor="bottom", xanchor="center"))
         
         
         if adf_test[1] < 0.05:
@@ -2326,7 +2326,7 @@ def ts_viz_generate(master_path):
 
     num_cols, cat_cols = c5,c6
 
-    final_ts_cols = list_ts_remove_append(list(ts_stats(master_path)[4].attributes.values),2)
+    final_ts_cols = list(ts_stats(master_path)[4].attributes.values)
 
     report =   dp.Group(dp.Text("# "),\
                         dp.Text("*This section summarizes the information about timestamp features and how they are interactive with other attributes. An exhaustive diagnosis is done by looking at different time series components, how they could be useful in deriving insights for further downstream applications*"),\
