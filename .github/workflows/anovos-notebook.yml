@@ -76,6 +76,7 @@ jobs:
       - notebooks
     runs-on: ubuntu-latest
     environment: DOCKER_HUB_CREDENTIALS
+    if: startsWith(github.ref, 'refs/tags')
     strategy:
       matrix:
         include:
