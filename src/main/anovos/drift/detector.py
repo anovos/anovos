@@ -1,11 +1,11 @@
 # coding=utf-8
 from __future__ import division, print_function
 
-import math
-
 import numpy as np
 import pandas as pd
 import pyspark
+from loguru import logger
+from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
 from scipy.stats import variation
@@ -14,21 +14,26 @@ import sympy as sp
 from anovos.data_ingest.data_ingest import concatenate_dataset
 from anovos.data_transformer.transformers import attribute_binning
 from anovos.shared.utils import attributeType_segregation
+from .distances import hellinger, psi, js_divergence, ks
+from .validations import check_distance_method, check_list_of_columns
 
 
-def drift_statistics(
-    spark,
-    idf_target,
-    idf_source,
-    list_of_cols="all",
-    drop_cols=[],
-    method_type="PSI",
-    bin_method="equal_range",
-    bin_size=10,
-    threshold=0.1,
-    pre_existing_source=False,
-    source_path="NA",
-    print_impact=False,
+@check_distance_method
+@check_list_of_columns
+def statistics(
+    spark: SparkSession,
+    idf_target: DataFrame,
+    idf_source: DataFrame,
+    list_of_cols: list = "all",
+    drop_cols: list = [],
+    method_type: str = "PSI",
+    bin_method: str = "equal_range",
+    bin_size: int = 10,
+    threshold: float = 0.1,
+    pre_existing_source: bool = False,
+    source_path: str = "NA",
+    model_directory: str = "drift_statistics",
+    print_impact: bool = False,
 ):
     """
     :param spark: Spark Session
@@ -58,32 +63,14 @@ def drift_statistics(
                         The drift_statistics folder will have attribute_binning (binning model) & frequency_counts sub-folders.
                         If pre_existing_source is True, this argument is path for referring the drift_statistics folder.
                         Default "NA" for temporarily saving source dataset attribute_binning folder.
+    :param model_directory: If pre_existing_source is False, this arguemnt can be used for saving the drift stats to folder.
+                        The default drift statics directory is drift_statistics folder will have attribute_binning
+                        If pre_existing_source is True, this argument is model_directory for referring the drift statistics dir.
+                        Default "drift_statistics" for temporarily saving source dataset attribute_binning folder.
     :param print_impact: True, False
     :return: Output Dataframe [attribute, *metric, flagged]
              Number of columns will be dependent on method argument. There will be one column for each drift method/metric.
     """
-
-    if list_of_cols == "all":
-        num_cols, cat_cols, other_cols = attributeType_segregation(idf_target)
-        list_of_cols = num_cols + cat_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
-
-    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
-
-    if any(x not in idf_target.columns for x in list_of_cols) | (
-        len(list_of_cols) == 0
-    ):
-        raise TypeError("Invalid input for Column(s)")
-
-    if method_type == "all":
-        method_type = ["PSI", "JSD", "HD", "KS"]
-    if isinstance(method_type, str):
-        method_type = [x.strip() for x in method_type.split("|")]
-    if any(x not in ("PSI", "JSD", "HD", "KS") for x in method_type):
-        raise TypeError("Invalid input for method_type")
 
     num_cols = attributeType_segregation(idf_target.select(list_of_cols))[0]
 
@@ -95,7 +82,7 @@ def drift_statistics(
             method_type=bin_method,
             bin_size=bin_size,
             pre_existing_model=False,
-            model_path=source_path + "/drift_statistics",
+            model_path=source_path + "/" + model_directory,
         )
         source_bin.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
 
@@ -106,42 +93,19 @@ def drift_statistics(
         method_type=bin_method,
         bin_size=bin_size,
         pre_existing_model=True,
-        model_path=source_path + "/drift_statistics",
+        model_path=source_path + "/" + model_directory,
     )
+
     target_bin.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
+    result = {"attribute": [], "flagged": []}
 
-    def hellinger_distance(p, q):
-        hd = math.sqrt(np.sum((np.sqrt(p) - np.sqrt(q)) ** 2) / 2)
-        return hd
-
-    def PSI(p, q):
-        psi = np.sum((p - q) * np.log(p / q))
-        return psi
-
-    def JS_divergence(p, q):
-        def KL_divergence(p, q):
-            kl = np.sum(p * np.log(p / q))
-            return kl
-
-        m = (p + q) / 2
-        pm = KL_divergence(p, m)
-        qm = KL_divergence(q, m)
-        jsd = (pm + qm) / 2
-        return jsd
-
-    def KS_distance(p, q):
-        dstats = np.max(np.abs(np.cumsum(p) - np.cumsum(q)))
-        return dstats
-
-    output = {"attribute": []}
-    output["flagged"] = []
     for method in method_type:
-        output[method] = []
+        result[method] = []
 
     for i in list_of_cols:
         if pre_existing_source:
             x = spark.read.csv(
-                source_path + "/drift_statistics/frequency_counts/" + i,
+                source_path + "/" + model_directory + "/frequency_counts/" + i,
                 header=True,
                 inferSchema=True,
             )
@@ -152,7 +116,7 @@ def drift_statistics(
                 .fillna(-1)
             )
             x.coalesce(1).write.csv(
-                source_path + "/drift_statistics/frequency_counts/" + i,
+                source_path + "/" + model_directory + "/frequency_counts/" + i,
                 header=True,
                 mode="overwrite",
             )
@@ -172,43 +136,44 @@ def drift_statistics(
         p = np.array(xy.select("p").rdd.flatMap(lambda x: x).collect())
         q = np.array(xy.select("q").rdd.flatMap(lambda x: x).collect())
 
-        output["attribute"].append(i)
+        result["attribute"].append(i)
         counter = 0
+
         for idx, method in enumerate(method_type):
             drift_function = {
-                "PSI": PSI,
-                "JSD": JS_divergence,
-                "HD": hellinger_distance,
-                "KS": KS_distance,
+                "PSI": psi,
+                "JSD": js_divergence,
+                "HD": hellinger,
+                "KS": ks,
             }
             metric = float(round(drift_function[method](p, q), 4))
-            output[method].append(metric)
+            result[method].append(metric)
             if counter == 0:
                 if metric > threshold:
-                    output["flagged"].append(1)
+                    result["flagged"].append(1)
                     counter = 1
             if (idx == (len(method_type) - 1)) & (counter == 0):
-                output["flagged"].append(0)
+                result["flagged"].append(0)
 
     odf = (
         spark.createDataFrame(
-            pd.DataFrame.from_dict(output, orient="index").transpose()
+            pd.DataFrame.from_dict(result, orient="index").transpose()
         )
         .select(["attribute"] + method_type + ["flagged"])
         .orderBy(F.desc("flagged"))
     )
 
     if print_impact:
-        print("All Attributes:")
+        logger.info("All Attributes:")
         odf.show(len(list_of_cols))
-        print("Attributes meeting Data Drift threshold:")
+        logger.info("Attributes meeting Data Drift threshold:")
         drift = odf.where(F.col("flagged") == 1)
         drift.show(drift.count())
 
     return odf
 
 
-def stabilityIndex_computation(
+def stability_index_computation(
     spark,
     *idfs,
     list_of_cols="all",
@@ -257,6 +222,7 @@ def stabilityIndex_computation(
 
     if any(x not in num_cols for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError("Invalid input for Column(s)")
+
     if (
         round(
             metric_weightages.get("mean", 0)
@@ -309,7 +275,7 @@ def stabilityIndex_computation(
             appended_metric_path, header=True, mode="overwrite"
         )
 
-    output = []
+    result = []
     for i in list_of_cols:
         i_output = [i]
         for metric in ["mean", "stddev", "kurtosis"]:
@@ -323,7 +289,7 @@ def stabilityIndex_computation(
             )
             metric_cv = round(float(variation([a for a in metric_stats])), 4) or None
             i_output.append(metric_cv)
-        output.append(i_output)
+        result.append(i_output)
 
     schema = T.StructType(
         [
@@ -334,7 +300,7 @@ def stabilityIndex_computation(
         ]
     )
 
-    odf = spark.createDataFrame(output, schema=schema)
+    odf = spark.createDataFrame(result, schema=schema)
 
     def score_cv(cv, thresholds=[0.03, 0.1, 0.2, 0.5]):
         if cv is None:
@@ -376,9 +342,9 @@ def stabilityIndex_computation(
     )
 
     if print_impact:
-        print("All Attributes:")
+        logger.info("All Attributes:")
         odf.show(len(list_of_cols))
-        print("Potential Unstable Attributes:")
+        logger.info("Potential Unstable Attributes:")
         unstable = odf.where(F.col("flagged") == 1)
         unstable.show(unstable.count())
 
@@ -418,8 +384,8 @@ def feature_stability_estimation(
             first_dev = sp.diff(transformation, attr)
             second_dev = sp.diff(transformation, attr, 2)
 
-            est_mean += s**2 * second_dev.subs(attribute_means) / 2
-            est_var += s**2 * (first_dev.subs(attribute_means)) ** 2
+            est_mean += s ** 2 * second_dev.subs(attribute_means) / 2
+            est_var += s ** 2 * (first_dev.subs(attribute_means)) ** 2
 
         transformation = sp.parse_expr(transformation)
         est_mean += transformation.subs(attribute_means)
