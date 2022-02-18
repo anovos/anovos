@@ -2,9 +2,7 @@ import copy
 import subprocess
 import sys
 import timeit
-
 import yaml
-
 from anovos.data_analyzer import association_evaluator
 from anovos.data_analyzer import quality_checker
 from anovos.data_analyzer import stats_generator
@@ -172,12 +170,14 @@ def main(all_configs, run_type):
 
         if (key == "timeseries_analyzer") & (args is not None):
             start = timeit.default_timer()
-            
-            auto_detection = args.get("auto_detection",None)
-            id_col = args.get("id_col",None)
-            
+
+            auto_detection = args.get("auto_detection", None)
+            id_col = args.get("id_col", None)
+
             if auto_detection:
-                df = ts_preprocess(spark,df, id_col,output_path=report_inputPath,run_type=run_type)
+                df = ts_preprocess(
+                    spark, df, id_col, output_path=report_inputPath, run_type=run_type
+                )
             else:
                 pass
             end = timeit.default_timer()
