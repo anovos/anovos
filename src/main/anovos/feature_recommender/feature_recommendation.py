@@ -22,7 +22,7 @@ def feature_recommendation(df, name_column=None, desc_column=None, suggested_ind
         raise TypeError('Invalid input for df')
     if type(top_n) != int or top_n < 0:
         raise TypeError('Invalid input for top_n')
-    if top_n > len(list_train):
+    if top_n > len(list_train_fer):
         raise TypeError('top_n value is too large')
     if type(threshold) != float:
         raise TypeError('Invalid input for building_corpus')
@@ -32,24 +32,24 @@ def feature_recommendation(df, name_column=None, desc_column=None, suggested_ind
 
     if suggested_industry != 'all' and suggested_industry == 'all':
         suggested_industry = process_industry(suggested_industry, semantic)
-        df_rec_fr = df_rec[df_rec.iloc[:,2].str.contains(suggested_industry)]
+        df_rec_fr = df_rec_fer[df_rec_fer.iloc[:, 2].str.contains(suggested_industry)]
         list_keep = list(df_rec_fr.index)
-        list_embedding_train_fr = [list_embedding_train.tolist()[x] for x in list_keep]
+        list_embedding_train_fr = [list_embedding_train_fer.tolist()[x] for x in list_keep]
         df_rec_fr = df_rec_fr.reset_index(drop=True)
     elif suggested_usecase != 'all' and suggested_industry == 'all':
         suggested_usecase = process_usecase(suggested_usecase, semantic)
-        df_rec_fr = df_rec[df_rec.iloc[:,3].str.contains(suggested_usecase)]
+        df_rec_fr = df_rec_fer[df_rec_fer.iloc[:, 3].str.contains(suggested_usecase)]
         list_keep = list(df_rec_fr.index)
-        list_embedding_train_fr = [list_embedding_train.tolist()[x] for x in list_keep]
+        list_embedding_train_fr = [list_embedding_train_fer.tolist()[x] for x in list_keep]
         df_rec_fr = df_rec_fr.reset_index(drop=True)
     elif suggested_usecase != 'all' and suggested_industry != 'all':
         suggested_industry = process_industry(suggested_industry, semantic)
         suggested_usecase = process_usecase(suggested_usecase, semantic)
-        df_rec_fr = df_rec[
-            df_rec.iloc[:,2].str.contains(suggested_industry) & df_rec.iloc[:,3].str.contains(suggested_usecase)]
+        df_rec_fr = df_rec_fer[
+            df_rec_fer.iloc[:, 2].str.contains(suggested_industry) & df_rec_fer.iloc[:, 3].str.contains(suggested_usecase)]
         if len(df_rec_fr) > 0:
             list_keep = list(df_rec_fr.index)
-            list_embedding_train_fr = [list_embedding_train.tolist()[x] for x in list_keep]
+            list_embedding_train_fr = [list_embedding_train_fer.tolist()[x] for x in list_keep]
             df_rec_fr = df_rec_fr.reset_index(drop=True)
         else:
             df_out = pd.DataFrame(
@@ -60,8 +60,8 @@ def feature_recommendation(df, name_column=None, desc_column=None, suggested_ind
             print('Industry/Usecase pair does not exist.')
             return df_out
     else:
-        df_rec_fr = df_rec
-        list_embedding_train_fr = list_embedding_train
+        df_rec_fr = df_rec_fer
+        list_embedding_train_fr = list_embedding_train_fer
 
     if name_column == None:
         df_out = pd.DataFrame(columns=['Input_Attribute_Description', 'Recommended_Feature_Name',
@@ -79,7 +79,7 @@ def feature_recommendation(df, name_column=None, desc_column=None, suggested_ind
                      'Recommended_Feature_Description', 'Feature_Similarity_Score', 'Industry',
                      'Usecase',
                      'Source'])
-    list_embedding_user = model.encode(list_user, convert_to_tensor=True)
+    list_embedding_user = model_fer.encode(list_user, convert_to_tensor=True)
     for i, feature in enumerate(list_user):
         cos_scores = util.pytorch_cos_sim(list_embedding_user, list_embedding_train_fr)[i]
         top_results = np.argpartition(-cos_scores, range(top_n))[0:top_n]
@@ -184,8 +184,8 @@ def find_attr_by_relevance(df, building_corpus, name_column=None, desc_column=No
         df_out = pd.DataFrame(columns=['Input_Feature_Description', 'Recommended_Input_Attribute_Name',
                                        'Recommended_Input_Attribute_Description', 'Input_Attribute_Similarity_Score'])
     list_user, df_user = recommendation_data_prep(df, name_column, desc_column)
-    list_embedding_user = model.encode(list_user, convert_to_tensor=True)
-    list_embedding_building = model.encode(building_corpus, convert_to_tensor=True)
+    list_embedding_user = model_fer.encode(list_user, convert_to_tensor=True)
+    list_embedding_building = model_fer.encode(building_corpus, convert_to_tensor=True)
     for i, feature in enumerate(building_corpus):
         if name_column == None:
             df_append = pd.DataFrame(columns=['Input_Feature_Description',

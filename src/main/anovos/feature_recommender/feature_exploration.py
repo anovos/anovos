@@ -3,17 +3,17 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 from sentence_transformers import util
 
-model = SentenceTransformer('all-mpnet-base-v2')
-input_path = 'https://raw.githubusercontent.com/anovos/anovos/feature_recommender_beta/data/feature_recommender/flatten_fr_db.csv'
-df_input = pd.read_csv(input_path)
-df_input = df_input.rename(columns=lambda x: x.strip().replace(' ','_'))
+model_fer = SentenceTransformer('all-mpnet-base-v2')
+input_path_fer = 'https://raw.githubusercontent.com/anovos/anovos/feature_recommender_beta/data/feature_recommender/flatten_fr_db.csv'
+df_input_fer = pd.read_csv(input_path_fer)
+df_input_fer = df_input_fer.rename(columns=lambda x: x.strip().replace(' ', '_'))
 
 
 def list_all_industry():
     """
     :return: DataFrame of all the supported industries as part of feature exploration/recommendation
     """
-    odf_uni = df_input.iloc[:,2].unique()
+    odf_uni = df_input_fer.iloc[:, 2].unique()
     odf = pd.DataFrame(odf_uni, columns=['Industry'])
     return odf
 
@@ -22,7 +22,7 @@ def list_all_usecase():
     """
     :return: DataFrame of all the supported usecases as part of feature exploration/recommendation
     """
-    odf_uni = df_input.iloc[:,3].unique()
+    odf_uni = df_input_fer.iloc[:, 3].unique()
     odf = pd.DataFrame(odf_uni, columns=['Usecase'])
     return odf
 
@@ -31,7 +31,7 @@ def list_all_pair():
     """
     :return: DataFrame of all the supported Industry/Usecase pairs as part of feature exploration/recommendation
     """
-    odf = df_input.iloc[:,[2,3]].drop_duplicates(keep='last', ignore_index=True)
+    odf = df_input_fer.iloc[:, [2, 3]].drop_duplicates(keep='last', ignore_index=True)
     return odf
 
 
@@ -49,8 +49,8 @@ def process_usecase(usecase, semantic):
     usecase = usecase.replace("[^A-Za-z0-9 ]+", " ")
     all_usecase = list_all_usecase()['Usecase'].to_list()
     if semantic and usecase not in all_usecase:
-        all_usecase_embeddings = model.encode(all_usecase, convert_to_tensor=True)
-        usecase_embeddings = model.encode(usecase, convert_to_tensor=True)
+        all_usecase_embeddings = model_fer.encode(all_usecase, convert_to_tensor=True)
+        usecase_embeddings = model_fer.encode(usecase, convert_to_tensor=True)
         cos_scores = util.pytorch_cos_sim(usecase_embeddings, all_usecase_embeddings)[0]
         first_match_index = int(np.argpartition(-cos_scores, 0)[0])
         processed_usecase = all_usecase[first_match_index]
@@ -74,8 +74,8 @@ def process_industry(industry, semantic):
     industry = industry.replace("[^A-Za-z0-9 ]+", " ")
     all_industry = list_all_industry()['Industry'].to_list()
     if semantic and industry not in all_industry:
-        all_industry_embeddings = model.encode(all_industry, convert_to_tensor=True)
-        industry_embeddings = model.encode(industry, convert_to_tensor=True)
+        all_industry_embeddings = model_fer.encode(all_industry, convert_to_tensor=True)
+        industry_embeddings = model_fer.encode(industry, convert_to_tensor=True)
         cos_scores = util.pytorch_cos_sim(industry_embeddings, all_industry_embeddings)[0]
         first_match_index = int(np.argpartition(-cos_scores, 0)[0])
         processed_industry = all_industry[first_match_index]
@@ -93,7 +93,7 @@ def list_usecase_by_industry(industry, semantic=True):
     :return: DataFrame
     """
     industry = process_industry(industry, semantic)
-    odf = pd.DataFrame(df_input.loc[df_input.iloc[:,2] == industry].iloc[:,3])
+    odf = pd.DataFrame(df_input_fer.loc[df_input_fer.iloc[:, 2] == industry].iloc[:, 3])
     odf = odf.drop_duplicates(keep='last', ignore_index=True)
     return odf
 
@@ -105,7 +105,7 @@ def list_industry_by_usecase(usecase, semantic=True):
     :return: DataFrame
     """
     usecase = process_usecase(usecase, semantic)
-    odf = pd.DataFrame(df_input.loc[df_input.iloc[:,3] == usecase].iloc[:,2])
+    odf = pd.DataFrame(df_input_fer.loc[df_input_fer.iloc[:, 3] == usecase].iloc[:, 2])
     odf = odf.drop_duplicates(keep='last', ignore_index=True)
     return odf
 
@@ -122,7 +122,7 @@ def list_feature_by_industry(industry, num_of_feat=100, semantic=True):
         if num_of_feat != 'all':
             raise TypeError('Invalid input for num_of_feat')
     industry = process_industry(industry, semantic)
-    odf = df_input.loc[df_input.iloc[:,2] == industry].drop_duplicates(keep='last', ignore_index=True)
+    odf = df_input_fer.loc[df_input_fer.iloc[:, 2] == industry].drop_duplicates(keep='last', ignore_index=True)
     if len(odf) > 0:
         industry_column = str(odf.columns.tolist()[0])
         odf['count'] = odf.groupby(industry_column)[industry_column].transform('count')
@@ -147,7 +147,7 @@ def list_feature_by_usecase(usecase, num_of_feat=100, semantic=True):
         if num_of_feat != 'all':
             raise TypeError('Invalid input for num_of_feat')
     usecase = process_usecase(usecase, semantic)
-    odf = df_input.loc[df_input.iloc[:,3] == usecase].drop_duplicates(keep='last', ignore_index=True)
+    odf = df_input_fer.loc[df_input_fer.iloc[:, 3] == usecase].drop_duplicates(keep='last', ignore_index=True)
     if len(odf) > 0:
         usecase_column = str(odf.columns.tolist()[0])
         odf['count'] = odf.groupby(usecase_column)[usecase_column].transform('count')
@@ -175,9 +175,9 @@ def list_feature_by_pair(industry, usecase, num_of_feat=100, semantic=True):
     industry = process_industry(industry, semantic)
     usecase = process_usecase(usecase, semantic)
     if num_of_feat != 'all':
-        odf = df_input.loc[(df_input.iloc[:,2] == industry) & (df_input.iloc[:,3] == usecase)].drop_duplicates(
+        odf = df_input_fer.loc[(df_input_fer.iloc[:, 2] == industry) & (df_input_fer.iloc[:, 3] == usecase)].drop_duplicates(
             keep='last', ignore_index=True).head(num_of_feat)
     else:
-        odf = df_input.loc[(df_input.iloc[:,2] == industry) & (df_input.iloc[:,3] == usecase)].drop_duplicates(
+        odf = df_input_fer.loc[(df_input_fer.iloc[:, 2] == industry) & (df_input_fer.iloc[:, 3] == usecase)].drop_duplicates(
             keep='last', ignore_index=True)
     return odf

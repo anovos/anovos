@@ -50,13 +50,13 @@ def recommendation_data_prep(df, name_column, desc_column):
     list_corpus = df_prep_com.to_list()
     return list_corpus, df_prep
 
-feature_name_column = str(df_input.columns.tolist()[0])
-feature_desc_column = str(df_input.columns.tolist()[1])
-industry_column = str(df_input.columns.tolist()[2])
-usecase_column = str(df_input.columns.tolist()[3])
-source_column = str(df_input.columns.tolist()[4])
-df_groupby = df_input.groupby([feature_name_column, feature_desc_column]).agg(
+feature_name_column = str(df_input_fer.columns.tolist()[0])
+feature_desc_column = str(df_input_fer.columns.tolist()[1])
+industry_column = str(df_input_fer.columns.tolist()[2])
+usecase_column = str(df_input_fer.columns.tolist()[3])
+source_column = str(df_input_fer.columns.tolist()[4])
+df_groupby_fer = df_input_fer.groupby([feature_name_column, feature_desc_column]).agg(
     {industry_column: lambda x: ', '.join(set(x.dropna())), usecase_column: lambda x: ', '.join(set(x.dropna())),
      source_column: lambda x: ', '.join(set(x.dropna()))}).reset_index()
-list_train, df_rec = recommendation_data_prep(df_groupby, feature_name_column, feature_name_column)
-list_embedding_train = model.encode(list_train, convert_to_tensor=True)
+list_train_fer, df_rec_fer = recommendation_data_prep(df_groupby_fer, feature_name_column, feature_name_column)
+list_embedding_train_fer = model_fer.encode(list_train_fer, convert_to_tensor=True)
