@@ -8,7 +8,8 @@ from anovos.shared.utils import attributeType_segregation
 def check_list_of_columns(
     func=None,
     columns="list_of_cols",
-    target="idf_target",
+    target_idx: int = 1,
+    target: str = "idf_target",
     drop="drop_cols",
 ):
     if func is None:
@@ -20,8 +21,10 @@ def check_list_of_columns(
 
         cols, drops = [], []
 
-        if kwargs[columns] == "all" and kwargs[target] is not None:
-            num_cols, cat_cols, other_cols = attributeType_segregation(kwargs[target])
+        idf_target = kwargs.get(target, "") or args[target_idx]
+
+        if kwargs[columns] == "all" and idf_target is not None:
+            num_cols, cat_cols, other_cols = attributeType_segregation(idf_target)
             cols = num_cols + cat_cols
 
         if isinstance(kwargs[columns], str):
@@ -32,7 +35,7 @@ def check_list_of_columns(
 
         cols = list(set([e for e in cols if e not in drops]))
 
-        if (len(cols) == 0) | any(x not in kwargs[target].columns for x in cols):
+        if (len(cols) == 0) | any(x not in idf_target.columns for x in cols):
             raise TypeError("Invalid input for Column(s)")
 
         kwargs[columns] = cols
@@ -44,7 +47,6 @@ def check_list_of_columns(
 
 
 def check_distance_method(func=None, param="method_type"):
-
     if func is None:
         return partial(check_distance_method, argument_name=param)
 
