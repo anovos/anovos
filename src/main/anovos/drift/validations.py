@@ -18,23 +18,25 @@ def check_list_of_columns(
     def validate(*args, **kwargs):
         logger.debug("check the list of columns")
 
-        if args[columns] == "all" and args[target] is not None:
-            num_cols, cat_cols, other_cols = attributeType_segregation(args[target])
+        cols, drops = [], []
+
+        if kwargs[columns] == "all" and kwargs[target] is not None:
+            num_cols, cat_cols, other_cols = attributeType_segregation(kwargs[target])
             cols = num_cols + cat_cols
 
-        if isinstance(args[columns], str):
-            cols = [x.strip() for x in args[columns].split("|")]
+        if isinstance(kwargs[columns], str):
+            cols = [x.strip() for x in kwargs[columns].split("|")]
 
-        if isinstance(args[drop], str):
-            drops = [x.strip() for x in args[drop].split("|")]
+        if isinstance(kwargs[drop], str):
+            drops = [x.strip() for x in kwargs[drop].split("|")]
 
         cols = list(set([e for e in cols if e not in drops]))
 
-        if (len(cols) == 0) | any(x not in args[target].columns for x in cols):
+        if (len(cols) == 0) | any(x not in kwargs[target].columns for x in cols):
             raise TypeError("Invalid input for Column(s)")
 
-        args[columns] = cols
-        args[drop] = drops
+        kwargs[columns] = cols
+        kwargs[drop] = drops
 
         return func(*args, **kwargs)
 
@@ -48,7 +50,7 @@ def check_distance_method(func=None, param="method_type"):
 
     @wraps(func)
     def validate(*args, **kwargs):
-        dist_distance_methods = args[param]
+        dist_distance_methods = kwargs[param]
 
         if isinstance(dist_distance_methods, str):
             if dist_distance_methods == "all":
