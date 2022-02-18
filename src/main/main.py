@@ -421,7 +421,7 @@ def main(all_configs, run_type):
                             df,
                             **value,
                             **extra_args,
-                            master_path=report_inputPath,
+                            master_path=report_input_path,
                             run_type=run_type,
                         )
                         end = timeit.default_timer()
