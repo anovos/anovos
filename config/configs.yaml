@@ -11,14 +11,14 @@ input_dataset:
       header: True
       delimiter: ","
       inferSchema: True
-  # delete_column: ['logfnl','constant']
-  # select_column: null
-  # rename_column:
-  #   list_of_cols: ['marital-status','education-num']
-  #   list_of_newcols: ['marital_status','education_num']
-  # recast_column:
-  #   list_of_cols: ['age','education_num']
-  #   list_of_dtypes: ['float','float']
+  delete_column: ['logfnl','constant']
+  select_column: null
+  rename_column:
+    list_of_cols: ['marital-status','education-num','capital-gain','capital-loss','hours-per-week']
+    list_of_newcols: ['marital_status','education_num','capital_gain','capital_loss','hours_per_week']
+  recast_column:
+    list_of_cols: ['age','education_num']
+    list_of_dtypes: ['float','float']
 
 # concatenate_dataset:
 #   method: name
@@ -63,13 +63,13 @@ input_dataset:
 #     recast_column: null
 
 
-# anovos_basic_report:
-#   basic_report: False
-#   report_args:
-#     id_col: ifa
-#     label_col: income
-#     event_label: '>50K'
-#     output_path: report_stats
+anovos_basic_report:
+  basic_report: False
+  report_args:
+    id_col: ifa
+    label_col: income
+    event_label: '>50K'
+    output_path: report_stats
 
 timeseries_analyzer:
   auto_detection: True
@@ -77,7 +77,8 @@ timeseries_analyzer:
 
 #if anovos_basic_report.basic_report is True, then all configs below are ignored.
 stats_generator:
-  metric: ['global_summary']
+  metric: ['global_summary','measures_of_counts','measures_of_centralTendency','measures_of_cardinality',
+           'measures_of_percentiles','measures_of_dispersion','measures_of_shape']
   metric_args:
     list_of_cols: all
     drop_cols: ['ifa']
@@ -148,15 +149,15 @@ association_evaluator:
     list_of_cols: all
     drop_cols: ['ifa']
   
-  # IV_calculation:
-  #   list_of_cols: all
-  #   drop_cols: ifa
-  #   label_col: income
-  #   event_label: '>50K'
-  #   encoding_configs:
-  #     bin_method: equal_frequency
-  #     bin_size: 10
-  #     monotonicity_check: 0
+  IV_calculation:
+    list_of_cols: all
+    drop_cols: ifa
+    label_col: income
+    event_label: '>50K'
+    encoding_configs:
+      bin_method: equal_frequency
+      bin_size: 10
+      monotonicity_check: 0
 
   IG_calculation:
     list_of_cols: all
@@ -173,126 +174,126 @@ association_evaluator:
     drop_cols: ifa|income
 
 
-# drift_detector:
-#   drift_statistics:
-#     configs:
-#       list_of_cols: all
-#       drop_cols: ['ifa','income']
-#       method_type: all
-#       threshold: 0.1
-#       bin_method: equal_range
-#       bin_size: 10
-#       pre_existing_source: False
-#       source_path: NA
+drift_detector:
+  drift_statistics:
+    configs:
+      list_of_cols: all
+      drop_cols: ['ifa','income']
+      method_type: all
+      threshold: 0.1
+      bin_method: equal_range
+      bin_size: 10
+      pre_existing_source: False
+      source_path: NA
 
-#     source_dataset:
-#       read_dataset:
-#         file_path: "data/income_dataset/source"
-#         file_type: csv
-#         file_configs:
-#           header: True
-#           delimiter: ","
-#           inferSchema: True
-#       delete_column: ['logfnl']
-#       select_column: null
-#       rename_column:
-#         list_of_cols: ['marital-status','education-num']
-#         list_of_newcols: ['marital_status','education_num']
-#       recast_column:
-#         list_of_cols: ['age','education_num']
-#         list_of_dtypes: ['float','float']
+    source_dataset:
+      read_dataset:
+        file_path: "data/income_dataset/source"
+        file_type: csv
+        file_configs:
+          header: True
+          delimiter: ","
+          inferSchema: True
+      delete_column: ['logfnl']
+      select_column: null
+      rename_column:
+        list_of_cols: ['marital-status','education-num']
+        list_of_newcols: ['marital_status','education_num']
+      recast_column:
+        list_of_cols: ['age','education_num']
+        list_of_dtypes: ['float','float']
 
-#   stabilityIndex_computation:
+  stabilityIndex_computation:
 
-#     configs:
-#       metric_weightages:
-#         mean: 0.5
-#         stddev: 0.3
-#         kurtosis: 0.2 
-#       existing_metric_path: ''
-#       appended_metric_path: 'si_metrics'
-#       threshold: 2
+    configs:
+      metric_weightages:
+        mean: 0.5
+        stddev: 0.3
+        kurtosis: 0.2 
+      existing_metric_path: ''
+      appended_metric_path: 'si_metrics'
+      threshold: 2
 
-#     dataset1:
-#       read_dataset:
-#         file_path: "data/income_dataset/stability_index/0"
-#         file_type: csv
-#         file_configs:
-#           header: True
-#           delimiter: ","
-#           inferSchema: True
+    dataset1:
+      read_dataset:
+        file_path: "data/income_dataset/stability_index/0"
+        file_type: csv
+        file_configs:
+          header: True
+          delimiter: ","
+          inferSchema: True
 
-#     dataset2:
-#       read_dataset:
-#         file_path: "data/income_dataset/stability_index/1"
-#         file_type: csv
-#         file_configs:
-#           header: True
-#           delimiter: ","
-#           inferSchema: 
+    dataset2:
+      read_dataset:
+        file_path: "data/income_dataset/stability_index/1"
+        file_type: csv
+        file_configs:
+          header: True
+          delimiter: ","
+          inferSchema: 
 
-#     dataset3:
-#       read_dataset:
-#         file_path: "data/income_dataset/stability_index/2"
-#         file_type: csv
-#         file_configs:
-#           header: True
-#           delimiter: ","
-#           inferSchema: True
+    dataset3:
+      read_dataset:
+        file_path: "data/income_dataset/stability_index/2"
+        file_type: csv
+        file_configs:
+          header: True
+          delimiter: ","
+          inferSchema: True
 
-#     dataset4:
-#       read_dataset:
-#         file_path: "data/income_dataset/stability_index/3"
-#         file_type: csv
-#         file_configs:
-#           header: True
-#           delimiter: ","
-#           inferSchema: True
+    dataset4:
+      read_dataset:
+        file_path: "data/income_dataset/stability_index/3"
+        file_type: csv
+        file_configs:
+          header: True
+          delimiter: ","
+          inferSchema: True
 
-#     dataset5:
-#       read_dataset:
-#         file_path: "data/income_dataset/stability_index/4"
-#         file_type: csv
-#         file_configs:
-#           header: True
-#           delimiter: ","
-#           inferSchema: True
+    dataset5:
+      read_dataset:
+        file_path: "data/income_dataset/stability_index/4"
+        file_type: csv
+        file_configs:
+          header: True
+          delimiter: ","
+          inferSchema: True
 
-#     dataset6:
-#       read_dataset:
-#         file_path: "data/income_dataset/stability_index/5"
-#         file_type: csv
-#         file_configs:
-#           header: True
-#           delimiter: ","
-#           inferSchema: True
+    dataset6:
+      read_dataset:
+        file_path: "data/income_dataset/stability_index/5"
+        file_type: csv
+        file_configs:
+          header: True
+          delimiter: ","
+          inferSchema: True
 
-#     dataset7:
-#       read_dataset:
-#         file_path: "data/income_dataset/stability_index/6"
-#         file_type: csv
-#         file_configs:
-#           header: True
-#           delimiter: ","
-#           inferSchema: True
+    dataset7:
+      read_dataset:
+        file_path: "data/income_dataset/stability_index/6"
+        file_type: csv
+        file_configs:
+          header: True
+          delimiter: ","
+          inferSchema: True
 
-#     dataset8:
-#       read_dataset:
-#         file_path: "data/income_dataset/stability_index/7"
-#         file_type: csv
-#         file_configs:
-#           header: True
-#           delimiter: ","
-#           inferSchema: True
+    dataset8:
+      read_dataset:
+        file_path: "data/income_dataset/stability_index/7"
+        file_type: csv
+        file_configs:
+          header: True
+          delimiter: ","
+          inferSchema: True
 
-#     dataset9:
-#       read_dataset:
-#         file_path: "data/income_dataset/stability_index/8"
-#         file_type: csv
-#         file_configs:
-#           header: True
-#           delimiter: ","
-#           inferSchema: True
+    dataset9:
+      read_dataset:
+        file_path: "data/income_dataset/stability_index/8"
+        file_type: csv
+        file_configs:
+          header: True
+          delimiter: ","
+          inferSchema: True
 
         
 report_preprocessing:
@@ -318,73 +319,73 @@ report_generation:
   metricDict_path: 'data/metric_dictionary.csv'
   final_report_path: 'report_stats'
 
-# transformers:
-#   numerical_mathops:
-#     feature_transformation:
-#       list_of_cols: all
-#       drop_cols: []
-#       method_type: sqrt
+transformers:
+  numerical_mathops:
+    feature_transformation:
+      list_of_cols: all
+      drop_cols: []
+      method_type: sqrt
 
-#     boxcox_transformation:
-#       list_of_cols: age|education_num
-#       drop_cols: []
+    boxcox_transformation:
+      list_of_cols: age|education_num
+      drop_cols: []
 
-#   numerical_binning:
-#     attribute_binning:
-#       list_of_cols: all
-#       drop_cols: []
-#       method_type: equal_frequency
-#       bin_size: 10
-#       bin_dtype: numerical
+  numerical_binning:
+    attribute_binning:
+      list_of_cols: all
+      drop_cols: []
+      method_type: equal_frequency
+      bin_size: 10
+      bin_dtype: numerical
 
-#   numerical_expression:
-#     expression_parser:
-#       list_of_expr: 'log(age) + 1.5|sin(capital-gain)+cos(capital-loss)'
+  numerical_expression:
+    expression_parser:
+      list_of_expr: 'log(age) + 1.5|sin(capital-gain)+cos(capital-loss)'
 
-#   categorical_outliers:
-#     outlier_categories:
-#       list_of_cols: all
-#       drop_cols: ['ifa','income']
-#       coverage: 0.9
-#       max_category: 20
+  categorical_outliers:
+    outlier_categories:
+      list_of_cols: all
+      drop_cols: ['ifa','income']
+      coverage: 0.9
+      max_category: 20
 
-#   categorical_encoding:
-#     # cat_to_num_unsupervised:
-#     #   list_of_cols: 'all'
-#     #   drop_cols: ['ifa']
-#     #   method_type: 0
+  categorical_encoding:
+    # cat_to_num_unsupervised:
+    #   list_of_cols: 'all'
+    #   drop_cols: ['ifa']
+    #   method_type: 0
 
-#     cat_to_num_supervised:
-#       list_of_cols: all
-#       drop_cols: ['ifa']
-#       label_col: income
-#       event_label: '>50K'
+    cat_to_num_supervised:
+      list_of_cols: all
+      drop_cols: ['ifa']
+      label_col: income
+      event_label: '>50K'
 
-#   numerical_rescaling:
-#     # normalization:
-#     #   list_of_cols: all
+  numerical_rescaling:
+    # normalization:
+    #   list_of_cols: all
 
-#     # z_standardization:
-#     #   list_of_cols: all
+    # z_standardization:
+    #   list_of_cols: all
 
-#     IQR_standardization:
-#       list_of_cols: all
+    IQR_standardization:
+      list_of_cols: all
 
    
-#   numerical_latentFeatures:
-#     PCA_latentFeatures:
-#       list_of_cols: all
-#       explained_variance_cutoff: 0.95
-#       standardization: False
-#       imputation: True
+  numerical_latentFeatures:
+    PCA_latentFeatures:
+      list_of_cols: all
+      explained_variance_cutoff: 0.95
+      standardization: False
+      imputation: True
 
 
-#     # autoencoder_latentFeatures:
-#     #   list_of_cols: all
-#     #   reduction_params: 0.5
-#     #   sample_size: 10000 
-#     #   epochs: 20
-#     #   batch_size: 256
+    # autoencoder_latentFeatures:
+    #   list_of_cols: all
+    #   reduction_params: 0.5
+    #   sample_size: 10000 
+    #   epochs: 20
+    #   batch_size: 256
 
 
 write_intermediate:
