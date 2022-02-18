@@ -802,13 +802,8 @@ def ts_preprocess(spark, idf, id_col, output_path, run_type="local"):
 
     idf = idf.distinct()
 
-    for i in ts_loop_cols_post:
-        for j in [num_cols, cat_cols]:
-            for k in j:
-                if k in i or k in id_col:
-                    j.remove(k)
-            else:
-                pass
+    num_cols = [x for x in num_cols if x not in [id_col] + ts_loop_cols_post]
+    cat_cols = [x for x in cat_cols if x not in [id_col] + ts_loop_cols_post]
 
     for i in ts_loop_cols_post:
         for j in [num_cols, cat_cols]:
