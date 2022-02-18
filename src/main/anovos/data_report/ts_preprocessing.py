@@ -53,7 +53,7 @@ f_daypart_cat = F.udf(daypart_cat, T.StringType())
 
 ###regex based ts parser function
 
-def regex_date_time_parser(spark,idf,id_col,col,save_output=None,precision="s", tz="local",output_mode="append"):
+def regex_date_time_parser(spark,idf,id_col,col,save_output=None,precision="s", tz="local",output_mode="replace"):
     
     
     REGEX_PARTS = {
@@ -242,7 +242,7 @@ def regex_date_time_parser(spark,idf,id_col,col,save_output=None,precision="s", 
 
     if idf.select(col).dtypes[0][1] == "timestamp" or idf.select(col).dtypes[0][1] == "date":
         
-        return idf.withColumn(col+"_ts",F.col(col))
+        return idf
         
     elif idf.select(col).dtypes[0][1] in ["long","bigint"]:
         
@@ -373,7 +373,7 @@ def regex_date_time_parser(spark,idf,id_col,col,save_output=None,precision="s", 
             return idf
 
     if output_mode == "replace":
-        output_df = idf.join(output_df,col,"left_outer").drop(col).withColumnRenamed(col + "_ts",col).orderBy(id_col,col+"_ts")
+        output_df = idf.join(output_df,col,"left_outer").drop(col).withColumnRenamed(col + "_ts",col).orderBy(id_col,col)
     elif output_mode == "append":
         output_df = idf.join(output_df,col,"left_outer").orderBy(id_col,col+"_ts")
     else:
@@ -390,23 +390,23 @@ def ts_processed_feats(spark,idf,col,id_col):
 
     if idf.count() == idf.select(id_col).distinct().count():
 
-        odf = timeUnits_extraction(regex_date_time_parser(spark,idf,id_col,col),col+"_ts", "all", output_mode="append")\
-                                    .withColumn("yyyymmdd_col",F.to_date(col + "_ts"))\
+        odf = timeUnits_extraction(regex_date_time_parser(spark,idf,id_col,col),col, "all", output_mode="append")\
+                                    .withColumn("yyyymmdd_col",F.to_date(col))\
                                     .orderBy("yyyymmdd_col")\
-                                    .withColumn("daypart_cat",f_daypart_cat(F.col(col + "_ts_hour")))\
-                                    .withColumn("week_cat",F.when(F.col(col + "_ts_dayofweek")>5,F.lit("weekend")).otherwise("weekday"))\
-                                    .withColumnRenamed(col + "_ts_dayofweek","dow")
+                                    .withColumn("daypart_cat",f_daypart_cat(F.col(col + "_hour")))\
+                                    .withColumn("week_cat",F.when(F.col(col + "_dayofweek")>5,F.lit("weekend")).otherwise("weekday"))\
+                                    .withColumnRenamed(col + "_dayofweek","dow")
 
         return odf
 
     else:
         
-        odf = timeUnits_extraction(regex_date_time_parser(spark,idf,id_col,col),col+"_ts", "all", output_mode="append")\
-                                    .withColumn("yyyymmdd_col",F.to_date(col + "_ts"))\
+        odf = timeUnits_extraction(regex_date_time_parser(spark,idf,id_col,col),col, "all", output_mode="append")\
+                                    .withColumn("yyyymmdd_col",F.to_date(col))\
                                     .orderBy(id_col,"yyyymmdd_col")\
-                                    .withColumn("daypart_cat",f_daypart_cat(F.col(col + "_ts_hour")))\
-                                    .withColumn("week_cat",F.when(F.col(col + "_ts_dayofweek")>5,F.lit("weekend")).otherwise("weekday"))\
-                                    .withColumnRenamed(col + "_ts_dayofweek","dow")
+                                    .withColumn("daypart_cat",f_daypart_cat(F.col(col + "_hour")))\
+                                    .withColumn("week_cat",F.when(F.col(col + "_dayofweek")>5,F.lit("weekend")).otherwise("weekday"))\
+                                    .withColumnRenamed(col + "_dayofweek","dow")
         
         return odf
 
@@ -433,7 +433,8 @@ def ts_eligiblity_check(spark,idf,col,id_col,opt=1):
     else:
 
         odf = ts_processed_feats(spark,idf,col,id_col)
-        mode = odf.groupBy("yyyymmdd_col").count().orderBy("count",ascending=False).collect()[0][0]
+        m = odf.groupBy("yyyymmdd_col").count().orderBy("count",ascending=False).collect()
+        mode = str(m[0][0]) + " [" + str(m[0][1]) + "]"
         missing_vals = odf.where(F.col('yyyymmdd_col').isNull()).count()
         odf = odf.groupBy().agg(F.countDistinct("yyyymmdd_col").alias("count_unique_dates"),F.min("yyyymmdd_col").alias("min_date"),F.max("yyyymmdd_col").alias("max_date")).withColumn("modal_date",F.lit(mode))\
                  .withColumn("date_diff",F.datediff("max_date","min_date"))\
@@ -551,7 +552,7 @@ def ts_preprocess(spark, idf, id_col,output_path,run_type="local"):
 
     for i in ts_loop_cols:
         try:
-            idf = regex_date_time_parser(spark,idf,id_col,i,save_output=None,precision="ms", tz="local",output_mode="append")
+            idf = regex_date_time_parser(spark,idf,id_col,i,save_output=None,precision="ms", tz="local",output_mode="replace")
             idf.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
         except:
             pass
