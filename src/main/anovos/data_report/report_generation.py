@@ -16,7 +16,7 @@ import pandas as pd
 import numpy as np
 from plotly.subplots import make_subplots
 import datapane as dp
-from statsmodels.tsa.stattools import adfuller,kpss
+from statsmodels.tsa.stattools import adfuller, kpss
 from sklearn.preprocessing import PowerTransformer
 from anovos.shared.utils import ends_with
 
@@ -1896,135 +1896,317 @@ def data_drift_stability(
     return report
 
 
-
-def plotSeasonalDecompose(base_path,x_col,y_col,metric_col="median",title="Seasonal Decomposition"):
+def plotSeasonalDecompose(
+    base_path, x_col, y_col, metric_col="median", title="Seasonal Decomposition"
+):
 
     df = pd.read_csv(ends_with(base_path) + x_col + "_" + y_col + "_daily.csv").dropna()
-    
-    df[x_col] = pd.to_datetime(df[x_col], format='%Y-%m-%d %H:%M:%S.%f')
+
+    df[x_col] = pd.to_datetime(df[x_col], format="%Y-%m-%d %H:%M:%S.%f")
     df = df.set_index(x_col)
-    
+
     if len([x for x in df.columns if "min" in x]) == 0:
-        
-#         result = seasonal_decompose(df[metric_col],model="additive")
+
+        #         result = seasonal_decompose(df[metric_col],model="additive")
         pass
-        
+
     else:
 
-        result = seasonal_decompose(df[metric_col],model="additive",period=12)
+        result = seasonal_decompose(df[metric_col], model="additive", period=12)
 
-        fig = make_subplots(rows=2, cols=2,subplot_titles=["Observed", "Trend", "Seasonal", "Residuals"])
-#         fig = go.Figure()
+        fig = make_subplots(
+            rows=2,
+            cols=2,
+            subplot_titles=["Observed", "Trend", "Seasonal", "Residuals"],
+        )
+        #         fig = go.Figure()
 
-        fig.add_trace(go.Scatter(x=df.index, y=result.observed, name ="Observed", mode='lines+markers',line=dict(color=global_theme[0])),row=1, col=1)
+        fig.add_trace(
+            go.Scatter(
+                x=df.index,
+                y=result.observed,
+                name="Observed",
+                mode="lines+markers",
+                line=dict(color=global_theme[0]),
+            ),
+            row=1,
+            col=1,
+        )
 
-        fig.add_trace(go.Scatter(x=df.index, y=result.trend, name ="Trend", mode='lines+markers',line=dict(color=global_theme[2])),row=1, col=2)
+        fig.add_trace(
+            go.Scatter(
+                x=df.index,
+                y=result.trend,
+                name="Trend",
+                mode="lines+markers",
+                line=dict(color=global_theme[2]),
+            ),
+            row=1,
+            col=2,
+        )
 
-        fig.add_trace(go.Scatter(x=df.index, y=result.seasonal, name ="Seasonal", mode='lines+markers',line=dict(color=global_theme[4])),row=2, col=1)
+        fig.add_trace(
+            go.Scatter(
+                x=df.index,
+                y=result.seasonal,
+                name="Seasonal",
+                mode="lines+markers",
+                line=dict(color=global_theme[4]),
+            ),
+            row=2,
+            col=1,
+        )
 
-        fig.add_trace(go.Scatter(x=df.index, y=result.resid, name ="Residuals", mode='lines+markers',line=dict(color=global_theme[6])),row=2, col=2)
+        fig.add_trace(
+            go.Scatter(
+                x=df.index,
+                y=result.resid,
+                name="Residuals",
+                mode="lines+markers",
+                line=dict(color=global_theme[6]),
+            ),
+            row=2,
+            col=2,
+        )
 
-#         fig.add_trace(go.Scatter(x=df.index, y=result.observed, name ="Observed", mode='lines+markers',line=dict(color=global_theme[0])))
+        #         fig.add_trace(go.Scatter(x=df.index, y=result.observed, name ="Observed", mode='lines+markers',line=dict(color=global_theme[0])))
 
-#         fig.add_trace(go.Scatter(x=df.index, y=result.trend, name ="Trend", mode='lines+markers',line=dict(color=global_theme[2])))
+        #         fig.add_trace(go.Scatter(x=df.index, y=result.trend, name ="Trend", mode='lines+markers',line=dict(color=global_theme[2])))
 
-#         fig.add_trace(go.Scatter(x=df.index, y=result.seasonal, name ="Seasonal", mode='lines+markers',line=dict(color=global_theme[4])))
+        #         fig.add_trace(go.Scatter(x=df.index, y=result.seasonal, name ="Seasonal", mode='lines+markers',line=dict(color=global_theme[4])))
 
-#         fig.add_trace(go.Scatter(x=df.index, y=result.resid, name ="Residuals", mode='lines+markers',line=dict(color=global_theme[6])))
+        #         fig.add_trace(go.Scatter(x=df.index, y=result.resid, name ="Residuals", mode='lines+markers',line=dict(color=global_theme[6])))
 
         fig.layout.plot_bgcolor = global_plot_bg_color
         fig.layout.paper_bgcolor = global_paper_bg_color
         fig.update_xaxes(gridcolor=px.colors.sequential.Greys[1])
         fig.update_yaxes(gridcolor=px.colors.sequential.Greys[1])
-        fig.update_layout(autosize=True,width=2000,height = 800)
-        fig.update_layout(legend=dict(orientation="h", x=0.5, yanchor="bottom", xanchor="center"))
+        fig.update_layout(autosize=True, width=2000, height=800)
+        fig.update_layout(
+            legend=dict(orientation="h", x=0.5, yanchor="bottom", xanchor="center")
+        )
 
         return fig
 
 
-def gen_time_series_plots(base_path,x_col,y_col,time_cat):    
-    
-    df = pd.read_csv(ends_with(base_path) + x_col + "_" + y_col + "_" + time_cat + ".csv").dropna()
+def gen_time_series_plots(base_path, x_col, y_col, time_cat):
 
-    
+    df = pd.read_csv(
+        ends_with(base_path) + x_col + "_" + y_col + "_" + time_cat + ".csv"
+    ).dropna()
+
     if len([x for x in df.columns if "min" in x]) == 0:
-        
+
         if time_cat == "daily":
-            
+
             # x_col = x_col + "_ts"
-            
-            fig = px.line(df, x=x_col, y='count', color=y_col,color_discrete_sequence=global_theme)
-            
-            fig.update_layout(xaxis=dict(rangeselector=dict(
-                        buttons=list([dict(count=1,label="1m",step="month",stepmode="backward"),\
-                                      dict(count=3,label="3m",step="month",stepmode="backward"),\
-                                      dict(count=6,label="6m",step="month",stepmode="backward"),\
-                                      dict(count=1,label="YTD",step="year",stepmode="todate"),\
-                                      dict(count=1,label="1y",step="year",stepmode="backward"),\
-                                      dict(step="all")])),\
-                                         rangeslider=dict(visible=True),\
-                                      type="date"))
-            
+
+            fig = px.line(
+                df,
+                x=x_col,
+                y="count",
+                color=y_col,
+                color_discrete_sequence=global_theme,
+            )
+
+            fig.update_layout(
+                xaxis=dict(
+                    rangeselector=dict(
+                        buttons=list(
+                            [
+                                dict(
+                                    count=1,
+                                    label="1m",
+                                    step="month",
+                                    stepmode="backward",
+                                ),
+                                dict(
+                                    count=3,
+                                    label="3m",
+                                    step="month",
+                                    stepmode="backward",
+                                ),
+                                dict(
+                                    count=6,
+                                    label="6m",
+                                    step="month",
+                                    stepmode="backward",
+                                ),
+                                dict(
+                                    count=1, label="YTD", step="year", stepmode="todate"
+                                ),
+                                dict(
+                                    count=1,
+                                    label="1y",
+                                    step="year",
+                                    stepmode="backward",
+                                ),
+                                dict(step="all"),
+                            ]
+                        )
+                    ),
+                    rangeslider=dict(visible=True),
+                    type="date",
+                )
+            )
+
         elif time_cat == "weekly":
 
-            fig = px.bar(df,x='dow', y='count',color=y_col,color_discrete_sequence=global_theme)
-#             fig.update_layout(barmode='stack')
-
+            fig = px.bar(
+                df,
+                x="dow",
+                y="count",
+                color=y_col,
+                color_discrete_sequence=global_theme,
+            )
+        #             fig.update_layout(barmode='stack')
 
         elif time_cat == "hourly":
 
-            fig = px.bar(df,x='daypart_cat', y='count',color=y_col,color_discrete_sequence=global_theme)
-#             fig.update_layout(barmode='stack')
-        
+            fig = px.bar(
+                df,
+                x="daypart_cat",
+                y="count",
+                color=y_col,
+                color_discrete_sequence=global_theme,
+            )
+        #             fig.update_layout(barmode='stack')
+
         else:
             pass
 
-        
     else:
 
         if time_cat == "daily":
 
             # x_col = x_col + "_ts"
-            f1 = go.Scatter(x=list(df[x_col]), y=list(df['min']),name="Min",line=dict(color=global_theme[6]))
-            f2 = go.Scatter(x=list(df[x_col]), y=list(df['max']),name = "Max",line=dict(color=global_theme[4]))
-            f3 = go.Scatter(x=list(df[x_col]), y=list(df['mean']),name = "Mean",line=dict(color=global_theme[2]))
-            f4 = go.Scatter(x=list(df[x_col]), y=list(df['median']),name = "Median",line=dict(color=global_theme[0]))
+            f1 = go.Scatter(
+                x=list(df[x_col]),
+                y=list(df["min"]),
+                name="Min",
+                line=dict(color=global_theme[6]),
+            )
+            f2 = go.Scatter(
+                x=list(df[x_col]),
+                y=list(df["max"]),
+                name="Max",
+                line=dict(color=global_theme[4]),
+            )
+            f3 = go.Scatter(
+                x=list(df[x_col]),
+                y=list(df["mean"]),
+                name="Mean",
+                line=dict(color=global_theme[2]),
+            )
+            f4 = go.Scatter(
+                x=list(df[x_col]),
+                y=list(df["median"]),
+                name="Median",
+                line=dict(color=global_theme[0]),
+            )
 
+            fig = go.Figure(data=[f1, f2, f3, f4])
 
-            fig = go.Figure(data=[f1,f2,f3,f4])
-
-            fig.update_layout(xaxis=dict(rangeselector=dict(
-                        buttons=list([dict(count=1,label="1m",step="month",stepmode="backward"),\
-                                      dict(count=3,label="3m",step="month",stepmode="backward"),\
-                                      dict(count=6,label="6m",step="month",stepmode="backward"),\
-                                      dict(count=1,label="YTD",step="year",stepmode="todate"),\
-                                      dict(count=1,label="1y",step="year",stepmode="backward"),\
-                                      dict(step="all")])),\
-                                         rangeslider=dict(visible=True),\
-                                      type="date"))
+            fig.update_layout(
+                xaxis=dict(
+                    rangeselector=dict(
+                        buttons=list(
+                            [
+                                dict(
+                                    count=1,
+                                    label="1m",
+                                    step="month",
+                                    stepmode="backward",
+                                ),
+                                dict(
+                                    count=3,
+                                    label="3m",
+                                    step="month",
+                                    stepmode="backward",
+                                ),
+                                dict(
+                                    count=6,
+                                    label="6m",
+                                    step="month",
+                                    stepmode="backward",
+                                ),
+                                dict(
+                                    count=1, label="YTD", step="year", stepmode="todate"
+                                ),
+                                dict(
+                                    count=1,
+                                    label="1y",
+                                    step="year",
+                                    stepmode="backward",
+                                ),
+                                dict(step="all"),
+                            ]
+                        )
+                    ),
+                    rangeslider=dict(visible=True),
+                    type="date",
+                )
+            )
 
         elif time_cat == "weekly":
 
-            f1 = go.Bar(x=list(df['dow']), y=list(df['min']),marker_color=global_theme[6],name="Min")
-            f2 = go.Bar(x=list(df['dow']), y=list(df['max']),marker_color=global_theme[4],name = "Max")
-            f3 = go.Bar(x=list(df['dow']), y=list(df['mean']),marker_color=global_theme[2],name = "Mean")
-            f4 = go.Bar(x=list(df['dow']), y=list(df['median']),marker_color=global_theme[0],name = "Median")
+            f1 = go.Bar(
+                x=list(df["dow"]),
+                y=list(df["min"]),
+                marker_color=global_theme[6],
+                name="Min",
+            )
+            f2 = go.Bar(
+                x=list(df["dow"]),
+                y=list(df["max"]),
+                marker_color=global_theme[4],
+                name="Max",
+            )
+            f3 = go.Bar(
+                x=list(df["dow"]),
+                y=list(df["mean"]),
+                marker_color=global_theme[2],
+                name="Mean",
+            )
+            f4 = go.Bar(
+                x=list(df["dow"]),
+                y=list(df["median"]),
+                marker_color=global_theme[0],
+                name="Median",
+            )
 
-
-            fig = go.Figure(data=[f1,f2,f3,f4])
-            fig.update_layout(barmode='group')
-
+            fig = go.Figure(data=[f1, f2, f3, f4])
+            fig.update_layout(barmode="group")
 
         elif time_cat == "hourly":
 
-            f1 = go.Bar(x=list(df['daypart_cat']), y=list(df['min']),marker_color=global_theme[6],name="Min")
-            f2 = go.Bar(x=list(df['daypart_cat']), y=list(df['max']),marker_color=global_theme[4],name = "Max")
-            f3 = go.Bar(x=list(df['daypart_cat']), y=list(df['mean']),marker_color=global_theme[2],name = "Mean")
-            f4 = go.Bar(x=list(df['daypart_cat']), y=list(df['median']),marker_color=global_theme[0],name = "Median")
+            f1 = go.Bar(
+                x=list(df["daypart_cat"]),
+                y=list(df["min"]),
+                marker_color=global_theme[6],
+                name="Min",
+            )
+            f2 = go.Bar(
+                x=list(df["daypart_cat"]),
+                y=list(df["max"]),
+                marker_color=global_theme[4],
+                name="Max",
+            )
+            f3 = go.Bar(
+                x=list(df["daypart_cat"]),
+                y=list(df["mean"]),
+                marker_color=global_theme[2],
+                name="Mean",
+            )
+            f4 = go.Bar(
+                x=list(df["daypart_cat"]),
+                y=list(df["median"]),
+                marker_color=global_theme[0],
+                name="Median",
+            )
 
-
-            fig = go.Figure(data=[f1,f2,f3,f4])
-            fig.update_layout(barmode='group')
+            fig = go.Figure(data=[f1, f2, f3, f4])
+            fig.update_layout(barmode="group")
 
         else:
             pass
@@ -2033,14 +2215,15 @@ def gen_time_series_plots(base_path,x_col,y_col,time_cat):
     fig.layout.paper_bgcolor = global_paper_bg_color
     fig.update_xaxes(gridcolor=px.colors.sequential.Greys[1])
     fig.update_yaxes(gridcolor=px.colors.sequential.Greys[1])
-    fig.update_layout(legend=dict(orientation="h", x=0.5, yanchor="bottom", xanchor="center"))
+    fig.update_layout(
+        legend=dict(orientation="h", x=0.5, yanchor="bottom", xanchor="center")
+    )
 
     return fig
 
 
-
-def list_ts_remove_append(l,opt):
-    ll=[]
+def list_ts_remove_append(l, opt):
+    ll = []
     if opt == 1:
         for i in l:
             if i[-3:] == "_ts":
@@ -2053,7 +2236,7 @@ def list_ts_remove_append(l,opt):
             if i[-3:] == "_ts":
                 ll.append(i)
             else:
-                ll.append(i+"_ts")
+                ll.append(i + "_ts")
         return ll
 
 
@@ -2064,292 +2247,450 @@ blank_chart.layout.paper_bgcolor = global_paper_bg_color
 blank_chart.update_xaxes(visible=False)
 blank_chart.update_yaxes(visible=False)
 
-def ts_viz_1_1(base_path,x_col,y_col):
+
+def ts_viz_1_1(base_path, x_col, y_col):
 
     ts_fig = []
-    
-    for x in ["daily","hourly","weekly"]:
-        
-        ts_fig.append(dp.Plot(gen_time_series_plots(base_path,x_col,y_col,x),label=x.title()))
 
-    return dp.Select(blocks=ts_fig,type=dp.SelectType.TABS)
+    for x in ["daily", "hourly", "weekly"]:
 
-def ts_viz_1_2(base_path,ts_col,col_list):
-        
+        ts_fig.append(
+            dp.Plot(gen_time_series_plots(base_path, x_col, y_col, x), label=x.title())
+        )
+
+    return dp.Select(blocks=ts_fig, type=dp.SelectType.TABS)
+
+
+def ts_viz_1_2(base_path, ts_col, col_list):
+
     bl = []
-    
+
     for i in col_list:
         print(i)
-        if len(col_list)>1:
-            bl.append(dp.Group(ts_viz_1_1(base_path,ts_col,i),label=i))
+        if len(col_list) > 1:
+            bl.append(dp.Group(ts_viz_1_1(base_path, ts_col, i), label=i))
         else:
-            bl.append(dp.Group(ts_viz_1_1(base_path,ts_col,i),label=i))
+            bl.append(dp.Group(ts_viz_1_1(base_path, ts_col, i), label=i))
             bl.append(dp.Plot(blank_chart, label="_"))
-        
-    return dp.Select(blocks=bl,type=dp.SelectType.DROPDOWN)
+
+    return dp.Select(blocks=bl, type=dp.SelectType.DROPDOWN)
 
 
-def ts_viz_1_3(base_path,ts_col,num_cols,cat_cols):
+def ts_viz_1_3(base_path, ts_col, num_cols, cat_cols):
     ts_v = []
     for i in ts_col:
-        if len(ts_col)>1:
-            ts_v.append(dp.Group(dp.Select(blocks=[dp.Group(ts_viz_1_2(base_path,i,num_cols),label="Numerical"),\
-                    dp.Group(ts_viz_1_2(base_path,i,cat_cols),label="Categorical")],type=dp.SelectType.TABS),label=i))
+        if len(ts_col) > 1:
+            ts_v.append(
+                dp.Group(
+                    dp.Select(
+                        blocks=[
+                            dp.Group(
+                                ts_viz_1_2(base_path, i, num_cols), label="Numerical"
+                            ),
+                            dp.Group(
+                                ts_viz_1_2(base_path, i, cat_cols), label="Categorical"
+                            ),
+                        ],
+                        type=dp.SelectType.TABS,
+                    ),
+                    label=i,
+                )
+            )
         else:
-            ts_v.append(dp.Group(dp.Select(blocks=[dp.Group(ts_viz_1_2(base_path,i,num_cols),label="Numerical"),\
-                    dp.Group(ts_viz_1_2(base_path,i,cat_cols),label="Categorical")],type=dp.SelectType.TABS),label=i))
+            ts_v.append(
+                dp.Group(
+                    dp.Select(
+                        blocks=[
+                            dp.Group(
+                                ts_viz_1_2(base_path, i, num_cols), label="Numerical"
+                            ),
+                            dp.Group(
+                                ts_viz_1_2(base_path, i, cat_cols), label="Categorical"
+                            ),
+                        ],
+                        type=dp.SelectType.TABS,
+                    ),
+                    label=i,
+                )
+            )
             ts_v.append(dp.Plot(blank_chart, label="_"))
 
-    return dp.Select(blocks=ts_v,type=dp.SelectType.DROPDOWN)
+    return dp.Select(blocks=ts_v, type=dp.SelectType.DROPDOWN)
 
 
-def ts_viz_2_1(base_path,x_col,y_col):
+def ts_viz_2_1(base_path, x_col, y_col):
 
     ts_fig = []
-    
-    for i in ["mean","median","min","max"]:
-    
-        ts_fig.append(dp.Plot(plotSeasonalDecompose(base_path,x_col,y_col,metric_col= i),label=i.title()))
-    
-    return dp.Select(blocks=ts_fig,type=dp.SelectType.TABS)
+
+    for i in ["mean", "median", "min", "max"]:
+
+        ts_fig.append(
+            dp.Plot(
+                plotSeasonalDecompose(base_path, x_col, y_col, metric_col=i),
+                label=i.title(),
+            )
+        )
+
+    return dp.Select(blocks=ts_fig, type=dp.SelectType.TABS)
 
 
-def ts_viz_2_2(base_path,ts_col,col_list):
-        
+def ts_viz_2_2(base_path, ts_col, col_list):
+
     bl = []
 
     for i in col_list:
-        if len(col_list)>1:
-            bl.append(dp.Group(ts_viz_2_1(base_path,ts_col,i),label=i))
+        if len(col_list) > 1:
+            bl.append(dp.Group(ts_viz_2_1(base_path, ts_col, i), label=i))
         else:
-            bl.append(dp.Group(ts_viz_2_1(base_path,ts_col,i),label=i))
-            bl.append(dp.Group(dp.Plot(blank_chart, label=" "),label=" "))
-            
-    return dp.Select(blocks=bl,type=dp.SelectType.DROPDOWN)
+            bl.append(dp.Group(ts_viz_2_1(base_path, ts_col, i), label=i))
+            bl.append(dp.Group(dp.Plot(blank_chart, label=" "), label=" "))
 
-            
-def ts_viz_2_3(base_path,ts_col,num_cols):
-    
+    return dp.Select(blocks=bl, type=dp.SelectType.DROPDOWN)
+
+
+def ts_viz_2_3(base_path, ts_col, num_cols):
+
     ts_v = []
-    
+
     for i in ts_col:
-        if len(ts_col)>1:
-            ts_v.append(dp.Group(ts_viz_2_2(base_path,i,num_cols),label=i))
+        if len(ts_col) > 1:
+            ts_v.append(dp.Group(ts_viz_2_2(base_path, i, num_cols), label=i))
         else:
-            ts_v.append(dp.Group(ts_viz_2_2(base_path,i,num_cols),label=i))
+            ts_v.append(dp.Group(ts_viz_2_2(base_path, i, num_cols), label=i))
             ts_v.append(dp.Plot(blank_chart, label="_"))
 
-    return dp.Select(blocks=ts_v,type=dp.SelectType.DROPDOWN)
+    return dp.Select(blocks=ts_v, type=dp.SelectType.DROPDOWN)
 
 
-def ts_landscape(base_path,ts_cols):
-    
+def ts_landscape(base_path, ts_cols):
+
     if ts_cols is None:
-        
+
         return dp.Text("#")
     else:
         df_stats_ts = []
         for i in ts_cols:
-            if len(ts_cols)>1:
-                df_stats_ts.append(dp.Group(
-                           dp.Group(
-                               dp.Text("#   "),
-                               dp.Text("#### Consistency Analysis Of Dates"),
-                               dp.DataTable(pd.read_csv(ends_with(base_path) + "stats_" + i + "_1.csv").set_index('attribute').T,label=i),rows=3),
-                           dp.Group(
-                               dp.Text("*The Percentile distribution across different bins of ID-Date / Date-ID combination should be in a considerable range to determine the regularity of Time series. In an ideal scenario the proportion of dates within each ID should be same. Also, the count of IDs across unique dates should be consistent for a balanced distribution*"),\
-                               dp.Text("#   "),
-                               dp.Text("#### Vital Statistics"),
-                               dp.DataTable(pd.read_csv(ends_with(base_path) + "stats_" + i + "_2.csv").T.rename(columns={0: ''}),label=i),rows=4),
-                           label=i,
-                           rows=2))
+            if len(ts_cols) > 1:
+                df_stats_ts.append(
+                    dp.Group(
+                        dp.Group(
+                            dp.Text("#   "),
+                            dp.Text("#### Consistency Analysis Of Dates"),
+                            dp.DataTable(
+                                pd.read_csv(
+                                    ends_with(base_path) + "stats_" + i + "_1.csv"
+                                )
+                                .set_index("attribute")
+                                .T,
+                                label=i,
+                            ),
+                            rows=3,
+                        ),
+                        dp.Group(
+                            dp.Text(
+                                "*The Percentile distribution across different bins of ID-Date / Date-ID combination should be in a considerable range to determine the regularity of Time series. In an ideal scenario the proportion of dates within each ID should be same. Also, the count of IDs across unique dates should be consistent for a balanced distribution*"
+                            ),
+                            dp.Text("#   "),
+                            dp.Text("#### Vital Statistics"),
+                            dp.DataTable(
+                                pd.read_csv(
+                                    ends_with(base_path) + "stats_" + i + "_2.csv"
+                                ).T.rename(columns={0: ""}),
+                                label=i,
+                            ),
+                            rows=4,
+                        ),
+                        label=i,
+                        rows=2,
+                    )
+                )
 
             else:
-                df_stats_ts.append(dp.Group(
-                           dp.Group(
-                               dp.Text("#   "),
-                               dp.Text("#### Consistency Analysis Of Dates"),
-                               dp.DataTable(pd.read_csv(ends_with(base_path) + "stats_" + i + "_1.csv").set_index('attribute').T,label=i),rows=3),
-                           dp.Group(
-                               dp.Text("#   "),
-                               dp.Text("#### Vital Statistics"),
-                               dp.DataTable(pd.read_csv(ends_with(base_path) + "stats_" + i + "_2.csv").T.rename(columns={0: ''}),label=i),rows=3),
-                           label=i,
-                           rows=2))
+                df_stats_ts.append(
+                    dp.Group(
+                        dp.Group(
+                            dp.Text("#   "),
+                            dp.Text("#### Consistency Analysis Of Dates"),
+                            dp.DataTable(
+                                pd.read_csv(
+                                    ends_with(base_path) + "stats_" + i + "_1.csv"
+                                )
+                                .set_index("attribute")
+                                .T,
+                                label=i,
+                            ),
+                            rows=3,
+                        ),
+                        dp.Group(
+                            dp.Text("#   "),
+                            dp.Text("#### Vital Statistics"),
+                            dp.DataTable(
+                                pd.read_csv(
+                                    ends_with(base_path) + "stats_" + i + "_2.csv"
+                                ).T.rename(columns={0: ""}),
+                                label=i,
+                            ),
+                            rows=3,
+                        ),
+                        label=i,
+                        rows=2,
+                    )
+                )
                 df_stats_ts.append(dp.Plot(blank_chart, label="_"))
-                
-        return dp.Group(dp.Text("### Time Stamp Data Diagnosis"),dp.Select(blocks=df_stats_ts,type=dp.SelectType.DROPDOWN),rows=2)
+
+        return dp.Group(
+            dp.Text("### Time Stamp Data Diagnosis"),
+            dp.Select(blocks=df_stats_ts, type=dp.SelectType.DROPDOWN),
+            rows=2,
+        )
+
 
 def lambda_cat(val):
-    
-    if val<-1:
+
+    if val < -1:
         return "Reciprocal Square Transform"
-    elif val>=-1 and val<-0.5:
+    elif val >= -1 and val < -0.5:
         return "Reciprocal Transform"
-    elif (val >=-0.5 and val <0):
+    elif val >= -0.5 and val < 0:
         return "Receiprocal Square Root Transform"
-    elif (val >=0 and val<0.5):
+    elif val >= 0 and val < 0.5:
         return "Log Transform"
-    elif (val >=0.5 and val<1):
+    elif val >= 0.5 and val < 1:
         return "Square Root Transform"
-    elif val>=1 and val<2:
+    elif val >= 1 and val < 2:
         return "No Transform"
-    elif val>=2:
+    elif val >= 2:
         return "Square Transform"
 
-def ts_viz_3_1(base_path,x_col,y_col):
-    
+
+def ts_viz_3_1(base_path, x_col, y_col):
+
     ts_fig = []
-    
+
     df = pd.read_csv(ends_with(base_path) + x_col + "_" + y_col + "_daily.csv").dropna()
-    df[x_col] = pd.to_datetime(df[x_col], format='%Y-%m-%d %H:%M:%S.%f')
+    df[x_col] = pd.to_datetime(df[x_col], format="%Y-%m-%d %H:%M:%S.%f")
     df = df.set_index(x_col)
-    
-    for metric_col in ["mean","median","min","max"]:
 
-        adf_test  = round(adfuller(df[metric_col])[0],3),round(adfuller(df[metric_col])[1],3)
-        kpss_test = round(kpss(df[metric_col],regression="ct")[0],3),round(kpss(df[metric_col],regression="ct")[1],3)
-#         df[metric_col] = df[metric_col].apply(lambda x: boxcox1p(x,0.25))
-#         lambda_box_cox = round(boxcox(df[metric_col])[1],5)
-        fit = PowerTransformer(method='yeo-johnson')
-        lambda_box_cox = round(fit.fit(np.array(df[metric_col]).reshape(-1, 1)).lambdas_[0],3)
-#         df[metric_col+"_transformed"] = boxcox(df[metric_col],lmbda=lambda_box_cox)
-        df[metric_col+"_transformed"] = fit.transform(np.array(df[metric_col]).reshape(-1, 1))
+    for metric_col in ["mean", "median", "min", "max"]:
 
-        fig = make_subplots(rows=1, cols=2,subplot_titles=["Pre-Transformation", "Post-Transformation"])
-        fig.add_trace(go.Scatter(x=df.index, y=df[metric_col],mode='lines+markers',name=metric_col,line=dict(color=global_theme[1])),row=1, col=1)
-        fig.add_trace(go.Scatter(x=df.index, y=df[metric_col+"_transformed"],mode='lines+markers',name=metric_col+"_transformed",line=dict(color=global_theme[7])),row=1, col=2)
+        adf_test = round(adfuller(df[metric_col])[0], 3), round(
+            adfuller(df[metric_col])[1], 3
+        )
+        kpss_test = round(kpss(df[metric_col], regression="ct")[0], 3), round(
+            kpss(df[metric_col], regression="ct")[1], 3
+        )
+        #         df[metric_col] = df[metric_col].apply(lambda x: boxcox1p(x,0.25))
+        #         lambda_box_cox = round(boxcox(df[metric_col])[1],5)
+        fit = PowerTransformer(method="yeo-johnson")
+        lambda_box_cox = round(
+            fit.fit(np.array(df[metric_col]).reshape(-1, 1)).lambdas_[0], 3
+        )
+        #         df[metric_col+"_transformed"] = boxcox(df[metric_col],lmbda=lambda_box_cox)
+        df[metric_col + "_transformed"] = fit.transform(
+            np.array(df[metric_col]).reshape(-1, 1)
+        )
+
+        fig = make_subplots(
+            rows=1, cols=2, subplot_titles=["Pre-Transformation", "Post-Transformation"]
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=df.index,
+                y=df[metric_col],
+                mode="lines+markers",
+                name=metric_col,
+                line=dict(color=global_theme[1]),
+            ),
+            row=1,
+            col=1,
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=df.index,
+                y=df[metric_col + "_transformed"],
+                mode="lines+markers",
+                name=metric_col + "_transformed",
+                line=dict(color=global_theme[7]),
+            ),
+            row=1,
+            col=2,
+        )
         fig.layout.plot_bgcolor = global_plot_bg_color
         fig.layout.paper_bgcolor = global_paper_bg_color
         fig.update_xaxes(gridcolor=px.colors.sequential.Greys[1])
         fig.update_yaxes(gridcolor=px.colors.sequential.Greys[1])
-        fig.update_layout(autosize=True,width=2000,height = 400)
-        fig.update_layout(legend=dict(orientation="h", x=0.5, yanchor="bottom", xanchor="center"))
-        
-        
+        fig.update_layout(autosize=True, width=2000, height=400)
+        fig.update_layout(
+            legend=dict(orientation="h", x=0.5, yanchor="bottom", xanchor="center")
+        )
+
         if adf_test[1] < 0.05:
             adf_flag = True
         else:
             adf_flag = False
 
-
         if kpss_test[1] < 0.05:
             kpss_flag = True
         else:
-            kpss_flag = False    
+            kpss_flag = False
 
-        ts_fig.append(dp.Group(\
-                      dp.Group(dp.BigNumber(heading="ADF Test Statistic",value=adf_test[0],change=adf_test[1],is_upward_change=adf_flag),\
-                               dp.BigNumber(heading="KPSS Test Statistic",value=kpss_test[0],change=kpss_test[1],is_upward_change=kpss_flag),\
-                               dp.BigNumber(heading="Box-Cox Transformation", value = lambda_box_cox,change=str(lambda_cat(lambda_box_cox)),is_upward_change=True),columns=3),\
-                      dp.Text("#### Transformation View"),\
-                      dp.Text("Below Transformation is basis the inferencing from the Box Cox Transformation. The Lambda value of " + str(lambda_box_cox) + " indicates a " + str(lambda_cat(lambda_box_cox)) + ". A Pre-Post Transformation Visualization is done for better clarity. "),\
-                      dp.Plot(fig),\
-                      dp.Text("**Guidelines :** "),\
-                      dp.Text("**ADF** : *The more negative the statistic, the more likely we are to reject the null hypothesis. If the p-value is less than the significance level of 0.05, we can reject the null hypothesis and take that the series is stationary*"),\
-                      dp.Text("**KPSS** : *If the p-value is high, we cannot reject the null hypothesis. So the series is stationary.*"),label=metric_col.title()))
-        
-    
-    return dp.Select(blocks=ts_fig,type=dp.SelectType.TABS)
+        ts_fig.append(
+            dp.Group(
+                dp.Group(
+                    dp.BigNumber(
+                        heading="ADF Test Statistic",
+                        value=adf_test[0],
+                        change=adf_test[1],
+                        is_upward_change=adf_flag,
+                    ),
+                    dp.BigNumber(
+                        heading="KPSS Test Statistic",
+                        value=kpss_test[0],
+                        change=kpss_test[1],
+                        is_upward_change=kpss_flag,
+                    ),
+                    dp.BigNumber(
+                        heading="Box-Cox Transformation",
+                        value=lambda_box_cox,
+                        change=str(lambda_cat(lambda_box_cox)),
+                        is_upward_change=True,
+                    ),
+                    columns=3,
+                ),
+                dp.Text("#### Transformation View"),
+                dp.Text(
+                    "Below Transformation is basis the inferencing from the Box Cox Transformation. The Lambda value of "
+                    + str(lambda_box_cox)
+                    + " indicates a "
+                    + str(lambda_cat(lambda_box_cox))
+                    + ". A Pre-Post Transformation Visualization is done for better clarity. "
+                ),
+                dp.Plot(fig),
+                dp.Text("**Guidelines :** "),
+                dp.Text(
+                    "**ADF** : *The more negative the statistic, the more likely we are to reject the null hypothesis. If the p-value is less than the significance level of 0.05, we can reject the null hypothesis and take that the series is stationary*"
+                ),
+                dp.Text(
+                    "**KPSS** : *If the p-value is high, we cannot reject the null hypothesis. So the series is stationary.*"
+                ),
+                label=metric_col.title(),
+            )
+        )
+
+    return dp.Select(blocks=ts_fig, type=dp.SelectType.TABS)
 
 
-def ts_viz_3_2(base_path,ts_col,col_list):
-    
+def ts_viz_3_2(base_path, ts_col, col_list):
+
     bl = []
 
     for i in col_list:
         print(i)
-        if len(num_cols)>1:
-            bl.append(dp.Group(ts_viz_3_1(base_path,ts_col,i),label=i))
+        if len(num_cols) > 1:
+            bl.append(dp.Group(ts_viz_3_1(base_path, ts_col, i), label=i))
         else:
-            bl.append(dp.Group(ts_viz_3_1(base_path,ts_col,i),label=i))
-            bl.append(dp.Group(dp.Plot(blank_chart, label=" "),label=" "))
+            bl.append(dp.Group(ts_viz_3_1(base_path, ts_col, i), label=i))
+            bl.append(dp.Group(dp.Plot(blank_chart, label=" "), label=" "))
 
-    return dp.Select(blocks=bl,type=dp.SelectType.DROPDOWN)
+    return dp.Select(blocks=bl, type=dp.SelectType.DROPDOWN)
 
-            
-def ts_viz_3_3(base_path,ts_col,num_cols):
-    
+
+def ts_viz_3_3(base_path, ts_col, num_cols):
+
     ts_v = []
     tt = ts_col
     for i in tt:
         print(i)
-        if len(tt)>1:
-            ts_v.append(dp.Group(ts_viz_3_2(base_path,i,num_cols),label=i))
+        if len(tt) > 1:
+            ts_v.append(dp.Group(ts_viz_3_2(base_path, i, num_cols), label=i))
         else:
-            ts_v.append(dp.Group(ts_viz_3_2(base_path,i,num_cols),label=i))
+            ts_v.append(dp.Group(ts_viz_3_2(base_path, i, num_cols), label=i))
             ts_v.append(dp.Plot(blank_chart, label="_"))
 
-    return dp.Select(blocks=ts_v,type=dp.SelectType.DROPDOWN)
+    return dp.Select(blocks=ts_v, type=dp.SelectType.DROPDOWN)
 
 
 def ts_stats(base_path):
-    
+
     df = pd.read_csv(base_path + "ts_cols_stats.csv")
-    
+
     all_stats = []
-    for i in range(0,7):
+    for i in range(0, 7):
         try:
-            all_stats.append(df[df.index.values==i].values[0][0].split(","))
+            all_stats.append(df[df.index.values == i].values[0][0].split(","))
         except:
             all_stats.append([])
 
-    c0  = pd.DataFrame(all_stats[0],columns=["attributes"])
-    c1 = pd.DataFrame(list_ts_remove_append(all_stats[1],1),columns=["attributes"])
+    c0 = pd.DataFrame(all_stats[0], columns=["attributes"])
+    c1 = pd.DataFrame(list_ts_remove_append(all_stats[1], 1), columns=["attributes"])
     c1["Analyzed Attributes"] = "✔"
-    c2 = pd.DataFrame(list_ts_remove_append(all_stats[2],1),columns=["attributes"])
+    c2 = pd.DataFrame(list_ts_remove_append(all_stats[2], 1), columns=["attributes"])
     c2["Attributes Identified"] = "✔"
-    c3 = pd.DataFrame(list_ts_remove_append(all_stats[3],1),columns=["attributes"])
+    c3 = pd.DataFrame(list_ts_remove_append(all_stats[3], 1), columns=["attributes"])
     c3["Attributes Pre-Existed"] = "✔"
-    c4 = pd.DataFrame(list_ts_remove_append(all_stats[4],1),columns=["attributes"])
+    c4 = pd.DataFrame(list_ts_remove_append(all_stats[4], 1), columns=["attributes"])
     c4["Overall TimeStamp Attributes"] = "✔"
 
-    c5 = list_ts_remove_append(all_stats[5],1)
-    c6 = list_ts_remove_append(all_stats[6],1)
-    print(c5,c6)
+    c5 = list_ts_remove_append(all_stats[5], 1)
+    c6 = list_ts_remove_append(all_stats[6], 1)
+    print(c5, c6)
+
+    return c0, c1, c2, c3, c4, c5, c6
 
 
-    return c0,c1,c2,c3,c4,c5,c6
-
-
-def ts_viz_generate(master_path,print_report=False):
+def ts_viz_generate(master_path, print_report=False):
 
     try:
-        c0,c1,c2,c3,c4,c5,c6 = ts_stats(master_path)
+        c0, c1, c2, c3, c4, c5, c6 = ts_stats(master_path)
 
     except:
         return "null_report"
 
-    stats_df =  c0.merge(c1,on="attributes",how="left")\
-                  .merge(c2,on="attributes",how="left")\
-                  .merge(c3,on="attributes",how="left")\
-                  .merge(c4,on="attributes",how="left").fillna("✘")
+    stats_df = (
+        c0.merge(c1, on="attributes", how="left")
+        .merge(c2, on="attributes", how="left")
+        .merge(c3, on="attributes", how="left")
+        .merge(c4, on="attributes", how="left")
+        .fillna("✘")
+    )
 
     global num_cols
     global cat_cols
 
-    num_cols, cat_cols = c5,c6
+    num_cols, cat_cols = c5, c6
 
     final_ts_cols = list(ts_stats(master_path)[4].attributes.values)
 
-    report =   dp.Group(dp.Text("# "),\
-                        dp.Text("*This section summarizes the information about timestamp features and how they are interactive with other attributes. An exhaustive diagnosis is done by looking at different time series components, how they could be useful in deriving insights for further downstream applications*"),\
-                        dp.Text("# "),\
-                        dp.Text("# "),\
-                        dp.Text("### Basic Landscaping"),\
-                        dp.Text("Out of **" + str(len(list(ts_stats(master_path)[1].attributes.values))) + "** potential attributes in the data, the module could locate **" + str(len(final_ts_cols)) + "** attributes as Timestamp"),\
-                        dp.DataTable(stats_df),\
-                        ts_landscape(master_path,final_ts_cols),\
-                        dp.Text("*Lower the **CoV** (Coefficient Of Variation), Higher the Consistency between the consecutive dates. Similarly the Mean & Variance should be consistent over time*"),\
-                        dp.Text("### Visualization across the Shortlisted Timestamp Attributes"),\
-                        ts_viz_1_3(master_path,final_ts_cols,num_cols,cat_cols),
-                        dp.Text("### Decomposed View"),\
-                        ts_viz_2_3(master_path,final_ts_cols,num_cols),\
-                        dp.Text("### Stationarity & Transformations"),\
-                        ts_viz_3_3(master_path,final_ts_cols,num_cols),\
-                        dp.Text("#"),\
-                        dp.Text("#"),label="Time Series Analyzer")
-
+    report = dp.Group(
+        dp.Text("# "),
+        dp.Text(
+            "*This section summarizes the information about timestamp features and how they are interactive with other attributes. An exhaustive diagnosis is done by looking at different time series components, how they could be useful in deriving insights for further downstream applications*"
+        ),
+        dp.Text("# "),
+        dp.Text("# "),
+        dp.Text("### Basic Landscaping"),
+        dp.Text(
+            "Out of **"
+            + str(len(list(ts_stats(master_path)[1].attributes.values)))
+            + "** potential attributes in the data, the module could locate **"
+            + str(len(final_ts_cols))
+            + "** attributes as Timestamp"
+        ),
+        dp.DataTable(stats_df),
+        ts_landscape(master_path, final_ts_cols),
+        dp.Text(
+            "*Lower the **CoV** (Coefficient Of Variation), Higher the Consistency between the consecutive dates. Similarly the Mean & Variance should be consistent over time*"
+        ),
+        dp.Text("### Visualization across the Shortlisted Timestamp Attributes"),
+        ts_viz_1_3(master_path, final_ts_cols, num_cols, cat_cols),
+        dp.Text("### Decomposed View"),
+        ts_viz_2_3(master_path, final_ts_cols, num_cols),
+        dp.Text("### Stationarity & Transformations"),
+        ts_viz_3_3(master_path, final_ts_cols, num_cols),
+        dp.Text("#"),
+        dp.Text("#"),
+        label="Time Series Analyzer",
+    )
 
     if print_report:
         dp.Report(default_template[0], default_template[1], report).save(
@@ -2357,7 +2698,6 @@ def ts_viz_generate(master_path,print_report=False):
         )
 
     return report
-
 
 
 def anovos_report(
@@ -2384,7 +2724,6 @@ def anovos_report(
     :param run_type: local or emr or databricks option. Default is kept as local
     :param final_report_path: Path where the report will be saved.
     """
-
 
     if run_type == "emr":
         bash_cmd = (
@@ -2539,7 +2878,7 @@ def anovos_report(
         numcols_name = ""
 
     all_files = os.listdir(master_path)
-    
+
     eventDist_charts = [x for x in all_files if "eventDist" in x]
     stats_files = [x for x in all_files if ".csv" in x]
     freq_charts = [x for x in all_files if "freqDist" in x]
@@ -2700,12 +3039,11 @@ def anovos_report(
         master_path, ds_ind, id_col, drift_threshold_model, all_drift_charts_
     )
 
+    tab7 = ts_viz_generate(ends_with(master_path))
 
-    tab7  = ts_viz_generate(ends_with(master_path))
-    
     final_tabs_list = []
 
-    for i in [tab1, tab2, tab3, tab4, tab5, tab6,tab7]:
+    for i in [tab1, tab2, tab3, tab4, tab5, tab6, tab7]:
 
         if i == "null_report":
             pass
