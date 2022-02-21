@@ -92,10 +92,10 @@ def test_imputation_sklearn(spark_session):
     assert odf.where(F.col("age").isNull()).count() == 0
     assert odf.where(F.col("fnlwgt").isNull()).count() == 0
     assert odf.where(F.col("hours-per-week").isNull()).count() == 0
-    assert odf.where(F.col("logfnl").isNull()).count() != 0
-    assert odf.where(F.col("education").isNull()).count() != 0
-    assert odf.where(F.col("race").isNull()).count() != 0
-    assert odf.where(F.col("relationship").isNull()).count() != 0
+    assert odf.where(F.col("logfnl").isNull()).count() == 10214
+    assert odf.where(F.col("education").isNull()).count() == 258
+    assert odf.where(F.col("race").isNull()).count() == 162
+    assert odf.where(F.col("relationship").isNull()).count() == 4
 
     try:
         odf = imputation_sklearn(spark_session, df, list_of_cols=["education-num"], method_type="KNN", pre_existing_model=True, model_path= "unit_testing/models/")
@@ -103,9 +103,9 @@ def test_imputation_sklearn(spark_session):
         assert str(error)=="list index out of range" 
 
     odf = imputation_sklearn(spark_session, df, list_of_cols=[], method_type="KNN")
-    assert odf.where(F.col("age").isNull()).count() != 0
-    assert odf.where(F.col("fnlwgt").isNull()).count() != 0
-    assert odf.where(F.col("hours-per-week").isNull()).count() != 0   
+    assert odf.where(F.col("age").isNull()).count() == 30
+    assert odf.where(F.col("fnlwgt").isNull()).count() == 8
+    assert odf.where(F.col("hours-per-week").isNull()).count() == 59   
 
     odf = imputation_sklearn(spark_session, df, list_of_cols=["age","fnlwgt","hours-per-week"], method_type="regression", output_mode="append")
     assert len(odf.columns) == 20
@@ -118,15 +118,15 @@ def test_imputation_matrixFactorization(spark_session):
     assert odf.where(F.col("age").isNull()).count() == 0
     assert odf.where(F.col("fnlwgt").isNull()).count() == 0
     assert odf.where(F.col("hours-per-week").isNull()).count() == 0
-    assert odf.where(F.col("logfnl").isNull()).count() != 0
-    assert odf.where(F.col("education").isNull()).count() != 0
-    assert odf.where(F.col("race").isNull()).count() != 0
-    assert odf.where(F.col("relationship").isNull()).count() != 0  
+    assert odf.where(F.col("logfnl").isNull()).count() == 10214
+    assert odf.where(F.col("education").isNull()).count() == 258
+    assert odf.where(F.col("race").isNull()).count() == 162
+    assert odf.where(F.col("relationship").isNull()).count() == 4  
 
     odf = imputation_matrixFactorization(spark_session, df, list_of_cols=[], id_col="ifa")   
-    assert odf.where(F.col("age").isNull()).count() != 0
-    assert odf.where(F.col("fnlwgt").isNull()).count() != 0
-    assert odf.where(F.col("hours-per-week").isNull()).count() != 0
+    assert odf.where(F.col("age").isNull()).count() == 30
+    assert odf.where(F.col("fnlwgt").isNull()).count() == 8
+    assert odf.where(F.col("hours-per-week").isNull()).count() == 59
 
     odf = imputation_matrixFactorization(spark_session, df, list_of_cols=["age","fnlwgt","hours-per-week"], id_col="ifa", output_mode="append")
     assert len(odf.columns) == 20
@@ -141,8 +141,8 @@ def test_imputation_MMM(spark_session):
     assert odf.where(F.col("hours-per-week").isNull()).count() == 0
     assert odf.where(F.col("race").isNull()).count() == 0
     assert odf.where(F.col("relationship").isNull()).count() == 0
-    assert odf.where(F.col("logfnl").isNull()).count() != 0
-    assert odf.where(F.col("education").isNull()).count() != 0
+    assert odf.where(F.col("logfnl").isNull()).count() == 10214
+    assert odf.where(F.col("education").isNull()).count() == 258
 
     try:
         odf = imputation_MMM(spark_session, df, list_of_cols=["education-num"], method_type="mode", pre_existing_model=True, model_path= "unit_testing/models/")
@@ -150,11 +150,11 @@ def test_imputation_MMM(spark_session):
         assert str(error)=="list index out of range"  
 
     odf = imputation_MMM(spark_session, df, list_of_cols=[], method_type="mode")
-    assert odf.where(F.col("age").isNull()).count() != 0
-    assert odf.where(F.col("fnlwgt").isNull()).count() != 0
-    assert odf.where(F.col("hours-per-week").isNull()).count() != 0
-    assert odf.where(F.col("race").isNull()).count() != 0
-    assert odf.where(F.col("relationship").isNull()).count() != 0   
+    assert odf.where(F.col("age").isNull()).count() == 30
+    assert odf.where(F.col("fnlwgt").isNull()).count() == 8
+    assert odf.where(F.col("hours-per-week").isNull()).count() == 59
+    assert odf.where(F.col("race").isNull()).count() == 162
+    assert odf.where(F.col("relationship").isNull()).count() == 4  
 
     odf = imputation_MMM(spark_session, df,list_of_cols=["age","fnlwgt","hours-per-week","relationship","race"], method_type="mean", output_mode="append")
     assert len(odf.columns) == 22
@@ -168,15 +168,15 @@ def test_auto_imputation(spark_session):
     assert odf[0].where(F.col("hours-per-week").isNull()).count() == 0
     assert odf[0].where(F.col("race").isNull()).count() == 0
     assert odf[0].where(F.col("relationship").isNull()).count() == 0
-    assert odf[0].where(F.col("logfnl").isNull()).count() != 0
-    assert odf[0].where(F.col("education").isNull()).count() != 0
+    assert odf[0].where(F.col("logfnl").isNull()).count() == 10154
+    assert odf[0].where(F.col("education").isNull()).count() == 253
 
     odf = auto_imputation(spark_session, df, list_of_cols=[],  id_col="ifa")
-    assert odf.where(F.col("age").isNull()).count() != 0
-    assert odf.where(F.col("fnlwgt").isNull()).count() != 0
-    assert odf.where(F.col("hours-per-week").isNull()).count() != 0
-    assert odf.where(F.col("race").isNull()).count() != 0
-    assert odf.where(F.col("relationship").isNull()).count() != 0
+    assert odf.where(F.col("age").isNull()).count() == 30
+    assert odf.where(F.col("fnlwgt").isNull()).count() == 8
+    assert odf.where(F.col("hours-per-week").isNull()).count() == 59
+    assert odf.where(F.col("race").isNull()).count() == 162
+    assert odf.where(F.col("relationship").isNull()).count() == 4
 
     odf = auto_imputation(spark_session, df, list_of_cols=["age","fnlwgt","hours-per-week","relationship","race"],  id_col="ifa", output_mode="append")
     assert len(odf[0].columns) == 21
@@ -201,8 +201,8 @@ def test_PCA_latentFeatures(spark_session):
     odf = PCA_latentFeatures(spark_session, df, list_of_cols=["age","fnlwgt","logfnl","education-num","hours-per-week"],explained_variance_cutoff=0.3,output_mode="append")
     assert len(odf.columns) > len(df.columns)
     assert len(odf.columns) == 18
-    assert odf.where(F.col("education").isNull()).count() != 0
-    assert odf.where(F.col("race").isNull()).count() != 0
+    assert odf.where(F.col("education").isNull()).count() == 91
+    assert odf.where(F.col("race").isNull()).count() == 58
     assert odf.where(F.col("latent_0").isNull()).count() == 0
 
 def test_autoencoder_latentFeatures(spark_session):
@@ -405,5 +405,3 @@ def test_cat_to_num_supervised(spark_session):
 
     odf= cat_to_num_supervised(spark_session,df, list_of_cols=["workclass","relationship","marital-status"], drop_cols=["ifa"],label_col="income",event_label="<=50K", output_mode="append")
     assert len(odf.columns) == 20
-
-
