@@ -545,10 +545,9 @@ def feature_stability_estimation(
     )
 
     if print_impact:
-        print("All Features:")
+        logger.info("All Features:")
         odf.show(len(attribute_names), False)
-
-        print("Potential Unstable Features Identified by Both Lower and Upper Bounds:")
+        logger.info("Potential Unstable Features Identified by Both Lower and Upper Bounds:")
         unstable = odf.where(F.col("flagged_upper") == 1)
         unstable.show(unstable.count())
 
