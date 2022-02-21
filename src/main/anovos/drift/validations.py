@@ -19,7 +19,8 @@ def check_list_of_columns(
     def validate(*args, **kwargs):
         logger.debug("check the list of columns")
 
-        cols, drops = [], []
+        cols = kwargs[columns]
+        drops = kwargs[drop]
 
         idf_target = kwargs.get(target, "") or args[target_idx]
 
@@ -27,8 +28,8 @@ def check_list_of_columns(
             num_cols, cat_cols, other_cols = attributeType_segregation(idf_target)
             cols = num_cols + cat_cols
 
-        if isinstance(kwargs[columns], str):
-            cols = [x.strip() for x in kwargs[columns].split("|")]
+        if isinstance(cols, str):
+            cols = [x.strip() for x in cols.split("|")]
 
         if isinstance(kwargs[drop], str):
             drops = [x.strip() for x in kwargs[drop].split("|")]
@@ -48,7 +49,7 @@ def check_list_of_columns(
 
 def check_distance_method(func=None, param="method_type"):
     if func is None:
-        return partial(check_distance_method, argument_name=param)
+        return partial(check_distance_method, param=param)
 
     @wraps(func)
     def validate(*args, **kwargs):
@@ -64,6 +65,8 @@ def check_distance_method(func=None, param="method_type"):
 
         if any(x not in ("PSI", "JSD", "HD", "KS") for x in dist_distance_methods):
             raise TypeError(f"Invalid input for {param}")
+
+        kwargs[param] = dist_distance_methods
 
         return func(*args, **kwargs)
 
