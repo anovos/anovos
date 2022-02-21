@@ -1,3 +1,4 @@
+import copy
 import subprocess
 import sys
 import timeit
@@ -177,7 +178,7 @@ def main(all_configs, run_type):
 
             if auto_detection:
                 df = ts_preprocess(
-                    spark, df, id_col, output_path=report_inputPath, run_type=run_type
+                    spark, df, id_col, output_path=report_input_path, run_type=run_type
                 )
             else:
                 pass
@@ -439,7 +440,7 @@ def main(all_configs, run_type):
                             df,
                             **value,
                             **extra_args,
-                            master_path=report_inputPath,
+                            master_path=report_input_path,
                             run_type=run_type,
                         )
                         end = timeit.default_timer()
