@@ -1556,26 +1556,26 @@ def data_drift_stability(
                 line_chart_gen_stability(df1=df_stability, df2=df_si_, col=i)
             )
 
-            report = dp.Group(
-                dp.Text("# "),
-                dp.Text(
-                    """
-                    *This section examines the dataset stability wrt the baseline dataset (via computing drift 
-                    statistics) and/or wrt the historical datasets (via computing stability index).*
-                    """
-                ),
-                dp.Text("# "),
-                dp.Text("# "),
-                dp.Text("### Data Stability Analysis"),
-                dp.DataTable(df_si),
-                dp.Select(blocks=line_chart_list, type=dp.SelectType.DROPDOWN),
-                dp.Group(
-                    dp.Text("**Stability Index Interpretation:**"),
-                    dp.Plot(plot_index_stability),
-                    rows=2,
-                ),
-                label="Drift & Stability",
-            )
+        report = dp.Group(
+            dp.Text("# "),
+            dp.Text(
+                """
+                *This section examines the dataset stability wrt the baseline dataset (via computing drift 
+                statistics) and/or wrt the historical datasets (via computing stability index).*
+                """
+            ),
+            dp.Text("# "),
+            dp.Text("# "),
+            dp.Text("### Data Stability Analysis"),
+            dp.DataTable(df_si),
+            dp.Select(blocks=line_chart_list, type=dp.SelectType.DROPDOWN),
+            dp.Group(
+                dp.Text("**Stability Index Interpretation:**"),
+                dp.Plot(plot_index_stability),
+                rows=2,
+            ),
+            label="Drift & Stability",
+        )
 
     elif ds_ind[0] == 1 and ds_ind[1] == 0:
 
