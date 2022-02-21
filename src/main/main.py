@@ -440,7 +440,7 @@ def main(all_configs, run_type):
                             **value,
                             **extra_args,
                             master_path=report_inputPath,
-                            run_type=run_type
+                            run_type=run_type,
                         )
                         end = timeit.default_timer()
                         logger.info(
