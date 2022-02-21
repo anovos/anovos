@@ -41,11 +41,11 @@ def check_list_of_columns(
             drops = kwargs[drop]
         else:
             raise TypeError(
-                f"'{drop}' must be either a string or a list of strings."
-                f" Received {type(kwargs[columns])}."
+                f"'{drop}' must be either a string or a list of strings. "
+                f"Received {type(kwargs[columns])}."
             )
 
-        final_cols = list(set([e for e in cols if e not in drops]))
+        final_cols = list(set(e for e in cols if e not in drops))
 
         if not final_cols:
             raise ValueError(
@@ -53,7 +53,10 @@ def check_list_of_columns(
             )
 
         if any(x not in idf_target.columns for x in final_cols):
-            raise ValueError("None of the columns are in the input dataframe.")
+            raise ValueError(
+                f"Not all columns are in the input dataframe. "
+                f"Missing columns: {set(final_cols) - set(idf_target.columns)}"
+            )
 
         kwargs[columns] = cols
         kwargs[drop] = drops
