@@ -30,3 +30,4 @@ findspark<2.0.0
 loguru==0.6.0
 pyaml==21.10.1
 sympy>=1.6
+statsmodels==0.13.2
