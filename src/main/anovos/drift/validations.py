@@ -49,7 +49,7 @@ def check_list_of_columns(
 
         if not final_cols:
             raise ValueError(
-                f"Empty set of columns is given. Columns to select: {cols}, columns to drop: {drop}."
+                f"Empty set of columns is given. Columns to select: {cols}, columns to drop: {drops}."
             )
 
         if any(x not in idf_target.columns for x in final_cols):
@@ -58,8 +58,8 @@ def check_list_of_columns(
                 f"Missing columns: {set(final_cols) - set(idf_target.columns)}"
             )
 
-        kwargs[columns] = cols
-        kwargs[drop] = drops
+        kwargs[columns] = final_cols
+        kwargs[drop] = []
 
         return func(*args, **kwargs)
 

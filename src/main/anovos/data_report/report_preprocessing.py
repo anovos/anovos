@@ -83,7 +83,8 @@ def save_stats(spark, idf, master_path, function_name, reread=False, run_type="l
 def edit_binRange(col):
     """
     :param col: The column which is passed as input and needs to be treated.
-                The generated output will not contain any range whose value at either side is the same.
+
+    The generated output will not contain any range whose value at either side is the same.
     """
     try:
         list_col = col.split("-")
