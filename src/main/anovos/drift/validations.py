@@ -58,9 +58,6 @@ def check_list_of_columns(
                 f"Missing columns: {set(final_cols) - set(idf_target.columns)}"
             )
 
-        kwargs[columns] = cols
-        kwargs[drop] = drops
-
         return func(*args, **kwargs)
 
     return validate
