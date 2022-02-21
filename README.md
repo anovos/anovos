@@ -10,8 +10,8 @@
 [![twitter](https://img.shields.io/badge/Follow--lightgrey?logo=twitter&style=social)](https://twitter.com/ml_anovos)
 [![Slack](https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&style=social)](https://go.mlops.community/slack)
 
-_Anovos_ is an open source library for feature engineering at scale. Built by data scientist for the data science
-community, it provides all capabilities required for data ingestion and transformation.
+_Anovos_ is an open source library for feature engineering at scale. Built by data scientists & ML Engineers for the data science
+community, it provides all the capabilities required for data ingestion, data analysis, data drift & data stability analysis, feature recommendation and feature composing. In addition, it auto produces (with some basic configs) easily interpretable & professionally looking data reports which can immensely help users to understand the nature of data within a short time span and also will help data scientists to compose features accordingly.
 
 Leveraging the power of [Apache Spark](https://spark.apache.org/) behind the scenes, _Anovos_ improves data scientists'
 productivity and helps them build more resilient and better performing models.
@@ -19,7 +19,7 @@ productivity and helps them build more resilient and better performing models.
 # Quick Start
 
 The easiest way to try out _Anovos_ and explore its capabilities is through the provided
-[examples](/examples) that you can run via Docker without the need to install anything on your local machine. To install Docker in your local machine please refer the following [guide](https://docs.docker.com/desktop/). Set docker preferences as follows if resources permit:
+[examples](/examples) that you can run via Docker without the need to install anything on your local machine. To install Docker in your local machine, please refer the following [guide](https://docs.docker.com/desktop/) hosted at docker website . Set, docker preferences as follows if your system's resources permit:
 1. CPUs - 6
 2. Memory - 8.0 GB
 3. Swap - 1GB
