@@ -24,8 +24,9 @@ def statistics(
     spark: SparkSession,
     idf_target: DataFrame,
     idf_source: DataFrame,
+    *,
     list_of_cols: list = "all",
-    drop_cols: list = [],
+    drop_cols: list = None,
     method_type: str = "PSI",
     bin_method: str = "equal_range",
     bin_size: int = 10,
@@ -71,7 +72,7 @@ def statistics(
     :return: Output Dataframe [attribute, *metric, flagged]
              Number of columns will be dependent on method argument. There will be one column for each drift method/metric.
     """
-
+    drop_cols = drop_cols or []
     num_cols = attributeType_segregation(idf_target.select(list_of_cols))[0]
 
     if not pre_existing_source:
@@ -182,7 +183,7 @@ def stability_index_computation(
     existing_metric_path="",
     appended_metric_path="",
     threshold=1,
-    print_impact=False
+    print_impact=False,
 ):
     """
     :param spark: Spark Session
