@@ -64,7 +64,7 @@ def statistics(
                         The drift_statistics folder will have attribute_binning (binning model) & frequency_counts sub-folders.
                         If pre_existing_source is True, this argument is path for referring the drift_statistics folder.
                         Default "NA" for temporarily saving source dataset attribute_binning folder.
-    :param model_directory: If pre_existing_source is False, this arguemnt can be used for saving the drift stats to folder.
+    :param model_directory: If pre_existing_source is False, this argument can be used for saving the drift stats to folder.
                         The default drift statics directory is drift_statistics folder will have attribute_binning
                         If pre_existing_source is True, this argument is model_directory for referring the drift statistics dir.
                         Default "drift_statistics" for temporarily saving source dataset attribute_binning folder.
