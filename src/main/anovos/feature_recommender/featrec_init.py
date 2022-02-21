@@ -51,11 +51,6 @@ def recommendation_data_prep(df, name_column, desc_column):
     return list_corpus, df_prep
 
 
-feature_name_column = str(df_input_fer.columns.tolist()[0])
-feature_desc_column = str(df_input_fer.columns.tolist()[1])
-industry_column = str(df_input_fer.columns.tolist()[2])
-usecase_column = str(df_input_fer.columns.tolist()[3])
-source_column = str(df_input_fer.columns.tolist()[4])
 df_groupby_fer = (
     df_input_fer.groupby([feature_name_column, feature_desc_column])
     .agg(

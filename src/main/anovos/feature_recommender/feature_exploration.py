@@ -4,9 +4,14 @@ from sentence_transformers import SentenceTransformer
 from sentence_transformers import util
 
 model_fer = SentenceTransformer("all-mpnet-base-v2")
-input_path_fer = "https://raw.githubusercontent.com/anovos/anovos/feature_recommender_beta/data/feature_recommender/flatten_fr_db.csv"
+input_path_fer = "https://raw.githubusercontent.com/anovos/anovos/main/data/feature_recommender/flatten_fr_db.csv"
 df_input_fer = pd.read_csv(input_path_fer)
 df_input_fer = df_input_fer.rename(columns=lambda x: x.strip().replace(" ", "_"))
+feature_name_column = str(df_input_fer.columns.tolist()[0])
+feature_desc_column = str(df_input_fer.columns.tolist()[1])
+industry_column = str(df_input_fer.columns.tolist()[2])
+usecase_column = str(df_input_fer.columns.tolist()[3])
+source_column = str(df_input_fer.columns.tolist()[4])
 
 
 def list_all_industry():
@@ -85,7 +90,7 @@ def process_industry(industry, semantic):
         first_match_index = int(np.argpartition(-cos_scores, 0)[0])
         processed_industry = all_industry[first_match_index]
         print(
-            "Given input Industry is not available. Showing the most semantically relevant Usecase result: ",
+            "Given input Industry is not available. Showing the most semantically relevant Industry result: ",
             processed_industry,
         )
     else:
@@ -133,8 +138,7 @@ def list_feature_by_industry(industry, num_of_feat=100, semantic=True):
         keep="last", ignore_index=True
     )
     if len(odf) > 0:
-        industry_column = str(odf.columns.tolist()[0])
-        odf["count"] = odf.groupby(industry_column)[industry_column].transform("count")
+        odf["count"] = odf.groupby(usecase_column)[usecase_column].transform("count")
         odf.sort_values("count", inplace=True, ascending=False)
         odf = odf.drop("count", axis=1)
         if num_of_feat != "all":
@@ -160,8 +164,7 @@ def list_feature_by_usecase(usecase, num_of_feat=100, semantic=True):
         keep="last", ignore_index=True
     )
     if len(odf) > 0:
-        usecase_column = str(odf.columns.tolist()[0])
-        odf["count"] = odf.groupby(usecase_column)[usecase_column].transform("count")
+        odf["count"] = odf.groupby(industry_column)[industry_column].transform("count")
         odf.sort_values("count", inplace=True, ascending=False)
         odf = odf.drop("count", axis=1)
         if num_of_feat != "all":
