@@ -1,12 +1,12 @@
-import copy
 import subprocess
 import sys
 import timeit
 import yaml
+from loguru import logger
+
 from anovos.data_analyzer import association_evaluator
 from anovos.data_analyzer import quality_checker
 from anovos.data_analyzer import stats_generator
-from anovos.data_drift import drift_detector
 from anovos.data_ingest import data_ingest
 from anovos.data_transformer import transformers
 from anovos.data_report import report_preprocessing
@@ -14,6 +14,7 @@ from anovos.data_report.basic_report_generation import anovos_basic_report
 from anovos.data_report.report_generation import anovos_report
 from anovos.data_report.report_preprocessing import save_stats
 from anovos.data_report.ts_preprocessing import ts_preprocess
+from anovos.drift import detector as ddetector
 from anovos.shared.spark import spark
 
 
@@ -54,11 +55,11 @@ def save(data, write_configs, folder_name, reread=False):
             return data
 
 
-def stats_args(configs, func):
-    stats_configs = configs.get("stats_generator", None)
-    write_configs = configs.get("write_stats", None)
+def stats_args(all_configs, func):
+    stats_configs = all_configs.get("stats_generator", None)
+    write_configs = all_configs.get("write_stats", None)
     report_input_path = ""
-    report_configs = configs.get("report_preprocessing", None)
+    report_configs = all_configs.get("report_preprocessing", None)
     if report_configs is not None:
         if "master_path" not in report_configs:
             raise TypeError("Master path missing for saving report statistics")
@@ -122,13 +123,13 @@ def main(all_configs, run_type):
     write_intermediate = all_configs.get("write_intermediate", None)
     write_stats = all_configs.get("write_stats", None)
 
-    report_inputPath = ""
+    report_input_path = ""
     report_configs = all_configs.get("report_preprocessing", None)
-    if report_configs != None:
+    if report_configs is not None:
         if "master_path" not in report_configs:
             raise TypeError("Master path missing for saving report statistics")
         else:
-            report_inputPath = report_configs.get("master_path")
+            report_input_path = report_configs.get("master_path")
 
     for key, args in all_configs.items():
 
@@ -146,7 +147,7 @@ def main(all_configs, run_type):
                 reread=True,
             )
             end = timeit.default_timer()
-            print(key, ", execution time (in secs) =", round(end - start, 4))
+            logger.info(f"{key}, execution time (in secs) = {round(end - start, 4)}")
             continue
 
         if (key == "join_dataset") & (args is not None):
@@ -165,7 +166,7 @@ def main(all_configs, run_type):
                 reread=True,
             )
             end = timeit.default_timer()
-            print(key, ", execution time (in secs) =", round(end - start, 4))
+            logger.info(f"{key}, execution time (in secs) = {round(end - start, 4)}")
             continue
 
         if (key == "timeseries_analyzer") & (args is not None):
@@ -191,24 +192,29 @@ def main(all_configs, run_type):
         ):
             start = timeit.default_timer()
             anovos_basic_report(
-                spark, df, **args.get("report_args", {}), run_type=run_type
+                spark,
+                df,
+                **args.get("report_args", {}),
+                run_type=run_type,
             )
             end = timeit.default_timer()
-            print("Basic Report, execution time (in secs) =", round(end - start, 4))
+            logger.info(
+                f"Basic Report, execution time (in secs) ={round(end - start, 4)}"
+            )
             continue
 
         if not all_configs.get("anovos_basic_report", {}).get("basic_report", False):
-            if (key == "stats_generator") & (args != None):
+            if (key == "stats_generator") & (args is not None):
                 for m in args["metric"]:
                     start = timeit.default_timer()
-                    print("\n" + m + ": \n")
+                    logger.debug("\n" + m + ": \n")
                     f = getattr(stats_generator, m)
                     df_stats = f(spark, df, **args["metric_args"], print_impact=False)
-                    if report_inputPath:
+                    if report_input_path:
                         save_stats(
                             spark,
                             df_stats,
-                            report_inputPath,
+                            report_input_path,
                             m,
                             reread=True,
                             run_type=run_type,
@@ -222,13 +228,15 @@ def main(all_configs, run_type):
                         ).show(100)
 
                     end = timeit.default_timer()
-                    print(key, m, ", execution time (in secs) =", round(end - start, 4))
+                    logger.info(
+                        f"{key}, metric:{m}, execution time (in secs) ={round(end - start, 4)}"
+                    )
 
             if (key == "quality_checker") & (args is not None):
                 for subkey, value in args.items():
                     if value is not None:
                         start = timeit.default_timer()
-                        print("\n" + subkey + ": \n")
+                        logger.debug("\n" + subkey + ": \n")
                         f = getattr(quality_checker, subkey)
                         extra_args = stats_args(all_configs, subkey)
                         df, df_stats = f(
@@ -242,11 +250,11 @@ def main(all_configs, run_type):
                             + "/dataset",
                             reread=True,
                         )
-                        if report_inputPath:
+                        if report_input_path:
                             save_stats(
                                 spark,
                                 df_stats,
-                                report_inputPath,
+                                report_input_path,
                                 subkey,
                                 reread=True,
                                 run_type=run_type,
@@ -259,28 +267,25 @@ def main(all_configs, run_type):
                                 reread=True,
                             ).show(100)
                         end = timeit.default_timer()
-                        print(
-                            key,
-                            subkey,
-                            ", execution time (in secs) =",
-                            round(end - start, 4),
+                        logger.info(
+                            f"{key} and subkey:{subkey}, execution time (in secs) ={round(end - start, 4)}"
                         )
 
             if (key == "association_evaluator") & (args is not None):
                 for subkey, value in args.items():
                     if value is not None:
                         start = timeit.default_timer()
-                        print("\n" + subkey + ": \n")
+                        logger.debug("\n" + subkey + ": \n")
                         f = getattr(association_evaluator, subkey)
                         extra_args = stats_args(all_configs, subkey)
                         df_stats = f(
                             spark, df, **value, **extra_args, print_impact=False
                         )
-                        if report_inputPath:
+                        if report_input_path:
                             save_stats(
                                 spark,
                                 df_stats,
-                                report_inputPath,
+                                report_input_path,
                                 subkey,
                                 reread=True,
                                 run_type=run_type,
@@ -294,11 +299,8 @@ def main(all_configs, run_type):
                                 reread=True,
                             ).show(100)
                         end = timeit.default_timer()
-                        print(
-                            key,
-                            subkey,
-                            ", execution time (in secs) =",
-                            round(end - start, 4),
+                        logger.info(
+                            f"{key} and subkey:{subkey}, execution time (in secs) ={round(end - start, 4)}"
                         )
 
             if (key == "drift_detector") & (args is not None):
@@ -310,14 +312,18 @@ def main(all_configs, run_type):
                             source = ETL(value.get("source_dataset"))
                         else:
                             source = None
-                        df_stats = drift_detector.drift_statistics(
+
+                        logger.info(
+                            f"running drift statistics detector using {value['configs']}"
+                        )
+                        df_stats = ddetector.statistics(
                             spark, df, source, **value["configs"], print_impact=False
                         )
-                        if report_inputPath:
+                        if report_input_path:
                             save_stats(
                                 spark,
                                 df_stats,
-                                report_inputPath,
+                                report_input_path,
                                 subkey,
                                 reread=True,
                                 run_type=run_type,
@@ -330,27 +336,24 @@ def main(all_configs, run_type):
                                 reread=True,
                             ).show(100)
                         end = timeit.default_timer()
-                        print(
-                            key,
-                            subkey,
-                            ", execution time (in secs) =",
-                            round(end - start, 4),
+                        logger.info(
+                            f"{key} and subkey:{subkey}, execution time (in secs) ={round(end - start, 4)}"
                         )
 
-                    if (subkey == "stabilityIndex_computation") & (value is not None):
+                    if (subkey == "stability_index") & (value is not None):
                         start = timeit.default_timer()
                         idfs = []
                         for k in [e for e in value.keys() if e not in ("configs")]:
                             tmp = ETL(value.get(k))
                             idfs.append(tmp)
-                        df_stats = drift_detector.stabilityIndex_computation(
+                        df_stats = ddetector.stability_index_computation(
                             spark, *idfs, **value["configs"], print_impact=False
                         )
-                        if report_inputPath:
+                        if report_input_path:
                             save_stats(
                                 spark,
                                 df_stats,
-                                report_inputPath,
+                                report_input_path,
                                 subkey,
                                 reread=True,
                                 run_type=run_type,
@@ -368,7 +371,7 @@ def main(all_configs, run_type):
                                 save_stats(
                                     spark,
                                     df_metrics,
-                                    report_inputPath,
+                                    report_input_path,
                                     "stabilityIndex_metrics",
                                     reread=True,
                                     run_type=run_type,
@@ -381,15 +384,12 @@ def main(all_configs, run_type):
                                 reread=True,
                             ).show(100)
                         end = timeit.default_timer()
-                        print(
-                            key,
-                            subkey,
-                            ", execution time (in secs) =",
-                            round(end - start, 4),
+                        logger.info(
+                            f"{key} and subkey:{subkey}, execution time (in secs) ={round(end - start, 4)}"
                         )
 
-                print(
-                    "execution time w/o report (in sec) =", round(end - start_main, 4)
+                logger.info(
+                    f"execution time w/o report (in sec) ={round(end - start_main, 4)}"
                 )
 
             if (key == "transformers") & (args != None):
@@ -443,11 +443,8 @@ def main(all_configs, run_type):
                             run_type=run_type
                         )
                         end = timeit.default_timer()
-                        print(
-                            key,
-                            subkey,
-                            ", execution time (in secs) =",
-                            round(end - start, 4),
+                        logger.info(
+                            f"{key} and subkey:{subkey}, execution time (in secs) ={round(end - start, 4)}"
                         )
 
             if (key == "report_generation") & (args is not None):

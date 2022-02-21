@@ -144,7 +144,7 @@ drift_detector:
       delete_column: [ 'Outlet_Identifier' ]
       select_column: null
 
-  stabilityIndex_computation:
+  stability_index:
 
     configs:
       metric_weightages:
