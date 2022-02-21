@@ -19,25 +19,41 @@ def check_list_of_columns(
     def validate(*args, **kwargs):
         logger.debug("check the list of columns")
 
-        cols = kwargs[columns]
-        drops = kwargs[drop]
-
         idf_target = kwargs.get(target, "") or args[target_idx]
 
-        if kwargs[columns] == "all" and idf_target is not None:
-            num_cols, cat_cols, other_cols = attributeType_segregation(idf_target)
-            cols = num_cols + cat_cols
-
-        if isinstance(cols, str):
-            cols = [x.strip() for x in cols.split("|")]
+        if isinstance(kwargs[columns], str):
+            if kwargs[columns] == "all":
+                num_cols, cat_cols, other_cols = attributeType_segregation(idf_target)
+                cols = num_cols + cat_cols
+            else:
+                cols = [x.strip() for x in kwargs[columns].split("|")]
+        elif isinstance(kwargs[columns], list):
+            cols = kwargs[columns]
+        else:
+            raise TypeError(
+                f"'{columns}' must be either a string or a list of strings."
+                f" Received {type(kwargs[columns])}."
+            )
 
         if isinstance(kwargs[drop], str):
             drops = [x.strip() for x in kwargs[drop].split("|")]
+        elif isinstance(kwargs[drop], list):
+            drops = kwargs[drop]
+        else:
+            raise TypeError(
+                f"'{drop}' must be either a string or a list of strings."
+                f" Received {type(kwargs[columns])}."
+            )
 
-        cols = list(set([e for e in cols if e not in drops]))
+        final_cols = list(set([e for e in cols if e not in drops]))
 
-        if (len(cols) == 0) | any(x not in idf_target.columns for x in cols):
-            raise TypeError("Invalid input for Column(s)")
+        if not final_cols:
+            raise ValueError(
+                f"Empty set of columns is given. Columns to select: {cols}, columns to drop: {drop}."
+            )
+
+        if any(x not in idf_target.columns for x in final_cols):
+            raise ValueError("None of the columns are in the input dataframe.")
 
         kwargs[columns] = cols
         kwargs[drop] = drops
