@@ -257,19 +257,6 @@ def regex_date_time_parser(
         for label, pattern in REGEX_FORMATTED.items()
     }
 
-    HEADERS = [
-        "PATH",
-        "FILE_ID",
-        "REGEX_LABEL",
-        "LINE_NUM",
-        "MATCH",
-        "START",
-        "END",
-        "MATCH_LEN",
-        "NORM_LINE_LEN",
-        "CONTEXT",
-        "PARSED",
-    ]
 
     if (
         idf.select(col).dtypes[0][1] == "timestamp"
