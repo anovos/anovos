@@ -257,7 +257,6 @@ def regex_date_time_parser(
         for label, pattern in REGEX_FORMATTED.items()
     }
 
-
     if (
         idf.select(col).dtypes[0][1] == "timestamp"
         or idf.select(col).dtypes[0][1] == "date"
@@ -423,13 +422,17 @@ def regex_date_time_parser(
                         [
                             match_info["CONTEXT"],
                             datetime.datetime(
-                                bl_int[0], bl_int[1], bl_int[2], bl_int[3], bl_int[4], bl_int[5]
+                                bl_int[0],
+                                bl_int[1],
+                                bl_int[2],
+                                bl_int[3],
+                                bl_int[4],
+                                bl_int[5],
                             ),
                         ]
                     )
                 except:
                     pass
-
 
         if len(bl) > 50:
             columns = [col, col + "_ts"]
