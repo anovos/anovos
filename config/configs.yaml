@@ -14,54 +14,57 @@ input_dataset:
   delete_column: ['logfnl','constant']
   select_column: null
   rename_column:
-    list_of_cols: ['marital-status','education-num','capital-gain','capital-loss','hours-per-week']
-    list_of_newcols: ['marital_status','education_num','capital_gain','capital_loss','hours_per_week']
+    list_of_cols: ['marital-status','education-num']
+    list_of_newcols: ['marital_status','education_num']
   recast_column:
     list_of_cols: ['age','education_num']
     list_of_dtypes: ['float','float']
 
-# concatenate_dataset:
-#   method: name
-#   dataset1:
-#     read_dataset:
-#       file_path: "data/income_dataset/parquet"
-#       file_type: parquet
-#     delete_column: ['logfnl']
-#     select_column: null
-#     rename_column:
-#       list_of_cols: ['marital-status','education-num']
-#       list_of_newcols: ['marital_status','education_num']
-#     recast_column:
-#       list_of_cols: ['age','education_num']
-#       list_of_dtypes: ['float','float']
-    
-#   dataset2:
-#     read_dataset:
-#       file_path: "data/income_dataset/parquet"
-#       file_type: parquet
-#     delete_column: ['logfnl']
-#     select_column: null
-#     rename_column:
-#       list_of_cols: ['marital-status','education-num']
-#       list_of_newcols: ['marital_status','education_num']
-#     recast_column:
-#       list_of_cols: ['age','education_num']
-#       list_of_dtypes: ['float','float']
-    
-# join_dataset:
-#   join_cols: ifa
-#   join_type: inner
-#   dataset1:
-#     read_dataset:
-#       file_path: "data/income_dataset/join"
-#       file_type: avro
-#     delete_column: null
-#     select_column: null
-#     rename_column:
-#       list_of_cols: "age|workclass"
-#       list_of_newcols: "dupl_age|dupl_workclass"
-#     recast_column: null
+concatenate_dataset:
+  method: name
+  dataset1:
+    read_dataset:
+      file_path: "data/income_dataset/parquet"
+      file_type: parquet
+    delete_column: ['logfnl']
+    select_column: null
+    rename_column:
+      list_of_cols: ['marital-status','education-num']
+      list_of_newcols: ['marital_status','education_num']
+    recast_column:
+      list_of_cols: ['age','education_num']
+      list_of_dtypes: ['float','float']
+  
+  dataset2:
+    read_dataset:
+      file_path: "data/income_dataset/parquet"
+      file_type: parquet
+    delete_column: ['logfnl']
+    select_column: null
+    rename_column:
+      list_of_cols: ['marital-status','education-num']
+      list_of_newcols: ['marital_status','education_num']
+    recast_column:
+      list_of_cols: ['age','education_num']
+      list_of_dtypes: ['float','float']
+  
+join_dataset:
+  join_cols: ifa
+  join_type: inner
+  dataset1:
+    read_dataset:
+      file_path: "data/income_dataset/join"
+      file_type: avro
+    delete_column: null
+    select_column: null
+    rename_column:
+      list_of_cols: "age|workclass"
+      list_of_newcols: "dupl_age|dupl_workclass"
+    recast_column: null
 
+timeseries_analyzer:
+  auto_detection: True
+  id_col: 'ifa'
 
 anovos_basic_report:
   basic_report: False
@@ -70,10 +73,6 @@ anovos_basic_report:
     label_col: income
     event_label: '>50K'
     output_path: report_stats
-
-timeseries_analyzer:
-  auto_detection: True
-  id_col: 'ifa'
 
 #if anovos_basic_report.basic_report is True, then all configs below are ignored.
 stats_generator:
