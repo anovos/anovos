@@ -5,21 +5,12 @@ from pyspark.sql import types as T
 from pyspark.sql import Window
 from loguru import logger
 import calendar
-from itertools import chain
-from anovos.shared.utils import (
-    attributeType_segregation,
-    ends_with,
-    flatten_dataframe,
-    transpose_dataframe,
-)
+from anovos.shared.utils import attributeType_segregation, ends_with
 from anovos.data_analyzer.stats_generator import measures_of_percentiles
 from anovos.data_transformer.datetime import (
-    argument_checker,
     timeUnits_extraction,
     unix_to_timestamp,
     lagged_ts,
-    dateformat_conversion,
-    string_to_timestamp,
 )
 
 import csv
@@ -37,7 +28,6 @@ import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
 from plotly.subplots import make_subplots
-from pyspark.sql import SparkSession
 
 global_theme = px.colors.sequential.Plasma
 global_theme_r = px.colors.sequential.Plasma_r
@@ -72,9 +62,8 @@ def regex_date_time_parser(
     idf,
     id_col,
     col,
+    tz,
     save_output=None,
-    precision="s",
-    tz="local",
     output_mode="replace",
 ):
 
@@ -291,6 +280,17 @@ def regex_date_time_parser(
 
     elif idf.select(col).dtypes[0][1] in ["long", "bigint"]:
 
+        precision_chk = (
+            idf.select(F.max(F.length(col))).rdd.flatMap(lambda x: x).collect()[0]
+        )
+
+        if precision_chk == 10:
+            precision = "s"
+        elif precision_chk == 13:
+            precision = "ms"
+        else:
+            precision = "ms"
+
         output_df = unix_to_timestamp(
             spark, idf, col, precision=precision, tz=tz, output_mode=output_mode
         ).orderBy(id_col, col)
@@ -304,7 +304,7 @@ def regex_date_time_parser(
     elif idf.select(col).dtypes[0][1] == "string":
         list_dates = set(idf.select(col).rdd.flatMap(lambda x: x).collect())
 
-        def regex_text(text, longest=False, context_max_len=999, dayfirst=True):
+        def regex_text(text, longest=True, context_max_len=999, dayfirst=True):
             # join multiple spaces, convert tabs, strip leading/trailing whitespace
 
             if isinstance(text, str):
@@ -466,13 +466,13 @@ def regex_date_time_parser(
         return output_df
 
 
-def ts_processed_feats(spark, idf, col, id_col):
+def ts_processed_feats(spark, idf, col, id_col, tz):
 
     if idf.count() == idf.select(id_col).distinct().count():
 
         odf = (
             timeUnits_extraction(
-                regex_date_time_parser(spark, idf, id_col, col),
+                regex_date_time_parser(spark, idf, id_col, col, tz),
                 col,
                 "all",
                 output_mode="append",
@@ -495,7 +495,7 @@ def ts_processed_feats(spark, idf, col, id_col):
 
         odf = (
             timeUnits_extraction(
-                regex_date_time_parser(spark, idf, id_col, col),
+                regex_date_time_parser(spark, idf, id_col, col, tz),
                 col,
                 "all",
                 output_mode="append",
@@ -515,10 +515,10 @@ def ts_processed_feats(spark, idf, col, id_col):
         return odf
 
 
-def ts_eligiblity_check(spark, idf, col, id_col, opt=1):
+def ts_eligiblity_check(spark, idf, col, id_col, opt=1, tz_offset="local"):
 
     lagged_df = lagged_ts(
-        ts_processed_feats(spark, idf, col, id_col)
+        ts_processed_feats(spark, idf, col, id_col, tz_offset)
         .select("yyyymmdd_col")
         .distinct()
         .orderBy("yyyymmdd_col"),
@@ -549,14 +549,14 @@ def ts_eligiblity_check(spark, idf, col, id_col, opt=1):
 
     p1 = measures_of_percentiles(
         spark,
-        ts_processed_feats(spark, idf, col, id_col)
+        ts_processed_feats(spark, idf, col, id_col, tz_offset)
         .groupBy(id_col)
         .agg(F.countDistinct("yyyymmdd_col").alias("id_date_pair")),
         list_of_cols="id_date_pair",
     )
     p2 = measures_of_percentiles(
         spark,
-        ts_processed_feats(spark, idf, col, id_col)
+        ts_processed_feats(spark, idf, col, id_col, tz_offset)
         .groupBy("yyyymmdd_col")
         .agg(F.countDistinct(id_col).alias("date_id_pair")),
         list_of_cols="date_id_pair",
@@ -570,7 +570,7 @@ def ts_eligiblity_check(spark, idf, col, id_col, opt=1):
 
     else:
 
-        odf = ts_processed_feats(spark, idf, col, id_col)
+        odf = ts_processed_feats(spark, idf, col, id_col, tz_offset)
         m = (
             odf.groupBy("yyyymmdd_col")
             .count()
@@ -605,8 +605,7 @@ def ts_viz_data(
     x_col,
     y_col,
     id_col,
-    precision="s",
-    tz="local",
+    tz_offset="local",
     output_mode="append",
     output_type="daily",
     n_cat=10,
@@ -632,7 +631,7 @@ def ts_viz_data(
             y_col,
             F.when(F.col(y_col).isin(top_cat), F.col(y_col)).otherwise(F.lit("Others")),
         )
-        idf = ts_processed_feats(spark, idf, x_col, id_col)
+        idf = ts_processed_feats(spark, idf, x_col, id_col, tz_offset)
 
         if output_type == "daily":
 
@@ -666,7 +665,7 @@ def ts_viz_data(
 
     else:
 
-        idf = ts_processed_feats(spark, idf, x_col, id_col)
+        idf = ts_processed_feats(spark, idf, x_col, id_col, tz_offset)
 
         if output_type == "daily":
 
@@ -767,7 +766,7 @@ def list_ts_remove_append(l, opt):
         return ll
 
 
-def ts_preprocess(spark, idf, id_col, output_path, run_type="local"):
+def ts_preprocess(spark, idf, id_col, output_path, tz_offset="local", run_type="local"):
 
     if run_type == "local":
         local_path = output_path
@@ -788,9 +787,8 @@ def ts_preprocess(spark, idf, id_col, output_path, run_type="local"):
                 idf,
                 id_col,
                 i,
+                tz_offset,
                 save_output=None,
-                precision="ms",
-                tz="local",
                 output_mode="replace",
             )
             idf.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
@@ -816,8 +814,7 @@ def ts_preprocess(spark, idf, id_col, output_path, run_type="local"):
                         i,
                         k,
                         id_col=id_col,
-                        precision="ms",
-                        tz="local",
+                        tz_offset=tz_offset,
                         output_mode="append",
                         output_type=l,
                         n_cat=10,
@@ -830,7 +827,9 @@ def ts_preprocess(spark, idf, id_col, output_path, run_type="local"):
     for i in ts_loop_cols_post:
         for j in range(1, 3):
             print(i, j)
-            f = ts_eligiblity_check(spark, idf, i, opt=j, id_col=id_col)
+            f = ts_eligiblity_check(
+                spark, idf, i, id_col=id_col, opt=j, tz_offset=tz_offset
+            )
             f.to_csv(
                 ends_with(local_path) + "stats_" + str(i) + "_" + str(j) + ".csv",
                 index=False,
