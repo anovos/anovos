@@ -2060,7 +2060,7 @@ def autoencoder_latentFeatures(
             idf,
             list_of_cols=list_of_cols,
             output_mode="append",
-            **standardization_configs
+            **standardization_configs,
         )
         list_of_cols_scaled = [
             i + "_scaled"
@@ -2097,7 +2097,7 @@ def autoencoder_latentFeatures(
             idf_standardized,
             list_of_cols_scaled,
             stats_missing=stats_missing_scaled,
-            **args
+            **args,
         )
     else:
         idf_imputed = idf_standardized.dropna(subset=list_of_cols_scaled)
@@ -2339,7 +2339,7 @@ def PCA_latentFeatures(
             idf,
             list_of_cols=list_of_cols,
             output_mode="append",
-            **standardization_configs
+            **standardization_configs,
         )
         list_of_cols_scaled = [
             i + "_scaled"
@@ -2376,7 +2376,7 @@ def PCA_latentFeatures(
             idf_standardized,
             list_of_cols_scaled,
             stats_missing=stats_missing_scaled,
-            **args
+            **args,
         )
     else:
         idf_imputed = idf_standardized.dropna(subset=list_of_cols_scaled)

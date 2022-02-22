@@ -1,0 +1,9 @@
+Name,Desc,Industry,Usecase
+key,a unique identifier for each trip,Transportation,Ridepooling Pricing
+fare_amount,the cost of each trip in usd,Transportation,Ridepooling Pricing
+pickup_datetime,date and time where the meter was engaged,Transportation,Ridepooling Pricing
+passenger_count,the number of passengers in the vehicle (driver entered value),Transportation,Ridepooling Pricing
+pickup_longitude,the longitude where the meter was engaged,Transportation,Ridepooling Pricing
+pickup_latitude,the latitude where the meter was engaged,Transportation,Ridepooling Pricing
+dropoff_longitude,the longitude where the meter was disengaged,Transportation,Ridepooling Pricing
+dropoff_latitude,the latitude where the meter was disengaged,Transportation,Ridepooling Pricing

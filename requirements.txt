@@ -26,8 +26,9 @@ soupsieve
 fsspec
 pybind11
 s3fs
-findspark<2.0.0
+findspark==2.0.1
 loguru==0.6.0
 pyaml==21.10.1
 sympy>=1.6
 statsmodels==0.13.2
+sentence_transformers
