@@ -19,6 +19,7 @@ setup(
         "anovos.data_analyzer",
         "anovos.drift",
         "anovos.data_report",
+        "anovos.feature_recommender"
     ],
     description="An Open Source tool for Feature Engineering in Machine Learning",
     long_description=README,

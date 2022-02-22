@@ -12,7 +12,7 @@ plotly>=5.2.1
 scipy
 scikit-learn==1.0.2
 boto3
-pyarrow<6.0.0
+pyarrow<=7.0.0
 s3path
 pybind11
 popmon
@@ -26,7 +26,9 @@ soupsieve
 fsspec
 pybind11
 s3fs
-findspark<2.0.0
+findspark==2.0.1
 loguru==0.6.0
 pyaml==21.10.1
 sympy>=1.6
+
+sentence_transformers

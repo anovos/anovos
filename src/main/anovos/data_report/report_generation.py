@@ -462,7 +462,6 @@ def executive_summary_gen(
     :param iv_threshold: IV threshold beyond which attributes can be called as significant.
     :param corr_threshold: Correlation threshold beyond which attributes can be categorized under correlated.
     :param print_report: Printing option flexibility. Default value is kept as False.
-
     """
 
     try:
@@ -2234,7 +2233,7 @@ def anovos_report(
         else:
             final_tabs_list.append(i)
 
-    if run_type == "local" or "databricks":
+    if run_type in ("local", "databricks"):
 
         dp.Report(
             default_template[0],

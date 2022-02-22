@@ -38,6 +38,7 @@ def correlation_matrix(
     :param stats_unique: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
                          to read pre-saved statistics on unique value count i.e. if measures_of_cardinality or
                          uniqueCount_computation (data_analyzer.stats_generator module) has been computed & saved before.
+    :param print_impact: True, False
     :return: Dataframe [attribute,*col_names]
              Correlation between attribute X and Y can be found at an intersection of
              a) row with value X in ‘attribute’ column and column ‘Y’, or

@@ -43,9 +43,9 @@ def save_stats(spark, idf, master_path, function_name, reread=False, run_type="l
     :param idf: input dataframe
     :param master_path: Path to master folder under which all statistics will be saved in a csv file format.
     :param function_name: Function Name for which statistics need to be saved. file name will be saved as csv
+    :param reread: option to reread. Default value is kept as False
+    :param run_type: local or emr or databricks based on the mode of execution. Default value is kept as local
     :return: None, dataframe saved
-    :run_type: local or emr or databricks based on the mode of execution. Default value is kept as local
-    :reread: option to reread. Default value is kept as False
     """
     if run_type == "local":
         local_path = master_path
@@ -106,7 +106,6 @@ def binRange_to_binIdx(spark, col, cutoffs_path):
     :param spark: Spark Session
     :param col: The input column which is needed to by mapped with respective index
     :param cutoffs_path: paths containing the range cutoffs applicable for each index
-
     """
     bin_cutoffs = (
         spark.read.parquet(cutoffs_path)
@@ -274,7 +273,7 @@ def plot_comparative_drift(spark, idf, source, col, cutoffs_path):
     :param idf: Target dataframe which would be referred for producing the frequency charts in form of bar plots / histogram
     :param source: Source dataframe of comparison
     :param col: Analysis column
-    :param sourcecutoffs_path: Path containing the range cut offs details for the analysis column
+    :param cutoffs_path: Path containing the range cut offs details for the analysis column
     """
     odf = (
         idf.groupBy(col)
@@ -384,6 +383,9 @@ def charts_to_objects(
     :param drift_detector: True or False as per the availability. Default value is kept as False
     :param source_path: Source data path. Default value is kept as "NA"
     :param master_path: Path where the output needs to be saved, ideally the same path where the analyzed data output is also saved
+    :param stats_unique: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
+                         to read pre-saved statistics on unique value count i.e. if measures_of_cardinality or
+                         uniqueCount_computation (data_analyzer.stats_generator module) has been computed & saved before.
     :param run_type: local or emr or databricks run type. Default value is kept as local
     """
 
