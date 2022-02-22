@@ -10,8 +10,8 @@
 [![twitter](https://img.shields.io/badge/Follow--lightgrey?logo=twitter&style=social)](https://twitter.com/ml_anovos)
 [![Slack](https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&style=social)](https://go.mlops.community/slack)
 
-_Anovos_ is an open source library for feature engineering at scale. Built by data scientist for the data science
-community, it provides all capabilities required for data ingestion and transformation.
+_Anovos_ is an open source library for feature engineering at scale. Built by data scientists & ML Engineers for the data science
+community, it provides all the capabilities required for data ingestion, data analysis, data drift & data stability analysis, feature recommendation and feature composing. In addition, it auto produces (with some basic configs) easily interpretable & professionally looking data reports which can immensely help users to understand the nature of data within a short time span and also will help data scientists to compose features accordingly.
 
 Leveraging the power of [Apache Spark](https://spark.apache.org/) behind the scenes, _Anovos_ improves data scientists'
 productivity and helps them build more resilient and better performing models.
@@ -19,7 +19,13 @@ productivity and helps them build more resilient and better performing models.
 # Quick Start
 
 The easiest way to try out _Anovos_ and explore its capabilities is through the provided
-[examples](/examples) that you can run via Docker without the need to install anything on your local machine. To install Docker in your local machine please refer the following [guide](https://docs.docker.com/desktop/).
+[examples](/examples) that you can run via Docker without the need to install anything on your local machine. To install Docker in your local machine, please refer the following [guide](https://docs.docker.com/desktop/) hosted at docker website . Set, docker preferences as follows if your system's resources permit:
+1. CPUs - 6
+2. Memory - 8.0 GB
+3. Swap - 1GB
+4. Disk Image Size - 24 GB
+
+Once the docker is up & running, use following command in your terminal to launch the anovos-examples docker container
 
 ```bash
 # Launch an anovos-examples Docker container
@@ -40,14 +46,13 @@ For more detailed instructions, see the [examples README](/examples/README.md).
 
 To use _Anovos_, you need a compatible version of [Apache Spark](https://spark.apache.org/).
 
-Currently, we support:
+Currently, we support following combinations of Apache Spark & Python:
 
-- Apache Spark 2.4.x (on Java 8)
-- Python 3.7.x
+- Apache Spark 2.4.x (on Java 8) & Python 3.7.x
+- Apache Spark 3.1.x (on Java 11) & Python 3.9.x
+- Apache Spark 3.2.x (on Java 11) & Python 3.9.x
 
-Please note that _Anovos_ is not yet compatible with Apache Spark 3.x or later versions of Python. For a more detailed
-and comprehensive description of the Spark environment expected by _Anovos_, please
-see [here](https://docs.anovos.ai/using-anovos/setting-up/locally.html).
+Please note that _Anovos_ auto detects these environment itself and runs on it. 
 
 ## Installation
 
@@ -72,7 +77,7 @@ the [Spark demo](/demo).
 
 ## Roadmap
 
-_Anovos_ is still in the early stages of its development. To see what's planned for the upcoming releases, see
+_Anovos_ has designed for to support any feature engineering tasks in a scalable form. To see what's planned for the upcoming releases, see
 our [roadmap](https://docs.anovos.ai/using-anovos/roadmap.html).
 
 ## Development Version
