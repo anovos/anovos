@@ -175,10 +175,16 @@ def main(all_configs, run_type):
 
             auto_detection = args.get("auto_detection", None)
             id_col = args.get("id_col", None)
+            tz_val = args.get("tz_offset", None)
 
             if auto_detection:
                 df = ts_preprocess(
-                    spark, df, id_col, output_path=report_input_path, run_type=run_type
+                    spark,
+                    df,
+                    id_col,
+                    output_path=report_input_path,
+                    tz_offset=tz_val,
+                    run_type=run_type,
                 )
             else:
                 pass
