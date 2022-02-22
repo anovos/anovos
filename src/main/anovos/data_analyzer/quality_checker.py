@@ -12,7 +12,12 @@ from anovos.data_analyzer.stats_generator import (
     measures_of_cardinality,
 )
 from anovos.data_ingest.data_ingest import read_dataset
-from anovos.data_transformer.transformers import imputation_MMM
+from anovos.data_transformer.transformers import (
+    imputation_MMM,
+    imputation_sklearn,
+    imputation_matrixFactorization,
+    auto_imputation,
+)
 from anovos.shared.utils import (
     attributeType_segregation,
     transpose_dataframe,
@@ -213,7 +218,7 @@ def nullColumns_detection(
                       Alternatively, columns can be specified in a string format,
                       where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
     :param treatment: Boolean argument – True or False. If True, missing values are treated as per treatment_method argument.
-    :param treatment_method: "MMM", "row_removal", "column_removal" (more methods to be added soon).
+    :param treatment_method: "MMM", "row_removal", "column_removal", "KNN", "regression", "MF", "auto".
                              MMM (Mean Median Mode) replaces null value by the measure of central tendency (mode for
                              categorical features and mean or median for numerical features).
                              row_removal removes all rows with any missing value.
@@ -221,9 +226,17 @@ def nullColumns_detection(
                              by key "treatment_threshold" under treatment_configs argument).
     :param treatment_configs: Takes input in dictionary format.
                               For column_removal treatment, key ‘treatment_threshold’ is provided with a value between 0 to 1.
+                              For row_removal, this argument can be skipped.
                               For MMM, arguments corresponding to imputation_MMM function (transformer module) are provided,
                               where each key is an argument from imputation_MMM function.
-                              For row_removal, this argument can be skipped.
+                              For KNN, arguments corresponding to imputation_sklearn function (transformer module) are provided,
+                              where each key is an argument from imputation_sklearn function. method_type should be "KNN"
+                              For regression, arguments corresponding to imputation_sklearn function (transformer module) are provided,
+                              where each key is an argument from imputation_sklearn function. method_type should be "regression"
+                              For MF, arguments corresponding to imputation_matrixFactorization function (transformer module) are provided,
+                              where each key is an argument from imputation_matrixFactorization function.
+                              For auto, arguments corresponding to auto_imputation function (transformer module) are provided,
+                              where each key is an argument from auto_imputation function.
     :param stats_missing: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
                           to read pre-saved statistics on missing count/pct i.e. if measures_of_counts or
                           missingCount_computation (data_analyzer.stats_generator module) has been computed & saved before.
@@ -233,7 +246,6 @@ def nullColumns_detection(
     :param stats_mode: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
                        to read pre-saved statistics on most frequently seen values i.e. if measures_of_centralTendency or
                        mode_computation (data_analyzer.stats_generator module) has been computed & saved before.
-    :param print_impact: True,False.
     :return: (Output Dataframe, Metric Dataframe)
               Output Dataframe is the imputed dataframe if treated, else original input dataframe.
               Metric Dataframe is of schema [attribute, missing_count, missing_pct]. missing_count is number of rows
@@ -256,6 +268,7 @@ def nullColumns_detection(
     if list_of_cols == "all":
         num_cols, cat_cols, other_cols = attributeType_segregation(idf)
         list_of_cols = num_cols + cat_cols
+
     if list_of_cols == "missing":
         list_of_cols = missing_cols
     if isinstance(list_of_cols, str):
@@ -287,8 +300,15 @@ def nullColumns_detection(
         treatment = False
     else:
         raise TypeError("Non-Boolean input for treatment")
-
-    if treatment_method not in ("MMM", "row_removal", "column_removal"):
+    if treatment_method not in (
+        "MMM",
+        "row_removal",
+        "column_removal",
+        "KNN",
+        "regression",
+        "MF",
+        "auto",
+    ):
         raise TypeError("Invalid input for method_type")
 
     treatment_threshold = treatment_configs.pop("treatment_threshold", None)
@@ -324,10 +344,8 @@ def nullColumns_detection(
                 .collect()
             )
             list_of_cols = [e for e in list_of_cols if e not in remove_cols]
-
             if treatment_threshold:
                 list_of_cols = [e for e in threshold_cols if e not in remove_cols]
-
             odf = idf.dropna(subset=list_of_cols)
 
             if print_impact:
@@ -364,6 +382,28 @@ def nullColumns_detection(
                 stats_mode=stats_mode,
                 print_impact=print_impact
             )
+
+        if treatment_method in ("KNN", "regression", "MF", "auto"):
+
+            if treatment_threshold:
+                list_of_cols = threshold_cols
+            list_of_cols = [e for e in list_of_cols if e in num_cols]
+            func_mapping = {
+                "KNN": imputation_sklearn,
+                "regression": imputation_sklearn,
+                "MF": imputation_matrixFactorization,
+                "auto": auto_imputation,
+            }
+            func = func_mapping[treatment_method]
+            odf = func(
+                spark,
+                idf,
+                list_of_cols,
+                **treatment_configs,
+                stats_missing=stats_missing,
+                print_impact=print_impact
+            )
+
     else:
         odf = idf
 
@@ -1145,7 +1185,8 @@ def invalidEntries_detection(
                             match_valid_entries.append(1)
                         else:
                             match_valid_entries.append(0)
-                if sum(match_valid_entries) == 0:
+
+                if (len(match_valid_entries) > 0) & (sum(match_valid_entries) == 0):
                     check = 1
                     output.append(1)
 
