@@ -16,8 +16,6 @@ input_dataset:
   rename_column:
     list_of_cols: ['marital-status','education-num','capital-gain','capital-loss','hours-per-week']
     list_of_newcols: ['marital_status','education_num','capital_gain','capital_loss','hours_per_week']
-    list_of_cols: ['marital-status','education-num']
-    list_of_newcols: ['marital_status','education_num']
   recast_column:
     list_of_cols: ['age','education_num']
     list_of_dtypes: ['float','float']
