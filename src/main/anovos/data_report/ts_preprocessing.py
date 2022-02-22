@@ -400,45 +400,49 @@ def regex_date_time_parser(
         for line_num, line in enumerate(file_lines):
             bl_int = []
             for match_info in regex_text(line):
-                ye, mo, da, ho, mi, se = (
-                    match_info["PARSED"].year,
-                    match_info["PARSED"].month,
-                    match_info["PARSED"].day,
-                    match_info["PARSED"].hour,
-                    match_info["PARSED"].minute,
-                    match_info["PARSED"].second,
-                )
-                if len(bl_int) == 0:
-                    bl_int = [ye, mo, da, ho, mi, se]
+                try:
+                    ye, mo, da, ho, mi, se = (
+                        match_info["PARSED"].year,
+                        match_info["PARSED"].month,
+                        match_info["PARSED"].day,
+                        match_info["PARSED"].hour,
+                        match_info["PARSED"].minute,
+                        match_info["PARSED"].second,
+                    )
+                    if len(bl_int) == 0:
+                        bl_int = [ye, mo, da, ho, mi, se]
 
-                else:
-                    if ye == 1970 and mo == 1 and da == 1:
-                        pass
-                    if ho + mi + se == 0:
-                        pass
-                    if ye > 1970:
-                        bl_int[0] = ye
-                    if mo > 0 and ye != 1970:
-                        bl_int[1] = mo
-                    if da > 0 and ye != 1970:
-                        bl_int[2] = da
-                    if ho > 0:
-                        bl_int[3] = ho
-                    if mi > 0:
-                        bl_int[4] = mi
-                    if se > 0:
-                        bl_int[5] = se
                     else:
-                        pass
+                        if ye == 1970 and mo == 1 and da == 1:
+                            pass
+                        if ho + mi + se == 0:
+                            pass
+                        if ye > 1970:
+                            bl_int[0] = ye
+                        if mo > 0 and ye != 1970:
+                            bl_int[1] = mo
+                        if da > 0 and ye != 1970:
+                            bl_int[2] = da
+                        if ho > 0:
+                            bl_int[3] = ho
+                        if mi > 0:
+                            bl_int[4] = mi
+                        if se > 0:
+                            bl_int[5] = se
+                        else:
+                            pass
 
-            bl.append(
-                [
-                    match_info["CONTEXT"],
-                    datetime.datetime(
-                        bl_int[0], bl_int[1], bl_int[2], bl_int[3], bl_int[4], bl_int[5]
-                    ),
-                ]
-            )
+                    bl.append(
+                        [
+                            match_info["CONTEXT"],
+                            datetime.datetime(
+                                bl_int[0], bl_int[1], bl_int[2], bl_int[3], bl_int[4], bl_int[5]
+                            ),
+                        ]
+                    )
+                except:
+                    pass
+
 
         if len(bl) > 50:
             columns = [col, col + "_ts"]
