@@ -87,6 +87,7 @@ def missingCount_computation(
     :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
                       Alternatively, columns can be specified in a string format,
                       where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+    :param print_impact: True, False
     :return: Dataframe [attribute, missing_count, missing_pct]
     """
     if list_of_cols == "all":
@@ -133,6 +134,7 @@ def nonzeroCount_computation(
     :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
                       Alternatively, columns can be specified in a string format,
                       where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+    :param print_impact: True, False
     :return: Dataframe [attribute, nonzero_count, nonzero_pct]
     """
     num_cols = attributeType_segregation(idf)[0]
@@ -188,6 +190,7 @@ def measures_of_counts(
     :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
                       Alternatively, columns can be specified in a string format,
                       where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+    :param print_impact: True, False
     :return: Dataframe [attribute, fill_count, fill_pct, missing_count, missing_pct, nonzero_count, nonzero_pct]
     """
     if list_of_cols == "all":
@@ -236,6 +239,7 @@ def mode_computation(spark, idf, list_of_cols="all", drop_cols=[], print_impact=
     :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
                       Alternatively, columns can be specified in a string format,
                       where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+    :param print_impact: True, False
     :return: Dataframe [attribute, mode, mode_rows]
              In case there is tie between multiple values, one value is randomly picked as mode.
     """
@@ -309,6 +313,7 @@ def measures_of_centralTendency(
     :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
                       Alternatively, columns can be specified in a string format,
                       where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+    :param print_impact: True, False
     :return: Dataframe [attribute, mean, median, mode, mode_rows, mode_pct]
     """
     if list_of_cols == "all":
@@ -415,6 +420,7 @@ def measures_of_cardinality(
     :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
                       Alternatively, columns can be specified in a string format,
                       where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+    :param print_impact: True, False
     :return: Dataframe [attribute, unique_values, IDness]
     """
     if list_of_cols == "all":
@@ -480,6 +486,7 @@ def measures_of_dispersion(
     :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
                       Alternatively, columns can be specified in a string format,
                       where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+    :param print_impact: True, False
     :return: Dataframe [attribute, stddev, variance, cov, IQR, range]
     """
     num_cols = attributeType_segregation(idf)[0]
@@ -545,6 +552,7 @@ def measures_of_percentiles(
     :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
                       Alternatively, columns can be specified in a string format,
                       where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+    :param print_impact: True, False
     :return: Dataframe [attribute, min, 1%, 5%, 10%, 25%, 50%, 75%, 90%, 95%, 99%, max]
     """
     num_cols = attributeType_segregation(idf)[0]
@@ -605,6 +613,7 @@ def measures_of_shape(spark, idf, list_of_cols="all", drop_cols=[], print_impact
     :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
                       Alternatively, columns can be specified in a string format,
                       where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+    :param print_impact: True, False
     :return: Dataframe [attribute, skewness, kurtosis]
     """
 

@@ -10,6 +10,7 @@ from anovos.data_analyzer import association_evaluator
 from anovos.data_analyzer import quality_checker
 from anovos.data_analyzer import stats_generator
 from anovos.data_ingest import data_ingest
+from anovos.data_transformer import transformers
 from anovos.data_report import report_preprocessing
 from anovos.data_report.basic_report_generation import anovos_basic_report
 from anovos.data_report.report_generation import anovos_report
@@ -76,6 +77,9 @@ def stats_args(all_configs, func):
             "nullColumns_detection": ["stats_unique", "stats_mode", "stats_missing"],
             "variable_clustering": ["stats_unique", "stats_mode"],
             "charts_to_objects": ["stats_unique"],
+            "cat_to_num_unsupervised": ["stats_unique"],
+            "PCA_latentFeatures": ["stats_missing"],
+            "autoencoder_latentFeatures": ["stats_missing"],
         }
         args_to_statsfunc = {
             "stats_unique": "measures_of_cardinality",
@@ -112,7 +116,7 @@ def stats_args(all_configs, func):
     return result
 
 
-def main(all_configs, global_run_type):
+def main(all_configs, run_type):
     start_main = timeit.default_timer()
     df = ETL(all_configs.get("input_dataset"))
 
@@ -133,7 +137,7 @@ def main(all_configs, global_run_type):
         if (key == "concatenate_dataset") & (args is not None):
             start = timeit.default_timer()
             idfs = [df]
-            for k in [e for e in args.keys() if e not in "method"]:
+            for k in [e for e in args.keys() if e not in ("method")]:
                 tmp = ETL(args.get(k))
                 idfs.append(tmp)
             df = data_ingest.concatenate_dataset(*idfs, method_type=args.get("method"))
@@ -173,10 +177,7 @@ def main(all_configs, global_run_type):
         ):
             start = timeit.default_timer()
             anovos_basic_report(
-                spark,
-                df,
-                **args.get("report_args", {}),
-                global_run_type=global_run_type,
+                spark, df, **args.get("report_args", {}), run_type=run_type
             )
             end = timeit.default_timer()
             logger.info(
@@ -198,7 +199,7 @@ def main(all_configs, global_run_type):
                             report_input_path,
                             m,
                             reread=True,
-                            run_type=global_run_type,
+                            run_type=run_type,
                         ).show(100)
                     else:
                         save(
@@ -238,7 +239,7 @@ def main(all_configs, global_run_type):
                                 report_input_path,
                                 subkey,
                                 reread=True,
-                                run_type=global_run_type,
+                                run_type=run_type,
                             ).show(100)
                         else:
                             save(
@@ -269,7 +270,7 @@ def main(all_configs, global_run_type):
                                 report_input_path,
                                 subkey,
                                 reread=True,
-                                run_type=global_run_type,
+                                run_type=run_type,
                             ).show(100)
                         else:
                             save(
@@ -307,7 +308,7 @@ def main(all_configs, global_run_type):
                                 report_input_path,
                                 subkey,
                                 reread=True,
-                                run_type=global_run_type,
+                                run_type=run_type,
                             ).show(100)
                         else:
                             save(
@@ -324,7 +325,7 @@ def main(all_configs, global_run_type):
                     if (subkey == "stability_index") & (value is not None):
                         start = timeit.default_timer()
                         idfs = []
-                        for k in [e for e in value.keys() if e not in "configs"]:
+                        for k in [e for e in value.keys() if e not in ("configs")]:
                             tmp = ETL(value.get(k))
                             idfs.append(tmp)
                         df_stats = ddetector.stability_index_computation(
@@ -337,7 +338,7 @@ def main(all_configs, global_run_type):
                                 report_input_path,
                                 subkey,
                                 reread=True,
-                                run_type=global_run_type,
+                                run_type=run_type,
                             ).show(100)
                             appended_metric_path = value["configs"].get(
                                 "appended_metric_path", ""
@@ -355,7 +356,7 @@ def main(all_configs, global_run_type):
                                     report_input_path,
                                     "stabilityIndex_metrics",
                                     reread=True,
-                                    run_type=global_run_type,
+                                    run_type=run_type,
                                 ).show(100)
                         else:
                             save(
@@ -373,6 +374,42 @@ def main(all_configs, global_run_type):
                     f"execution time w/o report (in sec) ={round(end - start_main, 4)}"
                 )
 
+            if (key == "transformers") & (args != None):
+                for subkey, value in args.items():
+                    if value != None:
+                        for subkey2, value2 in value.items():
+                            if value2 != None:
+                                start = timeit.default_timer()
+                                print("\n" + subkey2 + ": \n")
+                                f = getattr(transformers, subkey2)
+                                extra_args = stats_args(all_configs, subkey2)
+                                if subkey2 in (
+                                    "normalization",
+                                    "feature_transformation",
+                                    "boxcox_transformation",
+                                    "expression_parser",
+                                ):
+                                    df_transformed = f(df, **value2, print_impact=True)
+                                else:
+                                    df_transformed = f(
+                                        spark, df, **value2, print_impact=True
+                                    )
+                                df = save(
+                                    df_transformed,
+                                    write_intermediate,
+                                    folder_name="data_transformer/transformers/"
+                                    + subkey2,
+                                    reread=True,
+                                )
+                                end = timeit.default_timer()
+                                print(
+                                    key,
+                                    subkey,
+                                    subkey2,
+                                    ", execution time (in secs) =",
+                                    round(end - start, 4),
+                                )
+
             if (key == "report_preprocessing") & (args is not None):
                 for subkey, value in args.items():
                     if (subkey == "charts_to_objects") & (value is not None):
@@ -385,7 +422,7 @@ def main(all_configs, global_run_type):
                             **value,
                             **extra_args,
                             master_path=report_input_path,
-                            run_type=global_run_type,
+                            run_type=run_type,
                         )
                         end = timeit.default_timer()
                         logger.info(
@@ -393,23 +430,23 @@ def main(all_configs, global_run_type):
                         )
 
             if (key == "report_generation") & (args is not None):
-                anovos_report(**args, run_type=global_run_type)
+                anovos_report(**args, run_type=run_type)
 
     save(df, write_main, folder_name="final_dataset", reread=False)
 
 
 if __name__ == "__main__":
     config_path = sys.argv[1]
-    infra = sys.argv[2]
+    run_type = sys.argv[2]
 
-    if infra == "local" or "databricks":
+    if run_type in ("local", "databricks"):
         config_file = open(config_path, "r")
-    elif infra == "emr":
+    elif run_type == "emr":
         bash_cmd = "aws s3 cp " + config_path + " config.yaml"
         output = subprocess.check_output(["bash", "-c", bash_cmd])
         config_file = open("config.yaml", "r")
     else:
-        raise ValueError("Invalid global_run_type")
+        raise ValueError("Invalid run_type")
 
-    configs = yaml.load(config_file, yaml.SafeLoader)
-    main(configs, infra)
+    all_configs = yaml.load(config_file, yaml.SafeLoader)
+    main(all_configs, run_type)

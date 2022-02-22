@@ -395,7 +395,7 @@ def cat_to_num_unsupervised(
     :param output_mode: "replace", "append".
                         “replace” option replaces original columns with transformed column. “append” option append transformed
                         column to the input dataset with a postfix "_index" e.g. column X is appended as X_index.
-    :param print_impact:  true, False,
+    :param print_impact: True, False
     :return: Encoded Dataframe
     """
 
@@ -609,6 +609,7 @@ def cat_to_num_supervised(
     :param output_mode: "replace", "append".
                          “replace” option replaces original columns with transformed column. “append” option append transformed
                          column to the input dataset with a postfix "_encoded" e.g. column X is appended as X_encoded.
+    :param print_impact: True, False
     :return: Transformed Dataframe
     """
 
@@ -727,6 +728,7 @@ def z_standardization(
     :param output_mode: "replace", "append".
                         “replace” option replaces original columns with transformed column. “append” option append transformed
                         column to the input dataset with a postfix "_scaled" e.g. column X is appended as X_scaled.
+    :param print_impact: True, False
     :return: Scaled Dataframe
     """
     num_cols = attributeType_segregation(idf)[0]
@@ -839,6 +841,7 @@ def IQR_standardization(
     :param output_mode: "replace", "append".
                         “replace” option replaces original columns with transformed column. “append” option append transformed
                         column to the input dataset with a postfix "_scaled" e.g. column X is appended as X_scaled.
+    :param print_impact: True, False
     :return: Scaled Dataframe
     """
     num_cols = attributeType_segregation(idf)[0]
@@ -949,6 +952,7 @@ def normalization(
     :param output_mode: "replace", "append".
                         “replace” option replaces original columns with transformed column. “append” option append transformed
                         column to the input dataset with a postfix "_scaled" e.g. column X is appended as X_scaled.
+    :param print_impact: True, False
     :return: Scaled Dataframe
     """
     num_cols = attributeType_segregation(idf)[0]
@@ -1328,7 +1332,7 @@ def imputation_sklearn(
     model_path="NA",
     output_mode="replace",
     stats_missing={},
-    emr_mode=False,
+    run_type="local",
     print_impact=False,
 ):
     """
@@ -1360,7 +1364,8 @@ def imputation_sklearn(
     :param stats_missing: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
                           to read pre-saved statistics on missing count/pct i.e. if measures_of_counts or
                           missingCount_computation (data_analyzer.stats_generator module) has been computed & saved before.
-    :param emr_mode: Boolean argument – True or False. True if it is run on EMR, False otherwise.
+    :param run_type: "local", "emr"
+    :param print_impact: True, False
     :return: Imputed Dataframe
     """
 
@@ -1436,7 +1441,7 @@ def imputation_sklearn(
         raise TypeError("Invalid input for output_mode")
 
     if pre_existing_model:
-        if emr_mode:
+        if run_type == "emr":
             bash_cmd = "aws s3 cp " + model_path + "/imputation_sklearn.sav ."
             output = subprocess.check_output(["bash", "-c", bash_cmd])
             imputer = pickle.load(open("imputation_sklearn.sav", "rb"))
@@ -1445,22 +1450,19 @@ def imputation_sklearn(
         idf_rest = idf
     else:
         sample_ratio = min(1.0, float(sample_size) / idf.count())
-        idf = idf.withColumn("id", F.monotonically_increasing_id())
         idf_model = idf.sample(False, sample_ratio, 0)
-        idf_rest = idf.subtract(idf_model)
-        idf_pd = idf_model.select(["id"] + list_of_cols).toPandas()
+        idf_pd = idf_model.select(list_of_cols).toPandas()
 
         if method_type == "KNN":
             imputer = KNNImputer(
                 n_neighbors=5, weights="uniform", metric="nan_euclidean"
             )
-            imputer.fit(idf_pd.drop(columns=["id"]))
         if method_type == "regression":
             imputer = IterativeImputer()
-            imputer.fit(idf_pd.drop(columns=["id"]))
+        imputer.fit(idf_pd)
 
         if (not pre_existing_model) & (model_path != "NA"):
-            if emr_mode:
+            if run_type == "emr":
                 pickle.dump(imputer, open("imputation_sklearn.sav", "wb"))
                 bash_cmd = (
                     "aws s3 cp imputation_sklearn.sav "
@@ -1468,68 +1470,42 @@ def imputation_sklearn(
                     + "/imputation_sklearn.sav"
                 )
                 output = subprocess.check_output(["bash", "-c", bash_cmd])
+                imputer = pickle.load(open("imputation_sklearn.sav", "rb"))
             else:
                 local_path = model_path + "/imputation_sklearn.sav"
                 os.makedirs(os.path.dirname(local_path), exist_ok=True)
                 pickle.dump(imputer, open(local_path, "wb"))
+                imputer = pickle.load(
+                    open(model_path + "/imputation_sklearn.sav", "rb")
+                )
 
-        pred = imputer.transform(idf_pd.drop(columns=["id"]))
-        output = pd.concat([pd.Series(list(pred)), idf_pd], axis=1)
-        output.rename(columns={0: "features"}, inplace=True)
-        output.features = output.features.map(lambda x: [float(e) for e in x])
-        odf_model = spark.createDataFrame(output)
-        for index, i in enumerate(list_of_cols):
-            modify_col = (i + "_imputed") if (output_mode == "append") else i
-            odf_model = odf_model.withColumn(modify_col, F.col("features")[index])
-        odf_model = odf_model.drop("features")
-        for i in odf_model.columns:
-            odf_model = odf_model.withColumn(
-                i, F.when(F.isnan(F.col(i)), None).otherwise(F.col(i))
-            )
+    @F.pandas_udf(returnType=T.ArrayType(T.DoubleType()))
+    def prediction(*cols):
+        X = pd.concat(cols, axis=1)
+        return pd.Series(row.tolist() for row in imputer.transform(X))
 
-    if idf_rest.count() > 0:
+    odf = idf.withColumn("features", prediction(*list_of_cols))
+    odf.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
 
-        @F.pandas_udf(returnType=T.ArrayType(T.DoubleType()))
-        def prediction(*cols):
-            X = pd.concat(cols, axis=1)
-            return pd.Series(row.tolist() for row in imputer.transform(X))
-
-        odf_rest = idf_rest.withColumn("features", prediction(*list_of_cols))
-        for index, i in enumerate(list_of_cols):
-            modify_col = (i + "_imputed") if (output_mode == "append") else i
-            odf_rest = odf_rest.withColumn(modify_col, F.col("features")[index])
-        odf_rest = odf_rest.drop("features")
-
-    if pre_existing_model:
-        odf = odf_rest
-
-    elif idf_rest.count() == 0:
-        odf = (
-            idf.select(["id"] + [e for e in idf.columns if e not in list_of_cols])
-            .join(odf_model, "id", "left_outer")
-            .drop("id")
-        )
-    else:
-        odf = (
-            idf.select(["id"] + [e for e in idf.columns if e not in list_of_cols])
-            .join(
-                odf_model.union(odf_rest.select(odf_model.columns)), "id", "left_outer"
-            )
-            .drop("id")
-        )
-
+    odf_schema = odf.schema
     for i in list_of_cols:
-        if (i not in missing_cols) & (output_mode == "append"):
-            odf = odf.drop(i + "_imputed")
+        odf_schema = odf_schema.add(T.StructField(i + "_imputed", T.FloatType()))
+    odf = (
+        odf.rdd.map(lambda x: (*x, *x["features"]))
+        .toDF(schema=odf_schema)
+        .drop("features")
+    )
 
-    if output_mode == "replace":
-        odf_cols = idf.drop("id").columns
-    else:
-        output_cols = [
-            (i + "_imputed") for i in [e for e in list_of_cols if e in missing_cols]
-        ]
-        odf_cols = idf.drop("id").columns + output_cols
-    odf = odf.select(odf_cols)
+    output_cols = []
+    for i in list_of_cols:
+        if output_mode == "append":
+            if i not in missing_cols:
+                odf = odf.drop(i + "_imputed")
+            else:
+                output_cols.append(i + "_imputed")
+        else:
+            odf = odf.drop(i).withColumnRenamed(i + "_imputed", i)
+    odf = odf.select(idf.columns + output_cols)
 
     if print_impact:
         if output_mode == "replace":
@@ -1591,6 +1567,7 @@ def imputation_matrixFactorization(
     :param stats_missing: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
                           to read pre-saved statistics on missing count/pct i.e. if measures_of_counts or
                           missingCount_computation (data_analyzer.stats_generator module) has been computed & saved before.
+    :param print_impact: True, False
     :return: Imputed Dataframe
     """
 
@@ -1793,7 +1770,8 @@ def auto_imputation(
     :param output_mode: "replace", "append".
                          “replace” option replaces original columns with transformed column. “append” option append transformed
                          column to the input dataset with a postfix "_imputed" e.g. column X is appended as X_imputed.
-    :return: Name of the best Imputation Technique
+    :param print_impact: True, False
+    :return: Imputed Dataframe
     """
 
     if stats_missing == {}:
@@ -1957,7 +1935,7 @@ def auto_imputation(
                 RegressionEvaluator(
                     metricName="rmse", labelCol="val", predictionCol="pred"
                 ).evaluate(idf_joined)
-            ) / pred_mean
+            ) / abs(pred_mean)
             nrmse += i_nrmse
         nrmse_all.append(nrmse)
 
@@ -1968,7 +1946,7 @@ def auto_imputation(
     if print_impact:
         print(list(zip(method_all, nrmse_all)))
         print("Best Imputation Method: ", best_method)
-    return odf, best_method
+    return odf
 
 
 def autoencoder_latentFeatures(
@@ -1988,7 +1966,7 @@ def autoencoder_latentFeatures(
     imputation_configs={"imputation_function": "imputation_MMM"},
     stats_missing={},
     output_mode="replace",
-    emr_mode=False,
+    run_type="local",
     print_impact=False,
 ):
     """
@@ -2022,11 +2000,12 @@ def autoencoder_latentFeatures(
     :param stats_missing: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
                           to read pre-saved statistics on missing count/pct i.e. if measures_of_counts or
                           missingCount_computation (data_analyzer.stats_generator module) has been computed & saved before.
-    :param emr_mode: Boolean argument – True or False. True if it is run on EMR, False otherwise.
     :param output_mode: "replace", "append".
                         “replace” option replaces original columns with transformed columns: latent_<col_index>.
                         “append” option append transformed columns with format latent_<col_index> to the input dataset,
                         e.g. latent_0, latent_1 will be appended if reduction_params=2.
+    :param run_type: "local", "emr"
+    :param print_impact: True, False
     :return: Dataframe with Latent Features.
     """
 
@@ -2048,11 +2027,11 @@ def autoencoder_latentFeatures(
     if stats_missing == {}:
         missing_df = missingCount_computation(spark, idf, list_of_cols)
         missing_df.write.parquet(
-            "intermediate_data/PCA_latentFeatures/missingCount_computation",
+            "intermediate_data/autoencoder_latentFeatures/missingCount_computation",
             mode="overwrite",
         )
         stats_missing = {
-            "file_path": "intermediate_data/PCA_latentFeatures/missingCount_computation",
+            "file_path": "intermediate_data/autoencoder_latentFeatures/missingCount_computation",
             "file_type": "parquet",
         }
     else:
@@ -2106,11 +2085,11 @@ def autoencoder_latentFeatures(
             .withColumn("attribute", F.concat(F.col("attribute"), F.lit("_scaled")))
         )
         missing_df_scaled.write.parquet(
-            "intermediate_data/PCA_latentFeatures/missingCount_computation_scaled",
+            "intermediate_data/autoencoder_latentFeatures/missingCount_computation_scaled",
             mode="overwrite",
         )
         stats_missing_scaled = {
-            "file_path": "intermediate_data/PCA_latentFeatures/missingCount_computation_scaled",
+            "file_path": "intermediate_data/autoencoder_latentFeatures/missingCount_computation_scaled",
             "file_type": "parquet",
         }
         idf_imputed = f(
@@ -2130,7 +2109,7 @@ def autoencoder_latentFeatures(
         n_bottleneck = int(reduction_params)
 
     if pre_existing_model:
-        if emr_mode:
+        if run_type == "emr":
             bash_cmd = (
                 "aws s3 cp " + model_path + "/autoencoders_latentFeatures/encoder.h5 ."
             )
@@ -2184,7 +2163,7 @@ def autoencoder_latentFeatures(
         )
 
         if (not pre_existing_model) & (model_path != "NA"):
-            if emr_mode:
+            if run_type == "emr":
                 encoder.save("encoder.h5")
                 model.save("model.h5")
                 bash_cmd = (
@@ -2235,28 +2214,20 @@ def autoencoder_latentFeatures(
 
         return predict_pandas_udf
 
-    if output_mode == "append":
-        odf = idf_imputed.withColumn(
-            "predicted_output",
-            compute_output_pandas_udf(model_wrapper)(*list_of_cols_scaled),
-        ).select(
-            idf.columns
-            + [
-                F.col("predicted_output")[j].alias("latent_" + str(j))
-                for j in range(0, n_bottleneck)
-            ]
-        )
-    else:
-        odf = idf_imputed.withColumn(
-            "predicted_output",
-            compute_output_pandas_udf(model_wrapper)(*list_of_cols_scaled),
-        ).select(
-            [e for e in idf.columns if e not in list_of_cols]
-            + [
-                F.col("predicted_output")[j].alias("latent_" + str(j))
-                for j in range(0, n_bottleneck)
-            ]
-        )
+    odf = idf_imputed.withColumn(
+        "predicted_output",
+        compute_output_pandas_udf(model_wrapper)(*list_of_cols_scaled),
+    )
+    odf_schema = odf.schema
+    for i in range(0, n_bottleneck):
+        odf_schema = odf_schema.add(T.StructField("latent_" + str(i), T.FloatType()))
+    odf = (
+        odf.rdd.map(lambda x: (*x, *x["predicted_output"]))
+        .toDF(schema=odf_schema)
+        .drop("predicted_output")
+    )
+    if output_mode == "replace":
+        odf = odf.drop(*list_of_cols)
 
     if print_impact:
         output_cols = ["latent_" + str(j) for j in range(0, n_bottleneck)]
@@ -2273,7 +2244,7 @@ def PCA_latentFeatures(
     explained_variance_cutoff=0.95,
     pre_existing_model=False,
     model_path="NA",
-    standardization=False,
+    standardization=True,
     standardization_configs={"pre_existing_model": False, "model_path": "NA"},
     imputation=False,
     imputation_configs={"imputation_function": "imputation_MMM"},
@@ -2313,6 +2284,7 @@ def PCA_latentFeatures(
                         “replace” option replaces original columns with transformed columns: latent_<col_index>.
                         “append” option append transformed columns with format latent_<col_index> to the input dataset,
                         e.g. latent_0, latent_1.
+    :param print_impact: True, False
     :return:  Dataframe with Latent Features.
     """
 
@@ -2409,8 +2381,10 @@ def PCA_latentFeatures(
     else:
         idf_imputed = idf_standardized.dropna(subset=list_of_cols_scaled)
 
+    idf_imputed.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
+
     assembler = VectorAssembler(inputCols=list_of_cols_scaled, outputCol="features")
-    assembled_data = assembler.transform(idf_imputed)
+    assembled_data = assembler.transform(idf_imputed).drop(*list_of_cols_scaled)
 
     if pre_existing_model:
         pca = PCA.load(model_path + "/PCA_latentFeatures/pca_path")
@@ -2440,36 +2414,24 @@ def PCA_latentFeatures(
 
     f_vector_to_array = F.udf(vector_to_array, T.ArrayType(T.FloatType()))
 
-    if output_mode == "append":
-        odf = (
-            pcaModel.transform(assembled_data)
-            .withColumn("features_pca_array", f_vector_to_array("features_pca"))
-            .select(
-                idf.columns
-                + [
-                    F.col("features_pca_array")[j].alias("latent_" + str(j))
-                    for j in range(0, n)
-                ]
-            )
-            .replace(
-                float("nan"), None, subset=["latent_" + str(j) for j in range(0, n)]
-            )
-        )
-    else:
-        odf = (
-            pcaModel.transform(assembled_data)
-            .withColumn("features_pca_array", f_vector_to_array("features_pca"))
-            .select(
-                [e for e in idf.columns if e not in list_of_cols]
-                + [
-                    F.col("features_pca_array")[j].alias("latent_" + str(j))
-                    for j in range(0, n)
-                ]
-            )
-            .replace(
-                float("nan"), None, subset=["latent_" + str(j) for j in range(0, n)]
-            )
-        )
+    odf = (
+        pcaModel.transform(assembled_data)
+        .withColumn("features_pca_array", f_vector_to_array("features_pca"))
+        .drop(*["features", "features_pca"])
+    )
+
+    odf_schema = odf.schema
+    for i in range(0, n):
+        odf_schema = odf_schema.add(T.StructField("latent_" + str(i), T.FloatType()))
+    odf = (
+        odf.rdd.map(lambda x: (*x, *x["features_pca_array"]))
+        .toDF(schema=odf_schema)
+        .drop("features_pca_array")
+        .replace(float("nan"), None, subset=["latent_" + str(j) for j in range(0, n)])
+    )
+
+    if output_mode == "replace":
+        odf = odf.drop(*list_of_cols)
 
     if print_impact:
         print("Explained Variance: ", round(np.sum(pcaModel.explainedVariance[0:n]), 4))
@@ -2510,6 +2472,7 @@ def feature_transformation(
                         “replace” option replaces original columns with transformed columns.
                         “append” option append transformed columns with a postfix (E.g. "_ln", "_powOf<N>")
                         to the input dataset.
+    :param print_impact: True, False
     :return:  Dataframe with encoded columns.
     """
 
@@ -2640,6 +2603,7 @@ def boxcox_transformation(
                         “replace” option replaces original columns with transformed columns.
                         “append” option append transformed columns with a postfix "_bxcx_<lambda>"
                         to the input dataset.
+    :param print_impact: True, False
     :return:  Dataframe with encoded columns.
     """
 
@@ -2779,6 +2743,7 @@ def outlier_categories(
     :param output_mode: "replace", "append".
                         “replace” option replaces original columns with transformed column. “append” option append transformed
                         column to the input dataset with a postfix "_outliered" e.g. column X is appended as X_outliered.
+    :param print_impact: True, False
     :return: Dataframe after outlier treatment
     """
 
@@ -2891,6 +2856,8 @@ def expression_parser(idf, list_of_expr, postfix="", print_impact=False):
                          where different expressions are separated by pipe delimiter “|” e.g., "expr1|expr2".
     :param postfix: postfix for new feature name.Naming convention "f" + expression_index + postfix
                     e.g. with postfix of "new", new added features are named as f0new, f1new etc.
+    :param print_impact: True, False
+    :return: Output Dataframe appended with expression-derived attributes
     """
     if isinstance(list_of_expr, str):
         list_of_expr = [x.strip() for x in list_of_expr.split("|")]

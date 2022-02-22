@@ -125,6 +125,7 @@ def delete_column(idf, list_of_cols, print_impact=False):
     :param list_of_cols: List of columns to delete e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
                          where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+    :param print_impact: True, False
     :return: Dataframe after dropping columns
     """
     if isinstance(list_of_cols, str):
@@ -147,6 +148,7 @@ def select_column(idf, list_of_cols, print_impact=False):
     :param list_of_cols: List of columns to select e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
                          where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+    :param print_impact: True, False
     :return: Dataframe with the selected columns
     """
     if isinstance(list_of_cols, str):
@@ -174,6 +176,7 @@ def rename_column(idf, list_of_cols, list_of_newcols, print_impact=False):
                             where different column names are separated by pipe delimiter “|” e.g., "newcol1|newcol2".
                             First element in list_of_cols will be original column name,
                             and corresponding first column in list_of_newcols will be new column name.
+    :param print_impact: True, False
     :return: Dataframe with revised column names
     """
     if isinstance(list_of_cols, str):
@@ -204,6 +207,7 @@ def recast_column(idf, list_of_cols, list_of_dtypes, print_impact=False):
                            First element in list_of_cols will column name and corresponding element in list_of_dtypes
                            will be new datatypes such as "float", "integer", "long", "string", "double", decimal" etc.
                            Datatypes are case insensitive e.g. float or Float are treated as same.
+    :param print_impact: True, False
     :return: Dataframe with revised datatypes
     """
     if isinstance(list_of_cols, str):

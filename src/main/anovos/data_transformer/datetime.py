@@ -255,7 +255,7 @@ def string_to_timestamp(
     :param list_of_cols: List of columns to transform e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
                          where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    :param date_format: Format of the input column(s) in string
+    :param input_format: Format of the input column(s) in string
     :param output_type: "ts", "dt"
                         "ts" option returns result in T.TimestampType()
                         "dt" option returns result in T.DateType()
@@ -303,7 +303,7 @@ def timestamp_to_string(
                          Alternatively, columns can be specified in a string format,
                          where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
                          Columns must be of Datetime type or String type in "%Y-%m-%d %H:%M:%S" format.
-    :param date_format: Format of the output column(s)
+    :param output_format: Format of the output column(s)
     :param output_mode: "replace", "append".
                         “replace” option replaces original columns with derived column. “append” option appends derived
                         column to the input dataset with a postfix "_str" e.g. column X is appended as X_str.
@@ -1125,12 +1125,12 @@ def is_selectedHour(idf, list_of_cols, start_hour, end_hour, output_mode="append
     :param list_of_cols: List of columns to transform e.g., ["col1","col2"].
                          Alternatively, columns can be specified in a string format,
                          where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+    :param start_hour: The starting hour of the hour range (inclusive)
+    :param end_hour: The ending hour of the hour range (inclusive)
     :param output_mode: "replace", "append".
                         “replace” option replaces original columns with derived column with a postfix "_isselectedHour".
                         “append” option appends derived column to the input dataset with a postfix "_isselectedHour",
                         e.g. column X is appended as X_isselectedHour.
-    :param start_hour: the starting hour of the hour range (inclusive)
-    :param end_hour: : the ending hour of the hour range (inclusive)
     :return: Output Dataframe with derived column
     """
     list_of_cols = argument_checker(
@@ -1253,7 +1253,7 @@ def aggregator(
                          Supported metrics: 'count', 'min', 'max', 'sum', 'mean', 'median', 'stddev',
                          'countDistinct', 'sumDistinct', 'collect_list', 'collect_set'.
     :param time_col: (Timestamp) Column to group by.
-    :param granularity_format: Format to be allied to time_col before groupBy. The default value is
+    :param granularity_format: Format to be applied to time_col before groupBy. The default value is
                                '%Y-%m-%d', which means grouping by the date component of time_col.
                                Alternatively, '' can be used if no formatting is necessary.
 
@@ -1340,8 +1340,8 @@ def window_aggregator(
                          Supported metrics: 'count','min','max','sum','mean','median'
     :param order_col: (Timestamp) Column to order window
     :param window_type: "expanding", "rolling"
-                        "expanding" option have a fixed lower bound (first row in the partition)
-                        "rolling" option have a fixed window size defined by window_size param
+                        "expanding" option has a fixed lower bound (first row in the partition)
+                        "rolling" option has a fixed window size defined by window_size param
     :param window_size: window size for rolling window type. Integer value with value >= 1.
     :param partition_col: Rows partitioned by this column before creating window.
     :param output_mode: "replace", "append".
