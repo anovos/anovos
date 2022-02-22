@@ -12,7 +12,12 @@ from anovos.data_analyzer.stats_generator import (
     measures_of_cardinality,
 )
 from anovos.data_ingest.data_ingest import read_dataset
-from anovos.data_transformer.transformers import imputation_MMM
+from anovos.data_transformer.transformers import (
+    imputation_MMM,
+    imputation_sklearn,
+    imputation_matrixFactorization,
+    auto_imputation,
+)
 from anovos.shared.utils import (
     attributeType_segregation,
     transpose_dataframe,
