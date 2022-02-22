@@ -1771,7 +1771,7 @@ def auto_imputation(
                          “replace” option replaces original columns with transformed column. “append” option append transformed
                          column to the input dataset with a postfix "_imputed" e.g. column X is appended as X_imputed.
     :param print_impact: True, False
-    :return: Name of the best Imputation Technique
+    :return: Imputed Dataframe
     """
 
     if stats_missing == {}:
@@ -1946,7 +1946,7 @@ def auto_imputation(
     if print_impact:
         print(list(zip(method_all, nrmse_all)))
         print("Best Imputation Method: ", best_method)
-    return odf, best_method
+    return odf
 
 
 def autoencoder_latentFeatures(
