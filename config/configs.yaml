@@ -14,8 +14,8 @@ input_dataset:
   delete_column: ['logfnl','constant']
   select_column: null
   rename_column:
-    list_of_cols: ['marital-status','education-num']
-    list_of_newcols: ['marital_status','education_num']
+    list_of_cols: ['marital-status','education-num','capital-gain','capital-loss','hours-per-week']
+    list_of_newcols: ['marital_status','education_num','capital_gain','capital_loss','hours_per_week']
   recast_column:
     list_of_cols: ['age','education_num']
     list_of_dtypes: ['float','float']
@@ -29,8 +29,8 @@ concatenate_dataset:
     delete_column: ['logfnl']
     select_column: null
     rename_column:
-      list_of_cols: ['marital-status','education-num']
-      list_of_newcols: ['marital_status','education_num']
+      list_of_cols: ['marital-status','education-num','capital-gain','capital-loss','hours-per-week']
+      list_of_newcols: ['marital_status','education_num','capital_gain','capital_loss','hours_per_week']
     recast_column:
       list_of_cols: ['age','education_num']
       list_of_dtypes: ['float','float']
@@ -42,8 +42,8 @@ concatenate_dataset:
     delete_column: ['logfnl']
     select_column: null
     rename_column:
-      list_of_cols: ['marital-status','education-num']
-      list_of_newcols: ['marital_status','education_num']
+      list_of_cols: ['marital-status','education-num','capital-gain','capital-loss','hours-per-week']
+      list_of_newcols: ['marital_status','education_num','capital_gain','capital_loss','hours_per_week']
     recast_column:
       list_of_cols: ['age','education_num']
       list_of_dtypes: ['float','float']
@@ -196,8 +196,8 @@ drift_detector:
       delete_column: ['logfnl']
       select_column: null
       rename_column:
-        list_of_cols: ['marital-status','education-num']
-        list_of_newcols: ['marital_status','education_num']
+        list_of_cols: ['marital-status','education-num','capital-gain','capital-loss','hours-per-week']
+        list_of_newcols: ['marital_status','education_num','capital_gain','capital_loss','hours_per_week']
       recast_column:
         list_of_cols: ['age','education_num']
         list_of_dtypes: ['float','float']
