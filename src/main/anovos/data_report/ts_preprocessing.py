@@ -593,8 +593,6 @@ def ts_eligiblity_check(spark, idf, col, id_col, opt=1, tz_offset="local"):
         return odf
 
 
-
-
 def ts_viz_data(
     spark,
     idf,
@@ -607,8 +605,8 @@ def ts_viz_data(
     n_cat=10,
 ):
 
-    y_col_ = y_col.replace("-","_")
-    idf = idf.withColumnRenamed(y_col,y_col_)
+    y_col_ = y_col.replace("-", "_")
+    idf = idf.withColumnRenamed(y_col, y_col_)
     y_col = y_col_
 
     for i in idf.dtypes:
