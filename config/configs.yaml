@@ -340,7 +340,7 @@ transformers:
 
   numerical_expression:
     expression_parser:
-      list_of_expr: 'log(age) + 1.5|sin(capital-gain)+cos(capital-loss)'
+      list_of_expr: 'log(age) + 1.5|sin(capital_gain)+cos(capital_loss)'
 
   categorical_outliers:
     outlier_categories:
