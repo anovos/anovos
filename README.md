@@ -52,7 +52,7 @@ Currently, we support following combinations of Apache Spark & Python:
 - Apache Spark 3.1.x (on Java 11) & Python 3.9.x
 - Apache Spark 3.2.x (on Java 11) & Python 3.9.x
 
-Please note that _Anovos_ is not that auto detects these environment itself and runs on it.
+Please note that _Anovos_ auto detects these environment itself and runs on it. 
 
 ## Installation
 
