@@ -208,8 +208,8 @@ def test_PCA_latentFeatures(spark_session):
 def test_autoencoder_latentFeatures(spark_session):
     df = read_dataset(spark_session, sample_parquet, "parquet")
     odf = autoencoder_latentFeatures(spark_session, df, list_of_cols=["age","fnlwgt","logfnl","education-num","hours-per-week"] ,epochs=20, reduction_params=0.5, model_path= "unit_testing/models/")
-    assert len(odf.columns) < len(df.columns)
-    assert len(odf.columns) == 14
+    assert len(odf.columns) > len(df.columns)
+    assert len(odf.columns) == 19
 
     try:
         odf = autoencoder_latentFeatures(spark_session, df, list_of_cols=["education-num"] ,epochs=20, reduction_params=0.5, pre_existing_model=True, model_path= "unit_testing/models/")
@@ -222,7 +222,7 @@ def test_autoencoder_latentFeatures(spark_session):
 
     odf = autoencoder_latentFeatures(spark_session, df, list_of_cols=["age","fnlwgt","logfnl","education-num","hours-per-week"] ,epochs=20, reduction_params=0.5, output_mode= "append")
     assert len(odf.columns) > len(df.columns)
-    assert len(odf.columns) == 19    
+    assert len(odf.columns) == 24    
     assert odf.where(F.col("latent_0").isNull()).count() == 0
     assert odf.where(F.col("latent_1").isNull()).count() == 0
 
