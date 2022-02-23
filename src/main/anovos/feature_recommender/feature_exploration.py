@@ -46,8 +46,6 @@ def process_usecase(usecase, semantic):
 
     Returns
     -------
-    type
-        Processed Usecase(string)
 
     """
     if type(semantic) != bool:
@@ -84,8 +82,6 @@ def process_industry(industry, semantic):
 
     Returns
     -------
-    type
-        Processed Industry(string)
 
     """
     if type(semantic) != bool:
@@ -124,8 +120,6 @@ def list_usecase_by_industry(industry, semantic=True):
 
     Returns
     -------
-    type
-        DataFrame
 
     """
     industry = process_industry(industry, semantic)
@@ -146,8 +140,6 @@ def list_industry_by_usecase(usecase, semantic=True):
 
     Returns
     -------
-    type
-        DataFrame
 
     """
     usecase = process_usecase(usecase, semantic)
@@ -171,8 +163,6 @@ def list_feature_by_industry(industry, num_of_feat=100, semantic=True):
 
     Returns
     -------
-    type
-        DataFrame
 
     """
     if type(num_of_feat) != int or num_of_feat < 0:
@@ -208,8 +198,6 @@ def list_feature_by_usecase(usecase, num_of_feat=100, semantic=True):
 
     Returns
     -------
-    type
-        DataFrame
 
     """
     if type(num_of_feat) != int or num_of_feat < 0:
@@ -247,8 +235,6 @@ def list_feature_by_pair(industry, usecase, num_of_feat=100, semantic=True):
 
     Returns
     -------
-    type
-        DataFrame
 
     """
     if type(num_of_feat) != int or num_of_feat < 0:

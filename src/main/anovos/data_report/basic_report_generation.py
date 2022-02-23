@@ -55,7 +55,7 @@ def stats_args(path, func):
     Parameters
     ----------
     path :
-
+        param func:
     func :
 
 
