@@ -50,6 +50,19 @@ default_template = (
 
 
 def stats_args(path, func):
+    """
+
+    Parameters
+    ----------
+    path
+        param func:
+    func
+
+
+    Returns
+    -------
+
+    """
     output = {}
     mainfunc_to_args = {
         "biasedness_detection": ["stats_mode"],
@@ -86,17 +99,32 @@ def anovos_basic_report(
     print_impact=True,
 ):
     """
-    :param spark: Spark Session
-    :param idf: Input Dataframe
-    :param id_col: ID column
-    :param label_col: Label/Target column
-    :param event_label: Value of (positive) event (i.e label 1)
-    :param output_path: File Path for saving metrics and basic report
-    :param run_type: "local" (default), "emr", "databricks"
-                         "emr" if the files are read from or written in AWS s3
-                         "databricks" if the files are read from or written in dbfs in azure databricks
-    :param print_impact: True, False.
-    :return None
+
+    Parameters
+    ----------
+    spark
+        Spark Session
+    idf
+        Input Dataframe
+    id_col
+        ID column (Default value = "")
+    label_col
+        Label/Target column (Default value = "")
+    event_label
+        Value of (positive) event (i.e label 1) (Default value = "")
+    output_path
+        File Path for saving metrics and basic report (Default value = ".")
+    run_type
+        local" (default), "emr", "databricks"
+        "emr" if the files are read from or written in AWS s3
+        "databricks" if the files are read from or written in dbfs in azure databricks
+    print_impact
+        True, False.
+        :return None (Default value = True)
+
+    Returns
+    -------
+
     """
     global num_cols
     global cat_cols
@@ -123,6 +151,17 @@ def anovos_basic_report(
     all_funcs = SG_funcs + QC_rows_funcs + QC_cols_funcs + AA_funcs + AT_funcs
 
     def output_to_local(output_path):
+        """
+
+        Parameters
+        ----------
+        output_path
+
+
+        Returns
+        -------
+
+        """
         punctuations = ":"
         for x in output_path:
             if x in punctuations:
@@ -180,6 +219,17 @@ def anovos_basic_report(
             stats.show()
 
     def remove_u_score(col):
+        """
+
+        Parameters
+        ----------
+        col
+
+
+        Returns
+        -------
+
+        """
         col_ = col.split("_")
         bl = []
 

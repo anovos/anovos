@@ -5,8 +5,15 @@ import copy
 
 def camel_case_split(input):
     """
-    :param input: Input (string) which requires cleaning
-    :return: Processed Input (string)
+
+    Parameters
+    ----------
+    input
+        Input (string) which requires cleaning
+
+    Returns
+    -------
+
     """
     processed_input = ""
     matches = finditer(".+?(?:(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|$)", input)
@@ -17,11 +24,21 @@ def camel_case_split(input):
 
 def recommendation_data_prep(df, name_column, desc_column):
     """
-    :param df: Input DataFrame
-    :param name_column: Column name of Input DataFrame attribute/ feature name (string)
-    :param desc_column: Column name of Input DataFrame attribute/ feature description (string)
-    :return list_corpus: List of prepared data for Feature Recommender functions
-    :return df_prep: Processed DataFrame for Feature Recommender functions
+
+    Parameters
+    ----------
+    df
+        Input DataFrame
+    name_column
+        Column name of Input DataFrame attribute/ feature name (string)
+    desc_column
+        Column name of Input DataFrame attribute/ feature description (string)
+        :return list_corpus: List of prepared data for Feature Recommender functions
+        :return df_prep: Processed DataFrame for Feature Recommender functions
+
+    Returns
+    -------
+
     """
     if not isinstance(df, pd.DataFrame):
         raise TypeError("Invalid input for df")
