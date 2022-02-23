@@ -39,9 +39,9 @@ def process_usecase(usecase, semantic):
 
     Parameters
     ----------
-    usecase :
+    usecase
         Input usecase (string)
-    semantic :
+    semantic
         Input semantic (boolean) - Whether the input needs to go through semantic similarity or not. Default is True.
 
     Returns
@@ -75,9 +75,9 @@ def process_industry(industry, semantic):
 
     Parameters
     ----------
-    industry :
+    industry
         Input industry (string)
-    semantic :
+    semantic
         Input semantic (boolean) - Whether the input needs to go through semantic similarity or not. Default is True.
 
     Returns
@@ -113,9 +113,9 @@ def list_usecase_by_industry(industry, semantic=True):
 
     Parameters
     ----------
-    industry :
+    industry
         Input industry (string)
-    semantic :
+    semantic
         Input semantic (boolean) - Whether the input needs to go through semantic similarity or not. Default is True.
 
     Returns
@@ -133,9 +133,9 @@ def list_industry_by_usecase(usecase, semantic=True):
 
     Parameters
     ----------
-    usecase :
+    usecase
         Input usecase (string)
-    semantic :
+    semantic
         Input semantic (boolean) - Whether the input needs to go through semantic similarity or not. Default is True.
 
     Returns
@@ -153,12 +153,12 @@ def list_feature_by_industry(industry, num_of_feat=100, semantic=True):
 
     Parameters
     ----------
-    industry :
+    industry
         Input industry (string)
-    num_of_feat :
+    num_of_feat
         Number of features to be displayed in the output.
         Value can be either integer, or 'all' - display all features matched with the input. Default is 100.
-    semantic :
+    semantic
         Input semantic (boolean) - Whether the input needs to go through semantic similarity or not. Default is True.
 
     Returns
@@ -188,12 +188,12 @@ def list_feature_by_usecase(usecase, num_of_feat=100, semantic=True):
 
     Parameters
     ----------
-    usecase :
+    usecase
         Input usecase (string)
-    num_of_feat :
+    num_of_feat
         Number of features to be displayed in the output.
         Value can be either integer, or 'all' - display all features matched with the input.  Default is 100.
-    semantic :
+    semantic
         Input semantic (boolean) - Whether the input needs to go through semantic similarity or not. Default is True.
 
     Returns
@@ -223,14 +223,14 @@ def list_feature_by_pair(industry, usecase, num_of_feat=100, semantic=True):
 
     Parameters
     ----------
-    industry :
+    industry
         Input industry (string)
-    usecase :
+    usecase
         Input usecase (string)
-    num_of_feat :
+    num_of_feat
         Number of features to be displayed in the output.
         Value can be either integer, or 'all' - display all features matched with the input.  Default is 100.
-    semantic :
+    semantic
         Input semantic (boolean) - Whether the input needs to go through semantic similarity or not. Default is True.
 
     Returns

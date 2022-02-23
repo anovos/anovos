@@ -33,7 +33,7 @@ def master_to_local(master_path):
 
     Parameters
     ----------
-    master_path :
+    master_path
 
 
     Returns
@@ -53,17 +53,17 @@ def save_stats(spark, idf, master_path, function_name, reread=False, run_type="l
 
     Parameters
     ----------
-    spark :
+    spark
         Spark Session
-    idf :
+    idf
         input dataframe
-    master_path :
+    master_path
         Path to master folder under which all statistics will be saved in a csv file format.
-    function_name :
+    function_name
         Function Name for which statistics need to be saved. file name will be saved as csv
-    reread :
+    reread
         option to reread. Default value is kept as False
-    run_type :
+    run_type
         local or emr or databricks based on the mode of execution. Default value is kept as local
 
     Returns
@@ -108,7 +108,7 @@ def edit_binRange(col):
 
     Parameters
     ----------
-    col :
+    col
         The column which is passed as input and needs to be treated.
         The generated output will not contain any range whose value at either side is the same.
 
@@ -136,11 +136,11 @@ def binRange_to_binIdx(spark, col, cutoffs_path):
 
     Parameters
     ----------
-    spark :
+    spark
         Spark Session
-    col :
+    col
         The input column which is needed to by mapped with respective index
-    cutoffs_path :
+    cutoffs_path
         paths containing the range cutoffs applicable for each index
 
     Returns
@@ -178,14 +178,14 @@ def plot_frequency(spark, idf, col, cutoffs_path):
 
     Parameters
     ----------
-    spark :
+    spark
         Spark Session
-    idf :
+    idf
         Input dataframe which would be referred for producing the frequency charts in form of
         bar plots / histograms
-    col :
+    col
         Analysis column
-    cutoffs_path :
+    cutoffs_path
         Path containing the range cut offs details for the analysis column
 
     Returns
@@ -238,15 +238,15 @@ def plot_outlier(spark, idf, col, split_var=None, sample_size=500000):
 
     Parameters
     ----------
-    spark :
+    spark
         Spark Session
-    idf :
+    idf
         Input dataframe which would be referred for capturing the outliers in form of violin charts
-    col :
+    col
         Analysis column
-    split_var :
+    split_var
         Column which is needed. Default value is kept as None
-    sample_size :
+    sample_size
         Maximum Sample size. Default value is kept as 500000
 
     Returns
@@ -281,13 +281,13 @@ def plot_eventRate(spark, idf, col, label_col, event_label, cutoffs_path):
 
     Parameters
     ----------
-    spark :
+    spark
         Spark Session
-    idf :
+    idf
         Input dataframe which would be referred for producing the frequency charts in form of bar plots / histogram
-    col :
+    col
         Analysis column
-    label_col :
+    label_col
         Label column
     event_label :
         Event label

@@ -34,7 +34,7 @@ def remove_u_score(col):
 
     Parameters
     ----------
-    col :
+    col
         Analysis column containing "_" present gets replaced along with upper case conversion
 
     Returns
@@ -58,11 +58,11 @@ def line_chart_gen_stability(df1, df2, col):
 
     Parameters
     ----------
-    df1 :
+    df1
         Analysis dataframe pertaining to summarized stability metrics
-    df2 :
+    df2
         Analysis dataframe pertaining to historical data
-    col :
+    col
         Analysis column
 
     Returns
@@ -75,7 +75,7 @@ def line_chart_gen_stability(df1, df2, col):
 
         Parameters
         ----------
-        val :
+        val
 
 
         Returns
@@ -183,11 +183,11 @@ def data_analyzer_output(master_path, avl_recs_tab, tab_name):
 
     Parameters
     ----------
-    master_path :
+    master_path
         Path containing all the output from analyzed data
-    avl_recs_tab :
+    avl_recs_tab
         Available file names from the analysis tab
-    tab_name :
+    tab_name
         Analysis tab from association_evaluator / quality_checker / stats_generator
 
     Returns
@@ -421,13 +421,13 @@ def drift_stability_ind(
 
     Parameters
     ----------
-    missing_recs_drift :
+    missing_recs_drift
         param drift_tab:
-    missing_recs_stability :
+    missing_recs_stability
         param stability_tab:
-    drift_tab :
+    drift_tab
 
-    stability_tab :
+    stability_tab
 
 
     Returns
@@ -458,11 +458,11 @@ def chart_gen_list(master_path, chart_type, type_col=None):
 
     Parameters
     ----------
-    master_path :
+    master_path
         Path containing all the charts same as the other files from data analyzed output
-    chart_type :
+    chart_type
         Files containing only the specific chart names for the specific chart category
-    type_col :
+    type_col
         None. Default value is kept as None
 
     Returns
@@ -518,17 +518,17 @@ def executive_summary_gen(
 
     Parameters
     ----------
-    master_path :
+    master_path
         Path containing the input files.
-    label_col :
+    label_col
         Label column.
-    ds_ind :
+    ds_ind
         Drift stability indicator in list form.
-    id_col :
+    id_col
         ID column.
-    iv_threshold :
+    iv_threshold
         IV threshold beyond which attributes can be called as significant.
-    corr_threshold :
+    corr_threshold
         Correlation threshold beyond which attributes can be categorized under correlated.
     print_report :
         Printing option flexibility. Default value is kept as False.

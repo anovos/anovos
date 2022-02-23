@@ -96,84 +96,84 @@ def statistics(
 
     Parameters
     ----------
-    spark :
+    spark
         Spark Session
-    idf_target :
+    idf_target
         Input Dataframe
-    idf_source :
+    idf_source
         Baseline/Source Dataframe. This argument is ignored if pre_existing_source is True.
-    list_of_cols :
+    list_of_cols
         List of columns to check drift e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
         "all" can be passed to include all (non-array) columns for analysis.
         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
-    drop_cols :
+    drop_cols
         List of columns to be dropped e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    method_type :
+    method_type
         PSI", "JSD", "HD", "KS","all".
         "all" can be passed to calculate all drift metrics.
         One or more methods can be passed in a form of list or string where different metrics are separated
         by pipe delimiter “|” e.g. ["PSI", "JSD"] or "PSI|JSD"
-    bin_method :
+    bin_method
         equal_frequency", "equal_range".
         In "equal_range" method, each bin is of equal size/width and in "equal_frequency", each bin
         has equal no. of rows, though the width of bins may vary.
-    bin_size :
+    bin_size
         Number of bins for creating histogram
-    threshold :
+    threshold
         A column is flagged if any drift metric is above the threshold.
-    pre_existing_source :
+    pre_existing_source
         Boolean argument – True or False. True if the drift_statistics folder (binning model &
         frequency counts for each attribute) exists already, False Otherwise.
-    source_path :
+    source_path
         If pre_existing_source is False, this argument can be used for saving the drift_statistics folder.
         The drift_statistics folder will have attribute_binning (binning model) & frequency_counts sub-folders.
         If pre_existing_source is True, this argument is path for referring the drift_statistics folder.
         Default "NA" for temporarily saving source dataset attribute_binning folder.
-    model_directory :
+    model_directory
         If pre_existing_source is False, this argument can be used for saving the drift stats to folder.
         The default drift statics directory is drift_statistics folder will have attribute_binning
         If pre_existing_source is True, this argument is model_directory for referring the drift statistics dir.
         Default "drift_statistics" for temporarily saving source dataset attribute_binning folder.
-    print_impact :
+    print_impact
         True, False
-    spark :
-        type spark: SparkSession :
-    idf_target :
-        type idf_target: DataFrame :
-    idf_source :
-        type idf_source: DataFrame :
-    spark: SparkSession :
+    spark
+        type spark: SparkSession
+    idf_target
+        type idf_target: DataFrame
+    idf_source
+        type idf_source: DataFrame
+    spark: SparkSession
 
-    idf_target: DataFrame :
+    idf_target: DataFrame
 
-    idf_source: DataFrame :
+    idf_source: DataFrame
 
-    * :
+    *
 
-    list_of_cols: list :
+    list_of_cols: list
          (Default value = "all")
-    drop_cols: list :
+    drop_cols: list
          (Default value = None)
-    method_type: str :
+    method_type: str
          (Default value = "PSI")
-    bin_method: str :
+    bin_method: str
          (Default value = "equal_range")
-    bin_size: int :
+    bin_size: int
          (Default value = 10)
-    threshold: float :
+    threshold: float
          (Default value = 0.1)
-    pre_existing_source: bool :
+    pre_existing_source: bool
          (Default value = False)
-    source_path: str :
+    source_path: str
          (Default value = "NA")
-    model_directory: str :
+    model_directory: str
          (Default value = "drift_statistics")
-    print_impact: bool :
+    print_impact: bool
          (Default value = False)
 
     Returns
@@ -406,9 +406,9 @@ def stability_index_computation(
 
     Parameters
     ----------
-    spark :
+    spark
         Spark Session
-    idfs :
+    idfs
         Variable number of input dataframes
     list_of_cols :
         List of numerical columns to check stability e.g., ["col1","col2"].

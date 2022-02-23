@@ -22,16 +22,16 @@ def read_dataset(spark, file_path, file_type, file_configs={}):
 
     Parameters
     ----------
-    spark :
+    spark
         Spark Session
-    file_path :
+    file_path
         Path to input data (directory or filename).
         Compatible with local path and s3 path (when running in AWS environment).
-    file_type :
+    file_type
         csv", "parquet", "avro".
         Avro data source requires an external package to run, which can be configured with
         spark-submit (--packages org.apache.spark:spark-avro_2.11:2.4.0).
-    file_configs :
+    file_configs
         This argument is passed in a dictionary format as key/value pairs
         e.g. {"header": "True","delimiter": "|","inferSchema": "True"} for csv files.
         All the key/value pairs in this argument are passed as options to DataFrameReader,
@@ -125,12 +125,12 @@ def concatenate_dataset(*idfs, method_type="name"):
     in the concatenated dataframe. It will throw an error if any column in the 1st dataframe is not available in any
     of other dataframes.
 
-    Parameters ---------- dfs : All dataframes to be concatenated (with the first dataframe columns) method_type :
+    Parameters ---------- dfs : All dataframes to be concatenated (with the first dataframe columns) method_type
     index", "name". This argument needs to be passed as a keyword argument. "index" method concatenates by column
     index positioning, without shuffling columns. "name" concatenates after shuffling and arranging columns as per
     the first dataframe. First dataframe passed under idfs will define the final columns in the concatenated
     dataframe, and will throw error if any column in first dataframe is not available in any of other dataframes. (
-    Default value = "name") *idfs :
+    Default value = "name") *idfs
 
 
     Returns
@@ -160,15 +160,15 @@ def join_dataset(*idfs, join_cols, join_type):
 
     Parameters
     ----------
-    idfs :
+    idfs
         All dataframes to be joined
-    join_cols :
+    join_cols
         Key column(s) to join all dataframes together.
         In case of multiple columns to join, they can be passed in a list format or
         a string format where different column names are separated by pipe delimiter “|”.
-    join_type :
+    join_type
         inner", “full”, “left”, “right”, “left_semi”, “left_anti”
-    *idfs :
+    *idfs
 
 
     Returns
@@ -195,13 +195,13 @@ def delete_column(idf, list_of_cols, print_impact=False):
 
     Parameters
     ----------
-    idf :
+    idf
         Input Dataframe
-    list_of_cols :
+    list_of_cols
         List of columns to delete e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    print_impact :
+    print_impact
         True, False (Default value = False)
 
     Returns
@@ -234,13 +234,13 @@ def select_column(idf, list_of_cols, print_impact=False):
 
     Parameters
     ----------
-    idf :
+    idf
         Input Dataframe
-    list_of_cols :
+    list_of_cols
         List of columns to select e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    print_impact :
+    print_impact
         True, False (Default value = False)
 
     Returns
@@ -275,19 +275,19 @@ def rename_column(idf, list_of_cols, list_of_newcols, print_impact=False):
 
     Parameters
     ----------
-    idf :
+    idf
         Input Dataframe
-    list_of_cols :
+    list_of_cols
         List of old column names e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    list_of_newcols :
+    list_of_newcols
         List of corresponding new column names e.g., ["newcol1","newcol2"].
         Alternatively, new column names can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "newcol1|newcol2".
         First element in list_of_cols will be original column name,
         and corresponding first column in list_of_newcols will be new column name.
-    print_impact :
+    print_impact
         True, False (Default value = False)
 
     Returns
@@ -327,20 +327,20 @@ def recast_column(idf, list_of_cols, list_of_dtypes, print_impact=False):
 
     Parameters
     ----------
-    idf :
+    idf
         Input Dataframe
-    list_of_cols :
+    list_of_cols
         List of columns to cast e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    list_of_dtypes :
+    list_of_dtypes
         List of corresponding datatypes e.g., ["type1","type2"].
         Alternatively, datatypes can be specified in a string format,
         where they are separated by pipe delimiter “|” e.g., "type1|type2".
         First element in list_of_cols will column name and corresponding element in list_of_dtypes
         will be new datatypes such as "float", "integer", "long", "string", "double", decimal" etc.
         Datatypes are case insensitive e.g. float or Float are treated as same.
-    print_impact :
+    print_impact
         True, False (Default value = False)
 
     Returns

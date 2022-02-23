@@ -136,43 +136,43 @@ def attribute_binning(
 
     Parameters
     ----------
-    spark :
+    spark
         Spark Session
-    idf :
+    idf
         Input Dataframe
-    list_of_cols :
+    list_of_cols
         List of numerical columns to transform e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
         "all" can be passed to include all numerical columns for analysis.
         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
-    drop_cols :
+    drop_cols
         List of columns to be dropped e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
-    method_type :
+    method_type
         equal_frequency", "equal_range".
         In "equal_range" method, each bin is of equal size/width and in "equal_frequency", each bin has
         equal no. of rows, though the width of bins may vary. (Default value = "equal_range")
-    bin_size :
+    bin_size
         Number of bins. (Default value = 10)
-    bin_dtype :
+    bin_dtype
         numerical", "categorical".
         With "numerical" option, original value is replaced with an Integer (1,2,…) and
         with "categorical" option, original replaced with a string describing min and max value allowed
         in the bin ("minval-maxval"). (Default value = "numerical")
-    pre_existing_model :
+    pre_existing_model
         Boolean argument – True or False. True if binning model exists already, False Otherwise. (Default value = False)
-    model_path :
+    model_path
         If pre_existing_model is True, this argument is path for referring the pre-saved model.
         If pre_existing_model is False, this argument can be used for saving the model.
         Default "NA" means there is neither pre-existing model nor there is a need to save one.
-    output_mode :
+    output_mode
         replace", "append".
         “replace” option replaces original columns with transformed column. “append” option append transformed
         column to the input dataset with a postfix "_binned" e.g. column X is appended as X_binned. (Default value = "replace")
-    print_impact :
+    print_impact
         True, False (Default value = False)
 
     Returns
@@ -268,9 +268,9 @@ def attribute_binning(
 
         Parameters
         ----------
-        value :
+        value
             param index:
-        index :
+        index
 
 
         Returns
@@ -358,26 +358,26 @@ def monotonic_binning(
 
     Parameters
     ----------
-    spark :
+    spark
         Spark Session
-    idf :
+    idf
         Input Dataframe
-    list_of_cols :
+    list_of_cols
         List of numerical columns to transform e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
         "all" can be passed to include all numerical columns for analysis.
         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
-    drop_cols :
+    drop_cols
         List of columns to be dropped e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
-    label_col :
+    label_col
         Label/Target column (Default value = "label")
-    event_label :
+    event_label
         Value of (positive) event (i.e label 1) (Default value = 1)
-    bin_method :
+    bin_method
         equal_frequency", "equal_range".
         In "equal_range" method, each bin is of equal size/width and in "equal_frequency", each bin has
         equal no. of rows, though the width of bins may vary. (Default value = "equal_range")

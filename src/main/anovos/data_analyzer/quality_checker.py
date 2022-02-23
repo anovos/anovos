@@ -64,24 +64,24 @@ def duplicate_detection(
 
     Parameters
     ----------
-    spark :
+    spark
         Spark Session
-    idf :
+    idf
         Input Dataframe
-    list_of_cols :
+    list_of_cols
         List of columns to inspect e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
         "all" can be passed to include all columns for analysis.
         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
-    drop_cols :
+    drop_cols
         List of columns to be dropped e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
-    treatment :
+    treatment
         Boolean argument – True or False. If True, duplicate rows are removed from the input dataframe. (Default value = False)
-    print_impact :
+    print_impact
         True, False (Default value = False)
 
     Returns
@@ -159,30 +159,30 @@ def nullRows_detection(
 
     Parameters
     ----------
-    spark :
+    spark
         Spark Session
-    idf :
+    idf
         Input Dataframe
-    list_of_cols :
+    list_of_cols
         List of columns to inspect e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
         "all" can be passed to include all columns for analysis.
         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
-    drop_cols :
+    drop_cols
         List of columns to be dropped e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
-    treatment :
+    treatment
         Boolean argument – True or False. If True, rows with high no. of null columns (defined by
         treatment_threshold argument) are removed from the input dataframe. (Default value = False)
-    treatment_threshold :
+    treatment_threshold
         Defines % of columns allowed to be Null per row and takes value between 0 to 1.
         If % of null columns is above the threshold for a row, it is removed from the dataframe.
         There is no row removal if the threshold is 1.0. And if the threshold is 0, all rows with
         null value are removed. (Default value = 0.8)
-    print_impact :
+    print_impact
         True, False. (Default value = False)
 
     Returns
@@ -219,7 +219,7 @@ def nullRows_detection(
 
         Parameters
         ----------
-        *cols :
+        *cols
 
 
         Returns
@@ -292,11 +292,11 @@ def nullColumns_detection(
 
     Parameters
     ----------
-    spark :
+    spark
         Spark Session
-    idf :
+    idf
         Input Dataframe
-    list_of_cols :
+    list_of_cols
         List of columns to inspect e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
@@ -307,20 +307,20 @@ def nullColumns_detection(
         dataset but missing values may possibly appear in the prediction dataset.
         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
-    drop_cols :
+    drop_cols
         List of columns to be dropped e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
-    treatment :
+    treatment
         Boolean argument – True or False. If True, missing values are treated as per treatment_method argument. (Default value = False)
-    treatment_method :
+    treatment_method
         MMM", "row_removal", "column_removal", "KNN", "regression", "MF", "auto".
         MMM (Mean Median Mode) replaces null value by the measure of central tendency (mode for
         categorical features and mean or median for numerical features).
         row_removal removes all rows with any missing value.
         column_removal remove a column if % of rows with missing value is above a threshold (defined
         by key "treatment_threshold" under treatment_configs argument). (Default value = "row_removal")
-    treatment_configs :
+    treatment_configs
         Takes input in dictionary format.
         For column_removal treatment, key ‘treatment_threshold’ is provided with a value between 0 to 1.
         For row_removal, this argument can be skipped.
@@ -334,11 +334,11 @@ def nullColumns_detection(
         where each key is an argument from imputation_matrixFactorization function.
         For auto, arguments corresponding to auto_imputation function (transformer module) are provided,
         where each key is an argument from auto_imputation function. (Default value = {})
-    stats_missing :
+    stats_missing
         Takes arguments for read_dataset (data_ingest module) function in a dictionary format
         to read pre-saved statistics on missing count/pct i.e. if measures_of_counts or
         missingCount_computation (data_analyzer.stats_generator module) has been computed & saved before. (Default value = {})
-    stats_unique :
+    stats_unique
         Takes arguments for read_dataset (data_ingest module) function in a dictionary format
         to read pre-saved statistics on unique value count i.e. if measures_of_cardinality or
         uniqueCount_computation (data_analyzer.stats_generator module) has been computed & saved before. (Default value = {})

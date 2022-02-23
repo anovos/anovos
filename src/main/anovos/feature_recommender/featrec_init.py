@@ -8,7 +8,7 @@ def camel_case_split(input):
 
     Parameters
     ----------
-    input :
+    input
         Input (string) which requires cleaning
 
     Returns
@@ -27,11 +27,11 @@ def recommendation_data_prep(df, name_column, desc_column):
 
     Parameters
     ----------
-    df :
+    df
         Input DataFrame
-    name_column :
+    name_column
         Column name of Input DataFrame attribute/ feature name (string)
-    desc_column :
+    desc_column
         Column name of Input DataFrame attribute/ feature description (string)
         :return list_corpus: List of prepared data for Feature Recommender functions
         :return df_prep: Processed DataFrame for Feature Recommender functions
