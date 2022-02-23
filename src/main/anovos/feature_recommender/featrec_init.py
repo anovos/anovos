@@ -33,11 +33,14 @@ def recommendation_data_prep(df, name_column, desc_column):
         Column name of Input DataFrame attribute/ feature name (string)
     desc_column
         Column name of Input DataFrame attribute/ feature description (string)
-        :return list_corpus: List of prepared data for Feature Recommender functions
-        :return df_prep: Processed DataFrame for Feature Recommender functions
+
 
     Returns
     -------
+    list_corpus
+        List of prepared data for Feature Recommender functions
+    return df_prep
+        Processed DataFrame for Feature Recommender functions
 
     """
     if not isinstance(df, pd.DataFrame):

@@ -640,10 +640,10 @@ def feature_stability_estimation(
         Parameters
         ----------
         attributes
-            param transformation:
-        mean
-            param stddev:
+
         transformation
+
+        mean
 
         stddev
 
