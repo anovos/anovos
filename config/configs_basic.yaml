@@ -14,8 +14,8 @@ input_dataset:
   delete_column: ['logfnl','constant']
   select_column: null
   rename_column:
-    list_of_cols: ['marital-status','education-num','capital-gain','capital-loss','hours-per-week']
-    list_of_newcols: ['marital_status','education_num','capital_gain','capital_loss','hours_per_week']
+    list_of_cols: ['marital-status','education-num']
+    list_of_newcols: ['marital_status','education_num']
   recast_column:
     list_of_cols: ['age','education_num']
     list_of_dtypes: ['float','float']
@@ -29,8 +29,8 @@ concatenate_dataset:
     delete_column: ['logfnl']
     select_column: null
     rename_column:
-      list_of_cols: ['marital-status','education-num','capital-gain','capital-loss','hours-per-week']
-      list_of_newcols: ['marital_status','education_num','capital_gain','capital_loss','hours_per_week']
+      list_of_cols: ['marital-status','education-num']
+      list_of_newcols: ['marital_status','education_num']
     recast_column:
       list_of_cols: ['age','education_num']
       list_of_dtypes: ['float','float']
@@ -42,8 +42,8 @@ concatenate_dataset:
     delete_column: ['logfnl']
     select_column: null
     rename_column:
-      list_of_cols: ['marital-status','education-num','capital-gain','capital-loss','hours-per-week']
-      list_of_newcols: ['marital_status','education_num','capital_gain','capital_loss','hours_per_week']
+      list_of_cols: ['marital-status','education-num']
+      list_of_newcols: ['marital_status','education_num']
     recast_column:
       list_of_cols: ['age','education_num']
       list_of_dtypes: ['float','float']
@@ -66,6 +66,7 @@ timeseries_analyzer:
   auto_detection: True
   id_col: 'ifa'
   tz_offset: 'local'
+  inspection: False
 
 anovos_basic_report:
   basic_report: True
@@ -77,8 +78,7 @@ anovos_basic_report:
 
 #if anovos_basic_report.basic_report is True, then all configs below are ignored.
 stats_generator:
-  metric: ['global_summary','measures_of_counts','measures_of_centralTendency','measures_of_cardinality',
-           'measures_of_percentiles','measures_of_dispersion','measures_of_shape']
+  metric: ['global_summary','measures_of_counts','measures_of_centralTendency','measures_of_cardinality','measures_of_percentiles','measures_of_dispersion','measures_of_shape']
   metric_args:
     list_of_cols: all
     drop_cols: ['ifa']
@@ -305,7 +305,7 @@ report_preprocessing:
     event_label: '>50K'
     bin_method: equal_frequency
     bin_size: 10
-    drift_detector: True
+    drift_detector: False
     source_path: "NA"
 
 report_generation:
@@ -340,7 +340,7 @@ transformers:
 
   numerical_expression:
     expression_parser:
-      list_of_expr: 'log(age) + 1.5|sin(capital-gain)+cos(capital-loss)'
+      list_of_expr: 'log(age) + 1.5|sin(capital_gain)+cos(capital_loss)'
 
   categorical_outliers:
     outlier_categories:
