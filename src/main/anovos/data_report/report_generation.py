@@ -530,7 +530,7 @@ def executive_summary_gen(
         IV threshold beyond which attributes can be called as significant.
     corr_threshold
         Correlation threshold beyond which attributes can be categorized under correlated.
-    print_repor
+    print_report
         Printing option flexibility. Default value is kept as False.
 
     Returns
@@ -926,13 +926,13 @@ def wiki_generator(
 
     Parameters
     ----------
-    master_pat
+    master_path
         Path containing the input files.
-    dataDict_pat
+    dataDict_path
         Data dictionary path. Default value is kept as None.
-    metricDict_pat
+    metricDict_path
         Metric dictionary path. Default value is kept as None.
-    print_repor
+    print_report
         Printing option flexibility. Default value is kept as False.
 
     Returns
@@ -1023,19 +1023,19 @@ def descriptive_statistics(
 
     Parameters
     ----------
-    master_pat
+    master_path
         Path containing the input files.
-    SG_tab
+    SG_tabs
         measures_of_counts','measures_of_centralTendency','measures_of_cardinality','measures_of_percentiles','measures_of_dispersion','measures_of_shape','global_summary'
-    avl_recs_S
+    avl_recs_SG
         Available files from the SG_tabs (Stats Generator tabs)
-    missing_recs_S
+    missing_recs_SG
         Missing files from the SG_tabs (Stats Generator tabs)
-    all_charts_num_1
+    all_charts_num_1_
         Numerical charts (histogram) all collated in a list format supported as per datapane objects
-    all_charts_cat_1
+    all_charts_cat_1_
         Categorical charts (barplot) all collated in a list format supported as per datapane objects
-    print_repor
+    print_report
         Printing option flexibility. Default value is kept as False.
 
     Returns
@@ -1201,17 +1201,17 @@ def quality_check(
 
     Parameters
     ----------
-    master_pat
+    master_path
         Path containing the input files.
-    QC_tab
+    QC_tabs
         nullColumns_detection','IDness_detection','biasedness_detection','invalidEntries_detection','duplicate_detection','nullRows_detection','outlier_detection'
-    avl_recs_Q
+    avl_recs_QC
         Available files from the QC_tabs (Quality Checker tabs)
-    missing_recs_Q
+    missing_recs_QC
         Missing files from the QC_tabs (Quality Checker tabs)
-    all_charts_num_3
+    all_charts_num_3_
         Numerical charts (outlier charts) all collated in a list format supported as per datapane objects
-    print_repor
+    print_report
         Printing option flexibility. Default value is kept as False.
 
     Returns
@@ -1368,21 +1368,21 @@ def attribute_associations(
 
     Parameters
     ----------
-    master_pat
+    master_path
         Path containing the input files.
-    AE_tab
+    AE_tabs
         correlation_matrix','IV_calculation','IG_calculation','variable_clustering'
-    avl_recs_A
+    avl_recs_AE
         Available files from the AE_tabs (Association Evaluator tabs)
-    missing_recs_A
+    missing_recs_AE
         Missing files from the AE_tabs (Association Evaluator tabs)
-    label_co
+    label_col
         label column
-    all_charts_num_2
+    all_charts_num_2_
         Numerical charts (histogram) all collated in a list format supported as per datapane objects
-    all_charts_cat_2
+    all_charts_cat_2_
         Categorical charts (barplot) all collated in a list format supported as per datapane objects
-    print_repor
+    print_report
         Printing option flexibility. Default value is kept as False.
 
     Returns
@@ -1522,17 +1522,17 @@ def data_drift_stability(
 
     Parameters
     ----------
-    master_pat
+    master_path
         Path containing the input files.
-    ds_in
+    ds_ind
         Drift stability indicator in list form.
-    id_co
+    id_col
         ID column
-    drift_threshold_mode
+    drift_threshold_model
         threshold which the user is specifying for tagging an attribute to be drifted or not
-    all_drift_charts
+    all_drift_charts_
         Charts (histogram/barplot) all collated in a list format supported as per datapane objects
-    print_repor
+    print_report
         Printing option flexibility. Default value is kept as False.
 
     Returns
@@ -1644,9 +1644,9 @@ def data_drift_stability(
 
             Parameters
             ----------
-            drifted_feat
+            drifted_feats
                 count of attributes drifted
-            len_feat
+            len_feats
                 count of attributes passed for analysis
 
             Returns
@@ -2052,25 +2052,25 @@ def anovos_report(
 
     Parameters
     ----------
-    master_pat
+    master_path
         Path containing the input files.
-    id_co
+    id_col
         ID column (Default value = "")
-    label_co
+    label_col
         label column (Default value = "")
-    corr_threshol
+    corr_threshold
         Correlation threshold beyond which attributes can be categorized under correlated. (Default value = 0.4)
-    iv_threshol
+    iv_threshold
         IV threshold beyond which attributes can be called as significant. (Default value = 0.02)
-    drift_threshold_mode
+    drift_threshold_model
         threshold which the user is specifying for tagging an attribute to be drifted or not (Default value = 0.1)
-    dataDict_pat
+    dataDict_path
         Data dictionary path. Default value is kept as None.
-    metricDict_pat
+    metricDict_path
         Metric dictionary path. Default value is kept as None.
-    run_typ
+    run_type
         local or emr or databricks option. Default is kept as local
-    final_report_pat
+    final_report_path
         Path where the report will be saved. (Default value = ".")
 
     Returns

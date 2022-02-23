@@ -289,9 +289,9 @@ def plot_eventRate(spark, idf, col, label_col, event_label, cutoffs_path):
         Analysis column
     label_col
         Label column
-    event_labe
+    event_label
         Event label
-    cutoffs_pat
+    cutoffs_path
         Path containing the range cut offs details for the analysis column
 
     Returns
@@ -348,15 +348,15 @@ def plot_comparative_drift(spark, idf, source, col, cutoffs_path):
 
     Parameters
     ----------
-    spar
+    spark
         Spark Session
-    id
+    idf
         Target dataframe which would be referred for producing the frequency charts in form of bar plots / histogram
-    sourc
+    source
         Source dataframe of comparison
-    co
+    col
         Analysis column
-    cutoffs_pat
+    cutoffs_path
         Path containing the range cut offs details for the analysis column
 
     Returns
@@ -462,35 +462,35 @@ def charts_to_objects(
 
     Parameters
     ----------
-    spar
+    spark
         Spark Session
-    id
+    idf
         Input dataframe
-    list_of_col
+    list_of_cols
         List of columns passed for analysis (Default value = "all")
-    drop_col
+    drop_cols
         List of columns dropped from analysis (Default value = [])
-    label_co
+    label_col
         Label column (Default value = None)
-    event_labe
+    event_label
         Event label (Default value = 1)
-    bin_metho
+    bin_method
         Binning method equal_range or equal_frequency (Default value = "equal_range")
-    bin_siz
+    bin_size
         Maximum bin size categories. Default value is kept as 10
-    coverag
+    coverage
         Maximum coverage of categories. Default value is kept as 1.0 (which is 100%)
-    drift_detecto
+    drift_detector
         True or False as per the availability. Default value is kept as False
-    source_pat
+    source_path
         Source data path. Default value is kept as "NA"
-    master_pat
+    master_path
         Path where the output needs to be saved, ideally the same path where the analyzed data output is also saved (Default value = ".")
-    stats_uniqu
+    stats_unique
         Takes arguments for read_dataset (data_ingest module) function in a dictionary format
         to read pre-saved statistics on unique value count i.e. if measures_of_cardinality or
         uniqueCount_computation (data_analyzer.stats_generator module) has been computed & saved before. (Default value = {})
-    run_typ
+    run_type
         local or emr or databricks run type. Default value is kept as local
 
     Returns

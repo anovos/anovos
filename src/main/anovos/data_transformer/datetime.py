@@ -54,7 +54,7 @@ def argument_checker(func_name, args):
     Parameters
     ----------
     func_name
-        param args:
+
     args
 
 

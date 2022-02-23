@@ -436,11 +436,6 @@ def stability_index_computation(
         unstable: 1≤SI<2, marginally stable: 2≤SI<3, stable: 3≤SI<3.5 and very stable: 3.5≤SI≤4. (Default value = 1)
     print_impact
         True, False (Default value = False)
-    *idfs
-
-    "stddev": 0.3
-
-    "kurtosis": 0.2}
 
 
     Returns
@@ -633,10 +628,6 @@ def feature_stability_estimation(
         unstable: 1≤SI<2, marginally stable: 2≤SI<3, stable: 3≤SI<3.5 and very stable: 3.5≤SI≤4. (Default value = 1)
     print_impact
         True, False (Default value = False)
-    "stddev": 0.3
-
-    "kurtosis": 0.2}
-
 
     Returns
     -------
@@ -774,21 +765,8 @@ def feature_stability_estimation(
         Parameters
         ----------
         cv
-            param thresholds: (Default value = [0.03)
-        0
-            1:
-        0
-            2:
-        0
-            5]:
+
         thresholds
-             (Default value = [0.03)
-        0.1
-
-        0.2
-
-        0.5]
-
 
         Returns
         -------
