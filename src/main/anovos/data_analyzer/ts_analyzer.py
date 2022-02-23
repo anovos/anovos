@@ -103,10 +103,7 @@ def ts_processed_feats(idf, col, id_col, tz):
 def ts_eligiblity_check(spark, idf, col, id_col, opt=1, tz_offset="local"):
 
     lagged_df = lagged_ts(
-        idf
-        .select("yyyymmdd_col")
-        .distinct()
-        .orderBy("yyyymmdd_col"),
+        idf.select("yyyymmdd_col").distinct().orderBy("yyyymmdd_col"),
         "yyyymmdd_col",
         lag=1,
         tsdiff_unit="days",
@@ -134,16 +131,12 @@ def ts_eligiblity_check(spark, idf, col, id_col, opt=1, tz_offset="local"):
 
     p1 = measures_of_percentiles(
         spark,
-        idf
-        .groupBy(id_col)
-        .agg(F.countDistinct("yyyymmdd_col").alias("id_date_pair")),
+        idf.groupBy(id_col).agg(F.countDistinct("yyyymmdd_col").alias("id_date_pair")),
         list_of_cols="id_date_pair",
     )
     p2 = measures_of_percentiles(
         spark,
-        idf
-        .groupBy("yyyymmdd_col")
-        .agg(F.countDistinct(id_col).alias("date_id_pair")),
+        idf.groupBy("yyyymmdd_col").agg(F.countDistinct(id_col).alias("date_id_pair")),
         list_of_cols="date_id_pair",
     )
 
@@ -219,7 +212,7 @@ def ts_viz_data(
             y_col,
             F.when(F.col(y_col).isin(top_cat), F.col(y_col)).otherwise(F.lit("Others")),
         )
-        
+
         if output_type == "daily":
 
             odf = (
@@ -255,7 +248,6 @@ def ts_viz_data(
 
     else:
 
-        
         if output_type == "daily":
 
             odf = (
@@ -358,7 +350,15 @@ def list_ts_remove_append(l, opt):
         return ll
 
 
-def ts_analyzer(spark, idf, id_col, output_path, output_type="daily", tz_offset="local", run_type="local"):
+def ts_analyzer(
+    spark,
+    idf,
+    id_col,
+    output_path,
+    output_type="daily",
+    tz_offset="local",
+    run_type="local",
+):
 
     if run_type == "local":
         local_path = output_path
@@ -375,7 +375,6 @@ def ts_analyzer(spark, idf, id_col, output_path, output_type="daily", tz_offset=
     ts_loop_cols_post = ts_loop_cols_pre(idf, id_col)[1]
     print(ts_loop_cols_post)
 
-
     for i in ts_loop_cols_post:
 
         ts_processed_feat_df = ts_processed_feats(idf, i, id_col, tz_offset)
@@ -384,7 +383,12 @@ def ts_analyzer(spark, idf, id_col, output_path, output_type="daily", tz_offset=
         for j in range(1, 3):
             print(i, j)
             f = ts_eligiblity_check(
-                spark, ts_processed_feat_df, i, id_col=id_col, opt=j, tz_offset=tz_offset
+                spark,
+                ts_processed_feat_df,
+                i,
+                id_col=id_col,
+                opt=j,
+                tz_offset=tz_offset,
             )
             f.to_csv(
                 ends_with(local_path) + "stats_" + str(i) + "_" + str(j) + ".csv",
