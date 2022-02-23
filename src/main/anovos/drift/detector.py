@@ -396,8 +396,8 @@ def feature_stability_estimation(
             first_dev = sp.diff(transformation, attr)
             second_dev = sp.diff(transformation, attr, 2)
 
-            est_mean += s**2 * second_dev.subs(attribute_means) / 2
-            est_var += s**2 * (first_dev.subs(attribute_means)) ** 2
+            est_mean += s ** 2 * second_dev.subs(attribute_means) / 2
+            est_var += s ** 2 * (first_dev.subs(attribute_means)) ** 2
 
         transformation = sp.parse_expr(transformation)
         est_mean += transformation.subs(attribute_means)
