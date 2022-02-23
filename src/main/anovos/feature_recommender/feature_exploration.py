@@ -22,27 +22,36 @@ def list_all_industry():
 
 
 def list_all_usecase():
-    """:return: DataFrame of all the supported usecases as part of feature exploration/recommendation"""
+    """
+
+    Returns
+    -------
+    DataFrame of all the supported usecases as part of feature exploration/recommendation
+    """
     odf_uni = df_input_fer.iloc[:, 3].unique()
     odf = pd.DataFrame(odf_uni, columns=["Usecase"])
     return odf
 
 
 def list_all_pair():
-    """:return: DataFrame of all the supported Industry/Usecase pairs as part of feature exploration/recommendation"""
+    """
+    Returns
+    -------
+    DataFrame of all the supported Industry/Usecase pairs as part of feature exploration/recommendation
+    """
     odf = df_input_fer.iloc[:, [2, 3]].drop_duplicates(keep="last", ignore_index=True)
     return odf
 
 
-def process_usecase(usecase, semantic):
+def process_usecase(usecase: str, semantic: bool):
     """
 
     Parameters
     ----------
-    usecase
-        Input usecase (string)
-    semantic
-        Input semantic (boolean) - Whether the input needs to go through semantic similarity or not. Default is True.
+    usecase : str
+        Input usecase
+    semantic : bool
+        Whether the input needs to go through semantic similarity or not. Default is True.
 
     Returns
     -------
@@ -70,15 +79,15 @@ def process_usecase(usecase, semantic):
     return processed_usecase
 
 
-def process_industry(industry, semantic):
+def process_industry(industry: str, semantic: bool):
     """
 
     Parameters
     ----------
-    industry
-        Input industry (string)
-    semantic
-        Input semantic (boolean) - Whether the input needs to go through semantic similarity or not. Default is True.
+    industry : str
+        Input industry
+    semantic : bool
+        Whether the input needs to go through semantic similarity or not. Default is True.
 
     Returns
     -------

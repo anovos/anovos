@@ -73,7 +73,7 @@ def ETL(args):
 
     Parameters
     ----------
-    args :
+    argsOneHotEncoder
 
 
     Returns
@@ -103,13 +103,13 @@ def save(data, write_configs, folder_name, reread=False):
 
     Parameters
     ----------
-    data :
+    dataOneHotEncoder
         param write_configs:
-    folder_name :
+    folder_nameOneHotEncoder
         param reread: (Default value = False)
-    write_configs :
+    write_configsOneHotEncoder
 
-    reread :
+    rereadOneHotEncoder
          (Default value = False)
 
     Returns
@@ -138,9 +138,9 @@ def stats_args(all_configs, func):
 
     Parameters
     ----------
-    all_configs :
+    all_configsOneHotEncoder
         param func:
-    func :
+    funcOneHotEncoder
 
 
     Returns
@@ -211,9 +211,9 @@ def main(all_configs, run_type):
 
     Parameters
     ----------
-    all_configs :
+    all_configsOneHotEncoder
         param run_type:
-    run_type :
+    run_typeOneHotEncoder
 
 
     Returns

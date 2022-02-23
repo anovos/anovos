@@ -55,7 +55,7 @@ def argument_checker(func_name, args):
     Parameters
     ----------
     func_name
-        param args:
+
     args
 
 
@@ -434,9 +434,9 @@ def timestamp_to_string(
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
         Columns must be of Datetime type or String type in "%Y-%m-%d %H:%M:%S" format.
-    output_format :
+    output_format
         Format of the output column(s) (Default value = "%Y-%m-%d %H:%M:%S")
-    output_mode :
+    output_mode
         replace", "append".
         “replace” option replaces original columns with derived column. “append” option appends derived
         column to the input dataset with a postfix "_str" e.g. column X is appended as X_str. (Default value = "replace")
@@ -468,9 +468,9 @@ def timestamp_to_string(
 
         Parameters
         ----------
-        col :
+        col
             param form:
-        form :
+        form
 
 
         Returns
@@ -505,19 +505,19 @@ def dateformat_conversion(
 
     Parameters
     ----------
-    spark :
+    spark
         Spark Session
-    idf :
+    idf
         Input Dataframe
-    list_of_cols :
+    list_of_cols
         List of columns to transform e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    input_format :
+    input_format
         Format of the input column(s) in string (Default value = "%Y-%m-%d %H:%M:%S")
-    output_format :
+    output_format
         Format of the output column(s) in string (Default value = "%Y-%m-%d %H:%M:%S")
-    output_mode :
+    output_mode
         replace", "append".
         “replace” option replaces original columns with derived column. “append” option appends derived
         column to the input dataset with a postfix "_ts" e.g. column X is appended as X_ts. (Default value = "replace")
@@ -567,19 +567,19 @@ def timeUnits_extraction(idf, list_of_cols, units, output_mode="append"):
 
     Parameters
     ----------
-    idf :
+    idf 
         Input Dataframe
-    list_of_cols :
+    list_of_cols
         List of columns to transform e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    units :
+    units
         List of unit(s) to extract. Alternatively, unit(s) can be specified in a string format,
         where different units are separated by pipe delimiter “|” e.g., "hour|minute".
         Supported units to extract: 'hour', 'minute', 'second', 'dayofmonth', 'dayofweek',
         'dayofyear', 'weekofyear', 'month', 'quarter', 'year'.
         "all" can be passed to compute all supported metrics.
-    output_mode :
+    output_mode
         replace", "append".
         “replace” option replaces original columns with derived columns with a postfix "_<unit>",
         e.g. column X is replaced with X_second for units="second".
@@ -639,20 +639,20 @@ def time_diff(idf, ts1, ts2, unit, output_mode="append"):
 
     Parameters
     ----------
-    idf :
+    idf
         Input Dataframe
-    ts1 :
+    ts1
         ts2: The two columns to calculate the difference between.
-    unit :
+    unit
         second', 'minute', 'hour', 'day', 'week', 'month', 'year'.
         Unit of the output values.
-    output_mode :
+    output_mode
         replace", "append".
         “replace” option replaces original columns with derived column <ts1>_<ts2>_<unit>diff,
         e.g. Given ts1=X, ts2=Y , X and Y are replaced with X_Y_daydiff for unit="day".
         “append” option appends derived column to the input dataset with name = <ts1>_<ts2>_<unit>diff,
         e.g. Given ts1=X, ts2=Y, X_Y_daydiff is appended for unit="day". (Default value = "append")
-    ts2 :
+    ts2
 
 
     Returns
@@ -703,16 +703,16 @@ def time_elapsed(idf, list_of_cols, unit, output_mode="append"):
 
     Parameters
     ----------
-    idf :
+    idf
         Input Dataframe
-    list_of_cols :
+    list_of_cols
         List of columns to transform e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    unit :
+    unit
         second', 'minute', 'hour', 'day', 'week', 'month', 'year'.
         Unit of the output values.
-    output_mode :
+    output_mode
         replace", "append".
         “replace” option replaces original columns with derived columns with a postfix "_<unit>diff",
         e.g. column X is replaced with X_daydiff for unit="day".
@@ -773,18 +773,18 @@ def adding_timeUnits(idf, list_of_cols, unit, unit_value, output_mode="append"):
 
     Parameters
     ----------
-    idf :
+    idf
         Input Dataframe
-    list_of_cols :
+    list_of_cols
         List of columns to transform e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    unit :
+    unit
         hour','minute','second','day','week','month','year'.
         Unit of the added value.
-    unit_value :
+    unit_value
         The value to be added to input column(s).
-    output_mode :
+    output_mode
         replace", "append".
         “replace” option replaces original columns with derived columns with a postfix "_adjusted",
         e.g. column X is replaced with X_adjusted.
@@ -837,22 +837,22 @@ def timestamp_comparison(
 
     Parameters
     ----------
-    spark :
+    spark
         Spark Session
-    idf :
+    idf
         Input Dataframe
-    list_of_cols :
+    list_of_cols
         List of columns to transform e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    comparison_type :
+    comparison_type
         greater_than", "less_than", "greaterThan_equalTo", "lessThan_equalTo"
         The comparison type of the transformation.
-    comparison_value :
+    comparison_value
         The timestamp / date value to compare with in string.
-    comparison_format :
+    comparison_format
         The format of comparison_value in string. (Default value = "%Y-%m-%d %H:%M:%S")
-    output_mode :
+    output_mode
         replace", "append".
         “replace” option replaces original columns with derived columns with a postfix "_compared",
         e.g. column X is replaced with X_compared.
@@ -919,13 +919,13 @@ def start_of_month(idf, list_of_cols, output_mode="append"):
 
     Parameters
     ----------
-    idf :
+    idf
         Input Dataframe
-    list_of_cols :
+    list_of_cols
         List of columns to transform e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    output_mode :
+    output_mode
         replace", "append".
         “replace” option replaces original columns with derived column with a postfix "_monthStart".
         “append” option appends derived column to the input dataset with a postfix "_monthStart",
@@ -962,13 +962,13 @@ def is_monthStart(idf, list_of_cols, output_mode="append"):
 
     Parameters
     ----------
-    idf :
+    idf
         Input Dataframe
-    list_of_cols :
+    list_of_cols
         List of columns to transform e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    output_mode :
+    output_mode
         replace", "append".
         “replace” option replaces original columns with derived column with a postfix "_ismonthStart".
         “append” option appends derived column to the input dataset with a postfix "_ismonthStart",
@@ -1009,13 +1009,13 @@ def end_of_month(idf, list_of_cols, output_mode="append"):
 
     Parameters
     ----------
-    idf :
+    idf
         Input Dataframe
-    list_of_cols :
+    list_of_cols
         List of columns to transform e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    output_mode :
+    output_mode
         replace", "append".
         “replace” option replaces original columns with derived column with a postfix "_monthEnd".
         “append” option appends derived column to the input dataset with a postfix "_monthEnd",
@@ -1051,13 +1051,13 @@ def is_monthEnd(idf, list_of_cols, output_mode="append"):
 
     Parameters
     ----------
-    idf :
+    idf
         Input Dataframe
-    list_of_cols :
+    list_of_cols
         List of columns to transform e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    output_mode :
+    output_mode
         replace", "append".
         “replace” option replaces original columns with derived column with a postfix "_ismonthEnd".
         “append” option appends derived column to the input dataset with a postfix "_ismonthEnd",
@@ -1098,13 +1098,13 @@ def start_of_year(idf, list_of_cols, output_mode="append"):
 
     Parameters
     ----------
-    idf :
+    idf
         Input Dataframe
-    list_of_cols :
+    list_of_cols
         List of columns to transform e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    output_mode :
+    output_mode
         replace", "append".
         “replace” option replaces original columns with derived column with a postfix "_yearStart".
         “append” option appends derived column to the input dataset with a postfix "_yearStart",
@@ -1140,13 +1140,13 @@ def is_yearStart(idf, list_of_cols, output_mode="append"):
 
     Parameters
     ----------
-    idf :
+    idf
         Input Dataframe
-    list_of_cols :
+    list_of_cols
         List of columns to transform e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    output_mode :
+    output_mode
         replace", "append".
         “replace” option replaces original columns with derived column with a postfix "_isyearStart".
         “append” option appends derived column to the input dataset with a postfix "_isyearStart",
@@ -1187,13 +1187,13 @@ def end_of_year(idf, list_of_cols, output_mode="append"):
 
     Parameters
     ----------
-    idf :
+    idf
         Input Dataframe
-    list_of_cols :
+    list_of_cols
         List of columns to transform e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    output_mode :
+    output_mode
         replace", "append".
         “replace” option replaces original columns with derived column with a postfix "_yearEnd".
         “append” option appends derived column to the input dataset with a postfix "_yearEnd",
@@ -1232,13 +1232,13 @@ def is_yearEnd(idf, list_of_cols, output_mode="append"):
 
     Parameters
     ----------
-    idf :
+    idf
         Input Dataframe
-    list_of_cols :
+    list_of_cols
         List of columns to transform e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    output_mode :
+    output_mode
         replace", "append".
         “replace” option replaces original columns with derived column with a postfix "_isyearEnd".
         “append” option appends derived column to the input dataset with a postfix "_isyearEnd",
@@ -1277,13 +1277,13 @@ def start_of_quarter(idf, list_of_cols, output_mode="append"):
 
     Parameters
     ----------
-    idf :
+    idf
         Input Dataframe
-    list_of_cols :
+    list_of_cols
         List of columns to transform e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    output_mode :
+    output_mode
         replace", "append".
         “replace” option replaces original columns with derived column with a postfix "_quarterStart.
         “append” option appends derived column to the input dataset with a postfix "_quarterStart",
@@ -1320,13 +1320,13 @@ def is_quarterStart(idf, list_of_cols, output_mode="append"):
 
     Parameters
     ----------
-    idf :
+    idf
         Input Dataframe
-    list_of_cols :
+    list_of_cols
         List of columns to transform e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    output_mode :
+    output_mode
         replace", "append".
         “replace” option replaces original columns with derived column with a postfix "_isquarterStart".
         “append” option appends derived column to the input dataset with a postfix "_isquarterStart",
@@ -1365,13 +1365,13 @@ def end_of_quarter(idf, list_of_cols, output_mode="append"):
 
     Parameters
     ----------
-    idf :
+    idf
         Input Dataframe
-    list_of_cols :
+    list_of_cols
         List of columns to transform e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    output_mode :
+    output_mode
         replace", "append".
         “replace” option replaces original columns with derived column with a postfix "_quarterEnd".
         “append” option appends derived column to the input dataset with a postfix "_quarterEnd",
@@ -1413,13 +1413,13 @@ def is_quarterEnd(idf, list_of_cols, output_mode="append"):
 
     Parameters
     ----------
-    idf :
+    idf
         Input Dataframe
-    list_of_cols :
+    list_of_cols
         List of columns to transform e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    output_mode :
+    output_mode
         replace", "append".
         “replace” option replaces original columns with derived column with a postfix "_isquarterEnd".
         “append” option appends derived column to the input dataset with a postfix "_isquarterEnd",
@@ -1460,13 +1460,13 @@ def is_yearFirstHalf(idf, list_of_cols, output_mode="append"):
 
     Parameters
     ----------
-    idf :
+    idf
         Input Dataframe
-    list_of_cols :
+    list_of_cols
         List of columns to transform e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    output_mode :
+    output_mode
         replace", "append".
         “replace” option replaces original columns with derived column with a postfix "_isFirstHalf".
         “append” option appends derived column to the input dataset with a postfix "_isFirstHalf",
@@ -1508,17 +1508,17 @@ def is_selectedHour(idf, list_of_cols, start_hour, end_hour, output_mode="append
 
     Parameters
     ----------
-    idf :
+    idf
         Input Dataframe
-    list_of_cols :
+    list_of_cols
         List of columns to transform e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    start_hour :
+    start_hour
         The starting hour of the hour range (inclusive)
-    end_hour :
+    end_hour
         The ending hour of the hour range (inclusive)
-    output_mode :
+    output_mode
         replace", "append".
         “replace” option replaces original columns with derived column with a postfix "_isselectedHour".
         “append” option appends derived column to the input dataset with a postfix "_isselectedHour",
@@ -1567,13 +1567,13 @@ def is_leapYear(idf, list_of_cols, output_mode="append"):
 
     Parameters
     ----------
-    idf :
+    idf
         Input Dataframe
-    list_of_cols :
+    list_of_cols
         List of columns to transform e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    output_mode :
+    output_mode
         replace", "append".
         “replace” option replaces original columns with derived column with a postfix "_isleapYear".
         “append” option appends derived column to the input dataset with a postfix "_isleapYear",
@@ -1599,7 +1599,7 @@ def is_leapYear(idf, list_of_cols, output_mode="append"):
 
         Parameters
         ----------
-        year :
+        year
 
 
         Returns
@@ -1628,13 +1628,13 @@ def is_weekend(idf, list_of_cols, output_mode="append"):
 
     Parameters
     ----------
-    idf :
+    idf
         Input Dataframe
-    list_of_cols :
+    list_of_cols
         List of columns to transform e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    output_mode :
+    output_mode
         replace", "append".
         “replace” option replaces original columns with derived column with a postfix "_isweekend".
         “append” option appends derived column to the input dataset with a postfix "_isweekend",
@@ -1678,23 +1678,23 @@ def aggregator(
 
     Parameters
     ----------
-    spark :
+    spark
         Spark Session
-    idf :
+    idf
         Input Dataframe
-    list_of_cols :
+    list_of_cols
         List of columns to aggregate e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    list_of_aggs :
+    list_of_aggs
         List of aggregate metrics to compute e.g., ["f1","f2"].
         Alternatively, metrics can be specified in a string format,
         where different metrics are separated by pipe delimiter “|” e.g., "f1|f2".
         Supported metrics: 'count', 'min', 'max', 'sum', 'mean', 'median', 'stddev',
         'countDistinct', 'sumDistinct', 'collect_list', 'collect_set'.
-    time_col :
+    time_col
         Timestamp) Column to group by.
-    granularity_format :
+    granularity_format
         Format to be applied to time_col before groupBy. The default value is
         '%Y-%m-%d', which means grouping by the date component of time_col.
         Alternatively, '' can be used if no formatting is necessary.
@@ -1745,9 +1745,9 @@ def aggregator(
 
         Parameters
         ----------
-        col :
+        col
             param agg:
-        agg :
+        agg
 
 
         Returns
@@ -1799,28 +1799,28 @@ def window_aggregator(
 
     Parameters
     ----------
-    idf :
+    idf
         Input Dataframe
-    list_of_cols :
+    list_of_cols
         List of columns to aggregate e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    list_of_aggs :
+    list_of_aggs
         List of aggregate metrics to compute e.g., ["f1","f2"].
         Alternatively, metrics can be specified in a string format,
         where different metrics are separated by pipe delimiter “|” e.g., "f1|f2".
         Supported metrics: 'count','min','max','sum','mean','median'
-    order_col :
+    order_col
         Timestamp) Column to order window
-    window_type :
+    window_type
         expanding", "rolling"
         "expanding" option has a fixed lower bound (first row in the partition)
         "rolling" option has a fixed window size defined by window_size param (Default value = "expanding")
-    window_size :
+    window_size
         window size for rolling window type. Integer value with value >= 1. (Default value = "unbounded")
-    partition_col :
+    partition_col
         Rows partitioned by this column before creating window. (Default value = "")
-    output_mode :
+    output_mode
         replace", "append".
         “replace” option replaces original columns with derived column(s) with metric name as postfix.
         “append” option appends derived column(s) to the input dataset with metric name as postfix,
@@ -1867,7 +1867,7 @@ def window_aggregator(
 
         Parameters
         ----------
-        col :
+        col
 
 
         Returns
@@ -1915,15 +1915,15 @@ def lagged_ts(
 
     Parameters
     ----------
-    idf :
+    idf
         Input Dataframe
-    list_of_cols :
+    list_of_cols
         List of columns to transform e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    lag :
+    lag
         Integer - number of row(s) to extend.
-    output_type :
+    output_type
         ts", "ts_diff".
         "ts" option generats a lag column for each input column having the value that is
         <lag> rows before the current row, and None if there is less than <lag> rows
@@ -1931,12 +1931,12 @@ def lagged_ts(
         "ts_diff" option generates the lag column in the same way as the "ts" option.
         On top of that, it appends a column which represents the time_diff between the
         original and the lag column. (Default value = "ts")
-    tsdiff_unit :
+    tsdiff_unit
         second', 'minute', 'hour', 'day', 'week', 'month', 'year'.
         Unit of the time_diff if output_type="ts_diff". (Default value = "days")
-    partition_col :
+    partition_col
         Rows partitioned by this column before creating window. (Default value = "")
-    output_mode :
+    output_mode
         replace", "append".
         “replace” option replaces original columns with derived column: <col>_lag<lag> for "ts" output_type,
         <col>_lag<lag> and  <col>_<col>_lag<lag>_<tsdiff_unit>diff for "ts_diff" output_type.

@@ -153,8 +153,6 @@ def statistics(
 
     idf_source: DataFrame
 
-    *
-
     list_of_cols: list
          (Default value = "all")
     drop_cols: list
@@ -410,39 +408,34 @@ def stability_index_computation(
         Spark Session
     idfs
         Variable number of input dataframes
-    list_of_cols :
+    list_of_cols
         List of numerical columns to check stability e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
         "all" can be passed to include all numerical columns for analysis.
         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
-    drop_cols :
+    drop_cols
         List of columns to be dropped e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
-    metric_weightages :
+    metric_weightages
         Takes input in dictionary format with keys being the metric name - "mean","stdev","kurtosis"
         and value being the weightage of the metric (between 0 and 1). Sum of all weightages must be 1.
          (Default value = {"mean": 0.5)
-    existing_metric_path :
+    existing_metric_path
         This argument is path for referring pre-existing metrics of historical datasets and is
         of schema [idx, attribute, mean, stdev, kurtosis].
         idx is index number of historical datasets assigned in chronological order. (Default value = "")
-    appended_metric_path :
+    appended_metric_path
         This argument is path for saving input dataframes metrics after appending to the
         historical datasets' metrics. (Default value = "")
-    threshold :
+    threshold
         A column is flagged if the stability index is below the threshold, which varies between 0 to 4.
         The following criteria can be used to classifiy stability_index (SI): very unstable: 0≤SI<1,
         unstable: 1≤SI<2, marginally stable: 2≤SI<3, stable: 3≤SI<3.5 and very stable: 3.5≤SI≤4. (Default value = 1)
-    print_impact :
+    print_impact
         True, False (Default value = False)
-    *idfs :
-
-    "stddev": 0.3 :
-
-    "kurtosis": 0.2} :
 
 
     Returns
@@ -547,22 +540,9 @@ def stability_index_computation(
 
         Parameters
         ----------
-        cv :
-            param thresholds: (Default value = [0.03)
-        0 :
-            1:
-        0 :
-            2:
-        0 :
-            5]:
-        thresholds :
-             (Default value = [0.03)
-        0.1 :
+        cv
 
-        0.2 :
-
-        0.5] :
-
+        thresholds
 
         Returns
         -------
@@ -628,30 +608,26 @@ def feature_stability_estimation(
 
     Parameters
     ----------
-    spark :
+    spark
         Spark Session
-    attribute_stats :
+    attribute_stats
         Spark dataframe. The intermediate dataframe saved by running function
         stabilityIndex_computation with schema [idx, attribute, mean, stddev, kurtosis].
         It should contain all the attributes used in argument attribute_transformation.
-    attribute_transformation :
+    attribute_transformation
         Takes input in dictionary format: each key-value combination represents one
         new feature. Each key is a string containing all the attributes involved in
         the new feature seperated by '|'. Each value is the transformation of the
         attributes in string. For example, {'X|Y|Z': 'X**2+Y/Z', 'A': 'log(A)'}
-    metric_weightages :
+    metric_weightages
         Takes input in dictionary format with keys being the metric name - "mean","stdev","kurtosis"
         and value being the weightage of the metric (between 0 and 1). Sum of all weightages must be 1. (Default value = {"mean": 0.5)
-    threshold :
+    threshold
         A column is flagged if the stability index is below the threshold, which varies between 0 to 4.
         The following criteria can be used to classifiy stability_index (SI): very unstable: 0≤SI<1,
         unstable: 1≤SI<2, marginally stable: 2≤SI<3, stable: 3≤SI<3.5 and very stable: 3.5≤SI≤4. (Default value = 1)
-    print_impact :
+    print_impact
         True, False (Default value = False)
-    "stddev": 0.3 :
-
-    "kurtosis": 0.2} :
-
 
     Returns
     -------
@@ -663,13 +639,13 @@ def feature_stability_estimation(
 
         Parameters
         ----------
-        attributes :
-            param transformation:
-        mean :
-            param stddev:
-        transformation :
+        attributes
 
-        stddev :
+        transformation
+
+        mean
+
+        stddev
 
 
         Returns
@@ -788,22 +764,9 @@ def feature_stability_estimation(
 
         Parameters
         ----------
-        cv :
-            param thresholds: (Default value = [0.03)
-        0 :
-            1:
-        0 :
-            2:
-        0 :
-            5]:
-        thresholds :
-             (Default value = [0.03)
-        0.1 :
+        cv
 
-        0.2 :
-
-        0.5] :
-
+        thresholds
 
         Returns
         -------
