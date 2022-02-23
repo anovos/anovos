@@ -567,7 +567,7 @@ def timeUnits_extraction(idf, list_of_cols, units, output_mode="append"):
 
     Parameters
     ----------
-    idf 
+    idf
         Input Dataframe
     list_of_cols
         List of columns to transform e.g., ["col1","col2"].
