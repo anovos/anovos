@@ -38,8 +38,6 @@ def feature_recommendation(
 
     Returns
     -------
-    type
-        DataFrame with Recommended Features with the Input DataFrame and/or Users' Industry/Usecase of interest
 
     """
     if not isinstance(df, pd.DataFrame):
@@ -318,8 +316,6 @@ def find_attr_by_relevance(
 
     Returns
     -------
-    type
-        DataFrame with Input Feature Description and Input Attribute matching
 
     """
     if not isinstance(df, pd.DataFrame):
@@ -484,8 +480,6 @@ def sankey_visualization(df, industry_included=False, usecase_included=False):
 
     Returns
     -------
-    type
-        Sankey plot
 
     """
     fr_proper_col_list = [

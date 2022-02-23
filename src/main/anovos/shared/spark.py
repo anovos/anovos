@@ -49,8 +49,6 @@ def init_spark(
 
     Returns
     -------
-    type
-        A tuple of references to the Spark Session, Spark Context & SQL Context.
 
     """
     logger.info(f"Getting spark session, context and sql context app_name: {app_name}")

@@ -13,8 +13,6 @@ def camel_case_split(input):
 
     Returns
     -------
-    type
-        Processed Input (string)
 
     """
     processed_input = ""
