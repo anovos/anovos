@@ -4,17 +4,17 @@ import sys
 import timeit
 import yaml
 from loguru import logger
-
+from anovos.data_ingest import data_ingest
+from anovos.data_ingest.ts_auto_detection import ts_preprocess
 from anovos.data_analyzer import association_evaluator
 from anovos.data_analyzer import quality_checker
 from anovos.data_analyzer import stats_generator
-from anovos.data_ingest import data_ingest
+from anovos.data_analyzer.ts_analyzer import ts_analyzer
 from anovos.data_transformer import transformers
 from anovos.data_report import report_preprocessing
 from anovos.data_report.basic_report_generation import anovos_basic_report
 from anovos.data_report.report_generation import anovos_report
 from anovos.data_report.report_preprocessing import save_stats
-from anovos.data_report.ts_preprocessing import ts_preprocess
 from anovos.drift import detector as ddetector
 from anovos.shared.spark import spark
 
@@ -171,13 +171,14 @@ def main(all_configs, run_type):
             continue
 
         if (key == "timeseries_analyzer") & (args is not None):
-            start = timeit.default_timer()
 
-            auto_detection = args.get("auto_detection", None)
+            auto_detection_flag = args.get("auto_detection", False)
             id_col = args.get("id_col", None)
             tz_val = args.get("tz_offset", None)
+            inspection_flag = args.get("inspection", False)
 
-            if auto_detection:
+            if auto_detection_flag:
+                start = timeit.default_timer()
                 df = ts_preprocess(
                     spark,
                     df,
@@ -186,10 +187,22 @@ def main(all_configs, run_type):
                     tz_offset=tz_val,
                     run_type=run_type,
                 )
-            else:
-                pass
-            end = timeit.default_timer()
-            print(key, ", execution time (in secs) =", round(end - start, 4))
+                end = timeit.default_timer()
+                print(key, ", execution time (in secs) =", round(end - start, 4))
+
+            if inspection_flag:
+                start = timeit.default_timer()
+                ts_analyzer(
+                    spark,
+                    df,
+                    id_col,
+                    output_path=report_input_path,
+                    tz_offset=tz_val,
+                    run_type=run_type,
+                )
+                end = timeit.default_timer()
+                print(key, ", execution time (in secs) =", round(end - start, 4))
+
             continue
 
         if (
