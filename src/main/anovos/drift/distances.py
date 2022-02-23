@@ -9,7 +9,7 @@ def hellinger(p, q):
     Parameters
     ----------
     p
-        param q:
+
     q
 
 
@@ -26,7 +26,7 @@ def psi(p, q):
     Parameters
     ----------
     p
-        param q:
+
     q
 
 
@@ -43,7 +43,7 @@ def kl_divergence(p, q):
     Parameters
     ----------
     p
-        param q:
+
     q
 
 
@@ -61,7 +61,7 @@ def js_divergence(p, q):
     Parameters
     ----------
     p
-        param q:
+
     q
 
 
@@ -82,7 +82,7 @@ def ks(p, q):
     Parameters
     ----------
     p
-        param q:
+
     q
 
 

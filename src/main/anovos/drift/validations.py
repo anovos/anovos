@@ -116,9 +116,9 @@ def check_distance_method(func=None, param="method_type"):
     Parameters
     ----------
     func
-        Default value = None)
-    param
-        Default value = "method_type")
+        (Default value = None)
+    param : str
+        (Default value = "method_type")
 
     Returns
     -------
