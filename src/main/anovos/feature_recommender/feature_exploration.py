@@ -1,21 +1,20 @@
+from anovos.feature_recommender.featrec_init import *
+from sentence_transformers import util
 import pandas as pd
 import numpy as np
-from sentence_transformers import SentenceTransformer
-from sentence_transformers import util
 
-model_fer = SentenceTransformer("all-mpnet-base-v2")
-input_path_fer = "https://raw.githubusercontent.com/anovos/anovos/main/data/feature_recommender/flatten_fr_db.csv"
-df_input_fer = pd.read_csv(input_path_fer)
-df_input_fer = df_input_fer.rename(columns=lambda x: x.strip().replace(" ", "_"))
-feature_name_column = str(df_input_fer.columns.tolist()[0])
-feature_desc_column = str(df_input_fer.columns.tolist()[1])
-industry_column = str(df_input_fer.columns.tolist()[2])
-usecase_column = str(df_input_fer.columns.tolist()[3])
-source_column = str(df_input_fer.columns.tolist()[4])
+model_fer = init_model()
+df_input_fer = feature_exploration_prep()
+feature_name_column, feature_desc_column, industry_column, usecase_column, source_column = get_column_name(df_input_fer)
 
 
 def list_all_industry():
-    """:return: DataFrame of all the supported industries as part of feature exploration/recommendation"""
+    """
+
+    Returns
+    -------
+    DataFrame of all the supported industries as part of feature exploration/recommendation
+    """
     odf_uni = df_input_fer.iloc[:, 2].unique()
     odf = pd.DataFrame(odf_uni, columns=["Industry"])
     return odf
