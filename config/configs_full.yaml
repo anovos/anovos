@@ -67,6 +67,7 @@ timeseries_analyzer:
   id_col: 'ifa'
   tz_offset: 'local'
   inspection: True
+  analysis_level: 'daily'
 
 anovos_basic_report:
   basic_report: False
