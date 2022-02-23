@@ -2248,35 +2248,42 @@ blank_chart.update_xaxes(visible=False)
 blank_chart.update_yaxes(visible=False)
 
 
-def ts_viz_1_1(base_path, x_col, y_col):
+# def ts_viz_1_1(base_path, x_col, y_col):
 
-    ts_fig = []
+#     ts_fig = []
 
-    for x in ["daily", "hourly", "weekly"]:
+#     for x in ["daily", "hourly", "weekly"]:
 
-        ts_fig.append(
-            dp.Plot(gen_time_series_plots(base_path, x_col, y_col, x), label=x.title())
-        )
+#         ts_fig.append(
+#             dp.Plot(gen_time_series_plots(base_path, x_col, y_col, x), label=x.title())
+#         )
 
-    return dp.Select(blocks=ts_fig, type=dp.SelectType.TABS)
+#     return dp.Select(blocks=ts_fig, type=dp.SelectType.TABS)
+
+def ts_viz_1_1(base_path, x_col, y_col,output_type="daily"):
+
+    ts_fig = gen_time_series_plots(base_path, x_col, y_col, output_type)
+
+    return ts_fig
 
 
-def ts_viz_1_2(base_path, ts_col, col_list):
+
+def ts_viz_1_2(base_path, ts_col, col_list,output_type="daily"):
 
     bl = []
 
     for i in col_list:
         print(i)
         if len(col_list) > 1:
-            bl.append(dp.Group(ts_viz_1_1(base_path, ts_col, i), label=i))
+            bl.append(dp.Group(ts_viz_1_1(base_path, ts_col, i,output_type), label=i))
         else:
-            bl.append(dp.Group(ts_viz_1_1(base_path, ts_col, i), label=i))
+            bl.append(dp.Group(ts_viz_1_1(base_path, ts_col, i,output_type), label=i))
             bl.append(dp.Plot(blank_chart, label="_"))
 
     return dp.Select(blocks=bl, type=dp.SelectType.DROPDOWN)
 
 
-def ts_viz_1_3(base_path, ts_col, num_cols, cat_cols):
+def ts_viz_1_3(base_path, ts_col, num_cols, cat_cols,output_type):
     ts_v = []
     for i in ts_col:
         if len(ts_col) > 1:
@@ -2285,10 +2292,10 @@ def ts_viz_1_3(base_path, ts_col, num_cols, cat_cols):
                     dp.Select(
                         blocks=[
                             dp.Group(
-                                ts_viz_1_2(base_path, i, num_cols), label="Numerical"
+                                ts_viz_1_2(base_path, i, num_cols,output_type), label="Numerical"
                             ),
                             dp.Group(
-                                ts_viz_1_2(base_path, i, cat_cols), label="Categorical"
+                                ts_viz_1_2(base_path, i, cat_cols,output_type), label="Categorical"
                             ),
                         ],
                         type=dp.SelectType.TABS,
@@ -2302,10 +2309,10 @@ def ts_viz_1_3(base_path, ts_col, num_cols, cat_cols):
                     dp.Select(
                         blocks=[
                             dp.Group(
-                                ts_viz_1_2(base_path, i, num_cols), label="Numerical"
+                                ts_viz_1_2(base_path, i, num_cols,output_type), label="Numerical"
                             ),
                             dp.Group(
-                                ts_viz_1_2(base_path, i, cat_cols), label="Categorical"
+                                ts_viz_1_2(base_path, i, cat_cols,output_type), label="Categorical"
                             ),
                         ],
                         type=dp.SelectType.TABS,
@@ -2638,7 +2645,7 @@ def ts_stats(base_path):
     return c0, c1, c2, c3, c4, c5, c6
 
 
-def ts_viz_generate(master_path, print_report=False):
+def ts_viz_generate(master_path, print_report=False,output_type="daily"):
 
     try:
         c0, c1, c2, c3, c4, c5, c6 = ts_stats(master_path)
@@ -2682,7 +2689,7 @@ def ts_viz_generate(master_path, print_report=False):
             "*Lower the **CoV** (Coefficient Of Variation), Higher the Consistency between the consecutive dates. Similarly the Mean & Variance should be consistent over time*"
         ),
         dp.Text("### Visualization across the Shortlisted Timestamp Attributes"),
-        ts_viz_1_3(master_path, final_ts_cols, num_cols, cat_cols),
+        ts_viz_1_3(master_path, final_ts_cols, num_cols, cat_cols,output_type),
         dp.Text("### Decomposed View"),
         ts_viz_2_3(master_path, final_ts_cols, num_cols),
         dp.Text("### Stationarity & Transformations"),
@@ -2711,6 +2718,7 @@ def anovos_report(
     metricDict_path=".",
     run_type="local",
     final_report_path=".",
+    output_type="daily"
 ):
     """
     :param master_path: Path containing the input files.
@@ -3039,7 +3047,7 @@ def anovos_report(
         master_path, ds_ind, id_col, drift_threshold_model, all_drift_charts_
     )
 
-    tab7 = ts_viz_generate(ends_with(master_path))
+    tab7 = ts_viz_generate(ends_with(master_path),output_type)
 
     final_tabs_list = []
 
@@ -3072,3 +3080,4 @@ def anovos_report(
         raise ValueError("Invalid run_type")
 
     print("Report generated successfully at the specified location")
+    
