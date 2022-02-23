@@ -309,6 +309,7 @@ def IV_calculation(
     'bin_size' (default 10) and 'monotonicity_check' (default 0). monotonicity_check of 1 will dynamically calculate
     the bin_size ensuring monotonic nature and can be expensive operation. - **print_impact**
 
+
     Parameters
     ----------
     spark
@@ -337,13 +338,13 @@ def IV_calculation(
         "bin_method" i.e. method of binning - "equal_frequency" or "equal_range" and
         "monotonicity_check" 1 for monotonic binning else 0. monotonicity_check of 1 will
         dynamically calculate the bin_size ensuring monotonic nature but can be expensive operation.
-    print_impact :
+    print_impact
         True, False (Default value = False)
-    "bin_size": 10 :
+    "bin_size": 10
 
-    "monotonicity_check": 0 :
+    "monotonicity_check": 0
 
-    } :
+    }
 
 
     Returns
@@ -460,41 +461,42 @@ def IG_calculation(
     'bin_size' (default 10) and 'monotonicity_check' (default 0). monotonicity_check of 1 will dynamically calculate
     the bin_size ensuring monotonic nature and can be expensive operation. - **print_impact**
 
+
     Parameters
     ----------
-    spark :
+    spark
         Spark Session
-    idf :
+    idf
         Input Dataframe
-    list_of_cols :
+    list_of_cols
         List of columns to analyse e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
         "all" can be passed to include all columns for analysis.
         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
-    drop_cols :
+    drop_cols
         List of columns to be dropped e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
-    label_col :
+    label_col
         Label/Target column (Default value = "label")
-    event_label :
+    event_label
         Value of (positive) event (i.e label 1) (Default value = 1)
-    encoding_configs :
+    encoding_configs
         Takes input in dictionary format. Default {} i.e. empty dict means no encoding is required.
         In case numerical columns are present and encoding is required, following keys shall be
         provided - "bin_size" i.e. no. of bins for converting the numerical columns to categorical,
         "bin_method" i.e. method of binning - "equal_frequency" or "equal_range" and
         "monotonicity_check" 1 for monotonic binning else 0. monotonicity_check of 1 will
         dynamically calculate the bin_size ensuring monotonic nature but can be expensive operation.
-    print_impact :
+    print_impact
         True, False (Default value = False)
-    "bin_size": 10 :
+    "bin_size": 10
 
-    "monotonicity_check": 0 :
+    "monotonicity_check": 0
 
-    } :
+    }
 
 
     Returns
