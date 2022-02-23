@@ -176,6 +176,7 @@ def main(all_configs, run_type):
             id_col = args.get("id_col", None)
             tz_val = args.get("tz_offset", None)
             inspection_flag = args.get("inspection", False)
+            analysis_level = args.get("analysis_level", None)
 
             if auto_detection_flag:
                 start = timeit.default_timer()
@@ -192,14 +193,7 @@ def main(all_configs, run_type):
 
             if inspection_flag:
                 start = timeit.default_timer()
-                ts_analyzer(
-                    spark,
-                    df,
-                    id_col,
-                    output_path=report_input_path,
-                    tz_offset=tz_val,
-                    run_type=run_type,
-                )
+                ts_analyzer(spark,df,id_col,output_path=report_input_path, output_type=analysis_level,tz_offset=tz_val,run_type=run_type)
                 end = timeit.default_timer()
                 print(key, ", execution time (in secs) =", round(end - start, 4))
 
