@@ -530,7 +530,7 @@ def executive_summary_gen(
         IV threshold beyond which attributes can be called as significant.
     corr_threshold
         Correlation threshold beyond which attributes can be categorized under correlated.
-    print_reportOneHotEncoder
+    print_repor
         Printing option flexibility. Default value is kept as False.
 
     Returns
@@ -926,13 +926,13 @@ def wiki_generator(
 
     Parameters
     ----------
-    master_pathOneHotEncoder
+    master_pat
         Path containing the input files.
-    dataDict_pathOneHotEncoder
+    dataDict_pat
         Data dictionary path. Default value is kept as None.
-    metricDict_pathOneHotEncoder
+    metricDict_pat
         Metric dictionary path. Default value is kept as None.
-    print_reportOneHotEncoder
+    print_repor
         Printing option flexibility. Default value is kept as False.
 
     Returns
@@ -1023,19 +1023,19 @@ def descriptive_statistics(
 
     Parameters
     ----------
-    master_pathOneHotEncoder
+    master_pat
         Path containing the input files.
-    SG_tabsOneHotEncoder
+    SG_tab
         measures_of_counts','measures_of_centralTendency','measures_of_cardinality','measures_of_percentiles','measures_of_dispersion','measures_of_shape','global_summary'
-    avl_recs_SGOneHotEncoder
+    avl_recs_S
         Available files from the SG_tabs (Stats Generator tabs)
-    missing_recs_SGOneHotEncoder
+    missing_recs_S
         Missing files from the SG_tabs (Stats Generator tabs)
-    all_charts_num_1_OneHotEncoder
+    all_charts_num_1
         Numerical charts (histogram) all collated in a list format supported as per datapane objects
-    all_charts_cat_1_OneHotEncoder
+    all_charts_cat_1
         Categorical charts (barplot) all collated in a list format supported as per datapane objects
-    print_reportOneHotEncoder
+    print_repor
         Printing option flexibility. Default value is kept as False.
 
     Returns
@@ -1201,17 +1201,17 @@ def quality_check(
 
     Parameters
     ----------
-    master_pathOneHotEncoder
+    master_pat
         Path containing the input files.
-    QC_tabsOneHotEncoder
+    QC_tab
         nullColumns_detection','IDness_detection','biasedness_detection','invalidEntries_detection','duplicate_detection','nullRows_detection','outlier_detection'
-    avl_recs_QCOneHotEncoder
+    avl_recs_Q
         Available files from the QC_tabs (Quality Checker tabs)
-    missing_recs_QCOneHotEncoder
+    missing_recs_Q
         Missing files from the QC_tabs (Quality Checker tabs)
-    all_charts_num_3_OneHotEncoder
+    all_charts_num_3
         Numerical charts (outlier charts) all collated in a list format supported as per datapane objects
-    print_reportOneHotEncoder
+    print_repor
         Printing option flexibility. Default value is kept as False.
 
     Returns
@@ -1368,21 +1368,21 @@ def attribute_associations(
 
     Parameters
     ----------
-    master_pathOneHotEncoder
+    master_pat
         Path containing the input files.
-    AE_tabsOneHotEncoder
+    AE_tab
         correlation_matrix','IV_calculation','IG_calculation','variable_clustering'
-    avl_recs_AEOneHotEncoder
+    avl_recs_A
         Available files from the AE_tabs (Association Evaluator tabs)
-    missing_recs_AEOneHotEncoder
+    missing_recs_A
         Missing files from the AE_tabs (Association Evaluator tabs)
-    label_colOneHotEncoder
+    label_co
         label column
-    all_charts_num_2_OneHotEncoder
+    all_charts_num_2
         Numerical charts (histogram) all collated in a list format supported as per datapane objects
-    all_charts_cat_2_OneHotEncoder
+    all_charts_cat_2
         Categorical charts (barplot) all collated in a list format supported as per datapane objects
-    print_reportOneHotEncoder
+    print_repor
         Printing option flexibility. Default value is kept as False.
 
     Returns
@@ -1522,17 +1522,17 @@ def data_drift_stability(
 
     Parameters
     ----------
-    master_pathOneHotEncoder
+    master_pat
         Path containing the input files.
-    ds_indOneHotEncoder
+    ds_in
         Drift stability indicator in list form.
-    id_colOneHotEncoder
+    id_co
         ID column
-    drift_threshold_modelOneHotEncoder
+    drift_threshold_mode
         threshold which the user is specifying for tagging an attribute to be drifted or not
-    all_drift_charts_OneHotEncoder
+    all_drift_charts
         Charts (histogram/barplot) all collated in a list format supported as per datapane objects
-    print_reportOneHotEncoder
+    print_repor
         Printing option flexibility. Default value is kept as False.
 
     Returns
@@ -1644,9 +1644,9 @@ def data_drift_stability(
 
             Parameters
             ----------
-            drifted_featsOneHotEncoder
+            drifted_feat
                 count of attributes drifted
-            len_featsOneHotEncoder
+            len_feat
                 count of attributes passed for analysis
 
             Returns
@@ -2052,25 +2052,25 @@ def anovos_report(
 
     Parameters
     ----------
-    master_pathOneHotEncoder
+    master_pat
         Path containing the input files.
-    id_colOneHotEncoder
+    id_co
         ID column (Default value = "")
-    label_colOneHotEncoder
+    label_co
         label column (Default value = "")
-    corr_thresholdOneHotEncoder
+    corr_threshol
         Correlation threshold beyond which attributes can be categorized under correlated. (Default value = 0.4)
-    iv_thresholdOneHotEncoder
+    iv_threshol
         IV threshold beyond which attributes can be called as significant. (Default value = 0.02)
-    drift_threshold_modelOneHotEncoder
+    drift_threshold_mode
         threshold which the user is specifying for tagging an attribute to be drifted or not (Default value = 0.1)
-    dataDict_pathOneHotEncoder
+    dataDict_pat
         Data dictionary path. Default value is kept as None.
-    metricDict_pathOneHotEncoder
+    metricDict_pat
         Metric dictionary path. Default value is kept as None.
-    run_typeOneHotEncoder
+    run_typ
         local or emr or databricks option. Default is kept as local
-    final_report_pathOneHotEncoder
+    final_report_pat
         Path where the report will be saved. (Default value = ".")
 
     Returns

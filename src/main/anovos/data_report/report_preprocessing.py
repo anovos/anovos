@@ -289,9 +289,9 @@ def plot_eventRate(spark, idf, col, label_col, event_label, cutoffs_path):
         Analysis column
     label_col
         Label column
-    event_labelOneHotEncoder
+    event_labe
         Event label
-    cutoffs_pathOneHotEncoder
+    cutoffs_pat
         Path containing the range cut offs details for the analysis column
 
     Returns
@@ -348,15 +348,15 @@ def plot_comparative_drift(spark, idf, source, col, cutoffs_path):
 
     Parameters
     ----------
-    sparkOneHotEncoder
+    spar
         Spark Session
-    idfOneHotEncoder
+    id
         Target dataframe which would be referred for producing the frequency charts in form of bar plots / histogram
-    sourceOneHotEncoder
+    sourc
         Source dataframe of comparison
-    colOneHotEncoder
+    co
         Analysis column
-    cutoffs_pathOneHotEncoder
+    cutoffs_pat
         Path containing the range cut offs details for the analysis column
 
     Returns
@@ -462,35 +462,35 @@ def charts_to_objects(
 
     Parameters
     ----------
-    sparkOneHotEncoder
+    spar
         Spark Session
-    idfOneHotEncoder
+    id
         Input dataframe
-    list_of_colsOneHotEncoder
+    list_of_col
         List of columns passed for analysis (Default value = "all")
-    drop_colsOneHotEncoder
+    drop_col
         List of columns dropped from analysis (Default value = [])
-    label_colOneHotEncoder
+    label_co
         Label column (Default value = None)
-    event_labelOneHotEncoder
+    event_labe
         Event label (Default value = 1)
-    bin_methodOneHotEncoder
+    bin_metho
         Binning method equal_range or equal_frequency (Default value = "equal_range")
-    bin_sizeOneHotEncoder
+    bin_siz
         Maximum bin size categories. Default value is kept as 10
-    coverageOneHotEncoder
+    coverag
         Maximum coverage of categories. Default value is kept as 1.0 (which is 100%)
-    drift_detectorOneHotEncoder
+    drift_detecto
         True or False as per the availability. Default value is kept as False
-    source_pathOneHotEncoder
+    source_pat
         Source data path. Default value is kept as "NA"
-    master_pathOneHotEncoder
+    master_pat
         Path where the output needs to be saved, ideally the same path where the analyzed data output is also saved (Default value = ".")
-    stats_uniqueOneHotEncoder
+    stats_uniqu
         Takes arguments for read_dataset (data_ingest module) function in a dictionary format
         to read pre-saved statistics on unique value count i.e. if measures_of_cardinality or
         uniqueCount_computation (data_analyzer.stats_generator module) has been computed & saved before. (Default value = {})
-    run_typeOneHotEncoder
+    run_typ
         local or emr or databricks run type. Default value is kept as local
 
     Returns
