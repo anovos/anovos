@@ -34,7 +34,7 @@ concatenate_dataset:
     recast_column:
       list_of_cols: ['age','education_num']
       list_of_dtypes: ['float','float']
-  
+    
   dataset2:
     read_dataset:
       file_path: "data/income_dataset/parquet"
@@ -47,7 +47,7 @@ concatenate_dataset:
     recast_column:
       list_of_cols: ['age','education_num']
       list_of_dtypes: ['float','float']
-  
+    
 join_dataset:
   join_cols: ifa
   join_type: inner
@@ -79,7 +79,8 @@ anovos_basic_report:
 
 #if anovos_basic_report.basic_report is True, then all configs below are ignored.
 stats_generator:
-  metric: ['global_summary']
+  metric: ['global_summary','measures_of_counts','measures_of_centralTendency','measures_of_cardinality'
+            ,'measures_of_percentiles','measures_of_dispersion','measures_of_shape']
   metric_args:
     list_of_cols: all
     drop_cols: ['ifa']
@@ -89,25 +90,25 @@ quality_checker:
     list_of_cols: all
     drop_cols: ['ifa']
     treatment: True
-
+  
   nullRows_detection:
     list_of_cols: all
     drop_cols: []
     treatment: True
     treatment_threshold: 0.75
-
+  
   invalidEntries_detection:
     list_of_cols: all
     drop_cols: ['ifa']
     treatment: True
     output_mode: replace
-
+  
   IDness_detection:
     list_of_cols: all
     drop_cols: ['ifa']
     treatment: True
     treatment_threshold: 0.9
-
+  
   biasedness_detection:
     list_of_cols: all
     drop_cols: ['income']
@@ -149,7 +150,7 @@ association_evaluator:
   correlation_matrix:
     list_of_cols: all
     drop_cols: ['ifa']
-
+  
   IV_calculation:
     list_of_cols: all
     drop_cols: ifa
@@ -169,7 +170,7 @@ association_evaluator:
       bin_method: equal_frequency
       bin_size: 10
       monotonicity_check: 0
-
+  
   variable_clustering:
     list_of_cols: all
     drop_cols: ifa|income
@@ -306,7 +307,7 @@ report_preprocessing:
     event_label: '>50K'
     bin_method: equal_frequency
     bin_size: 10
-    drift_detector: False
+    drift_detector: True
     source_path: "NA"
 
 report_generation:
