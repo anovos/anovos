@@ -193,7 +193,15 @@ def main(all_configs, run_type):
 
             if inspection_flag:
                 start = timeit.default_timer()
-                ts_analyzer(spark,df,id_col,output_path=report_input_path, output_type=analysis_level,tz_offset=tz_val,run_type=run_type)
+                ts_analyzer(
+                    spark,
+                    df,
+                    id_col,
+                    output_path=report_input_path,
+                    output_type=analysis_level,
+                    tz_offset=tz_val,
+                    run_type=run_type,
+                )
                 end = timeit.default_timer()
                 print(key, ", execution time (in secs) =", round(end - start, 4))
 
@@ -462,7 +470,10 @@ def main(all_configs, run_type):
                         )
 
             if (key == "report_generation") & (args is not None):
-                anovos_report(**args, run_type=run_type)
+                analysis_level = all_configs.get("timeseries_analyzer", None).get(
+                    "analysis_level", None
+                )
+                anovos_report(**args, run_type=run_type, output_type=analysis_level)
 
     save(df, write_main, folder_name="final_dataset", reread=False)
 
