@@ -16,7 +16,7 @@ s3path
 s3fs
 pybind11
 fsspec
-pybind11
+py4j
 popmon
 varclushi
 tensorflow
