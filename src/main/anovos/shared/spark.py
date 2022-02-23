@@ -31,14 +31,27 @@ def init_spark(
     spark_config=None,
 ):
     """
-    :param app_name: Name of Spark app.
-    :param master: Cluster connection details
-                   Defaults to local[*] which means to run Spark locally with as many worker threads
-                   as logical cores on the machine.
-    :param jars_packages: List of Spark JAR package names.
-    :param py_files: List of files to send to Spark cluster (master and workers).
-    :param spark_config: Dictionary of config key-value pairs.
-    :return: A tuple of references to the Spark Session, Spark Context & SQL Context.
+
+    Parameters
+    ----------
+    app_name :
+        Name of Spark app. (Default value = "anovos")
+    master :
+        Cluster connection details
+        Defaults to local[*] which means to run Spark locally with as many worker threads
+        as logical cores on the machine.
+    jars_packages :
+        List of Spark JAR package names. (Default value = None)
+    py_files :
+        List of files to send to Spark cluster (master and workers). (Default value = None)
+    spark_config :
+        Dictionary of config key-value pairs. (Default value = None)
+
+    Returns
+    -------
+    type
+        A tuple of references to the Spark Session, Spark Context & SQL Context.
+
     """
     logger.info(f"Getting spark session, context and sql context app_name: {app_name}")
 

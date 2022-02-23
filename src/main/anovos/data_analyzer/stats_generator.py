@@ -11,19 +11,32 @@ from anovos.shared.utils import transpose_dataframe, attributeType_segregation
 
 def global_summary(spark, idf, list_of_cols="all", drop_cols=[], print_impact=True):
     """
-    :param spark: Spark Session
-    :param idf: Input Dataframe
-    :param list_of_cols: List of columns to analyse e.g., ["col1","col2"].
-                         Alternatively, columns can be specified in a string format,
-                         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-                         "all" can be passed to include all columns for analysis.
-                         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
-                         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
-    :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
-                      Alternatively, columns can be specified in a string format,
-                      where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    :param print_impact: True, False
-    :return: Dataframe [metric, value]
+
+    Parameters
+    ----------
+    spark :
+        Spark Session
+    idf :
+        Input Dataframe
+    list_of_cols :
+        List of columns to analyse e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        "all" can be passed to include all columns for analysis.
+        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
+        drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
+    drop_cols :
+        List of columns to be dropped e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+    print_impact :
+        True, False (Default value = True)
+
+    Returns
+    -------
+    type
+        Dataframe [metric, value]
+
     """
     if list_of_cols == "all":
         list_of_cols = idf.columns
@@ -76,19 +89,32 @@ def missingCount_computation(
     spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
 ):
     """
-    :param spark: Spark Session
-    :param idf: Input Dataframe
-    :param list_of_cols: List of columns to analyse e.g., ["col1","col2"].
-                         Alternatively, columns can be specified in a string format,
-                         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-                         "all" can be passed to include all columns for analysis.
-                         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
-                         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
-    :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
-                      Alternatively, columns can be specified in a string format,
-                      where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    :param print_impact: True, False
-    :return: Dataframe [attribute, missing_count, missing_pct]
+
+    Parameters
+    ----------
+    spark :
+        Spark Session
+    idf :
+        Input Dataframe
+    list_of_cols :
+        List of columns to analyse e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        "all" can be passed to include all columns for analysis.
+        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
+        drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
+    drop_cols :
+        List of columns to be dropped e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+    print_impact :
+        True, False (Default value = False)
+
+    Returns
+    -------
+    type
+        Dataframe [attribute, missing_count, missing_pct]
+
     """
     if list_of_cols == "all":
         num_cols, cat_cols, other_cols = attributeType_segregation(idf)
@@ -123,19 +149,32 @@ def nonzeroCount_computation(
     spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
 ):
     """
-    :param spark: Spark Session
-    :param idf: Input Dataframe
-    :param list_of_cols: List of numerical columns to analyse e.g., ["col1","col2"].
-                         Alternatively, columns can be specified in a string format,
-                         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-                         "all" can be passed to include all numerical columns for analysis.
-                         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
-                         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
-    :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
-                      Alternatively, columns can be specified in a string format,
-                      where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    :param print_impact: True, False
-    :return: Dataframe [attribute, nonzero_count, nonzero_pct]
+
+    Parameters
+    ----------
+    spark :
+        Spark Session
+    idf :
+        Input Dataframe
+    list_of_cols :
+        List of numerical columns to analyse e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        "all" can be passed to include all numerical columns for analysis.
+        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
+        drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
+    drop_cols :
+        List of columns to be dropped e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+    print_impact :
+        True, False (Default value = False)
+
+    Returns
+    -------
+    type
+        Dataframe [attribute, nonzero_count, nonzero_pct]
+
     """
     num_cols = attributeType_segregation(idf)[0]
     if list_of_cols == "all":
@@ -179,19 +218,32 @@ def measures_of_counts(
     spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
 ):
     """
-    :param spark: Spark Session
-    :param idf: Input Dataframe
-    :param list_of_cols: List of columns to analyse e.g., ["col1","col2"].
-                         Alternatively, columns can be specified in a string format,
-                         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-                         "all" can be passed to include all columns for analysis.
-                         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
-                         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
-    :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
-                      Alternatively, columns can be specified in a string format,
-                      where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    :param print_impact: True, False
-    :return: Dataframe [attribute, fill_count, fill_pct, missing_count, missing_pct, nonzero_count, nonzero_pct]
+
+    Parameters
+    ----------
+    spark :
+        Spark Session
+    idf :
+        Input Dataframe
+    list_of_cols :
+        List of columns to analyse e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        "all" can be passed to include all columns for analysis.
+        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
+        drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
+    drop_cols :
+        List of columns to be dropped e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+    print_impact :
+        True, False (Default value = False)
+
+    Returns
+    -------
+    type
+        Dataframe [attribute, fill_count, fill_pct, missing_count, missing_pct, nonzero_count, nonzero_pct]
+
     """
     if list_of_cols == "all":
         num_cols, cat_cols, other_cols = attributeType_segregation(idf)
@@ -228,20 +280,33 @@ def measures_of_counts(
 
 def mode_computation(spark, idf, list_of_cols="all", drop_cols=[], print_impact=False):
     """
-    :param spark: Spark Session
-    :param idf: Input Dataframe
-    :param list_of_cols: List of Discrete (Categorical + Integer) columns to analyse e.g., ["col1","col2"].
-                         Alternatively, columns can be specified in a string format,
-                         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-                         "all" can be passed to include all discrete columns for analysis.
-                         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
-                         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
-    :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
-                      Alternatively, columns can be specified in a string format,
-                      where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    :param print_impact: True, False
-    :return: Dataframe [attribute, mode, mode_rows]
-             In case there is tie between multiple values, one value is randomly picked as mode.
+
+    Parameters
+    ----------
+    spark :
+        Spark Session
+    idf :
+        Input Dataframe
+    list_of_cols :
+        List of Discrete (Categorical + Integer) columns to analyse e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        "all" can be passed to include all discrete columns for analysis.
+        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
+        drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
+    drop_cols :
+        List of columns to be dropped e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+    print_impact :
+        True, False (Default value = False)
+
+    Returns
+    -------
+    type
+        Dataframe [attribute, mode, mode_rows]
+        In case there is tie between multiple values, one value is randomly picked as mode.
+
     """
     if list_of_cols == "all":
         num_cols, cat_cols, other_cols = attributeType_segregation(idf)
@@ -302,19 +367,32 @@ def measures_of_centralTendency(
     spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
 ):
     """
-    :param spark: Spark Session
-    :param idf: Input Dataframe
-    :param list_of_cols: List of columns to analyse e.g., ["col1","col2"].
-                         Alternatively, columns can be specified in a string format,
-                         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-                         "all" can be passed to include all columns for analysis.
-                         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
-                         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
-    :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
-                      Alternatively, columns can be specified in a string format,
-                      where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    :param print_impact: True, False
-    :return: Dataframe [attribute, mean, median, mode, mode_rows, mode_pct]
+
+    Parameters
+    ----------
+    spark :
+        Spark Session
+    idf :
+        Input Dataframe
+    list_of_cols :
+        List of columns to analyse e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        "all" can be passed to include all columns for analysis.
+        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
+        drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
+    drop_cols :
+        List of columns to be dropped e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+    print_impact :
+        True, False (Default value = False)
+
+    Returns
+    -------
+    type
+        Dataframe [attribute, mean, median, mode, mode_rows, mode_pct]
+
     """
     if list_of_cols == "all":
         num_cols, cat_cols, other_cols = attributeType_segregation(idf)
@@ -353,19 +431,32 @@ def uniqueCount_computation(
     spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
 ):
     """
-    :param spark: Spark Session
-    :param idf: Input Dataframe
-    :param list_of_cols: List of Discrete (Categorical + Integer) columns to analyse e.g., ["col1","col2"].
-                         Alternatively, columns can be specified in a string format,
-                         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-                         "all" can be passed to include all discrete columns for analysis.
-                         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
-                         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
-    :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
-                      Alternatively, columns can be specified in a string format,
-                      where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    :param print_impact: True, False
-    :return: Dataframe [attribute, unique_values]
+
+    Parameters
+    ----------
+    spark :
+        Spark Session
+    idf :
+        Input Dataframe
+    list_of_cols :
+        List of Discrete (Categorical + Integer) columns to analyse e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        "all" can be passed to include all discrete columns for analysis.
+        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
+        drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
+    drop_cols :
+        List of columns to be dropped e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+    print_impact :
+        True, False (Default value = False)
+
+    Returns
+    -------
+    type
+        Dataframe [attribute, unique_values]
+
     """
     if list_of_cols == "all":
         list_of_cols = []
@@ -409,19 +500,32 @@ def measures_of_cardinality(
     spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
 ):
     """
-    :param spark: Spark Session
-    :param idf: Input Dataframe
-    :param list_of_cols: List of Discrete (Categorical + Integer) columns to analyse e.g., ["col1","col2"].
-                         Alternatively, columns can be specified in a string format,
-                         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-                         "all" can be passed to include all discrete columns for analysis.
-                         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
-                         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
-    :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
-                      Alternatively, columns can be specified in a string format,
-                      where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    :param print_impact: True, False
-    :return: Dataframe [attribute, unique_values, IDness]
+
+    Parameters
+    ----------
+    spark :
+        Spark Session
+    idf :
+        Input Dataframe
+    list_of_cols :
+        List of Discrete (Categorical + Integer) columns to analyse e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        "all" can be passed to include all discrete columns for analysis.
+        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
+        drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
+    drop_cols :
+        List of columns to be dropped e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+    print_impact :
+        True, False (Default value = False)
+
+    Returns
+    -------
+    type
+        Dataframe [attribute, unique_values, IDness]
+
     """
     if list_of_cols == "all":
         list_of_cols = []
@@ -475,19 +579,32 @@ def measures_of_dispersion(
     spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
 ):
     """
-    :param spark: Spark Session
-    :param idf: Input Dataframe
-    :param list_of_cols: List of numerical columns to analyse e.g., ["col1","col2"].
-                         Alternatively, columns can be specified in a string format,
-                         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-                         "all" can be passed to include all numerical columns for analysis.
-                         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
-                         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
-    :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
-                      Alternatively, columns can be specified in a string format,
-                      where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    :param print_impact: True, False
-    :return: Dataframe [attribute, stddev, variance, cov, IQR, range]
+
+    Parameters
+    ----------
+    spark :
+        Spark Session
+    idf :
+        Input Dataframe
+    list_of_cols :
+        List of numerical columns to analyse e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        "all" can be passed to include all numerical columns for analysis.
+        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
+        drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
+    drop_cols :
+        List of columns to be dropped e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+    print_impact :
+        True, False (Default value = False)
+
+    Returns
+    -------
+    type
+        Dataframe [attribute, stddev, variance, cov, IQR, range]
+
     """
     num_cols = attributeType_segregation(idf)[0]
     if list_of_cols == "all":
@@ -541,19 +658,32 @@ def measures_of_percentiles(
     spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
 ):
     """
-    :param spark: Spark Session
-    :param idf: Input Dataframe
-    :param list_of_cols: List of numerical columns to analyse e.g., ["col1","col2"].
-                         Alternatively, columns can be specified in a string format,
-                         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-                         "all" can be passed to include all numerical columns for analysis.
-                         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
-                         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
-    :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
-                      Alternatively, columns can be specified in a string format,
-                      where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    :param print_impact: True, False
-    :return: Dataframe [attribute, min, 1%, 5%, 10%, 25%, 50%, 75%, 90%, 95%, 99%, max]
+
+    Parameters
+    ----------
+    spark :
+        Spark Session
+    idf :
+        Input Dataframe
+    list_of_cols :
+        List of numerical columns to analyse e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        "all" can be passed to include all numerical columns for analysis.
+        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
+        drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
+    drop_cols :
+        List of columns to be dropped e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+    print_impact :
+        True, False (Default value = False)
+
+    Returns
+    -------
+    type
+        Dataframe [attribute, min, 1%, 5%, 10%, 25%, 50%, 75%, 90%, 95%, 99%, max]
+
     """
     num_cols = attributeType_segregation(idf)[0]
     if list_of_cols == "all":
@@ -603,18 +733,32 @@ def measures_of_percentiles(
 
 def measures_of_shape(spark, idf, list_of_cols="all", drop_cols=[], print_impact=False):
     """
-    :param idf: Input Dataframe
-    :param list_of_cols: List of numerical columns to analyse e.g., ["col1","col2"].
-                         Alternatively, columns can be specified in a string format,
-                         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-                         "all" can be passed to include all numerical columns for analysis.
-                         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
-                         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
-    :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
-                      Alternatively, columns can be specified in a string format,
-                      where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    :param print_impact: True, False
-    :return: Dataframe [attribute, skewness, kurtosis]
+
+    Parameters
+    ----------
+    idf :
+        Input Dataframe
+    list_of_cols :
+        List of numerical columns to analyse e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        "all" can be passed to include all numerical columns for analysis.
+        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
+        drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
+    drop_cols :
+        List of columns to be dropped e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+    print_impact :
+        True, False (Default value = False)
+    spark :
+
+
+    Returns
+    -------
+    type
+        Dataframe [attribute, skewness, kurtosis]
+
     """
 
     num_cols = attributeType_segregation(idf)[0]

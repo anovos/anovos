@@ -29,6 +29,17 @@ cat_cols = []
 
 
 def master_to_local(master_path):
+    """
+
+    Parameters
+    ----------
+    master_path :
+
+
+    Returns
+    -------
+
+    """
     punctuations = ":"
     for x in master_path:
         if x in punctuations:
@@ -39,13 +50,27 @@ def master_to_local(master_path):
 
 def save_stats(spark, idf, master_path, function_name, reread=False, run_type="local"):
     """
-    :param spark: Spark Session
-    :param idf: input dataframe
-    :param master_path: Path to master folder under which all statistics will be saved in a csv file format.
-    :param function_name: Function Name for which statistics need to be saved. file name will be saved as csv
-    :param reread: option to reread. Default value is kept as False
-    :param run_type: local or emr or databricks based on the mode of execution. Default value is kept as local
-    :return: None, dataframe saved
+
+    Parameters
+    ----------
+    spark :
+        Spark Session
+    idf :
+        input dataframe
+    master_path :
+        Path to master folder under which all statistics will be saved in a csv file format.
+    function_name :
+        Function Name for which statistics need to be saved. file name will be saved as csv
+    reread :
+        option to reread. Default value is kept as False
+    run_type :
+        local or emr or databricks based on the mode of execution. Default value is kept as local
+
+    Returns
+    -------
+    type
+        None, dataframe saved
+
     """
     if run_type == "local":
         local_path = master_path
@@ -82,9 +107,17 @@ def save_stats(spark, idf, master_path, function_name, reread=False, run_type="l
 
 def edit_binRange(col):
     """
-    :param col: The column which is passed as input and needs to be treated.
 
-    The generated output will not contain any range whose value at either side is the same.
+    Parameters
+    ----------
+    col :
+        The column which is passed as input and needs to be treated.
+
+        The generated output will not contain any range whose value at either side is the same.
+
+    Returns
+    -------
+
     """
     try:
         list_col = col.split("-")
@@ -103,9 +136,19 @@ f_edit_binRange = F.udf(edit_binRange, T.StringType())
 
 def binRange_to_binIdx(spark, col, cutoffs_path):
     """
-    :param spark: Spark Session
-    :param col: The input column which is needed to by mapped with respective index
-    :param cutoffs_path: paths containing the range cutoffs applicable for each index
+
+    Parameters
+    ----------
+    spark :
+        Spark Session
+    col :
+        The input column which is needed to by mapped with respective index
+    cutoffs_path :
+        paths containing the range cutoffs applicable for each index
+
+    Returns
+    -------
+
     """
     bin_cutoffs = (
         spark.read.parquet(cutoffs_path)
@@ -135,11 +178,22 @@ def binRange_to_binIdx(spark, col, cutoffs_path):
 
 def plot_frequency(spark, idf, col, cutoffs_path):
     """
-    :param spark: Spark Session
-    :param idf: Input dataframe which would be referred for producing the frequency charts in form of
-                bar plots / histograms
-    :param col: Analysis column
-    :param cutoffs_path: Path containing the range cut offs details for the analysis column
+
+    Parameters
+    ----------
+    spark :
+        Spark Session
+    idf :
+        Input dataframe which would be referred for producing the frequency charts in form of
+        bar plots / histograms
+    col :
+        Analysis column
+    cutoffs_path :
+        Path containing the range cut offs details for the analysis column
+
+    Returns
+    -------
+
     """
     odf = (
         idf.groupBy(col)
@@ -184,11 +238,23 @@ def plot_frequency(spark, idf, col, cutoffs_path):
 
 def plot_outlier(spark, idf, col, split_var=None, sample_size=500000):
     """
-    :param spark: Spark Session
-    :param idf: Input dataframe which would be referred for capturing the outliers in form of violin charts
-    :param col: Analysis column
-    :param split_var: Column which is needed. Default value is kept as None
-    :param sample_size: Maximum Sample size. Default value is kept as 500000
+
+    Parameters
+    ----------
+    spark :
+        Spark Session
+    idf :
+        Input dataframe which would be referred for capturing the outliers in form of violin charts
+    col :
+        Analysis column
+    split_var :
+        Column which is needed. Default value is kept as None
+    sample_size :
+        Maximum Sample size. Default value is kept as 500000
+
+    Returns
+    -------
+
     """
     idf_sample = idf.select(col).sample(
         False, min(1.0, float(sample_size) / idf.count()), 0
@@ -215,12 +281,25 @@ def plot_outlier(spark, idf, col, split_var=None, sample_size=500000):
 
 def plot_eventRate(spark, idf, col, label_col, event_label, cutoffs_path):
     """
-    :param spark: Spark Session
-    :param idf: Input dataframe which would be referred for producing the frequency charts in form of bar plots / histogram
-    :param col: Analysis column
-    :param label_col: Label column
-    :param event_label: Event label
-    :param cutoffs_path: Path containing the range cut offs details for the analysis column
+
+    Parameters
+    ----------
+    spark :
+        Spark Session
+    idf :
+        Input dataframe which would be referred for producing the frequency charts in form of bar plots / histogram
+    col :
+        Analysis column
+    label_col :
+        Label column
+    event_label :
+        Event label
+    cutoffs_path :
+        Path containing the range cut offs details for the analysis column
+
+    Returns
+    -------
+
     """
 
     odf = (
@@ -269,11 +348,23 @@ def plot_eventRate(spark, idf, col, label_col, event_label, cutoffs_path):
 
 def plot_comparative_drift(spark, idf, source, col, cutoffs_path):
     """
-    :param spark: Spark Session
-    :param idf: Target dataframe which would be referred for producing the frequency charts in form of bar plots / histogram
-    :param source: Source dataframe of comparison
-    :param col: Analysis column
-    :param cutoffs_path: Path containing the range cut offs details for the analysis column
+
+    Parameters
+    ----------
+    spark :
+        Spark Session
+    idf :
+        Target dataframe which would be referred for producing the frequency charts in form of bar plots / histogram
+    source :
+        Source dataframe of comparison
+    col :
+        Analysis column
+    cutoffs_path :
+        Path containing the range cut offs details for the analysis column
+
+    Returns
+    -------
+
     """
     odf = (
         idf.groupBy(col)
@@ -371,22 +462,43 @@ def charts_to_objects(
     run_type="local",
 ):
     """
-    :param spark: Spark Session
-    :param idf: Input dataframe
-    :param list_of_cols: List of columns passed for analysis
-    :param drop_cols: List of columns dropped from analysis
-    :param label_col: Label column
-    :param event_label: Event label
-    :param bin_method: Binning method equal_range or equal_frequency
-    :param bin_size: Maximum bin size categories. Default value is kept as 10
-    :param coverage: Maximum coverage of categories. Default value is kept as 1.0 (which is 100%)
-    :param drift_detector: True or False as per the availability. Default value is kept as False
-    :param source_path: Source data path. Default value is kept as "NA"
-    :param master_path: Path where the output needs to be saved, ideally the same path where the analyzed data output is also saved
-    :param stats_unique: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
-                         to read pre-saved statistics on unique value count i.e. if measures_of_cardinality or
-                         uniqueCount_computation (data_analyzer.stats_generator module) has been computed & saved before.
-    :param run_type: local or emr or databricks run type. Default value is kept as local
+
+    Parameters
+    ----------
+    spark :
+        Spark Session
+    idf :
+        Input dataframe
+    list_of_cols :
+        List of columns passed for analysis (Default value = "all")
+    drop_cols :
+        List of columns dropped from analysis (Default value = [])
+    label_col :
+        Label column (Default value = None)
+    event_label :
+        Event label (Default value = 1)
+    bin_method :
+        Binning method equal_range or equal_frequency (Default value = "equal_range")
+    bin_size :
+        Maximum bin size categories. Default value is kept as 10
+    coverage :
+        Maximum coverage of categories. Default value is kept as 1.0 (which is 100%)
+    drift_detector :
+        True or False as per the availability. Default value is kept as False
+    source_path :
+        Source data path. Default value is kept as "NA"
+    master_path :
+        Path where the output needs to be saved, ideally the same path where the analyzed data output is also saved (Default value = ".")
+    stats_unique :
+        Takes arguments for read_dataset (data_ingest module) function in a dictionary format
+        to read pre-saved statistics on unique value count i.e. if measures_of_cardinality or
+        uniqueCount_computation (data_analyzer.stats_generator module) has been computed & saved before. (Default value = {})
+    run_type :
+        local or emr or databricks run type. Default value is kept as local
+
+    Returns
+    -------
+
     """
 
     global num_cols

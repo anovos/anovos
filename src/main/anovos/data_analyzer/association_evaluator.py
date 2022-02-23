@@ -24,25 +24,39 @@ def correlation_matrix(
     spark, idf, list_of_cols="all", drop_cols=[], stats_unique={}, print_impact=False
 ):
     """
-    :param spark: Spark Session
-    :param idf: Input Dataframe
-    :param list_of_cols: List of columns to analyse e.g., ["col1","col2"].
-                         Alternatively, columns can be specified in a string format,
-                         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-                         "all" can be passed to include all columns for analysis.
-                         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
-                         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
-    :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
-                      Alternatively, columns can be specified in a string format,
-                      where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    :param stats_unique: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
-                         to read pre-saved statistics on unique value count i.e. if measures_of_cardinality or
-                         uniqueCount_computation (data_analyzer.stats_generator module) has been computed & saved before.
-    :param print_impact: True, False
-    :return: Dataframe [attribute,*col_names]
-             Correlation between attribute X and Y can be found at an intersection of
-             a) row with value X in ‘attribute’ column and column ‘Y’, or
-             b) row with value Y in ‘attribute’ column and column ‘X’.
+
+    Parameters
+    ----------
+    spark :
+        Spark Session
+    idf :
+        Input Dataframe
+    list_of_cols :
+        List of columns to analyse e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        "all" can be passed to include all columns for analysis.
+        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
+        drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
+    drop_cols :
+        List of columns to be dropped e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+    stats_unique :
+        Takes arguments for read_dataset (data_ingest module) function in a dictionary format
+        to read pre-saved statistics on unique value count i.e. if measures_of_cardinality or
+        uniqueCount_computation (data_analyzer.stats_generator module) has been computed & saved before. (Default value = {})
+    print_impact :
+        True, False (Default value = False)
+
+    Returns
+    -------
+    type
+        Dataframe [attribute,*col_names]
+        Correlation between attribute X and Y can be found at an intersection of
+        a) row with value X in ‘attribute’ column and column ‘Y’, or
+        b) row with value Y in ‘attribute’ column and column ‘X’.
+
     """
 
     if list_of_cols == "all":
@@ -106,29 +120,45 @@ def variable_clustering(
     print_impact=False,
 ):
     """
-    :param spark: Spark Session
-    :param idf: Input Dataframe
-    :param list_of_cols: List of columns to analyse e.g., ["col1","col2"].
-                         Alternatively, columns can be specified in a string format,
-                         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-                         "all" can be passed to include all columns for analysis.
-                         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
-                         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
-    :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
-                      Alternatively, columns can be specified in a string format,
-                      where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    :param sample_size: Maximum sample size (in terms of number of rows) taken for the computation.
-                        Sample dataset is extracted using random sampling.
-    :param stats_unique: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
-                         to read pre-saved statistics on unique value count i.e. if measures_of_cardinality or
-                         uniqueCount_computation (data_analyzer.stats_generator module) has been computed & saved before.
-    :param stats_mode: Takes arguments for read_dataset (data_ingest module) function in a dictionary format
-                       to read pre-saved statistics on most frequently seen values i.e. if measures_of_centralTendency or
-                       mode_computation (data_analyzer.stats_generator module) has been computed & saved before.
-    :param print_impact: True, False
-    :return: Dataframe [Cluster, Attribute, RS_Ratio]
-             Attributes similar to each other are grouped together with the same cluster id.
-             Attribute with the lowest (1 — RS_Ratio) can be chosen as a representative of the cluster.
+
+    Parameters
+    ----------
+    spark :
+        Spark Session
+    idf :
+        Input Dataframe
+    list_of_cols :
+        List of columns to analyse e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        "all" can be passed to include all columns for analysis.
+        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
+        drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
+    drop_cols :
+        List of columns to be dropped e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+    sample_size :
+        Maximum sample size (in terms of number of rows) taken for the computation.
+        Sample dataset is extracted using random sampling. (Default value = 100000)
+    stats_unique :
+        Takes arguments for read_dataset (data_ingest module) function in a dictionary format
+        to read pre-saved statistics on unique value count i.e. if measures_of_cardinality or
+        uniqueCount_computation (data_analyzer.stats_generator module) has been computed & saved before. (Default value = {})
+    stats_mode :
+        Takes arguments for read_dataset (data_ingest module) function in a dictionary format
+        to read pre-saved statistics on most frequently seen values i.e. if measures_of_centralTendency or
+        mode_computation (data_analyzer.stats_generator module) has been computed & saved before. (Default value = {})
+    print_impact :
+        True, False (Default value = False)
+
+    Returns
+    -------
+    type
+        Dataframe [Cluster, Attribute, RS_Ratio]
+        Attributes similar to each other are grouped together with the same cluster id.
+        Attribute with the lowest (1 — RS_Ratio) can be chosen as a representative of the cluster.
+
     """
 
     if list_of_cols == "all":
@@ -205,27 +235,49 @@ def IV_calculation(
     print_impact=False,
 ):
     """
-    :param spark: Spark Session
-    :param idf: Input Dataframe
-    :param list_of_cols: List of columns to analyse e.g., ["col1","col2"].
-                         Alternatively, columns can be specified in a string format,
-                         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-                         "all" can be passed to include all columns for analysis.
-                         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
-                         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
-    :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
-                      Alternatively, columns can be specified in a string format,
-                      where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    :param label_col: Label/Target column
-    :param event_label: Value of (positive) event (i.e label 1)
-    :param encoding_configs: Takes input in dictionary format. Default {} i.e. empty dict means no encoding is required.
-                             In case numerical columns are present and encoding is required, following keys shall be
-                             provided - "bin_size" i.e. no. of bins for converting the numerical columns to categorical,
-                             "bin_method" i.e. method of binning - "equal_frequency" or "equal_range" and
-                             "monotonicity_check" 1 for monotonic binning else 0. monotonicity_check of 1 will
-                             dynamically calculate the bin_size ensuring monotonic nature but can be expensive operation.
-    :param print_impact: True, False
-    :return: Dataframe [attribute, iv]
+
+    Parameters
+    ----------
+    spark :
+        Spark Session
+    idf :
+        Input Dataframe
+    list_of_cols :
+        List of columns to analyse e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        "all" can be passed to include all columns for analysis.
+        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
+        drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
+    drop_cols :
+        List of columns to be dropped e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+    label_col :
+        Label/Target column (Default value = "label")
+    event_label :
+        Value of (positive) event (i.e label 1) (Default value = 1)
+    encoding_configs :
+        Takes input in dictionary format. Default {} i.e. empty dict means no encoding is required.
+        In case numerical columns are present and encoding is required, following keys shall be
+        provided - "bin_size" i.e. no. of bins for converting the numerical columns to categorical,
+        "bin_method" i.e. method of binning - "equal_frequency" or "equal_range" and
+        "monotonicity_check" 1 for monotonic binning else 0. monotonicity_check of 1 will
+        dynamically calculate the bin_size ensuring monotonic nature but can be expensive operation.
+    print_impact :
+        True, False (Default value = False)
+    "bin_size": 10 :
+
+    "monotonicity_check": 0 :
+
+    } :
+
+
+    Returns
+    -------
+    type
+        Dataframe [attribute, iv]
+
     """
 
     if label_col not in idf.columns:
@@ -321,27 +373,49 @@ def IG_calculation(
     print_impact=False,
 ):
     """
-    :param spark: Spark Session
-    :param idf: Input Dataframe
-    :param list_of_cols: List of columns to analyse e.g., ["col1","col2"].
-                         Alternatively, columns can be specified in a string format,
-                         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-                         "all" can be passed to include all columns for analysis.
-                         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
-                         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
-    :param drop_cols: List of columns to be dropped e.g., ["col1","col2"].
-                      Alternatively, columns can be specified in a string format,
-                      where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-    :param label_col: Label/Target column
-    :param event_label: Value of (positive) event (i.e label 1)
-    :param encoding_configs: Takes input in dictionary format. Default {} i.e. empty dict means no encoding is required.
-                             In case numerical columns are present and encoding is required, following keys shall be
-                             provided - "bin_size" i.e. no. of bins for converting the numerical columns to categorical,
-                             "bin_method" i.e. method of binning - "equal_frequency" or "equal_range" and
-                             "monotonicity_check" 1 for monotonic binning else 0. monotonicity_check of 1 will
-                             dynamically calculate the bin_size ensuring monotonic nature but can be expensive operation.
-    :param print_impact: True, False
-    :return: Dataframe [attribute, ig]
+
+    Parameters
+    ----------
+    spark :
+        Spark Session
+    idf :
+        Input Dataframe
+    list_of_cols :
+        List of columns to analyse e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        "all" can be passed to include all columns for analysis.
+        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
+        drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
+    drop_cols :
+        List of columns to be dropped e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+    label_col :
+        Label/Target column (Default value = "label")
+    event_label :
+        Value of (positive) event (i.e label 1) (Default value = 1)
+    encoding_configs :
+        Takes input in dictionary format. Default {} i.e. empty dict means no encoding is required.
+        In case numerical columns are present and encoding is required, following keys shall be
+        provided - "bin_size" i.e. no. of bins for converting the numerical columns to categorical,
+        "bin_method" i.e. method of binning - "equal_frequency" or "equal_range" and
+        "monotonicity_check" 1 for monotonic binning else 0. monotonicity_check of 1 will
+        dynamically calculate the bin_size ensuring monotonic nature but can be expensive operation.
+    print_impact :
+        True, False (Default value = False)
+    "bin_size": 10 :
+
+    "monotonicity_check": 0 :
+
+    } :
+
+
+    Returns
+    -------
+    type
+        Dataframe [attribute, ig]
+
     """
 
     if label_col not in idf.columns:
