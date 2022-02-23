@@ -5,7 +5,13 @@ import numpy as np
 
 model_fer = init_model()
 df_input_fer = feature_exploration_prep()
-feature_name_column, feature_desc_column, industry_column, usecase_column, source_column = get_column_name(df_input_fer)
+(
+    feature_name_column,
+    feature_desc_column,
+    industry_column,
+    usecase_column,
+    source_column,
+) = get_column_name(df_input_fer)
 
 
 def list_all_industry():

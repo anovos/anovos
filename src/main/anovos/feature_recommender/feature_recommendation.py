@@ -1,5 +1,9 @@
 from anovos.feature_recommender.featrec_init import *
-from anovos.feature_recommender.feature_exploration import process_industry, process_usecase, list_usecase_by_industry
+from anovos.feature_recommender.feature_exploration import (
+    process_industry,
+    process_usecase,
+    list_usecase_by_industry,
+)
 from sentence_transformers import util
 import pandas as pd
 import numpy as np
@@ -11,7 +15,13 @@ import matplotlib.pyplot as plt
 
 model_fer = init_model()
 list_train_fer, df_rec_fer, list_embedding_train_fer = feature_recommendation_prep()
-feature_name_column, feature_desc_column, industry_column, usecase_column, source_column = get_column_name(df_rec_fer)
+(
+    feature_name_column,
+    feature_desc_column,
+    industry_column,
+    usecase_column,
+    source_column,
+) = get_column_name(df_rec_fer)
 
 
 def feature_recommendation(
