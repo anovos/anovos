@@ -8,8 +8,6 @@ import calendar
 from anovos.shared.utils import attributeType_segregation, ends_with
 from anovos.data_analyzer.stats_generator import measures_of_percentiles
 from anovos.data_ingest.ts_auto_detection import (
-    regex_date_time_parser,
-    ts_processed_feats,
     check_val_ind,
     ts_loop_cols_pre,
     list_ts_remove_append,
@@ -53,13 +51,13 @@ def daypart_cat(column):
 f_daypart_cat = F.udf(daypart_cat, T.StringType())
 
 
-def ts_processed_feats(spark, idf, col, id_col, tz):
+def ts_processed_feats(idf, col, id_col, tz):
 
     if idf.count() == idf.select(id_col).distinct().count():
 
         odf = (
             timeUnits_extraction(
-                regex_date_time_parser(spark, idf, id_col, col, tz),
+                idf,
                 col,
                 "all",
                 output_mode="append",
@@ -82,7 +80,7 @@ def ts_processed_feats(spark, idf, col, id_col, tz):
 
         odf = (
             timeUnits_extraction(
-                regex_date_time_parser(spark, idf, id_col, col, tz),
+                idf,
                 col,
                 "all",
                 output_mode="append",
@@ -105,7 +103,7 @@ def ts_processed_feats(spark, idf, col, id_col, tz):
 def ts_eligiblity_check(spark, idf, col, id_col, opt=1, tz_offset="local"):
 
     lagged_df = lagged_ts(
-        ts_processed_feats(spark, idf, col, id_col, tz_offset)
+        idf
         .select("yyyymmdd_col")
         .distinct()
         .orderBy("yyyymmdd_col"),
@@ -136,14 +134,14 @@ def ts_eligiblity_check(spark, idf, col, id_col, opt=1, tz_offset="local"):
 
     p1 = measures_of_percentiles(
         spark,
-        ts_processed_feats(spark, idf, col, id_col, tz_offset)
+        idf
         .groupBy(id_col)
         .agg(F.countDistinct("yyyymmdd_col").alias("id_date_pair")),
         list_of_cols="id_date_pair",
     )
     p2 = measures_of_percentiles(
         spark,
-        ts_processed_feats(spark, idf, col, id_col, tz_offset)
+        idf
         .groupBy("yyyymmdd_col")
         .agg(F.countDistinct(id_col).alias("date_id_pair")),
         list_of_cols="date_id_pair",
@@ -157,7 +155,7 @@ def ts_eligiblity_check(spark, idf, col, id_col, opt=1, tz_offset="local"):
 
     else:
 
-        odf = ts_processed_feats(spark, idf, col, id_col, tz_offset)
+        odf = idf
         m = (
             odf.groupBy("yyyymmdd_col")
             .count()
@@ -187,7 +185,6 @@ def ts_eligiblity_check(spark, idf, col, id_col, opt=1, tz_offset="local"):
 
 
 def ts_viz_data(
-    spark,
     idf,
     x_col,
     y_col,
@@ -222,8 +219,7 @@ def ts_viz_data(
             y_col,
             F.when(F.col(y_col).isin(top_cat), F.col(y_col)).otherwise(F.lit("Others")),
         )
-        idf = ts_processed_feats(spark, idf, x_col, id_col, tz_offset)
-
+        
         if output_type == "daily":
 
             odf = (
@@ -259,8 +255,7 @@ def ts_viz_data(
 
     else:
 
-        idf = ts_processed_feats(spark, idf, x_col, id_col, tz_offset)
-
+        
         if output_type == "daily":
 
             odf = (
@@ -363,7 +358,7 @@ def list_ts_remove_append(l, opt):
         return ll
 
 
-def ts_analyzer(spark, idf, id_col, output_path, tz_offset="local", run_type="local"):
+def ts_analyzer(spark, idf, id_col, output_path, output_type="daily", tz_offset="local", run_type="local"):
 
     if run_type == "local":
         local_path = output_path
@@ -373,40 +368,47 @@ def ts_analyzer(spark, idf, id_col, output_path, tz_offset="local", run_type="lo
     Path(local_path).mkdir(parents=True, exist_ok=True)
 
     num_cols, cat_cols, other_cols = attributeType_segregation(idf)
+
+    num_cols = [x for x in num_cols if x not in [id_col]]
+    cat_cols = [x for x in cat_cols if x not in [id_col]]
+
     ts_loop_cols_post = ts_loop_cols_pre(idf, id_col)[1]
     print(ts_loop_cols_post)
 
-    for i in ts_loop_cols_post:
-        for j in [num_cols, cat_cols]:
-            for k in j:
-                for l in ["daily", "hourly", "weekly"]:
-                    print(i, j, k, l)
-                    f = ts_viz_data(
-                        spark,
-                        idf,
-                        i,
-                        k,
-                        id_col=id_col,
-                        tz_offset=tz_offset,
-                        output_mode="append",
-                        output_type=l,
-                        n_cat=10,
-                    )
-                    f.to_csv(
-                        ends_with(local_path) + i + "_" + k + "_" + l + ".csv",
-                        index=False,
-                    )
 
     for i in ts_loop_cols_post:
+
+        ts_processed_feat_df = ts_processed_feats(idf, i, id_col, tz_offset)
+        ts_processed_feat_df.persist()
+
         for j in range(1, 3):
             print(i, j)
             f = ts_eligiblity_check(
-                spark, idf, i, id_col=id_col, opt=j, tz_offset=tz_offset
+                spark, ts_processed_feat_df, i, id_col=id_col, opt=j, tz_offset=tz_offset
             )
             f.to_csv(
                 ends_with(local_path) + "stats_" + str(i) + "_" + str(j) + ".csv",
                 index=False,
             )
+
+        for k in [num_cols, cat_cols]:
+            for l in k:
+                for m in [output_type]:
+                    print(i, k, l, m)
+                    f = ts_viz_data(
+                        ts_processed_feat_df,
+                        i,
+                        l,
+                        id_col=id_col,
+                        tz_offset=tz_offset,
+                        output_mode="append",
+                        output_type=m,
+                        n_cat=10,
+                    )
+                    f.to_csv(
+                        ends_with(local_path) + i + "_" + l + "_" + m + ".csv",
+                        index=False,
+                    )
 
     if run_type == "emr":
         bash_cmd = (
