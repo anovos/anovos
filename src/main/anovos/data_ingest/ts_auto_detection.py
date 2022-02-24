@@ -278,7 +278,7 @@ def regex_date_time_parser(
             return output_df
 
     elif idf.select(col).dtypes[0][1] == "string":
-        list_dates = set(idf.select(col).rdd.flatMap(lambda x: x).collect())
+        list_dates = list(set(idf.select(col).rdd.flatMap(lambda x: x).collect()))
 
         def regex_text(text, longest=True, context_max_len=999, dayfirst=False):
             # join multiple spaces, convert tabs, strip leading/trailing whitespace
@@ -407,22 +407,22 @@ def regex_date_time_parser(
                             bl_int[5] = se
                         else:
                             pass
-
-                    bl.append(
-                        [
-                            match_info["CONTEXT"],
-                            datetime.datetime(
-                                bl_int[0],
-                                bl_int[1],
-                                bl_int[2],
-                                bl_int[3],
-                                bl_int[4],
-                                bl_int[5],
-                            ),
-                        ]
-                    )
                 except:
                     pass
+            bl.append(
+                [
+                    match_info["CONTEXT"],
+                    datetime.datetime(
+                        bl_int[0],
+                        bl_int[1],
+                        bl_int[2],
+                        bl_int[3],
+                        bl_int[4],
+                        bl_int[5],
+                    ),
+                ]
+            )
+                
 
         if len(bl) > 50:
             columns = [col, col + "_ts"]
