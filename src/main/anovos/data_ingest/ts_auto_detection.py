@@ -422,7 +422,6 @@ def regex_date_time_parser(
                     ),
                 ]
             )
-                
 
         if len(bl) > 50:
             columns = [col, col + "_ts"]
