@@ -419,8 +419,9 @@ def measures_of_centralTendency(
     -------
 
     """
+
+    num_cols, cat_cols, other_cols = attributeType_segregation(idf)
     if list_of_cols == "all":
-        num_cols, cat_cols, other_cols = attributeType_segregation(idf)
         list_of_cols = num_cols + cat_cols
     if isinstance(list_of_cols, str):
         list_of_cols = [x.strip() for x in list_of_cols.split("|")]
@@ -436,8 +437,20 @@ def measures_of_centralTendency(
         transpose_dataframe(
             idf.select(list_of_cols).summary("mean", "50%", "count"), "summary"
         )
-        .withColumn("mean", F.round(F.col("mean").cast(T.DoubleType()), 4))
-        .withColumn("median", F.round(F.col("50%").cast(T.DoubleType()), 4))
+        .withColumn(
+            "mean",
+            F.when(
+                F.col("key").isin(num_cols),
+                F.round(F.col("mean").cast(T.DoubleType()), 4),
+            ).otherwise(None),
+        )
+        .withColumn(
+            "median",
+            F.when(
+                F.col("key").isin(num_cols),
+                F.round(F.col("50%").cast(T.DoubleType()), 4),
+            ).otherwise(None),
+        )
         .withColumnRenamed("key", "attribute")
         .join(mode_computation(spark, idf, list_of_cols), "attribute", "full_outer")
         .withColumn(

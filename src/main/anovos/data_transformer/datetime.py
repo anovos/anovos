@@ -40,6 +40,7 @@ where different column names are separated by pipe delimiter “|”.
 """
 import calendar
 import warnings
+import pytz
 
 from pyspark.sql import Window
 from pyspark.sql import functions as F
@@ -333,6 +334,7 @@ def timezone_conversion(
 
 
 def string_to_timestamp(
+    spark,
     idf,
     list_of_cols,
     input_format="%Y-%m-%d %H:%M:%S",
@@ -379,6 +381,13 @@ def string_to_timestamp(
     if not list_of_cols:
         return idf
 
+    localtz = (
+        spark.sql("SET spark.sql.session.timeZone")
+        .select("value")
+        .rdd.flatMap(lambda x: x)
+        .collect()[0]
+    )
+
     def conversion(col, form):
         """
 
@@ -393,7 +402,7 @@ def string_to_timestamp(
         -------
 
         """
-        output = dt.strptime(str(col), form)
+        output = pytz.timezone(localtz).localize(dt.strptime(str(col), form))
         return output
 
     data_type = {"ts": T.TimestampType(), "dt": T.DateType()}
@@ -410,7 +419,7 @@ def string_to_timestamp(
 
 
 def timestamp_to_string(
-    idf, list_of_cols, output_format="%Y-%m-%d %H:%M:%S", output_mode="replace"
+    spark, idf, list_of_cols, output_format="%Y-%m-%d %H:%M:%S", output_mode="replace"
 ):
     """Convert timestamp/date columns to time string columns with given output format ("%Y-%m-%d %H:%M:%S", by default)
 
@@ -447,6 +456,13 @@ def timestamp_to_string(
     if not list_of_cols:
         return idf
 
+    localtz = (
+        spark.sql("SET spark.sql.session.timeZone")
+        .select("value")
+        .rdd.flatMap(lambda x: x)
+        .collect()[0]
+    )
+
     def conversion(col, form):
         """
 
@@ -461,7 +477,7 @@ def timestamp_to_string(
         -------
 
         """
-        output = col.strftime(form)
+        output = col.astimezone(pytz.timezone(localtz)).strftime(form)
         return output
 
     f_conversion = F.udf(conversion, T.StringType())
@@ -477,6 +493,7 @@ def timestamp_to_string(
 
 
 def dateformat_conversion(
+    spark,
     idf,
     list_of_cols,
     input_format="%Y-%m-%d %H:%M:%S",
@@ -521,6 +538,7 @@ def dateformat_conversion(
         return idf
 
     odf_tmp = string_to_timestamp(
+        spark,
         idf,
         list_of_cols,
         input_format=input_format,
@@ -532,6 +550,7 @@ def dateformat_conversion(
         "replace": list_of_cols,
     }
     odf = timestamp_to_string(
+        spark,
         odf_tmp,
         appended_cols[output_mode],
         output_format=output_format,
@@ -548,8 +567,6 @@ def timeUnits_extraction(idf, list_of_cols, units, output_mode="append"):
 
     Parameters
     ----------
-    spark
-        Spark Session
     idf
         Input Dataframe
     list_of_cols
@@ -686,8 +703,6 @@ def time_elapsed(idf, list_of_cols, unit, output_mode="append"):
 
     Parameters
     ----------
-    spark
-        Spark Session
     idf
         Input Dataframe
     list_of_cols
@@ -758,8 +773,6 @@ def adding_timeUnits(idf, list_of_cols, unit, unit_value, output_mode="append"):
 
     Parameters
     ----------
-    spark
-        Spark Session
     idf
         Input Dataframe
     list_of_cols
@@ -809,6 +822,7 @@ def adding_timeUnits(idf, list_of_cols, unit, unit_value, output_mode="append"):
 
 
 def timestamp_comparison(
+    spark,
     idf,
     list_of_cols,
     comparison_type,
@@ -863,7 +877,16 @@ def timestamp_comparison(
     if not list_of_cols:
         return idf
 
-    base_ts = dt.strptime(comparison_value, comparison_format)
+    localtz = (
+        spark.sql("SET spark.sql.session.timeZone")
+        .select("value")
+        .rdd.flatMap(lambda x: x)
+        .collect()[0]
+    )
+
+    base_ts = pytz.timezone(localtz).localize(
+        dt.strptime(comparison_value, comparison_format)
+    )
 
     odf = idf
     for i in list_of_cols:
@@ -1644,7 +1667,7 @@ def is_weekend(idf, list_of_cols, output_mode="append"):
 
 
 def aggregator(
-    idf, list_of_cols, list_of_aggs, time_col, granularity_format="%Y-%m-%d"
+    spark, idf, list_of_cols, list_of_aggs, time_col, granularity_format="%Y-%m-%d"
 ):
     """aggregator performs groupBy over the timestamp/date column and calcuates a list of aggregate metrics over all
     input columns. The timestamp column is firstly converted to the given granularity format ("%Y-%m-%d", by default)
@@ -1655,6 +1678,8 @@ def aggregator(
 
     Parameters
     ----------
+    spark
+        Spark Session
     idf
         Input Dataframe
     list_of_cols
@@ -1708,7 +1733,11 @@ def aggregator(
 
     if granularity_format != "":
         idf = timestamp_to_string(
-            idf, time_col, output_format=granularity_format, output_mode="replace"
+            spark,
+            idf,
+            time_col,
+            output_format=granularity_format,
+            output_mode="replace",
         )
 
     def agg_funcs(col, agg):
@@ -1886,8 +1915,6 @@ def lagged_ts(
 
     Parameters
     ----------
-    spark
-        Spark Session
     idf
         Input Dataframe
     list_of_cols
