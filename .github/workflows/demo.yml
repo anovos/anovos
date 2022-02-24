@@ -18,7 +18,7 @@ jobs:
             spark: '2.4.8'
             hadoop: '2.7'
             java: '8'
-            experimental: false
+            experimental: true
           - python: '3.9'
             spark: '3.1.2'
             hadoop: '3.2'

@@ -243,7 +243,9 @@ def main(all_configs, run_type):
                     run_type=run_type,
                 )
                 end = timeit.default_timer()
-                print(key, ", execution time (in secs) =", round(end - start, 4))
+                logger.info(
+                    f"{key} and subkey:auto_detection, execution time (in secs) ={round(end - start, 4)}"
+                )
 
             if inspection_flag:
                 start = timeit.default_timer()
@@ -257,8 +259,9 @@ def main(all_configs, run_type):
                     run_type=run_type,
                 )
                 end = timeit.default_timer()
-                print(key, ", execution time (in secs) =", round(end - start, 4))
-
+                logger.info(
+                    f"{key} and subkey:inspection, execution time (in secs) ={round(end - start, 4)}"
+                )
             continue
 
         if (
@@ -524,10 +527,15 @@ def main(all_configs, run_type):
                         )
 
             if (key == "report_generation") & (args is not None):
+                start = timeit.default_timer()
                 analysis_level = all_configs.get("timeseries_analyzer", None).get(
                     "analysis_level", None
                 )
                 anovos_report(**args, run_type=run_type, output_type=analysis_level)
+                end = timeit.default_timer()
+                logger.info(
+                    f"{key} and subkey:full_report, execution time (in secs) ={round(end - start, 4)}"
+                )
 
     save(df, write_main, folder_name="final_dataset", reread=False)
 
