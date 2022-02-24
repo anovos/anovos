@@ -161,14 +161,13 @@ def test_imputation_MMM(spark_session):
     
 def test_auto_imputation(spark_session):
     df = read_dataset(spark_session, sample_parquet, "parquet")
-    odf = auto_imputation(spark_session, df, list_of_cols=["age","fnlwgt","hours-per-week","relationship","race"],  id_col="ifa")
+    odf = auto_imputation(spark_session, df, list_of_cols=["education-num","relationship","race"],  id_col="ifa")
     assert len(odf.columns) == 18
-    assert odf.where(F.col("age").isNull()).count() == 0
-    assert odf.where(F.col("fnlwgt").isNull()).count() == 0
+    assert odf.where(F.col("education-num").isNull()).count() == 0
     assert odf.where(F.col("race").isNull()).count() == 0
     assert odf.where(F.col("relationship").isNull()).count() == 0
-    assert odf.where(F.col("logfnl").isNull()).count() == 10154
-    assert odf.where(F.col("education").isNull()).count() == 253
+    assert odf.where(F.col("logfnl").isNull()).count() == 10207
+    assert odf.where(F.col("education").isNull()).count() == 254
 
     odf = auto_imputation(spark_session, df, list_of_cols=[],  id_col="ifa")
     assert odf.where(F.col("age").isNull()).count() == 30
