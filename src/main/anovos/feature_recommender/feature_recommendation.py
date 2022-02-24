@@ -310,7 +310,9 @@ def feature_recommendation(
                             "Source",
                         ],
                     )
-            df_out = pd.concat([df_out, df_append], ignore_index=True, axis=0, join='outer')
+            df_out = pd.concat(
+                [df_out, df_append], ignore_index=True, axis=0, join="outer"
+            )
     return df_out
 
 
@@ -418,19 +420,24 @@ def find_attr_by_relevance(
             single_score = "%.4f" % (cos_scores[idx])
             if float(single_score) >= threshold:
                 if name_column is None:
-                    df_append.loc[len(df_append.index)] = [feature, df_user[
-                                desc_column
-                            ].iloc[int(idx)], single_score]
+                    df_append.loc[len(df_append.index)] = [
+                        feature,
+                        df_user[desc_column].iloc[int(idx)],
+                        single_score,
+                    ]
                 elif desc_column is None:
-                    df_append.loc[len(df_append.index)] = [feature, df_user[
-                                name_column
-                            ].iloc[int(idx)], single_score]
+                    df_append.loc[len(df_append.index)] = [
+                        feature,
+                        df_user[name_column].iloc[int(idx)],
+                        single_score,
+                    ]
                 else:
-                    df_append.loc[len(df_append.index)] = [feature, df_user[
-                                name_column
-                            ].iloc[int(idx)], df_user[
-                                desc_column
-                            ].iloc[int(idx)], single_score]
+                    df_append.loc[len(df_append.index)] = [
+                        feature,
+                        df_user[name_column].iloc[int(idx)],
+                        df_user[desc_column].iloc[int(idx)],
+                        single_score,
+                    ]
         if len(df_append) == 0:
             if name_column is None:
                 df_append.loc[len(df_append.index)] = [feature, "Null", "Null"]
@@ -438,7 +445,7 @@ def find_attr_by_relevance(
                 df_append.loc[len(df_append.index)] = [feature, "Null", "Null"]
             else:
                 df_append.loc[len(df_append.index)] = [feature, "Null", "Null", "Null"]
-        df_out = pd.concat([df_out, df_append], ignore_index=True, axis=0, join='outer')
+        df_out = pd.concat([df_out, df_append], ignore_index=True, axis=0, join="outer")
     return df_out
 
 
