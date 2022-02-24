@@ -3,21 +3,20 @@ from re import finditer
 import pandas as pd
 import numpy as np
 import copy
-import warnings
 
 
-warnings.filterwarnings("ignore")
+class _TransformerModel:
+    def __init__(self):
+        self._model = None
+
+    @property
+    def model(self) -> SentenceTransformer:
+        if self._model is None:
+            self._model = SentenceTransformer("all-mpnet-base-v2")
+        return self._model
 
 
-def init_model():
-    """
-
-    Returns
-    -------
-    Semantic model used in Feature Explorer and Recommender
-    """
-    model = SentenceTransformer("all-mpnet-base-v2")
-    return model
+model_fer = _TransformerModel()
 
 
 def init_input_fer():
@@ -160,7 +159,6 @@ def feature_recommendation_prep():
     list_embedding_train_fer
         List of embedding tensor for Feature Recommendation functions
     """
-    model_fer = init_model()
     df_input_fer = init_input_fer()
     (
         feature_name_column,
@@ -183,5 +181,7 @@ def feature_recommendation_prep():
     list_train_fer, df_rec_fer = recommendation_data_prep(
         df_groupby_fer, feature_name_column, feature_name_column
     )
-    list_embedding_train_fer = model_fer.encode(list_train_fer, convert_to_tensor=True)
+    list_embedding_train_fer = model_fer.model.encode(
+        list_train_fer, convert_to_tensor=True
+    )
     return list_train_fer, df_rec_fer, list_embedding_train_fer

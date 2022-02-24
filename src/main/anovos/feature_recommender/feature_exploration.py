@@ -3,7 +3,6 @@ from sentence_transformers import util
 import pandas as pd
 import numpy as np
 
-model_fer = init_model()
 df_input_fer = feature_exploration_prep()
 (
     feature_name_column,
@@ -70,8 +69,10 @@ def process_usecase(usecase: str, semantic: bool):
     usecase = usecase.replace("[^A-Za-z0-9 ]+", " ")
     all_usecase = list_all_usecase()["Usecase"].to_list()
     if semantic and usecase not in all_usecase:
-        all_usecase_embeddings = model_fer.encode(all_usecase, convert_to_tensor=True)
-        usecase_embeddings = model_fer.encode(usecase, convert_to_tensor=True)
+        all_usecase_embeddings = model_fer.model.encode(
+            all_usecase, convert_to_tensor=True
+        )
+        usecase_embeddings = model_fer.model.encode(usecase, convert_to_tensor=True)
         cos_scores = util.pytorch_cos_sim(usecase_embeddings, all_usecase_embeddings)[0]
         first_match_index = int(np.argpartition(-cos_scores, 0)[0])
         processed_usecase = all_usecase[first_match_index]
@@ -106,8 +107,10 @@ def process_industry(industry: str, semantic: bool):
     industry = industry.replace("[^A-Za-z0-9 ]+", " ")
     all_industry = list_all_industry()["Industry"].to_list()
     if semantic and industry not in all_industry:
-        all_industry_embeddings = model_fer.encode(all_industry, convert_to_tensor=True)
-        industry_embeddings = model_fer.encode(industry, convert_to_tensor=True)
+        all_industry_embeddings = model_fer.model.encode(
+            all_industry, convert_to_tensor=True
+        )
+        industry_embeddings = model_fer.model.encode(industry, convert_to_tensor=True)
         cos_scores = util.pytorch_cos_sim(industry_embeddings, all_industry_embeddings)[
             0
         ]

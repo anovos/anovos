@@ -13,7 +13,6 @@ import plotly.graph_objects as go
 import random
 import matplotlib.pyplot as plt
 
-model_fer = init_model()
 list_train_fer, df_rec_fer, list_embedding_train_fer = feature_recommendation_prep()
 (
     feature_name_column,
@@ -158,7 +157,7 @@ def feature_recommendation(
                 "Source",
             ]
         )
-    list_embedding_user = model_fer.encode(list_user, convert_to_tensor=True)
+    list_embedding_user = model_fer.model.encode(list_user, convert_to_tensor=True)
     for i, feature in enumerate(list_user):
         cos_scores = util.pytorch_cos_sim(list_embedding_user, list_embedding_train_fr)[
             i
@@ -379,8 +378,10 @@ def find_attr_by_relevance(
             ]
         )
     list_user, df_user = recommendation_data_prep(df, name_column, desc_column)
-    list_embedding_user = model_fer.encode(list_user, convert_to_tensor=True)
-    list_embedding_building = model_fer.encode(building_corpus, convert_to_tensor=True)
+    list_embedding_user = model_fer.model.encode(list_user, convert_to_tensor=True)
+    list_embedding_building = model_fer.model.encode(
+        building_corpus, convert_to_tensor=True
+    )
     for i, feature in enumerate(building_corpus):
         if name_column == None:
             df_append = pd.DataFrame(
