@@ -12,11 +12,43 @@ def check_list_of_columns(
     target: str = "idf_target",
     drop="drop_cols",
 ):
+    """
+
+    Parameters
+    ----------
+    func :
+         (Default value = None)
+    columns :
+         (Default value = "list_of_cols")
+    target_idx: int :
+         (Default value = 1)
+    target: str :
+         (Default value = "idf_target")
+    drop :
+         (Default value = "drop_cols")
+
+    Returns
+    -------
+
+    """
     if func is None:
         return partial(check_list_of_columns, columns=columns, target=target, drop=drop)
 
     @wraps(func)
     def validate(*args, **kwargs):
+        """
+
+        Parameters
+        ----------
+        *args :
+
+        **kwargs :
+
+
+        Returns
+        -------
+
+        """
         logger.debug("check the list of columns")
 
         idf_target = kwargs.get(target, "") or args[target_idx]
@@ -67,11 +99,37 @@ def check_list_of_columns(
 
 
 def check_distance_method(func=None, param="method_type"):
+    """
+
+    Parameters
+    ----------
+    func :
+         (Default value = None)
+    param :
+         (Default value = "method_type")
+
+    Returns
+    -------
+
+    """
     if func is None:
         return partial(check_distance_method, param=param)
 
     @wraps(func)
     def validate(*args, **kwargs):
+        """
+
+        Parameters
+        ----------
+        *args :
+
+        **kwargs :
+
+
+        Returns
+        -------
+
+        """
         dist_distance_methods = kwargs[param]
 
         if isinstance(dist_distance_methods, str):

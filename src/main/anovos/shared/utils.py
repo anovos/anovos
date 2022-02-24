@@ -5,9 +5,19 @@ from pyspark.sql import functions as F
 
 def flatten_dataframe(idf, fixed_cols):
     """
-    :param idf: Input Dataframe
-    :param fixed_cols: All columns except in this list will be melted/unpivoted
-    :return: Flatten/Melted dataframe
+
+    Parameters
+    ----------
+    idf :
+        Input Dataframe
+    fixed_cols :
+        All columns except in this list will be melted/unpivoted
+
+    Returns
+    -------
+    type
+        Flatten/Melted dataframe
+
     """
     valid_cols = [e for e in idf.columns if e not in fixed_cols]
     key_and_val = F.create_map(
@@ -19,10 +29,20 @@ def flatten_dataframe(idf, fixed_cols):
 
 def transpose_dataframe(idf, fixed_col):
     """
-    :param idf: Input Dataframe
-    :param fixed_col: Values in this column will be converted into columns as header.
-                Ideally all values should be unique
-    :return: Transposed dataframe
+
+    Parameters
+    ----------
+    idf :
+        Input Dataframe
+    fixed_col :
+        Values in this column will be converted into columns as header.
+        Ideally all values should be unique
+
+    Returns
+    -------
+    type
+        Transposed dataframe
+
     """
     idf_flatten = flatten_dataframe(idf, fixed_cols=[fixed_col])
     odf = idf_flatten.groupBy("key").pivot(fixed_col).agg(F.first("value"))
@@ -31,9 +51,18 @@ def transpose_dataframe(idf, fixed_col):
 
 def attributeType_segregation(idf):
     """
-    :param idf: Input Dataframe
-    :return: (list1, list2, list3)
-             3 lists - each corresponding to numerical, categorical, and others columns
+
+    Parameters
+    ----------
+    idf :
+        Input Dataframe
+
+    Returns
+    -------
+    type
+        list1, list2, list3)
+        3 lists - each corresponding to numerical, categorical, and others columns
+
     """
     cat_cols = []
     num_cols = []
@@ -53,18 +82,38 @@ def attributeType_segregation(idf):
 
 def get_dtype(idf, col):
     """
-    :param idf: Input Dataframe
-    :param col: Column Name for datatype detection
-    :return: data type
+
+    Parameters
+    ----------
+    idf :
+        Input Dataframe
+    col :
+        Column Name for datatype detection
+
+    Returns
+    -------
+    type
+        data type
+
     """
     return [dtype for name, dtype in idf.dtypes if name == col][0]
 
 
 def ends_with(string, end_str="/"):
     """
-    :param string: "s3:mw-bucket"
-    :param end_str: "/"
-    :return: "s3:mw-bucket/"
+
+    Parameters
+    ----------
+    string :
+        s3:mw-bucket"
+    end_str :
+        return: "s3:mw-bucket/" (Default value = "/")
+
+    Returns
+    -------
+    type
+        s3:mw-bucket/"
+
     """
     string = str(string)
     if string.endswith(end_str):
@@ -73,6 +122,19 @@ def ends_with(string, end_str="/"):
 
 
 def pairwise_reduce(op, x):
+    """
+
+    Parameters
+    ----------
+    op :
+
+    x :
+
+
+    Returns
+    -------
+
+    """
     while len(x) > 1:
         v = [op(i, j) for i, j in zip(x[::2], x[1::2])]
         if len(x) > 1 and len(x) % 2 == 1:

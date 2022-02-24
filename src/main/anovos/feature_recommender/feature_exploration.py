@@ -15,36 +15,40 @@ source_column = str(df_input_fer.columns.tolist()[4])
 
 
 def list_all_industry():
-    """
-    :return: DataFrame of all the supported industries as part of feature exploration/recommendation
-    """
+    """:return: DataFrame of all the supported industries as part of feature exploration/recommendation"""
     odf_uni = df_input_fer.iloc[:, 2].unique()
     odf = pd.DataFrame(odf_uni, columns=["Industry"])
     return odf
 
 
 def list_all_usecase():
-    """
-    :return: DataFrame of all the supported usecases as part of feature exploration/recommendation
-    """
+    """:return: DataFrame of all the supported usecases as part of feature exploration/recommendation"""
     odf_uni = df_input_fer.iloc[:, 3].unique()
     odf = pd.DataFrame(odf_uni, columns=["Usecase"])
     return odf
 
 
 def list_all_pair():
-    """
-    :return: DataFrame of all the supported Industry/Usecase pairs as part of feature exploration/recommendation
-    """
+    """:return: DataFrame of all the supported Industry/Usecase pairs as part of feature exploration/recommendation"""
     odf = df_input_fer.iloc[:, [2, 3]].drop_duplicates(keep="last", ignore_index=True)
     return odf
 
 
 def process_usecase(usecase, semantic):
     """
-    :param usecase: Input usecase (string)
-    :param semantic: Input semantic (boolean) - Whether the input needs to go through semantic similarity or not. Default is True.
-    :return: Processed Usecase(string)
+
+    Parameters
+    ----------
+    usecase :
+        Input usecase (string)
+    semantic :
+        Input semantic (boolean) - Whether the input needs to go through semantic similarity or not. Default is True.
+
+    Returns
+    -------
+    type
+        Processed Usecase(string)
+
     """
     if type(semantic) != bool:
         raise TypeError("Invalid input for semantic")
@@ -70,9 +74,19 @@ def process_usecase(usecase, semantic):
 
 def process_industry(industry, semantic):
     """
-    :param industry: Input industry (string)
-    :param semantic: Input semantic (boolean) - Whether the input needs to go through semantic similarity or not. Default is True.
-    :return: Processed Industry(string)
+
+    Parameters
+    ----------
+    industry :
+        Input industry (string)
+    semantic :
+        Input semantic (boolean) - Whether the input needs to go through semantic similarity or not. Default is True.
+
+    Returns
+    -------
+    type
+        Processed Industry(string)
+
     """
     if type(semantic) != bool:
         raise TypeError("Invalid input for semantic")
@@ -100,9 +114,19 @@ def process_industry(industry, semantic):
 
 def list_usecase_by_industry(industry, semantic=True):
     """
-    :param industry: Input industry (string)
-    :param semantic: Input semantic (boolean) - Whether the input needs to go through semantic similarity or not. Default is True.
-    :return: DataFrame
+
+    Parameters
+    ----------
+    industry :
+        Input industry (string)
+    semantic :
+        Input semantic (boolean) - Whether the input needs to go through semantic similarity or not. Default is True.
+
+    Returns
+    -------
+    type
+        DataFrame
+
     """
     industry = process_industry(industry, semantic)
     odf = pd.DataFrame(df_input_fer.loc[df_input_fer.iloc[:, 2] == industry].iloc[:, 3])
@@ -112,9 +136,19 @@ def list_usecase_by_industry(industry, semantic=True):
 
 def list_industry_by_usecase(usecase, semantic=True):
     """
-    :param usecase: Input usecase (string)
-    :param semantic: Input semantic (boolean) - Whether the input needs to go through semantic similarity or not. Default is True.
-    :return: DataFrame
+
+    Parameters
+    ----------
+    usecase :
+        Input usecase (string)
+    semantic :
+        Input semantic (boolean) - Whether the input needs to go through semantic similarity or not. Default is True.
+
+    Returns
+    -------
+    type
+        DataFrame
+
     """
     usecase = process_usecase(usecase, semantic)
     odf = pd.DataFrame(df_input_fer.loc[df_input_fer.iloc[:, 3] == usecase].iloc[:, 2])
@@ -124,11 +158,22 @@ def list_industry_by_usecase(usecase, semantic=True):
 
 def list_feature_by_industry(industry, num_of_feat=100, semantic=True):
     """
-    :param industry: Input industry (string)
-    :param num_of_feat: Number of features to be displayed in the output.
-                        Value can be either integer, or 'all' - display all features matched with the input. Default is 100.
-    :param semantic: Input semantic (boolean) - Whether the input needs to go through semantic similarity or not. Default is True.
-    :return: DataFrame
+
+    Parameters
+    ----------
+    industry :
+        Input industry (string)
+    num_of_feat :
+        Number of features to be displayed in the output.
+        Value can be either integer, or 'all' - display all features matched with the input. Default is 100.
+    semantic :
+        Input semantic (boolean) - Whether the input needs to go through semantic similarity or not. Default is True.
+
+    Returns
+    -------
+    type
+        DataFrame
+
     """
     if type(num_of_feat) != int or num_of_feat < 0:
         if num_of_feat != "all":
@@ -150,11 +195,22 @@ def list_feature_by_industry(industry, num_of_feat=100, semantic=True):
 
 def list_feature_by_usecase(usecase, num_of_feat=100, semantic=True):
     """
-    :param usecase: Input usecase (string)
-    :param num_of_feat: Number of features to be displayed in the output.
-                        Value can be either integer, or 'all' - display all features matched with the input.  Default is 100.
-    :param semantic: Input semantic (boolean) - Whether the input needs to go through semantic similarity or not. Default is True.
-    :return: DataFrame
+
+    Parameters
+    ----------
+    usecase :
+        Input usecase (string)
+    num_of_feat :
+        Number of features to be displayed in the output.
+        Value can be either integer, or 'all' - display all features matched with the input.  Default is 100.
+    semantic :
+        Input semantic (boolean) - Whether the input needs to go through semantic similarity or not. Default is True.
+
+    Returns
+    -------
+    type
+        DataFrame
+
     """
     if type(num_of_feat) != int or num_of_feat < 0:
         if num_of_feat != "all":
@@ -176,12 +232,24 @@ def list_feature_by_usecase(usecase, num_of_feat=100, semantic=True):
 
 def list_feature_by_pair(industry, usecase, num_of_feat=100, semantic=True):
     """
-    :param industry: Input industry (string)
-    :param usecase: Input usecase (string)
-    :param num_of_feat: Number of features to be displayed in the output.
-                        Value can be either integer, or 'all' - display all features matched with the input.  Default is 100.
-    :param semantic: Input semantic (boolean) - Whether the input needs to go through semantic similarity or not. Default is True.
-    :return: DataFrame
+
+    Parameters
+    ----------
+    industry :
+        Input industry (string)
+    usecase :
+        Input usecase (string)
+    num_of_feat :
+        Number of features to be displayed in the output.
+        Value can be either integer, or 'all' - display all features matched with the input.  Default is 100.
+    semantic :
+        Input semantic (boolean) - Whether the input needs to go through semantic similarity or not. Default is True.
+
+    Returns
+    -------
+    type
+        DataFrame
+
     """
     if type(num_of_feat) != int or num_of_feat < 0:
         if num_of_feat != "all":
