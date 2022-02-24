@@ -113,20 +113,17 @@ def test_imputation_sklearn(spark_session):
     
 def test_imputation_matrixFactorization(spark_session):
     df = read_dataset(spark_session, sample_parquet, "parquet")
-    odf = imputation_matrixFactorization(spark_session, df, list_of_cols=["age","fnlwgt","hours-per-week"], id_col="ifa")
+    odf = imputation_matrixFactorization(spark_session, df, list_of_cols=["education-num", "hours-per-week"], id_col="ifa")
     assert len(odf.columns) == 17
-    assert odf.where(F.col("age").isNull()).count() == 0
-    assert odf.where(F.col("fnlwgt").isNull()).count() == 0
     assert odf.where(F.col("hours-per-week").isNull()).count() == 0
-    assert odf.where(F.col("logfnl").isNull()).count() == 10214
+    assert odf.where(F.col("education-num").isNull()).count() == 0
     assert odf.where(F.col("education").isNull()).count() == 258
     assert odf.where(F.col("race").isNull()).count() == 162
     assert odf.where(F.col("relationship").isNull()).count() == 4  
 
     odf = imputation_matrixFactorization(spark_session, df, list_of_cols=[], id_col="ifa")   
-    assert odf.where(F.col("age").isNull()).count() == 30
-    assert odf.where(F.col("fnlwgt").isNull()).count() == 8
     assert odf.where(F.col("hours-per-week").isNull()).count() == 59
+    assert odf.where(F.col("education-num").isNull()).count() == 14
 
     odf = imputation_matrixFactorization(spark_session, df, list_of_cols=["age","fnlwgt","hours-per-week"], id_col="ifa", output_mode="append")
     assert len(odf.columns) == 20
