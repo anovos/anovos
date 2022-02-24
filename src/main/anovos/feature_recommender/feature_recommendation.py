@@ -120,7 +120,7 @@ def feature_recommendation(
         df_rec_fr = df_rec_fer
         list_embedding_train_fr = list_embedding_train_fer
 
-    if name_column == None:
+    if name_column is None:
         df_out = pd.DataFrame(
             columns=[
                 "Input_Attribute_Description",
@@ -132,7 +132,7 @@ def feature_recommendation(
                 "Source",
             ]
         )
-    elif desc_column == None:
+    elif desc_column is None:
         df_out = pd.DataFrame(
             columns=[
                 "Input_Attribute_Name",
@@ -165,7 +165,7 @@ def feature_recommendation(
         top_results = np.argpartition(-cos_scores, range(top_n))[0:top_n]
         for idx in top_results[0:top_n]:
             single_score = "%.4f" % (cos_scores[idx])
-            if name_column == None:
+            if name_column is None:
                 if float(single_score) >= threshold:
                     df_append = pd.DataFrame(
                         [
@@ -212,7 +212,7 @@ def feature_recommendation(
                             "Source",
                         ],
                     )
-            elif desc_column == None:
+            elif desc_column is None:
                 if float(single_score) >= threshold:
                     df_append = pd.DataFrame(
                         [
@@ -240,7 +240,7 @@ def feature_recommendation(
                     df_append = pd.DataFrame(
                         [
                             [
-                                df_user[desc_column].iloc[i],
+                                df_user[name_column].iloc[i],
                                 "Null",
                                 "Null",
                                 "Null",
@@ -310,7 +310,7 @@ def feature_recommendation(
                             "Source",
                         ],
                     )
-            df_out = df_out.append(df_append, ignore_index=True)
+            df_out = pd.concat([df_out, df_append], ignore_index=True, axis=0, join='outer')
     return df_out
 
 
@@ -352,7 +352,7 @@ def find_attr_by_relevance(
         building_corpus[i] = re.sub("[^A-Za-z0-9]+", " ", building_corpus[i])
         building_corpus[i] = camel_case_split(building_corpus[i])
         building_corpus[i] = building_corpus[i].lower().strip()
-    if name_column == None:
+    if name_column is None:
         df_out = pd.DataFrame(
             columns=[
                 "Input_Feature_Description",
@@ -360,7 +360,7 @@ def find_attr_by_relevance(
                 "Input_Attribute_Similarity_Score",
             ]
         )
-    elif desc_column == None:
+    elif desc_column is None:
         df_out = pd.DataFrame(
             columns=[
                 "Input_Feature_Description",
@@ -383,7 +383,7 @@ def find_attr_by_relevance(
         building_corpus, convert_to_tensor=True
     )
     for i, feature in enumerate(building_corpus):
-        if name_column == None:
+        if name_column is None:
             df_append = pd.DataFrame(
                 columns=[
                     "Input_Feature_Description",
@@ -391,7 +391,7 @@ def find_attr_by_relevance(
                     "Input_Attribute_Similarity_Score",
                 ]
             )
-        elif desc_column == None:
+        elif desc_column is None:
             df_append = pd.DataFrame(
                 columns=[
                     "Input_Feature_Description",
@@ -417,72 +417,28 @@ def find_attr_by_relevance(
         for idx in top_results[0 : len(list_user)]:
             single_score = "%.4f" % (cos_scores[idx])
             if float(single_score) >= threshold:
-                if name_column == None:
-                    df_append = df_append.append(
-                        {
-                            "Input_Feature_Description": feature,
-                            "Recommended_Input_Attribute_Description": df_user[
+                if name_column is None:
+                    df_append.loc[len(df_append.index)] = [feature, df_user[
                                 desc_column
-                            ].iloc[int(idx)],
-                            "Input_Attribute_Similarity_Score": single_score,
-                        },
-                        ignore_index=True,
-                    )
-                elif desc_column == None:
-                    df_append = df_append.append(
-                        {
-                            "Input_Feature_Description": feature,
-                            "Recommended_Input_Attribute_Name": df_user[
+                            ].iloc[int(idx)], single_score]
+                elif desc_column is None:
+                    df_append.loc[len(df_append.index)] = [feature, df_user[
                                 name_column
-                            ].iloc[int(idx)],
-                            "Input_Attribute_Similarity_Score": single_score,
-                        },
-                        ignore_index=True,
-                    )
+                            ].iloc[int(idx)], single_score]
                 else:
-                    df_append = df_append.append(
-                        {
-                            "Input_Feature_Description": feature,
-                            "Recommended_Input_Attribute_Name": df_user[
+                    df_append.loc[len(df_append.index)] = [feature, df_user[
                                 name_column
-                            ].iloc[int(idx)],
-                            "Recommended_Input_Attribute_Description": df_user[
+                            ].iloc[int(idx)], df_user[
                                 desc_column
-                            ].iloc[int(idx)],
-                            "Input_Attribute_Similarity_Score": single_score,
-                        },
-                        ignore_index=True,
-                    )
+                            ].iloc[int(idx)], single_score]
         if len(df_append) == 0:
-            if name_column == None:
-                df_append = df_append.append(
-                    {
-                        "Input_Feature_Description": feature,
-                        "Recommended_Input_Attribute_Description": "Null",
-                        "Input_Attribute_Similarity_Score": "Null",
-                    },
-                    ignore_index=True,
-                )
-            elif desc_column == None:
-                df_append = df_append.append(
-                    {
-                        "Input_Feature_Description": feature,
-                        "Recommended_Input_Attribute_Name": "Null",
-                        "Input_Attribute_Similarity_Score": "Null",
-                    },
-                    ignore_index=True,
-                )
+            if name_column is None:
+                df_append.loc[len(df_append.index)] = [feature, "Null", "Null"]
+            elif desc_column is None:
+                df_append.loc[len(df_append.index)] = [feature, "Null", "Null"]
             else:
-                df_append = df_append.append(
-                    {
-                        "Input_Feature_Description": feature,
-                        "Recommended_Input_Attribute_Name": "Null",
-                        "Recommended_Input_Attribute_Description": "Null",
-                        "Input_Attribute_Similarity_Score": "Null",
-                    },
-                    ignore_index=True,
-                )
-        df_out = df_out.append(df_append, ignore_index=True)
+                df_append.loc[len(df_append.index)] = [feature, "Null", "Null", "Null"]
+        df_out = pd.concat([df_out, df_append], ignore_index=True, axis=0, join='outer')
     return df_out
 
 
@@ -540,7 +496,7 @@ def sankey_visualization(df, industry_included=False, usecase_included=False):
         else:
             name_target = "Recommended_Input_Attribute_Description"
         name_score = "Input_Attribute_Similarity_Score"
-        if industry_included != False or usecase_included != False:
+        if industry_included or usecase_included:
             print(
                 "Input is find_attr_by_relevance output DataFrame. There is no suggested Industry and/or Usecase."
             )
@@ -556,7 +512,7 @@ def sankey_visualization(df, industry_included=False, usecase_included=False):
     source = []
     target = []
     value = []
-    if industry_included == False and usecase_included == False:
+    if not industry_included and not usecase_included:
         source_list = df[name_source].unique().tolist()
         target_list = df[name_target].unique().tolist()
         label = source_list + target_list
@@ -564,7 +520,7 @@ def sankey_visualization(df, industry_included=False, usecase_included=False):
             source.append(label.index(str(df[name_source][i])))
             target.append(label.index(str(df[name_target][i])))
             value.append(float(df[name_score][i]))
-    elif industry_included == False and usecase_included != False:
+    elif not industry_included and usecase_included:
         source_list = df[name_source].unique().tolist()
         target_list = df[name_target].unique().tolist()
         raw_usecase_list = df[usecase_target].unique().tolist()
@@ -586,7 +542,7 @@ def sankey_visualization(df, industry_included=False, usecase_included=False):
                 source.append(label.index(str(df[name_target][i])))
                 target.append(label.index(str(item)))
                 value.append(float(1))
-    elif industry_included != False and usecase_included == False:
+    elif industry_included and not usecase_included:
         source_list = df[name_source].unique().tolist()
         target_list = df[name_target].unique().tolist()
         raw_industry_list = df[industry_target].unique().tolist()
