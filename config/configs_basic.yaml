@@ -11,7 +11,7 @@ input_dataset:
       header: True
       delimiter: ","
       inferSchema: True
-  delete_column: ['logfnl','constant']
+  delete_column: ['logfnl']
   select_column: null
   rename_column:
     list_of_cols: ['marital-status','education-num']

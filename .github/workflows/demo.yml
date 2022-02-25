@@ -24,6 +24,11 @@ jobs:
             hadoop: '3.2'
             java: '11'
             experimental: true
+          - python: '3.7'
+            spark: '2.4.8'
+            hadoop: '3.2'
+            java: '8'
+            experimental: true
     steps:
       - uses: actions/setup-python@v2
         with:
