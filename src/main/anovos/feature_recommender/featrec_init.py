@@ -3,6 +3,27 @@ from re import finditer
 import pandas as pd
 import numpy as np
 import copy
+import os
+from torch.hub import _get_torch_home
+
+
+def detect_model_path():
+    transformers_path = os.getenv('SENTENCE_TRANSFORMERS_HOME')
+    if transformers_path is None:
+        try:
+            torch_home = _get_torch_home()
+        except ImportError:
+            torch_home = os.path.expanduser(os.getenv('TORCH_HOME', os.path.join(os.getenv('XDG_CACHE_HOME', '~/.cache'), 'torch')))
+        transformers_path = os.path.join(torch_home, 'sentence_transformers')
+    model_path = os.path.join(transformers_path, 'sentence-transformers_all-mpnet-base-v2')
+    return model_path
+
+
+def model_download():
+    print('Model download start')
+    SentenceTransformer("all-mpnet-base-v2")
+    print('Model download finish')
+    return
 
 
 class _TransformerModel:
@@ -12,7 +33,11 @@ class _TransformerModel:
     @property
     def model(self) -> SentenceTransformer:
         if self._model is None:
-            self._model = SentenceTransformer("all-mpnet-base-v2")
+            model_path = detect_model_path()
+            if os.path.exists(model_path):
+                self._model = SentenceTransformer(model_path)
+            else:
+                raise TypeError("Model has not been downloaded. Please use model_download() function to download the model")
         return self._model
 
 
