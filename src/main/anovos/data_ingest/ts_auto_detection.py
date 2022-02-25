@@ -449,55 +449,6 @@ def regex_date_time_parser(
         return output_df
 
 
-def ts_processed_feats(spark, idf, col, id_col, tz):
-
-    if idf.count() == idf.select(id_col).distinct().count():
-
-        odf = (
-            timeUnits_extraction(
-                regex_date_time_parser(spark, idf, id_col, col, tz),
-                col,
-                "all",
-                output_mode="append",
-            )
-            .withColumn("yyyymmdd_col", F.to_date(col))
-            .orderBy("yyyymmdd_col")
-            .withColumn("daypart_cat", f_daypart_cat(F.col(col + "_hour")))
-            .withColumn(
-                "week_cat",
-                F.when(F.col(col + "_dayofweek") > 5, F.lit("weekend")).otherwise(
-                    "weekday"
-                ),
-            )
-            .withColumnRenamed(col + "_dayofweek", "dow")
-        )
-
-        return odf
-
-    else:
-
-        odf = (
-            timeUnits_extraction(
-                regex_date_time_parser(spark, idf, id_col, col, tz),
-                col,
-                "all",
-                output_mode="append",
-            )
-            .withColumn("yyyymmdd_col", F.to_date(col))
-            .orderBy(id_col, "yyyymmdd_col")
-            .withColumn("daypart_cat", f_daypart_cat(F.col(col + "_hour")))
-            .withColumn(
-                "week_cat",
-                F.when(F.col(col + "_dayofweek") > 5, F.lit("weekend")).otherwise(
-                    "weekday"
-                ),
-            )
-            .withColumnRenamed(col + "_dayofweek", "dow")
-        )
-
-        return odf
-
-
 def check_val_ind(val):
     if val is None:
         return 0
