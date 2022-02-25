@@ -23,8 +23,13 @@ jobs:
             hadoop: '2.7'
             java: '8'
           - python: '3.9'
-            spark: '3.2.0'
-            checksum: 'EBE51A449EBD070BE7D3570931044070E53C23076ABAD233B3C51D45A7C99326CF55805EE0D573E6EB7D6A67CFEF1963CD77D6DC07DD2FD70FD60DA9D1F79E5E'
+            spark: '3.1.3'
+            checksum: '2AF22A096CAA616F7C2045D2CA2291DCBBB9112233434C2249944FBD6CE85AF58743A479A86BA8454E86EF3A3D5730664466EE6D12D05AB03C9F2128CCD8AB1B'
+            hadoop: '3.2'
+            java: '11'
+          - python: '3.9'
+            spark: '3.2.1'
+            checksum: '145ADACF189FECF05FBA3A69841D2804DD66546B11D14FC181AC49D89F3CB5E4FECD9B25F56F0AF767155419CD430838FB651992AEB37D3A6F91E7E009D1F9AE'
             hadoop: '3.2'
             java: '11'
 
@@ -57,7 +62,7 @@ jobs:
           echo "${{ steps.meta.outputs.tags }}" | xargs -n 1 docker tag anovos-notebook-${{ matrix.spark }}
 
       - name: Log in to Docker Hub
-        uses: docker/login-action@v1.12.0
+        uses: docker/login-action@v1.13.0
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
@@ -76,11 +81,13 @@ jobs:
       - notebooks
     runs-on: ubuntu-latest
     environment: DOCKER_HUB_CREDENTIALS
+    if: startsWith(github.ref, 'refs/tags')
     strategy:
       matrix:
         include:
           - spark: '2.4.8'
-          - spark: '3.2.0'
+          - spark: '3.1.3'
+          - spark: '3.2.1'
 
     steps:
       - name: Checkout code
@@ -102,7 +109,7 @@ jobs:
             tag: ${{ github.ref }}
 
       - name: Log in to Docker Hub
-        uses: docker/login-action@v1.12.0
+        uses: docker/login-action@v1.13.0
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}

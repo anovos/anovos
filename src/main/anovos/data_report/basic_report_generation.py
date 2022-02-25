@@ -50,6 +50,19 @@ default_template = (
 
 
 def stats_args(path, func):
+    """
+
+    Parameters
+    ----------
+    path
+        param func:
+    func
+
+
+    Returns
+    -------
+
+    """
     output = {}
     mainfunc_to_args = {
         "biasedness_detection": ["stats_mode"],
@@ -82,20 +95,36 @@ def anovos_basic_report(
     label_col="",
     event_label="",
     output_path=".",
-    global_run_type="local",
+    run_type="local",
     print_impact=True,
 ):
     """
-    :param spark: Spark Session
-    :param idf: Input Dataframe
-    :param id_col: ID column
-    :param label_col: Label/Target column
-    :param event_label: Value of (positive) event (i.e label 1)
-    :param output_path: File Path for saving metrics and basic report
-    :param global_run_type: "local" (default), "emr", "databricks"
-                         "emr" if the files are read from or written in AWS s3
-                         "databricks" if the files are read from or written in dbfs in azure databricks
-    : param print_impact: True, False.
+
+    Parameters
+    ----------
+    spark
+        Spark Session
+    idf
+        Input Dataframe
+    id_col
+        ID column (Default value = "")
+    label_col
+        Label/Target column (Default value = "")
+    event_label
+        Value of (positive) event (i.e label 1) (Default value = "")
+    output_path
+        File Path for saving metrics and basic report (Default value = ".")
+    run_type
+        local" (default), "emr", "databricks"
+        "emr" if the files are read from or written in AWS s3
+        "databricks" if the files are read from or written in dbfs in azure databricks
+    print_impact
+        True, False.
+        :return None (Default value = True)
+
+    Returns
+    -------
+
     """
     global num_cols
     global cat_cols
@@ -122,6 +151,17 @@ def anovos_basic_report(
     all_funcs = SG_funcs + QC_rows_funcs + QC_cols_funcs + AA_funcs + AT_funcs
 
     def output_to_local(output_path):
+        """
+
+        Parameters
+        ----------
+        output_path
+
+
+        Returns
+        -------
+
+        """
         punctuations = ":"
         for x in output_path:
             if x in punctuations:
@@ -129,14 +169,14 @@ def anovos_basic_report(
                 local_path = "/" + local_path
         return local_path
 
-    if global_run_type == "local":
+    if run_type == "local":
         local_path = output_path
-    elif global_run_type == "databricks":
+    elif run_type == "databricks":
         local_path = output_to_local(output_path)
-    elif global_run_type == "emr":
+    elif run_type == "emr":
         local_path = "report_stats"
     else:
-        raise ValueError("Invalid global_run_type")
+        raise ValueError("Invalid run_type")
 
     Path(local_path).mkdir(parents=True, exist_ok=True)
 
@@ -159,7 +199,7 @@ def anovos_basic_report(
             ends_with(local_path) + func.__name__ + ".csv", index=False
         )
 
-        if global_run_type == "emr":
+        if run_type == "emr":
             bash_cmd = (
                 "aws s3 cp "
                 + ends_with(local_path)
@@ -179,6 +219,17 @@ def anovos_basic_report(
             stats.show()
 
     def remove_u_score(col):
+        """
+
+        Parameters
+        ----------
+        col
+
+
+        Returns
+        -------
+
+        """
         col_ = col.split("_")
         bl = []
 
@@ -494,7 +545,7 @@ def anovos_basic_report(
         dp.Select(blocks=[tab1, tab2, tab3], type=dp.SelectType.TABS),
     ).save(ends_with(local_path) + "basic_report.html", open=True)
 
-    if global_run_type == "emr":
+    if run_type == "emr":
         bash_cmd = (
             "aws s3 cp "
             + ends_with(local_path)
