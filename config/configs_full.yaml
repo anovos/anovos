@@ -68,6 +68,7 @@ timeseries_analyzer:
   tz_offset: 'local'
   inspection: True
   analysis_level: 'daily'
+  max_days: 3600
 
 anovos_basic_report:
   basic_report: False
@@ -308,6 +309,7 @@ report_preprocessing:
     bin_method: equal_frequency
     bin_size: 10
     drift_detector: True
+    outlier_charts: False
     source_path: "NA"
 
 report_generation:
