@@ -194,12 +194,12 @@ def feature_recommendation(
                         [
                             [
                                 df_user[desc_column].iloc[i],
-                                "Null",
-                                "Null",
-                                "Null",
-                                "Null",
-                                "Null",
-                                "Null",
+                                "N/A",
+                                "N/A",
+                                "N/A",
+                                "N/A",
+                                "N/A",
+                                "N/A",
                             ]
                         ],
                         columns=[
@@ -241,12 +241,12 @@ def feature_recommendation(
                         [
                             [
                                 df_user[name_column].iloc[i],
-                                "Null",
-                                "Null",
-                                "Null",
-                                "Null",
-                                "Null",
-                                "Null",
+                                "N/A",
+                                "N/A",
+                                "N/A",
+                                "N/A",
+                                "N/A",
+                                "N/A",
                             ]
                         ],
                         columns=[
@@ -291,12 +291,12 @@ def feature_recommendation(
                             [
                                 df_user[name_column].iloc[i],
                                 df_user[desc_column].iloc[i],
-                                "Null",
-                                "Null",
-                                "Null",
-                                "Null",
-                                "Null",
-                                "Null",
+                                "N/A",
+                                "N/A",
+                                "N/A",
+                                "N/A",
+                                "N/A",
+                                "N/A",
                             ]
                         ],
                         columns=[
@@ -440,11 +440,11 @@ def find_attr_by_relevance(
                     ]
         if len(df_append) == 0:
             if name_column is None:
-                df_append.loc[len(df_append.index)] = [feature, "Null", "Null"]
+                df_append.loc[len(df_append.index)] = [feature, "N/A", "N/A"]
             elif desc_column is None:
-                df_append.loc[len(df_append.index)] = [feature, "Null", "Null"]
+                df_append.loc[len(df_append.index)] = [feature, "N/A", "N/A"]
             else:
-                df_append.loc[len(df_append.index)] = [feature, "Null", "Null", "Null"]
+                df_append.loc[len(df_append.index)] = [feature, "N/A", "N/A", "N/A"]
         df_out = pd.concat([df_out, df_append], ignore_index=True, axis=0, join="outer")
     return df_out
 
@@ -513,7 +513,7 @@ def sankey_visualization(df, industry_included=False, usecase_included=False):
     usecase_target = "Usecase"
     df_iter = copy.deepcopy(df)
     for i in range(len(df_iter)):
-        if str(df_iter[name_score][i]) == "Null":
+        if str(df_iter[name_score][i]) == "N/A":
             df = df.drop([i])
     df = df.reset_index(drop=True)
     source = []
