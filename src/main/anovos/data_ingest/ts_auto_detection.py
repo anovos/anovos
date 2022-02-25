@@ -430,6 +430,20 @@ def regex_date_time_parser(
         else:
             return idf
 
+    
+    elif ((idf.select(col).dtypes[0][1] in ["string","int"]) and (idf.select(F.length(col)).distinct().count() == 1) and (idf.select(F.length(col)).rdd.flatMap(lambda x: x).collect()[0] == 8)):
+        
+        f = idf.select(F.max(F.substring(col,1,4)),F.max(F.substring(col,5,2)),F.max(F.substring(col,7,2))).rdd.flatMap(lambda x: x).collect()
+
+        if int(f[1])>12:
+            frmt = "yyyyddMM"
+        elif int(f[2])>12:
+            frmt = "yyyyMMdd"
+        else:
+            return idf
+
+        output_df = idf.select(F.col(col).cast(T.StringType())).withColumn(col+"_ts",F.to_date(col, frmt))
+    
     if output_mode == "replace":
         output_df = (
             idf.join(output_df, col, "left_outer")
@@ -442,7 +456,7 @@ def regex_date_time_parser(
     else:
         return "Incorrect Output Mode Selected"
 
-    if save_output is not None:
+    if save_output:
         output_df.write.parquet(save_output, mode="overwrite")
 
     else:
@@ -456,25 +470,38 @@ def check_val_ind(val):
         return val
 
 
+# def ts_loop_cols_pre(idf, id_col):
+#     lc = []
+#     ts_col = []
+#     for i in idf.dtypes:
+#         if (
+#             (i[1] in ["string", "object"])
+#             or (
+#                 i[1] in ["long", "bigint"]
+#                 and (
+#                     check_val_ind(
+#                         idf.select(F.max(F.length(i[0])))
+#                         .rdd.flatMap(lambda x: x)
+#                         .collect()[0]
+#                     )
+#                     > 9
+#                 )
+#                 and (idf.select(i[0]).distinct())
+#             )
+#         ) and i[0] != id_col:
+#             lc.append(i[0])
+#         else:
+#             pass
+
+#         if i[1] in ["timestamp", "date"] and i[0] != id_col:
+#             ts_col.append(i[0])
+#     return lc, ts_col
+
 def ts_loop_cols_pre(idf, id_col):
     lc = []
     ts_col = []
     for i in idf.dtypes:
-        if (
-            (i[1] in ["string", "object"])
-            or (
-                i[1] in ["long", "bigint"]
-                and (
-                    check_val_ind(
-                        idf.select(F.max(F.length(i[0])))
-                        .rdd.flatMap(lambda x: x)
-                        .collect()[0]
-                    )
-                    > 9
-                )
-                and (idf.select(i[0]).distinct())
-            )
-        ) and i[0] != id_col:
+        if ((i[1] in ["string", "object"]) or ((i[1] in ["string","int"]) and (idf.select(F.length(i[0])).distinct().count() == 1) and (idf.select(F.length(i[0])).rdd.flatMap(lambda x: x).collect()[0] == 8)) or (i[1] in ["long", "bigint"] and (check_val_ind(idf.select(F.max(F.length(i[0]))).rdd.flatMap(lambda x: x).collect()[0])> 9) and (idf.select(i[0]).distinct()))) and i[0] != id_col:
             lc.append(i[0])
         else:
             pass
@@ -482,6 +509,7 @@ def ts_loop_cols_pre(idf, id_col):
         if i[1] in ["timestamp", "date"] and i[0] != id_col:
             ts_col.append(i[0])
     return lc, ts_col
+
 
 
 def list_ts_remove_append(l, opt):
@@ -530,7 +558,7 @@ def ts_preprocess(spark, idf, id_col, output_path, tz_offset="local", run_type="
             idf.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
         except:
             pass
-
+    
     ts_loop_cols_post = ts_loop_cols_pre(idf, id_col)[1]
 
     num_cols = [x for x in num_cols if x not in [id_col] + ts_loop_cols_post]
