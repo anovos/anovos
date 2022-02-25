@@ -456,6 +456,7 @@ def charts_to_objects(
     bin_size=10,
     coverage=1.0,
     drift_detector=False,
+    outlier_charts=False,
     source_path="NA",
     master_path=".",
     stats_unique={},
@@ -638,8 +639,9 @@ def charts_to_objects(
                     pass
 
         if col in num_cols:
-            f = plot_outlier(spark, idf, col, split_var=None)
-            f.write_json(ends_with(local_path) + "outlier_" + col)
+            if outlier_charts:
+                f = plot_outlier(spark, idf, col, split_var=None)
+                f.write_json(ends_with(local_path) + "outlier_" + col)
             f = plot_frequency(
                 spark,
                 idf_encoded.drop(col).withColumnRenamed(col + "_binned", col),
