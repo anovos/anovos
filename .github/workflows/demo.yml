@@ -1,9 +1,9 @@
 name: Demo
 on:
   push:
-    paths-ignore:
-      - '.github/**'
-      - '**.md'
+#    paths-ignore:
+#      - '.github/**'
+#      - '**.md'
 
 jobs:
   run-demo:
@@ -43,6 +43,13 @@ jobs:
         with:
           spark-version: ${{ matrix.spark }}
           hadoop-version: ${{ matrix.hadoop }}
+
+      - name: Check Spark setup
+        run: |
+          echo $SPARK_HOME
+          ls $SPARK_HOME
+          which spark-submit
+          which spark-shell
 
       - name: Checkout code
         uses: actions/checkout@master
