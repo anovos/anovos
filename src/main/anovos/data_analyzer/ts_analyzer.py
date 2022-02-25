@@ -354,6 +354,7 @@ def ts_analyzer(
     spark,
     idf,
     id_col,
+    max_days,
     output_path,
     output_type="daily",
     tz_offset="local",
@@ -364,7 +365,7 @@ def ts_analyzer(
         local_path = output_path
     else:
         local_path = "report_stats"
-    print(local_path)
+
     Path(local_path).mkdir(parents=True, exist_ok=True)
 
     num_cols, cat_cols, other_cols = attributeType_segregation(idf)
@@ -399,15 +400,19 @@ def ts_analyzer(
             for l in k:
                 for m in [output_type]:
                     print(i, k, l, m)
-                    f = ts_viz_data(
-                        ts_processed_feat_df,
-                        i,
-                        l,
-                        id_col=id_col,
-                        tz_offset=tz_offset,
-                        output_mode="append",
-                        output_type=m,
-                        n_cat=10,
+                    f = (
+                        ts_viz_data(
+                            ts_processed_feat_df,
+                            i,
+                            l,
+                            id_col=id_col,
+                            tz_offset=tz_offset,
+                            output_mode="append",
+                            output_type=m,
+                            n_cat=10,
+                        )
+                        .tail(int(max_days))
+                        .dropna()
                     )
                     f.to_csv(
                         ends_with(local_path) + i + "_" + l + "_" + m + ".csv",
