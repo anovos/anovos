@@ -49,20 +49,16 @@ def get_column_name(df):
         Column name of Industry in the input DataFrame (string)
     usecase_column
         Column name of Usecase in the input DataFrame (string)
-    source_column
-        Column name of Source in the input DataFrame (string)
     """
     feature_name_column = str(df.columns.tolist()[0])
     feature_desc_column = str(df.columns.tolist()[1])
     industry_column = str(df.columns.tolist()[2])
     usecase_column = str(df.columns.tolist()[3])
-    source_column = str(df.columns.tolist()[4])
     return (
         feature_name_column,
         feature_desc_column,
         industry_column,
         usecase_column,
-        source_column,
     )
 
 
@@ -165,7 +161,6 @@ def feature_recommendation_prep():
         feature_desc_column,
         industry_column,
         usecase_column,
-        source_column,
     ) = get_column_name(df_input_fer)
     df_groupby_fer = (
         df_input_fer.groupby([feature_name_column, feature_desc_column])
@@ -173,7 +168,6 @@ def feature_recommendation_prep():
             {
                 industry_column: lambda x: ", ".join(set(x.dropna())),
                 usecase_column: lambda x: ", ".join(set(x.dropna())),
-                source_column: lambda x: ", ".join(set(x.dropna())),
             }
         )
         .reset_index()

@@ -9,7 +9,6 @@ df_input_fer = feature_exploration_prep()
     feature_desc_column,
     industry_column,
     usecase_column,
-    source_column,
 ) = get_column_name(df_input_fer)
 
 
