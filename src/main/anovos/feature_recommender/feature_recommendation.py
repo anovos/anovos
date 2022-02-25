@@ -19,27 +19,25 @@ def feature_recommendation(
 
     Parameters
     ----------
-    df :
+    df
         Input DataFrame - Users' Data dictionary. It is expected to consist of attribute name and/or attribute description
-    name_column :
+    name_column
         Input, column name of Attribute Name in Input DataFrame (string). Default is None.
-    desc_column :
+    desc_column
         Input, column name of Attribute Description in Input DataFrame (string). Default is None.
-    suggested_industry :
+    suggested_industry
         Input, Industry of interest to the user (if any) to be filtered out (string). Default is 'all', meaning all Industries available.
-    suggested_usecase :
+    suggested_usecase
         Input, Usecase of interest to the user (if any) to be filtered out (string). Default is 'all', meaning all Usecases available.
-    semantic :
+    semantic
         Input semantic (boolean) - Whether the input needs to go through semantic similarity or not. Default is True.
-    top_n :
+    top_n
         Number of features displayed (int). Default is 2
-    threshold :
+    threshold
         Input threshold value (float). Default is 0.3
 
     Returns
     -------
-    type
-        DataFrame with Recommended Features with the Input DataFrame and/or Users' Industry/Usecase of interest
 
     """
     if not isinstance(df, pd.DataFrame):
@@ -305,21 +303,19 @@ def find_attr_by_relevance(
 
     Parameters
     ----------
-    df :
+    df
         Input DataFrame - Users' Data dictionary. It is expected to consist of attribute name and/or attribute description
-    building_corpus :
+    building_corpus
         Input Feature Description (list)
-    name_column :
+    name_column
         Input, column name of Attribute Name in Input DataFrame (string). Default is None.
-    desc_column :
+    desc_column
         Input, column name of Attribute Description in Input DataFrame (string). Default is None.
-    threshold :
+    threshold
         Input threshold value (float). Default is 0.3
 
     Returns
     -------
-    type
-        DataFrame with Input Feature Description and Input Attribute matching
 
     """
     if not isinstance(df, pd.DataFrame):
@@ -475,17 +471,15 @@ def sankey_visualization(df, industry_included=False, usecase_included=False):
 
     Parameters
     ----------
-    df :
+    df
         Input DataFrame. This DataFrame needs to be output of feature_recommendation or find_attr_by_relevance, or in the same format.
-    industry_included :
+    industry_included
         Whether the plot needs to include industry mapping or not (boolean). Default is False
-    usecase_included :
+    usecase_included
         Whether the plot needs to include usecase mapping or not (boolean). Default is False
 
     Returns
     -------
-    type
-        Sankey plot
 
     """
     fr_proper_col_list = [

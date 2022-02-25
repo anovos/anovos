@@ -16,16 +16,28 @@ def check_list_of_columns(
 
     Parameters
     ----------
-    func :
-         (Default value = None)
-    columns :
-         (Default value = "list_of_cols")
-    target_idx: int :
+    func
+        Default value = None)
+    columns
+        Default value = "list_of_cols")
+    target_idx : int
+        Default value = 1)
+    target : str
+        Default value = "idf_target")
+    drop
+        Default value = "drop_cols")
+    target_idx : int
+        Default value = 1)
+    target : str
+        Default value = "idf_target")
+    target_idx
+        int:  (Default value = 1)
+    target
+        str:  (Default value = "idf_target")
+    target_idx: int
          (Default value = 1)
-    target: str :
+    target: str
          (Default value = "idf_target")
-    drop :
-         (Default value = "drop_cols")
 
     Returns
     -------
@@ -40,9 +52,9 @@ def check_list_of_columns(
 
         Parameters
         ----------
-        *args :
+        *args
 
-        **kwargs :
+        **kwargs
 
 
         Returns
@@ -103,10 +115,10 @@ def check_distance_method(func=None, param="method_type"):
 
     Parameters
     ----------
-    func :
-         (Default value = None)
-    param :
-         (Default value = "method_type")
+    func
+        (Default value = None)
+    param : str
+        (Default value = "method_type")
 
     Returns
     -------
@@ -121,9 +133,9 @@ def check_distance_method(func=None, param="method_type"):
 
         Parameters
         ----------
-        *args :
+        *args
 
-        **kwargs :
+        **kwargs
 
 
         Returns

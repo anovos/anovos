@@ -8,15 +8,13 @@ def flatten_dataframe(idf, fixed_cols):
 
     Parameters
     ----------
-    idf :
+    idf
         Input Dataframe
-    fixed_cols :
+    fixed_cols
         All columns except in this list will be melted/unpivoted
 
     Returns
     -------
-    type
-        Flatten/Melted dataframe
 
     """
     valid_cols = [e for e in idf.columns if e not in fixed_cols]
@@ -32,16 +30,14 @@ def transpose_dataframe(idf, fixed_col):
 
     Parameters
     ----------
-    idf :
+    idf
         Input Dataframe
-    fixed_col :
+    fixed_col
         Values in this column will be converted into columns as header.
         Ideally all values should be unique
 
     Returns
     -------
-    type
-        Transposed dataframe
 
     """
     idf_flatten = flatten_dataframe(idf, fixed_cols=[fixed_col])
@@ -54,14 +50,11 @@ def attributeType_segregation(idf):
 
     Parameters
     ----------
-    idf :
+    idf
         Input Dataframe
 
     Returns
     -------
-    type
-        list1, list2, list3)
-        3 lists - each corresponding to numerical, categorical, and others columns
 
     """
     cat_cols = []
@@ -85,15 +78,13 @@ def get_dtype(idf, col):
 
     Parameters
     ----------
-    idf :
+    idf
         Input Dataframe
-    col :
+    col
         Column Name for datatype detection
 
     Returns
     -------
-    type
-        data type
 
     """
     return [dtype for name, dtype in idf.dtypes if name == col][0]
@@ -104,15 +95,13 @@ def ends_with(string, end_str="/"):
 
     Parameters
     ----------
-    string :
+    string
         s3:mw-bucket"
-    end_str :
+    end_str
         return: "s3:mw-bucket/" (Default value = "/")
 
     Returns
     -------
-    type
-        s3:mw-bucket/"
 
     """
     string = str(string)
@@ -126,9 +115,9 @@ def pairwise_reduce(op, x):
 
     Parameters
     ----------
-    op :
-
-    x :
+    op
+        param x:
+    x
 
 
     Returns

@@ -54,9 +54,9 @@ def stats_args(path, func):
 
     Parameters
     ----------
-    path :
-
-    func :
+    path
+        param func:
+    func
 
 
     Returns
@@ -102,23 +102,23 @@ def anovos_basic_report(
 
     Parameters
     ----------
-    spark :
+    spark
         Spark Session
-    idf :
+    idf
         Input Dataframe
-    id_col :
+    id_col
         ID column (Default value = "")
-    label_col :
+    label_col
         Label/Target column (Default value = "")
-    event_label :
+    event_label
         Value of (positive) event (i.e label 1) (Default value = "")
-    output_path :
+    output_path
         File Path for saving metrics and basic report (Default value = ".")
-    run_type :
+    run_type
         local" (default), "emr", "databricks"
         "emr" if the files are read from or written in AWS s3
         "databricks" if the files are read from or written in dbfs in azure databricks
-    print_impact :
+    print_impact
         True, False.
         :return None (Default value = True)
 
@@ -155,7 +155,7 @@ def anovos_basic_report(
 
         Parameters
         ----------
-        output_path :
+        output_path
 
 
         Returns
@@ -223,7 +223,7 @@ def anovos_basic_report(
 
         Parameters
         ----------
-        col :
+        col
 
 
         Returns
