@@ -21,4 +21,4 @@ popmon
 varclushi
 tensorflow
 soupsieve
-sentence_transformers
+sentence-transformers
