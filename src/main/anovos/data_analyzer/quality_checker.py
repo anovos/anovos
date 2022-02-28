@@ -80,6 +80,11 @@ def duplicate_detection(
 
     Returns
     -------
+    odf : DataFrame
+        de-duplicated dataframe if treated, else original input dataframe.
+    odf_print : DataFrame
+        of schema [metric, value] and contains metrics - number of rows, number of unique rows,
+        number of duplicate rows and percentage of duplicate rows in total.
 
     """
     if list_of_cols == "all":
@@ -186,6 +191,13 @@ def nullRows_detection(
 
     Returns
     -------
+    odf : DataFrame
+        the dataframe after row removal if treated, else original input dataframe.
+    odf_print : DataFrame
+        of schema [null_cols_count, row_count, row_pct, flagged/treated]. null_cols_count is defined as
+        no. of missing columns in a row. row_count is no. of rows with null_cols_count missing columns.
+        row_pct is row_count divided by number of rows. flagged/treated is 1 if null_cols_count is more than
+        (threshold  X Number of Columns), else 0.
 
     """
 
@@ -346,7 +358,11 @@ def nullColumns_detection(
 
     Returns
     -------
-
+    odf : DataFrame
+        the imputed dataframe if treated, else original input dataframe.
+    odf_print : DataFrame
+        of schema [attribute, missing_count, missing_pct]. missing_count is number of rows
+        with null values for an attribute and missing_pct is missing_count divided by number of rows.
     """
     if stats_missing == {}:
         odf_print = missingCount_computation(spark, idf)
@@ -626,6 +642,11 @@ def outlier_detection(
 
     Returns
     -------
+    odf : DataFrame
+        the imputed dataframe if treated, else original input dataframe.
+    odf_print : DataFrame
+         of schema [attribute, lower_outliers, upper_outliers]. lower_outliers is no. of outliers
+         found in the lower spectrum of the attribute range and upper_outliers is outlier count in the upper spectrum.
 
     """
 
@@ -946,7 +967,12 @@ def IDness_detection(
 
     Returns
     -------
-
+    odf : DataFrame
+        the dataframe after column removal if treated, else original input dataframe.
+    odf_print : DataFrame
+        of schema [attribute, unique_values, IDness, flagged/treated]. unique_values is no. of distinct
+       values in a column, IDness is unique_values divided by no. of non-null values. A column is flagged 1
+       if IDness is above the threshold, else 0.
     """
 
     if list_of_cols == "all":
@@ -1077,7 +1103,12 @@ def biasedness_detection(
 
     Returns
     -------
-
+    odf : DataFrame
+        the dataframe after column removal if treated, else original input dataframe.
+    odf_print : DataFrame
+        of schema [attribute, mode, mode_rows, mode_pct, flagged/treated]. mode is the most frequently seen value,
+        mode_rows is number of rows with mode value and mode_pct is number of rows with mode value divided by non-null values.
+        A column is flagged 1 if mode_pct is above the threshold else 0.
     """
 
     if list_of_cols == "all":
@@ -1274,6 +1305,12 @@ def invalidEntries_detection(
 
     Returns
     -------
+    odf : DataFrame
+        the dataframe after treatment if applicable, else original input dataframe.
+    odf_print : DataFrame
+        of schema [attribute, invalid_entries, invalid_count, invalid_pct].
+        invalid_entries are all potential invalid values (separated by delimiter pipe “|”), invalid_count is no.
+        of rows which are impacted by invalid entries and invalid_pct is invalid_count divided by no of rows.
 
     """
 

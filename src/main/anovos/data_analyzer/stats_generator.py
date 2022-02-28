@@ -59,6 +59,8 @@ def global_summary(spark, idf, list_of_cols="all", drop_cols=[], print_impact=Fa
 
     Returns
     -------
+    DataFrame
+        [metric, value]
 
     """
     if list_of_cols == "all":
@@ -138,6 +140,8 @@ def missingCount_computation(
 
     Returns
     -------
+    DataFrame
+        [attribute, missing_count, missing_pct]
 
     """
     if list_of_cols == "all":
@@ -199,6 +203,8 @@ def nonzeroCount_computation(
 
     Returns
     -------
+    DataFrame
+        [attribute, nonzero_count, nonzero_pct]
 
     """
     num_cols = attributeType_segregation(idf)[0]
@@ -279,6 +285,8 @@ def measures_of_counts(
 
     Returns
     -------
+    DataFrame
+        [attribute, fill_count, fill_pct, missing_count, missing_pct, nonzero_count, nonzero_pct]
 
     """
     if list_of_cols == "all":
@@ -342,6 +350,9 @@ def mode_computation(spark, idf, list_of_cols="all", drop_cols=[], print_impact=
 
     Returns
     -------
+    DataFrame
+        [attribute, mode, mode_rows]
+        In case there is tie between multiple values, one value is randomly picked as mode.
 
     """
     if list_of_cols == "all":
@@ -440,6 +451,8 @@ def measures_of_centralTendency(
 
     Returns
     -------
+    DataFrame
+        [attribute, mean, median, mode, mode_rows, mode_pct]
 
     """
 
@@ -518,6 +531,8 @@ def uniqueCount_computation(
 
     Returns
     -------
+    DataFrame
+        [attribute, unique_values]
 
     """
     if list_of_cols == "all":
@@ -597,6 +612,8 @@ def measures_of_cardinality(
 
     Returns
     -------
+    DataFrame
+        [attribute, unique_values, IDness]
 
     """
     if list_of_cols == "all":
@@ -691,6 +708,8 @@ def measures_of_dispersion(
 
     Returns
     -------
+    DataFrame
+        [attribute, stddev, variance, cov, IQR, range]
 
     """
     num_cols = attributeType_segregation(idf)[0]
@@ -778,6 +797,8 @@ def measures_of_percentiles(
 
     Returns
     -------
+    DataFrame
+        [attribute, min, 1%, 5%, 10%, 25%, 50%, 75%, 90%, 95%, 99%, max]
 
     """
     num_cols = attributeType_segregation(idf)[0]
@@ -869,6 +890,8 @@ def measures_of_shape(spark, idf, list_of_cols="all", drop_cols=[], print_impact
 
     Returns
     -------
+    DataFrame
+        [attribute, skewness, kurtosis]
 
     """
 

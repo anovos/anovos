@@ -85,6 +85,11 @@ def correlation_matrix(
 
     Returns
     -------
+    DataFrame
+        [attribute,*col_names]
+        Correlation between attribute X and Y can be found at an intersection of
+        a) row with value X in ‘attribute’ column and column ‘Y’, or
+        b) row with value Y in ‘attribute’ column and column ‘X’.
 
     """
 
@@ -200,6 +205,10 @@ def variable_clustering(
 
     Returns
     -------
+    DataFrame
+        [Cluster, Attribute, RS_Ratio]
+        Attributes similar to each other are grouped together with the same cluster id.
+        Attribute with the lowest (1 — RS_Ratio) can be chosen as a representative of the cluster.
 
     """
 
@@ -329,6 +338,8 @@ def IV_calculation(
 
     Returns
     -------
+    DataFrame
+        [attribute, iv]
 
     """
 
@@ -474,6 +485,8 @@ def IG_calculation(
 
     Returns
     -------
+    DataFrame
+        [attribute, id]
 
     """
 
