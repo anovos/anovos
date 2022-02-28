@@ -7,12 +7,7 @@ from loguru import logger
 import calendar
 from anovos.shared.utils import attributeType_segregation, ends_with
 from anovos.data_analyzer.stats_generator import measures_of_percentiles
-from anovos.data_ingest.ts_auto_detection import (
-    check_val_ind,
-    ts_loop_cols_pre,
-    list_ts_remove_append,
-    ts_preprocess,
-)
+from anovos.data_ingest.ts_auto_detection import ts_preprocess
 from anovos.data_transformer.datetime import (
     timeUnits_extraction,
     unix_to_timestamp,
@@ -51,9 +46,9 @@ def daypart_cat(column):
 f_daypart_cat = F.udf(daypart_cat, T.StringType())
 
 
-def ts_processed_feats(idf, col, id_col, tz):
+def ts_processed_feats(idf, col, id_col, tz, cnt_row, cnt_unique_id):
 
-    if idf.count() == idf.select(id_col).distinct().count():
+    if cnt_row == cnt_unique_id:
 
         odf = (
             timeUnits_extraction(
@@ -297,59 +292,6 @@ def ts_viz_data(
         return odf
 
 
-def check_val_ind(val):
-    if val is None:
-        return 0
-    else:
-        return val
-
-
-def ts_loop_cols_pre(idf, id_col):
-    lc = []
-    ts_col = []
-    for i in idf.dtypes:
-        if (
-            (i[1] in ["string", "object"])
-            or (
-                i[1] in ["long", "bigint"]
-                and (
-                    check_val_ind(
-                        idf.select(F.max(F.length(i[0])))
-                        .rdd.flatMap(lambda x: x)
-                        .collect()[0]
-                    )
-                    > 9
-                )
-                and (idf.select(i[0]).distinct())
-            )
-        ) and i[0] != id_col:
-            lc.append(i[0])
-        else:
-            pass
-
-        if i[1] in ["timestamp", "date"] and i[0] != id_col:
-            ts_col.append(i[0])
-    return lc, ts_col
-
-
-def list_ts_remove_append(l, opt):
-    ll = []
-    if opt == 1:
-        for i in l:
-            if i[-3:] == "_ts":
-                ll.append(i[0:-3:])
-            else:
-                ll.append(i)
-        return ll
-    else:
-        for i in l:
-            if i[-3:] == "_ts":
-                ll.append(i)
-            else:
-                ll.append(i + "_ts")
-        return ll
-
-
 def ts_analyzer(
     spark,
     idf,
@@ -373,12 +315,18 @@ def ts_analyzer(
     num_cols = [x for x in num_cols if x not in [id_col]]
     cat_cols = [x for x in cat_cols if x not in [id_col]]
 
-    ts_loop_cols_post = ts_loop_cols_pre(idf, id_col)[1]
+    ts_loop_cols_post = [x[0] for x in idf.dtypes if x[1] in ["timestamp", "date"]]
+
+    cnt_row = idf.count()
+    cnt_unique_id = idf.select(id_col).distinct().count()
+
     print(ts_loop_cols_post)
 
     for i in ts_loop_cols_post:
 
-        ts_processed_feat_df = ts_processed_feats(idf, i, id_col, tz_offset)
+        ts_processed_feat_df = ts_processed_feats(
+            idf, i, id_col, tz_offset, cnt_row, cnt_unique_id
+        )
         ts_processed_feat_df.persist()
 
         for j in range(1, 3):
