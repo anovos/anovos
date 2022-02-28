@@ -699,6 +699,8 @@ def ts_preprocess(spark, idf, id_col, output_path, tz_offset="local", run_type="
         except:
             pass
 
+    odf = idf.distinct()
+
     ts_loop_cols_post = [x[0] for x in idf.dtypes if x[1] in ["timestamp", "date"]]
 
     num_cols = [x for x in num_cols if x not in [id_col] + ts_loop_cols_post]
@@ -733,4 +735,4 @@ def ts_preprocess(spark, idf, id_col, output_path, tz_offset="local", run_type="
         )
         output = subprocess.check_output(["bash", "-c", bash_cmd])
 
-    return idf
+    return odf
