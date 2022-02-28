@@ -2593,7 +2593,7 @@ def ts_viz_2_3(base_path, ts_col, num_cols):
         return dp.Select(blocks=ts_v, type=dp.SelectType.DROPDOWN)
 
 
-def ts_landscape(base_path, ts_cols):
+def ts_landscape(base_path, ts_cols, id_col):
 
     if ts_cols is None:
 
@@ -2606,6 +2606,8 @@ def ts_landscape(base_path, ts_cols):
                     dp.Group(
                         dp.Group(
                             dp.Text("#   "),
+                            dp.Text("*ID considered here is : " + str(id_col) + "*"),
+                            dp.Text("#   "),
                             dp.Text("#### Consistency Analysis Of Dates"),
                             dp.DataTable(
                                 pd.read_csv(
@@ -2615,7 +2617,7 @@ def ts_landscape(base_path, ts_cols):
                                 .T,
                                 label=i,
                             ),
-                            rows=3,
+                            rows=5,
                         ),
                         dp.Group(
                             dp.Text(
@@ -2641,7 +2643,9 @@ def ts_landscape(base_path, ts_cols):
                     dp.Group(
                         dp.Group(
                             dp.Text("#   "),
+                            dp.Text("*ID considered here is : " + str(id_col) + "*"),
                             dp.Text("#### Consistency Analysis Of Dates"),
+                            dp.Text("#   "),
                             dp.DataTable(
                                 pd.read_csv(
                                     ends_with(base_path) + "stats_" + i + "_1.csv"
@@ -2650,7 +2654,7 @@ def ts_landscape(base_path, ts_cols):
                                 .T,
                                 label=i,
                             ),
-                            rows=3,
+                            rows=5,
                         ),
                         dp.Group(
                             dp.Text("#   "),
@@ -2869,7 +2873,7 @@ def ts_stats(base_path):
     return c0, c1, c2, c3, c4, c5, c6
 
 
-def ts_viz_generate(master_path, print_report=False, output_type="daily"):
+def ts_viz_generate(master_path, id_col, print_report=False, output_type="daily"):
 
     try:
         c0, c1, c2, c3, c4, c5, c6 = ts_stats(master_path)
@@ -2908,7 +2912,7 @@ def ts_viz_generate(master_path, print_report=False, output_type="daily"):
             + "** attributes as Timestamp"
         ),
         dp.DataTable(stats_df),
-        ts_landscape(master_path, final_ts_cols),
+        ts_landscape(master_path, final_ts_cols, id_col),
         dp.Text(
             "*Lower the **CoV** (Coefficient Of Variation), Higher the Consistency between the consecutive dates. Similarly the Mean & Variance should be consistent over time*"
         ),
@@ -3288,7 +3292,7 @@ def anovos_report(
         master_path, ds_ind, id_col, drift_threshold_model, all_drift_charts_
     )
 
-    tab7 = ts_viz_generate(ends_with(master_path), output_type)
+    tab7 = ts_viz_generate(ends_with(master_path), id_col, output_type)
 
     final_tabs_list = []
 
