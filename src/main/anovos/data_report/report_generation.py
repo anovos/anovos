@@ -18,7 +18,7 @@ from plotly.subplots import make_subplots
 import datapane as dp
 from statsmodels.tsa.stattools import adfuller, kpss
 from sklearn.preprocessing import PowerTransformer
-# from anovos.shared.utils import ends_with
+from anovos.shared.utils import ends_with
 
 global_theme = px.colors.sequential.Plasma
 global_theme_r = px.colors.sequential.Plasma_r
@@ -36,18 +36,6 @@ default_template = (
     ),
     dp.Text("# ML-Anovos Report"),
 )
-
-
-def ends_with(string, end_str="/"):
-    '''
-    :param string: "s3:mw-bucket"
-    :param end_str: "/"
-    :return: "s3:mw-bucket/"
-    '''
-    string = str(string)
-    if string.endswith(end_str):
-        return string
-    return string + end_str
 
 
 def remove_u_score(col):
@@ -2451,34 +2439,69 @@ def ts_viz_1_3(base_path, ts_col, num_cols, cat_cols, output_type):
     if len(num_cols) == 0:
         for i in ts_col:
             if len(ts_col) > 1:
-                ts_v.append(dp.Group(ts_viz_1_2(base_path, i, cat_cols, output_type),label=i))
+                ts_v.append(
+                    dp.Group(ts_viz_1_2(base_path, i, cat_cols, output_type), label=i)
+                )
             else:
-                ts_v.append(dp.Group(ts_viz_1_2(base_path, i, cat_cols, output_type),label=i))
+                ts_v.append(
+                    dp.Group(ts_viz_1_2(base_path, i, cat_cols, output_type), label=i)
+                )
                 ts_v.append(dp.Plot(blank_chart, label="_"))
-    
+
     elif len(cat_cols) == 0:
         for i in ts_col:
             if len(ts_col) > 1:
-                ts_v.append(dp.Group(ts_viz_1_2(base_path, i, num_cols, output_type),label=i))
+                ts_v.append(
+                    dp.Group(ts_viz_1_2(base_path, i, num_cols, output_type), label=i)
+                )
             else:
-                ts_v.append(dp.Group(ts_viz_1_2(base_path, i, num_cols, output_type),label=i))
+                ts_v.append(
+                    dp.Group(ts_viz_1_2(base_path, i, num_cols, output_type), label=i)
+                )
                 ts_v.append(dp.Plot(blank_chart, label="_"))
 
-        
-    elif len(num_cols)>=1 & len(cat_cols)>=1:
-        
-        for i in ts_col:
-                if len(ts_col) > 1:
-                    ts_v.append(dp.Group(dp.Select(blocks=[dp.Group(ts_viz_1_2(base_path, i, num_cols, output_type),label="Numerical"),
-                                dp.Group(ts_viz_1_2(base_path, i, cat_cols, output_type),label="Categorical")],
-                                type=dp.SelectType.TABS),label=i))
-                else:
-                    ts_v.append(dp.Group(dp.Select(blocks=[dp.Group(ts_viz_1_2(base_path, i, num_cols, output_type),label="Numerical"),
-                                dp.Group(ts_viz_1_2(base_path, i, cat_cols, output_type),label="Categorical")],
-                                type=dp.SelectType.TABS),label=i))
-                    ts_v.append(dp.Plot(blank_chart, label="_"))
+    elif len(num_cols) >= 1 & len(cat_cols) >= 1:
 
-        
+        for i in ts_col:
+            if len(ts_col) > 1:
+                ts_v.append(
+                    dp.Group(
+                        dp.Select(
+                            blocks=[
+                                dp.Group(
+                                    ts_viz_1_2(base_path, i, num_cols, output_type),
+                                    label="Numerical",
+                                ),
+                                dp.Group(
+                                    ts_viz_1_2(base_path, i, cat_cols, output_type),
+                                    label="Categorical",
+                                ),
+                            ],
+                            type=dp.SelectType.TABS,
+                        ),
+                        label=i,
+                    )
+                )
+            else:
+                ts_v.append(
+                    dp.Group(
+                        dp.Select(
+                            blocks=[
+                                dp.Group(
+                                    ts_viz_1_2(base_path, i, num_cols, output_type),
+                                    label="Numerical",
+                                ),
+                                dp.Group(
+                                    ts_viz_1_2(base_path, i, cat_cols, output_type),
+                                    label="Categorical",
+                                ),
+                            ],
+                            type=dp.SelectType.TABS,
+                        ),
+                        label=i,
+                    )
+                )
+                ts_v.append(dp.Plot(blank_chart, label="_"))
 
     return dp.Select(blocks=ts_v, type=dp.SelectType.DROPDOWN)
 
@@ -2519,30 +2542,53 @@ def ts_viz_2_3(base_path, ts_col, num_cols):
 
     for i in ts_col:
 
-        f = list(pd.read_csv(ends_with(base_path) + "stats_" + i + "_2.csv").count_unique_dates.values)[0]
+        f = list(
+            pd.read_csv(
+                ends_with(base_path) + "stats_" + i + "_2.csv"
+            ).count_unique_dates.values
+        )[0]
 
         if len(ts_col) > 1:
 
-            if f>=24:
+            if f >= 24:
 
                 ts_v.append(dp.Group(ts_viz_2_2(base_path, i, num_cols), label=i))
 
             else:
 
-                ts_v.append(dp.Group(dp.Text("The plots couldn't be displayed as x must have 2 complete cycles requires 24 observations. x only has " + str(f) + " observation(s)"),label=i))
+                ts_v.append(
+                    dp.Group(
+                        dp.Text(
+                            "The plots couldn't be displayed as x must have 2 complete cycles requires 24 observations. x only has "
+                            + str(f)
+                            + " observation(s)"
+                        ),
+                        label=i,
+                    )
+                )
         else:
 
-            if f>=24:
+            if f >= 24:
 
                 ts_v.append(dp.Group(ts_viz_2_2(base_path, i, num_cols), label=i))
 
             else:
 
-                ts_v.append(dp.Group(dp.Text("The plots couldn't be displayed as x must have 2 complete cycles requires 24 observations. x only has " + str(f) + " observation(s)"),label=i))
+                ts_v.append(
+                    dp.Group(
+                        dp.Text(
+                            "The plots couldn't be displayed as x must have 2 complete cycles requires 24 observations. x only has "
+                            + str(f)
+                            + " observation(s)"
+                        ),
+                        label=i,
+                    )
+                )
 
             ts_v.append(dp.Plot(blank_chart, label="_"))
 
         return dp.Select(blocks=ts_v, type=dp.SelectType.DROPDOWN)
+
 
 def ts_landscape(base_path, ts_cols):
 
