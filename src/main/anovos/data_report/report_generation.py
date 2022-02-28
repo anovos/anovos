@@ -2052,6 +2052,26 @@ def plotSeasonalDecompose(
     base_path, x_col, y_col, metric_col="median", title="Seasonal Decomposition"
 ):
 
+    """
+
+    Parameters
+    ----------
+    base_path
+        Base path which is the same as Master path where the aggregated data resides.
+    x_col
+        Timestamp / date column name
+    y_col
+        Numerical column names
+    metric_col
+        Metric of aggregation. Options can be between "Median", "Mean", "Min", "Max"
+    title
+        "Title Description"
+
+    Returns
+    -------
+
+    """
+
     df = pd.read_csv(ends_with(base_path) + x_col + "_" + y_col + "_daily.csv").dropna()
 
     df[x_col] = pd.to_datetime(df[x_col], format="%Y-%m-%d %H:%M:%S.%f")
@@ -2142,6 +2162,24 @@ def plotSeasonalDecompose(
 
 
 def gen_time_series_plots(base_path, x_col, y_col, time_cat):
+
+    """
+
+    Parameters
+    ----------
+    base_path
+        Base path which is the same as Master path where the aggregated data resides.
+    x_col
+        Timestamp / date column name
+    y_col
+        Numerical column names
+    time_cat
+        Time category of analysis which can be between "Daily", "Hourly", "Weekly"
+
+    Returns
+    -------
+
+    """    
 
     df = pd.read_csv(
         ends_with(base_path) + x_col + "_" + y_col + "_" + time_cat + ".csv"
@@ -2375,6 +2413,21 @@ def gen_time_series_plots(base_path, x_col, y_col, time_cat):
 
 
 def list_ts_remove_append(l, opt):
+
+    """
+
+    Parameters
+    ----------
+    l
+        List containing column name
+    opt
+        Option to choose between 1 & Others to enable the functionality of removing or appending "_ts" within the elements of a list
+    
+    Returns
+    -------
+
+    """
+
     ll = []
     if opt == 1:
         for i in l:
@@ -2400,20 +2453,26 @@ blank_chart.update_xaxes(visible=False)
 blank_chart.update_yaxes(visible=False)
 
 
-# def ts_viz_1_1(base_path, x_col, y_col):
-
-#     ts_fig = []
-
-#     for x in ["daily", "hourly", "weekly"]:
-
-#         ts_fig.append(
-#             dp.Plot(gen_time_series_plots(base_path, x_col, y_col, x), label=x.title())
-#         )
-
-#     return dp.Select(blocks=ts_fig, type=dp.SelectType.TABS)
-
 
 def ts_viz_1_1(base_path, x_col, y_col, output_type="daily"):
+
+    """
+
+    Parameters
+    ----------
+    base_path
+        Base path which is the same as Master path where the aggregated data resides.
+    x_col
+        Timestamp / date column name
+    y_col
+        Numerical column names
+    output_type
+        Time category of analysis which can be between "Daily", "Hourly", "Weekly"
+
+    Returns
+    -------
+
+    """      
 
     ts_fig = gen_time_series_plots(base_path, x_col, y_col, output_type)
 
@@ -2421,6 +2480,24 @@ def ts_viz_1_1(base_path, x_col, y_col, output_type="daily"):
 
 
 def ts_viz_1_2(base_path, ts_col, col_list, output_type="daily"):
+
+    """
+
+    Parameters
+    ----------
+    base_path
+        Base path which is the same as Master path where the aggregated data resides.
+    ts_col
+        Timestamp / date column name
+    col_list
+        Numerical / Categorical column names
+    output_type
+        Time category of analysis which can be between "Daily", "Hourly", "Weekly"
+
+    Returns
+    -------
+
+    """
 
     bl = []
 
@@ -2436,9 +2513,29 @@ def ts_viz_1_2(base_path, ts_col, col_list, output_type="daily"):
 
 def ts_viz_1_3(base_path, ts_col, num_cols, cat_cols, output_type):
 
+    """
+
+    Parameters
+    ----------
+    base_path
+        Base path which is the same as Master path where the aggregated data resides.
+    ts_col
+        Timestamp / date column name
+    num_cols
+        Numerical column names
+    cat_cols
+        Categorical column names
+    output_type
+        Time category of analysis which can be between "Daily", "Hourly", "Weekly"
+
+    Returns
+    -------
+
+    """
+
     ts_v = []
-    print(num_cols)
-    print(cat_cols)
+    # print(num_cols)
+    # print(cat_cols)
     if len(num_cols) == 0:
         for i in ts_col:
             if len(ts_col) > 1:
@@ -2511,6 +2608,22 @@ def ts_viz_1_3(base_path, ts_col, num_cols, cat_cols, output_type):
 
 def ts_viz_2_1(base_path, x_col, y_col):
 
+    """
+
+    Parameters
+    ----------
+    base_path
+        Base path which is the same as Master path where the aggregated data resides.
+    x_col
+        Timestamp / date column name
+    y_col
+        Numerical column names
+
+    Returns
+    -------
+
+    """
+
     ts_fig = []
 
     for i in ["mean", "median", "min", "max"]:
@@ -2527,6 +2640,22 @@ def ts_viz_2_1(base_path, x_col, y_col):
 
 def ts_viz_2_2(base_path, ts_col, col_list):
 
+    """
+
+    Parameters
+    ----------
+    base_path
+        Base path which is the same as Master path where the aggregated data resides.
+    ts_col
+        Timestamp / date column name
+    col_list
+        Numerical column names
+
+    Returns
+    -------
+
+    """    
+
     bl = []
 
     for i in col_list:
@@ -2540,6 +2669,22 @@ def ts_viz_2_2(base_path, ts_col, col_list):
 
 
 def ts_viz_2_3(base_path, ts_col, num_cols):
+
+    """
+
+    Parameters
+    ----------
+    base_path
+        Base path which is the same as Master path where the aggregated data resides.
+    ts_col
+        Timestamp / date column name
+    num_cols
+        Numerical column names
+    
+    Returns
+    -------
+
+    """    
 
     ts_v = []
 
@@ -2594,6 +2739,22 @@ def ts_viz_2_3(base_path, ts_col, num_cols):
 
 
 def ts_landscape(base_path, ts_cols, id_col):
+
+    """
+
+    Parameters
+    ----------
+    base_path
+        Base path which is the same as Master path where the aggregated data resides.
+    ts_col
+        Timestamp / date column name
+    id_col
+        ID Column
+
+    Returns
+    -------
+
+    """    
 
     if ts_cols is None:
 
@@ -2682,6 +2843,19 @@ def ts_landscape(base_path, ts_cols, id_col):
 
 def lambda_cat(val):
 
+    """
+
+    Parameters
+    ----------
+
+    val
+        Value of Box Cox Test which translates into the transformation to be applied.
+
+    Returns
+    -------
+
+    """    
+
     if val < -1:
         return "Reciprocal Square Transform"
     elif val >= -1 and val < -0.5:
@@ -2699,6 +2873,22 @@ def lambda_cat(val):
 
 
 def ts_viz_3_1(base_path, x_col, y_col):
+
+    """
+
+    Parameters
+    ----------
+    base_path
+        Base path which is the same as Master path where the aggregated data resides.
+    x_col
+        Timestamp / date column name
+    y_col
+        Numerical column names
+
+    Returns
+    -------
+
+    """    
 
     ts_fig = []
 
@@ -2817,10 +3007,26 @@ def ts_viz_3_1(base_path, x_col, y_col):
 
 def ts_viz_3_2(base_path, ts_col, col_list):
 
+    """
+
+    Parameters
+    ----------
+    base_path
+        Base path which is the same as Master path where the aggregated data resides.
+    ts_col
+        Timestamp / date column name
+    col_list
+        Numerical column names
+
+    Returns
+    -------
+
+    """    
+
     bl = []
 
     for i in col_list:
-        print(i)
+        # print(i)
         if len(num_cols) > 1:
             bl.append(dp.Group(ts_viz_3_1(base_path, ts_col, i), label=i))
         else:
@@ -2832,10 +3038,26 @@ def ts_viz_3_2(base_path, ts_col, col_list):
 
 def ts_viz_3_3(base_path, ts_col, num_cols):
 
+    """
+
+    Parameters
+    ----------
+    base_path
+        Base path which is the same as Master path where the aggregated data resides.
+    ts_col
+        Timestamp / date column name
+    num_cols
+        Numerical column names
+
+    Returns
+    -------
+
+    """    
+
     ts_v = []
     tt = ts_col
     for i in tt:
-        print(i)
+        # print(i)
         if len(tt) > 1:
             ts_v.append(dp.Group(ts_viz_3_2(base_path, i, num_cols), label=i))
         else:
@@ -2846,6 +3068,17 @@ def ts_viz_3_3(base_path, ts_col, num_cols):
 
 
 def ts_stats(base_path):
+
+    """
+
+    Parameters
+    ----------
+    base_path
+        Base path which is the same as Master path where the aggregated data resides.
+    Returns
+    -------
+
+    """ 
 
     df = pd.read_csv(base_path + "ts_cols_stats.csv")
 
@@ -2868,12 +3101,30 @@ def ts_stats(base_path):
 
     c5 = list_ts_remove_append(all_stats[5], 1)
     c6 = list_ts_remove_append(all_stats[6], 1)
-    print(c5, c6)
+    
 
     return c0, c1, c2, c3, c4, c5, c6
 
 
 def ts_viz_generate(master_path, id_col, print_report=False, output_type="daily"):
+
+    """
+
+    Parameters
+    ----------
+    master_path
+        Master path where the aggregated data resides.
+    id_col
+        ID Column
+    print_report
+        Option to specify whether the Report needs to be saved or not. True / False can be used to specify the needful. 
+    output_type
+        Time category of analysis which can be between "Daily", "Hourly", "Weekly"
+
+    Returns
+    -------
+
+    """    
 
     try:
         c0, c1, c2, c3, c4, c5, c6 = ts_stats(master_path)
@@ -2972,6 +3223,8 @@ def anovos_report(
         local or emr or databricks option. Default is kept as local
     final_report_path
         Path where the report will be saved. (Default value = ".")
+    output_type
+        Time category of analysis which can be between "Daily", "Hourly", "Weekly"
 
     Returns
     -------
