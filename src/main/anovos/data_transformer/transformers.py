@@ -250,7 +250,7 @@ def attribute_binning(
 
                 bin_cutoff = []
 
-                if max_val:
+                if max_val != None:
                     bin_width = (max_val - min_val) / bin_size
                     for j in range(1, bin_size):
                         bin_cutoff.append(min_val + j * bin_width)
