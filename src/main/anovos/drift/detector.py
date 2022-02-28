@@ -43,12 +43,12 @@ def statistics(
     Data drift mainly includes the following manifestations:
 
     - Covariate shift: training and test data follow different distributions. For example, An algorithm predicting
-    income that is trained on younger population but tested on older population. 
-    - Prior probability shift: change of prior probability. For example in a spam classification problem, 
+    income that is trained on younger population but tested on older population.
+    - Prior probability shift: change of prior probability. For example in a spam classification problem,
     the proportion of spam emails changes from 0.2
-    in training data to 0.6 in testing data. 
-    - Concept shift: the distribution of the target variable changes given fixed input values. For example in 
-    the same spam classification problem, emails tagged as spam in training data are more likely to be tagged 
+    in training data to 0.6 in testing data.
+    - Concept shift: the distribution of the target variable changes given fixed input values. For example in
+    the same spam classification problem, emails tagged as spam in training data are more likely to be tagged
     as non-spam in testing data.
 
     In our module, we mainly focus on covariate shift detection.
@@ -78,9 +78,9 @@ def statistics(
     This function can be used in many scenarios. For example:
 
     1. Attribute level data drift can be analysed together with the attribute importance of a machine learning model.
-    The more important an attribute is, the more attention it needs to be given if drift presents. 
-    2. To analyse data drift over time, one can treat one dataset as the source / baseline dataset and multiple 
-    datasets as the target datasets. Drift analysis can be performed between the source dataset and each of the 
+    The more important an attribute is, the more attention it needs to be given if drift presents.
+    2. To analyse data drift over time, one can treat one dataset as the source / baseline dataset and multiple
+    datasets as the target datasets. Drift analysis can be performed between the source dataset and each of the
     target dataset to quantify the drift over time.
 
     Parameters
@@ -165,6 +165,9 @@ def statistics(
 
     Returns
     -------
+    DataFrame
+        [attribute, *metric, flagged]
+        Number of columns will be dependent on method argument. There will be one column for each drift method/metric.
 
     """
     drop_cols = drop_cols or []
@@ -417,6 +420,10 @@ def stability_index_computation(
 
     Returns
     -------
+    DataFrame
+        [attribute, mean_si, stddev_si, kurtosis_si, mean_cv, stddev_cv, kurtosis_cv, stability_index].
+        *_cv is coefficient of variation for each metric. *_si is stability index for each metric.
+        stability_index is net weighted stability index based on the individual metrics' stability index.
 
     """
 
@@ -582,28 +589,28 @@ def feature_stability_estimation(
     print_impact=False,
 ):
     """
-    This function is able to estimate the stability index of a new feature composed of certain attributes whose 
-    stability metrics are known. For example, the new feature F can be expressed as F = g(X1, X2, …, Xn), 
-    where X1, X2, …, Xn represent different attributes and g represents the transformation function. 
-    The most straightforward way is to generate the new feature for all periods and calculate its stability index. 
-    However, it requires reading all historical data again which can be unrealistic for large datasets. 
-    Thus, the objective of this function is to estimate feature stability index without reading historical data. 
-    
-    One example can be the following scenario: we have attributes A and B, we have their respective stability 
-    statistics from T1 to T7. At T7 we realise we need to generate a new feature: A/B, but we don’t have 
-    statistics metrics of A/B from T1 to T6 and this is where this function can be applied to generate an 
+    This function is able to estimate the stability index of a new feature composed of certain attributes whose
+    stability metrics are known. For example, the new feature F can be expressed as F = g(X1, X2, …, Xn),
+    where X1, X2, …, Xn represent different attributes and g represents the transformation function.
+    The most straightforward way is to generate the new feature for all periods and calculate its stability index.
+    However, it requires reading all historical data again which can be unrealistic for large datasets.
+    Thus, the objective of this function is to estimate feature stability index without reading historical data.
+
+    One example can be the following scenario: we have attributes A and B, we have their respective stability
+    statistics from T1 to T7. At T7 we realise we need to generate a new feature: A/B, but we don’t have
+    statistics metrics of A/B from T1 to T6 and this is where this function can be applied to generate an
     estimation without reading datasets from T1 to T6.
-    
+
     The estimation can be broken down into 3 steps.
-    1. Estimate mean and stddev for the new feature based on attribute metrics (no existing resource found to 
-    estimate Feature kurtosis). Estimated mean and stddev are generated for each time period using the 
+    1. Estimate mean and stddev for the new feature based on attribute metrics (no existing resource found to
+    estimate Feature kurtosis). Estimated mean and stddev are generated for each time period using the
     formula below according to [1]:
     ![feature_stability_formulae.png](https://raw.githubusercontent.com/anovos/anovos-docs/main/docs/assets/feature_stability_formulae.png)
-    2. Calculate Coefficient of variation (CV) for estimated feature mean and stddev. Each CV can be then mapped 
+    2. Calculate Coefficient of variation (CV) for estimated feature mean and stddev. Each CV can be then mapped
     to an integer between 0 and 4 to generate the metric stability index.
-    3. Similar to the attribute stability index, each metric is assigned a weightage between 0 and 1, where the 
-    default values are 50 for mean, 30% for standard deviation and 20% for kurtosis. Because we are unable to 
-    generate kurtosis stability index, its minimum and maximum possible values (0 and 4) are used to output a 
+    3. Similar to the attribute stability index, each metric is assigned a weightage between 0 and 1, where the
+    default values are 50 for mean, 30% for standard deviation and 20% for kurtosis. Because we are unable to
+    generate kurtosis stability index, its minimum and maximum possible values (0 and 4) are used to output a
     range for global stability index (GSI):
         * Lower bound of GSI = 0.5∗mean stability index + 0.3∗stddev stability index + 0.2 ∗ 𝟎
         * Upper bound of GSI = 0.5∗mean stability index + 0.3∗stddev stability index + 0.2 ∗ 𝟒
@@ -627,14 +634,21 @@ def feature_stability_estimation(
         Takes input in dictionary format with keys being the metric name - "mean","stdev","kurtosis"
         and value being the weightage of the metric (between 0 and 1). Sum of all weightages must be 1. (Default value = {"mean": 0.5)
     threshold
-        A column is flagged if the stability index is below the threshold, which varies between 0 to 4.
-        The following criteria can be used to classifiy stability_index (SI): very unstable: 0≤SI<1,
+        A column is flagged if the stability index is below the threshold, which varies between 0 and 4.
+        The following criteria can be used to classify stability_index (SI): very unstable: 0≤SI<1,
         unstable: 1≤SI<2, marginally stable: 2≤SI<3, stable: 3≤SI<3.5 and very stable: 3.5≤SI≤4. (Default value = 1)
     print_impact
         True, False (Default value = False)
 
     Returns
     -------
+    DataFrame
+        [feature_formula, mean_cv, stddev_cv, mean_si, stddev_si, stability_index_lower_bound,
+        stability_index_upper_bound, flagged_lower, flagged_upper].
+        *_cv is coefficient of variation for each metric. *_si is stability index for each metric.
+        stability_index_lower_bound and stability_index_upper_bound form a range for estimated stability index.
+        flagged_lower and flagged_upper indicate whether the feature is potentially unstable based on the lower
+        and upper bounds for stability index.
 
     """
 

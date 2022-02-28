@@ -40,6 +40,7 @@ def read_dataset(spark, file_path, file_type, file_configs={}):
 
     Returns
     -------
+    DataFrame
 
     """
     odf = spark.read.format(file_type).options(**file_configs).load(file_path)
@@ -73,9 +74,6 @@ def write_dataset(idf, file_path, file_type, file_configs={}, column_order=[]):
         execution work. This is because the coalesce operation doesn’t require any shuffling like repartition which is known to be an expensive step.
     column_order
         list of columns in the order in which Dataframe is to be written. If None or [] is specified, then the default order is applied.
-
-    Returns
-    -------
 
     """
 
@@ -137,6 +135,8 @@ def concatenate_dataset(*idfs, method_type="name"):
 
     Returns
     -------
+    DataFrame
+        Concatenated dataframe
 
     """
     if method_type not in ["index", "name"]:
@@ -169,6 +169,8 @@ def join_dataset(*idfs, join_cols, join_type):
 
     Returns
     -------
+    DataFrame
+        Joined dataframe
 
     """
     if isinstance(join_cols, str):
@@ -199,6 +201,8 @@ def delete_column(idf, list_of_cols, print_impact=False):
 
     Returns
     -------
+    DataFrame
+        Dataframe after dropping columns
 
     """
     if isinstance(list_of_cols, str):
@@ -235,6 +239,8 @@ def select_column(idf, list_of_cols, print_impact=False):
 
     Returns
     -------
+    DataFrame
+        Dataframe with the selected columns
 
     """
     if isinstance(list_of_cols, str):
@@ -276,6 +282,8 @@ def rename_column(idf, list_of_cols, list_of_newcols, print_impact=False):
 
     Returns
     -------
+    DataFrame
+        Dataframe with revised column names
 
     """
     if isinstance(list_of_cols, str):
@@ -321,6 +329,8 @@ def recast_column(idf, list_of_cols, list_of_dtypes, print_impact=False):
 
     Returns
     -------
+    DataFrame
+        Dataframe with revised datatypes
 
     """
     if isinstance(list_of_cols, str):
