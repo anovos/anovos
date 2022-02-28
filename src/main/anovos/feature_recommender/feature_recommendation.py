@@ -520,7 +520,7 @@ def sankey_visualization(df, industry_included=False, usecase_included=False):
         else:
             name_target = "Recommended_Input_Attribute_Description"
         name_score = "Input_Attribute_Similarity_Score"
-        if industry_included != False or usecase_included != False:
+        if industry_included or usecase_included:
             print(
                 "Input is find_attr_by_relevance output DataFrame. There is no suggested Industry and/or Usecase."
             )
@@ -536,7 +536,7 @@ def sankey_visualization(df, industry_included=False, usecase_included=False):
     source = []
     target = []
     value = []
-    if industry_included == False and usecase_included == False:
+    if not industry_included and not usecase_included:
         source_list = df[name_source].unique().tolist()
         target_list = df[name_target].unique().tolist()
         label = source_list + target_list
@@ -544,7 +544,7 @@ def sankey_visualization(df, industry_included=False, usecase_included=False):
             source.append(label.index(str(df[name_source][i])))
             target.append(label.index(str(df[name_target][i])))
             value.append(float(df[name_score][i]))
-    elif industry_included == False and usecase_included != False:
+    elif not industry_included and usecase_included:
         source_list = df[name_source].unique().tolist()
         target_list = df[name_target].unique().tolist()
         raw_usecase_list = df[usecase_target].unique().tolist()
@@ -566,7 +566,7 @@ def sankey_visualization(df, industry_included=False, usecase_included=False):
                 source.append(label.index(str(df[name_target][i])))
                 target.append(label.index(str(item)))
                 value.append(float(1))
-    elif industry_included != False and usecase_included == False:
+    elif industry_included and not usecase_included:
         source_list = df[name_source].unique().tolist()
         target_list = df[name_target].unique().tolist()
         raw_industry_list = df[industry_target].unique().tolist()

@@ -716,7 +716,7 @@ def cat_to_num_unsupervised(
         if skipped_cols:
             warnings.warn(
                 "Columns dropped from one-hot encoding due to high cardinality: "
-                + (",").join(skipped_cols)
+                + ",".join(skipped_cols)
             )
     else:
         odf = odf_indexed
@@ -732,7 +732,7 @@ def cat_to_num_unsupervised(
                 odf = odf.drop(i).withColumnRenamed(i + "_index", i)
             odf = odf.select(idf.columns)
 
-    if (print_impact) & (method_type == 1):
+    if print_impact and method_type == 1:
         print("Before")
         idf.describe().where(F.col("summary").isin("count", "min", "max")).show(
             3, False
@@ -741,7 +741,7 @@ def cat_to_num_unsupervised(
         odf.describe().where(F.col("summary").isin("count", "min", "max")).show(
             3, False
         )
-    if (print_impact == True) & (method_type == 0):
+    if print_impact and method_type == 0:
         print("Before")
         idf.printSchema()
         print("After")
