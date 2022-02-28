@@ -8,6 +8,12 @@ from torch.hub import _get_torch_home
 
 
 def detect_model_path():
+    """
+
+    Returns
+    -------
+    Local Feature Explorer and Recommender semantic model path
+    """
     transformers_path = os.getenv("SENTENCE_TRANSFORMERS_HOME")
     if transformers_path is None:
         try:
