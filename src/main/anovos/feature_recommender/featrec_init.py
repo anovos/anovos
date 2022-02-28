@@ -12,7 +12,7 @@ def detect_model_path():
 
     Returns
     -------
-    Local Feature Explorer and Recommender semantic model path
+    Local Feature Explorer and Recommender semantic model path (if the model is pre-downloaded)
     """
     transformers_path = os.getenv("SENTENCE_TRANSFORMERS_HOME")
     if transformers_path is None:
@@ -33,9 +33,9 @@ def detect_model_path():
 
 
 def model_download():
-    print("Model download start")
+    print("Starting the Semantic Model download")
     SentenceTransformer("all-mpnet-base-v2")
-    print("Model download finish")
+    print("Model downloading finished")
 
 
 class _TransformerModel:
@@ -50,7 +50,7 @@ class _TransformerModel:
                 self._model = SentenceTransformer(model_path)
             else:
                 raise FileNotFoundError(
-                    "Model has not been downloaded. Please use model_download() function to download the model"
+                    "Model has not been downloaded. Please use model_download() function to download the model first"
                 )
         return self._model
 
@@ -63,7 +63,7 @@ def init_input_fer():
 
     Returns
     -------
-    Feature Explorer and Recommender Input DataFrame
+    Loading the Feature Explorer and Recommender (FER) Input DataFrame (FER corpus)
     """
     input_path_fer = "https://raw.githubusercontent.com/anovos/anovos/main/data/feature_recommender/flatten_fr_db.csv"
     df_input_fer = pd.read_csv(input_path_fer)
