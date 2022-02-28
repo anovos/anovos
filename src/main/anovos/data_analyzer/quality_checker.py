@@ -155,7 +155,7 @@ def nullRows_detection(
 
 
     Interpretation: 1306 rows (4.01% of total rows) have 7 missing columns and flagged for are removal because
-    null\_cols\_count is above the threshold.
+    `null_cols_count` is above the threshold.
 
     Parameters
     ----------
