@@ -1,5 +1,19 @@
 # coding=utf-8
 
+"""This module generates the intermediate output specific to the inspection of Time series analysis. 
+
+As a part of generation of final output, there are various functions created such as - 
+
+- ts_processed_feats
+- ts_eligiblity_check
+- ts_viz_data
+- ts_analyzer
+- daypart_cat
+
+Respective functions have sections containing the detailed definition of the parameters used for computing.
+
+"""
+
 import pyspark
 import datetime
 from pyspark.sql import functions as F
@@ -30,11 +44,13 @@ import numpy as np
 
 
 def daypart_cat(column):
-    
-    """"
+
+    """ "
+    This functioin helps to convert the input hour part into the respective day parts. The different dayparts are Early Hours, Work Hours, Late Hours, Commuting Hours, Other Hours based on the hour value.
+
     Parameters
     ----------
-    
+
     column
         Reads the column containing the hour part and converts into respective day part
 
@@ -42,7 +58,7 @@ def daypart_cat(column):
     -------
     """
 
-    #calculate hour buckets after adding local timezone
+    # calculate hour buckets after adding local timezone
 
     if column is None:
         return "Missing_NA"
@@ -63,16 +79,18 @@ f_daypart_cat = F.udf(daypart_cat, T.StringType())
 
 def ts_processed_feats(idf, col, id_col, tz, cnt_row, cnt_unique_id):
 
-    """"
+    """ "
+    This function helps to extract time units from the input dataframe on a processed column being timestamp / date.
+
     Parameters
     ----------
-    
+
     idf
         Input dataframe
     col
         Column belonging to timestamp / date
     id_col
-        ID column 
+        ID column
     tz
         Timezone offset
     cnt_row
@@ -82,7 +100,7 @@ def ts_processed_feats(idf, col, id_col, tz, cnt_row, cnt_unique_id):
 
     Returns
     -------
-    """    
+    """
 
     if cnt_row == cnt_unique_id:
 
@@ -133,24 +151,26 @@ def ts_processed_feats(idf, col, id_col, tz, cnt_row, cnt_unique_id):
 
 def ts_eligiblity_check(spark, idf, id_col, opt=1, tz_offset="local"):
 
-    """"
+    """ "
+    This function helps to extract various metrics which can help to understand the nature of timestamp / date column for a given dataset.
+
     Parameters
     ----------
-    
+
     spark
         Spark session
     idf
-        Input dataframe 
+        Input dataframe
     id_col
         ID Column
     opt
-        Option to choose between [1,2]. 1 is kept as default. Based on the user input, the specific aggregation of data will happen. 
+        Option to choose between [1,2]. 1 is kept as default. Based on the user input, the specific aggregation of data will happen.
     tz_offset
         Timezone offset (Option to chose between options like Local, GMT, UTC, etc.). Default option is set as "Local".
 
     Returns
     -------
-    """      
+    """
 
     lagged_df = lagged_ts(
         idf.select("yyyymmdd_col").distinct().orderBy("yyyymmdd_col"),
@@ -238,10 +258,13 @@ def ts_viz_data(
     n_cat=10,
 ):
 
-    """"
+    """ "
+
+    This function helps to produce the processed dataframe with the relevant aggregation at the time frequency chosen for a given column as seen against the timestamp / date column.
+
     Parameters
     ----------
-    
+
     idf
         Input Dataframe
     x_col
@@ -383,11 +406,13 @@ def ts_analyzer(
     run_type="local",
 ):
 
+    """ "
 
-    """"
+    This function helps to produce the processed output in an aggregate form considering the input dataframe with processed timestamp / date column. The aggregation happens across Mean, Median, Min & Max for the Numerical / Categorical column.
+
     Parameters
     ----------
-    
+
     spark
         Spark session
     idf
@@ -408,8 +433,6 @@ def ts_analyzer(
     Returns
     -------
     """
-
-
 
     if run_type == "local":
         local_path = output_path
