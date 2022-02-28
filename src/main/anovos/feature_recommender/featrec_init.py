@@ -1,6 +1,16 @@
-from anovos.feature_recommender.feature_exploration import *
 from re import finditer
 import copy
+import pandas as pd
+
+from feature_exploration import (
+    df_input_fer,
+    feature_desc_column,
+    feature_name_column,
+    industry_column,
+    usecase_column,
+    source_column,
+    model_fer,
+)
 
 
 def camel_case_split(input):
