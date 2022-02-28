@@ -30,7 +30,6 @@ def model_download():
     print("Model download start")
     SentenceTransformer("all-mpnet-base-v2")
     print("Model download finish")
-    return
 
 
 class _TransformerModel:
@@ -44,7 +43,7 @@ class _TransformerModel:
             if os.path.exists(model_path):
                 self._model = SentenceTransformer(model_path)
             else:
-                raise TypeError(
+                raise FileNotFoundError(
                     "Model has not been downloaded. Please use model_download() function to download the model"
                 )
         return self._model
