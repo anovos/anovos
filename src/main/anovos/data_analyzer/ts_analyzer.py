@@ -1,3 +1,5 @@
+# coding=utf-8
+
 import pyspark
 import datetime
 from pyspark.sql import functions as F
@@ -28,7 +30,20 @@ import numpy as np
 
 
 def daypart_cat(column):
-    """calculate hour buckets after adding local timezone"""
+    
+    """"
+    Parameters
+    ----------
+    
+    column
+        Reads the column containing the hour part and converts into respective day part
+
+    Returns
+    -------
+    """
+
+    #calculate hour buckets after adding local timezone
+
     if column is None:
         return "Missing_NA"
     elif (column >= 4) and (column < 7):
@@ -47,6 +62,27 @@ f_daypart_cat = F.udf(daypart_cat, T.StringType())
 
 
 def ts_processed_feats(idf, col, id_col, tz, cnt_row, cnt_unique_id):
+
+    """"
+    Parameters
+    ----------
+    
+    idf
+        Input dataframe
+    col
+        Column belonging to timestamp / date
+    id_col
+        ID column 
+    tz
+        Timezone offset
+    cnt_row
+        Count of rows present in the Input dataframe
+    cnt_unique_id
+        Count of unique records present in the Input dataframe
+
+    Returns
+    -------
+    """    
 
     if cnt_row == cnt_unique_id:
 
@@ -95,7 +131,26 @@ def ts_processed_feats(idf, col, id_col, tz, cnt_row, cnt_unique_id):
         return odf
 
 
-def ts_eligiblity_check(spark, idf, col, id_col, opt=1, tz_offset="local"):
+def ts_eligiblity_check(spark, idf, id_col, opt=1, tz_offset="local"):
+
+    """"
+    Parameters
+    ----------
+    
+    spark
+        Spark session
+    idf
+        Input dataframe 
+    id_col
+        ID Column
+    opt
+        Option to choose between [1,2]. 1 is kept as default. Based on the user input, the specific aggregation of data will happen. 
+    tz_offset
+        Timezone offset (Option to chose between options like Local, GMT, UTC, etc.). Default option is set as "Local".
+
+    Returns
+    -------
+    """      
 
     lagged_df = lagged_ts(
         idf.select("yyyymmdd_col").distinct().orderBy("yyyymmdd_col"),
@@ -182,6 +237,31 @@ def ts_viz_data(
     output_type="daily",
     n_cat=10,
 ):
+
+    """"
+    Parameters
+    ----------
+    
+    idf
+        Input Dataframe
+    x_col
+        Timestamp / Date column as set in the X-Axis
+    y_col
+        Numerical & Categorical column as set in the Y-Axis
+    id_col
+        ID Column
+    tz_offset
+        Timezone offset (Option to chose between options like Local, GMT, UTC, etc.). Default option is set as "Local".
+    output_mode
+        Option to choose between Append or Replace. If the option Append is selected, the column names are Appended by "_ts" else it's replaced by the original column name
+    output_type
+        Option to choose between "Daily" or "Weekly" or "Hourly". Daily is chosen as default. If "Daily" is selected as the output type, the daily view is populated ; If it's "Hourly", the view is shown at a Day part level. However, if it's "Weekly", then the display it per individual week days (1-7) as captured.
+    n_cat
+        For categorical columns whose cardinality is beyond N, the Top N categories are chosen, beyond which the categories are grouped as Others.
+
+    Returns
+    -------
+    """
 
     y_col_org = y_col
     y_col = y_col.replace("-", "_")
@@ -303,6 +383,34 @@ def ts_analyzer(
     run_type="local",
 ):
 
+
+    """"
+    Parameters
+    ----------
+    
+    spark
+        Spark session
+    idf
+        Input Dataframe
+    id_col
+        ID Column
+    max_days
+        Max days upto which the data will be aggregated. If we've a dataset containing a timestamp / date field with very high number of unique dates (Let's say beyond 20 years worth of daily data), a maximum days value chosen basis which the latest output is displayed.
+    output_path
+        Output path where the intermediate data is going to be saved
+    output_type
+        Option to choose between "Daily" or "Weekly" or "Hourly". Daily is chosen as default. If "Daily" is selected as the output type, the daily view is populated ; If it's "Hourly", the view is shown at a Day part level. However, if it's "Weekly", then the display it per individual week days (1-7) as captured.
+    tz_offset
+        Timezone offset (Option to chose between options like Local, GMT, UTC, etc.). Default option is set as "Local".
+    run_type
+        Option to choose between run type "Local" or "EMR" or "Azure" basis the user flexibility. Default option is set as "Local".
+
+    Returns
+    -------
+    """
+
+
+
     if run_type == "local":
         local_path = output_path
     else:
@@ -320,8 +428,6 @@ def ts_analyzer(
     cnt_row = idf.count()
     cnt_unique_id = idf.select(id_col).distinct().count()
 
-    print(ts_loop_cols_post)
-
     for i in ts_loop_cols_post:
 
         ts_processed_feat_df = ts_processed_feats(
@@ -330,11 +436,9 @@ def ts_analyzer(
         ts_processed_feat_df.persist()
 
         for j in range(1, 3):
-            print(i, j)
             f = ts_eligiblity_check(
                 spark,
                 ts_processed_feat_df,
-                i,
                 id_col=id_col,
                 opt=j,
                 tz_offset=tz_offset,
@@ -347,7 +451,6 @@ def ts_analyzer(
         for k in [num_cols, cat_cols]:
             for l in k:
                 for m in [output_type]:
-                    print(i, k, l, m)
                     f = (
                         ts_viz_data(
                             ts_processed_feat_df,
