@@ -1,3 +1,34 @@
+# coding=utf-8
+
+"""This module generates the final report output specific to the intermediate data generated across each of the modules. The final report, however, can be proccessed through the config.yaml file or by generating it through the respective functions. 
+
+Below are some of the functions used to process the final output.
+
+- line_chart_gen_stability
+- data_analyzer_output
+- drift_stability_ind
+- chart_gen_list
+- executive_summary_gen
+- wiki_generator
+- descriptive_statistics
+- quality_check
+- attribute_associations
+- data_drift_stability
+- plotSeasonalDecompose
+- gen_time_series_plots
+- list_ts_remove_append
+- ts_viz_1_1 — ts_viz_1_3
+- ts_viz_2_1 — ts_viz_2_3
+- ts_viz_3_1 — ts_viz_3_3
+- ts_landscape
+- ts_stats
+- ts_viz_generate
+- anovos_report
+
+However, each of the functions have been detailed in the respective sections across the parameters used. 
+
+"""
+
 import json
 import os
 import subprocess
@@ -44,6 +75,8 @@ default_template = (
 def remove_u_score(col):
     """
 
+    This functions help to remove the "_" present in a specific text
+
     Parameters
     ----------
     col
@@ -66,7 +99,10 @@ def remove_u_score(col):
 
 
 def line_chart_gen_stability(df1, df2, col):
+
     """
+
+    This function helps to produce charts which are specific to data stability index. It taken into account the stability input along with the analysis column to produce the desired output.
 
     Parameters
     ----------
@@ -191,7 +227,10 @@ def line_chart_gen_stability(df1, df2, col):
 
 
 def data_analyzer_output(master_path, avl_recs_tab, tab_name):
+
     """
+
+    This section produces output in form of datapane objects which is specific to the different data analyzer modules. It is used by referring to the Master path along with the Available list of metrics & the Tab name.
 
     Parameters
     ----------
@@ -426,7 +465,11 @@ def data_analyzer_output(master_path, avl_recs_tab, tab_name):
 def drift_stability_ind(
     missing_recs_drift, drift_tab, missing_recs_stability, stability_tab
 ):
-    """missing_recs_drift: Missing files from the drift tab
+    """
+
+    This function helps to produce the drift & stability indicator for further processing. Ideally a data with both drift & stability should produce a list of [1,1]
+
+    missing_recs_drift: Missing files from the drift tab
         drift_tab: "drift_statistics"
     missing_recs_stability: Missing files from the stability tab
         stability_tab:"stability_index, stabilityIndex_metrics"
@@ -466,7 +509,11 @@ def drift_stability_ind(
 
 
 def chart_gen_list(master_path, chart_type, type_col=None):
+
     """
+
+    This function helps to produce the charts in a list object form nested by a datapane object.
+
 
     Parameters
     ----------
@@ -527,6 +574,8 @@ def executive_summary_gen(
     print_report=False,
 ):
     """
+
+    This function helps to produce output specific to the Executive Summary Tab.
 
     Parameters
     ----------
@@ -935,6 +984,7 @@ def wiki_generator(
     master_path, dataDict_path=None, metricDict_path=None, print_report=False
 ):
     """
+    This function helps to produce output specific to the Wiki Tab.
 
     Parameters
     ----------
@@ -1032,6 +1082,8 @@ def descriptive_statistics(
     print_report=False,
 ):
     """
+
+    This function helps to produce output specific to the Descriptive Stats Tab.
 
     Parameters
     ----------
@@ -1211,6 +1263,8 @@ def quality_check(
 ):
     """
 
+    This function helps to produce output specific to the Quality Checker Tab.
+
     Parameters
     ----------
     master_path
@@ -1378,6 +1432,8 @@ def attribute_associations(
 ):
     """
 
+    This function helps to produce output specific to the Attribute Association Tab.
+
     Parameters
     ----------
     master_path
@@ -1531,6 +1587,8 @@ def data_drift_stability(
     print_report=False,
 ):
     """
+
+    This function helps to produce output specific to the Data Drift & Stability Tab.
 
     Parameters
     ----------
@@ -2054,6 +2112,8 @@ def plotSeasonalDecompose(
 
     """
 
+    This function helps to produce output specific to the Seasonal Decomposition of Time Series. Ideally it's expected to source a data containing atleast 2 cycles or 24 months as the most.
+
     Parameters
     ----------
     base_path
@@ -2165,6 +2225,8 @@ def gen_time_series_plots(base_path, x_col, y_col, time_cat):
 
     """
 
+    This function helps to produce Time Series Plots by sourcing the aggregated data as Daily/Hourly/Weekly level.
+
     Parameters
     ----------
     base_path
@@ -2179,7 +2241,7 @@ def gen_time_series_plots(base_path, x_col, y_col, time_cat):
     Returns
     -------
 
-    """    
+    """
 
     df = pd.read_csv(
         ends_with(base_path) + x_col + "_" + y_col + "_" + time_cat + ".csv"
@@ -2416,13 +2478,16 @@ def list_ts_remove_append(l, opt):
 
     """
 
+    This function helps to remove or append "_ts" from any list.
+
+
     Parameters
     ----------
     l
         List containing column name
     opt
         Option to choose between 1 & Others to enable the functionality of removing or appending "_ts" within the elements of a list
-    
+
     Returns
     -------
 
@@ -2453,7 +2518,6 @@ blank_chart.update_xaxes(visible=False)
 blank_chart.update_yaxes(visible=False)
 
 
-
 def ts_viz_1_1(base_path, x_col, y_col, output_type="daily"):
 
     """
@@ -2472,7 +2536,7 @@ def ts_viz_1_1(base_path, x_col, y_col, output_type="daily"):
     Returns
     -------
 
-    """      
+    """
 
     ts_fig = gen_time_series_plots(base_path, x_col, y_col, output_type)
 
@@ -2654,7 +2718,7 @@ def ts_viz_2_2(base_path, ts_col, col_list):
     Returns
     -------
 
-    """    
+    """
 
     bl = []
 
@@ -2680,11 +2744,11 @@ def ts_viz_2_3(base_path, ts_col, num_cols):
         Timestamp / date column name
     num_cols
         Numerical column names
-    
+
     Returns
     -------
 
-    """    
+    """
 
     ts_v = []
 
@@ -2742,6 +2806,8 @@ def ts_landscape(base_path, ts_cols, id_col):
 
     """
 
+    This function helps to produce a basic landscaping view of the data by picking up the base path for reading the aggregated data and specified by the timestamp / date column & the ID column.
+
     Parameters
     ----------
     base_path
@@ -2754,7 +2820,7 @@ def ts_landscape(base_path, ts_cols, id_col):
     Returns
     -------
 
-    """    
+    """
 
     if ts_cols is None:
 
@@ -2854,7 +2920,7 @@ def lambda_cat(val):
     Returns
     -------
 
-    """    
+    """
 
     if val < -1:
         return "Reciprocal Square Transform"
@@ -2888,7 +2954,7 @@ def ts_viz_3_1(base_path, x_col, y_col):
     Returns
     -------
 
-    """    
+    """
 
     ts_fig = []
 
@@ -3021,7 +3087,7 @@ def ts_viz_3_2(base_path, ts_col, col_list):
     Returns
     -------
 
-    """    
+    """
 
     bl = []
 
@@ -3052,7 +3118,7 @@ def ts_viz_3_3(base_path, ts_col, num_cols):
     Returns
     -------
 
-    """    
+    """
 
     ts_v = []
     tt = ts_col
@@ -3071,6 +3137,8 @@ def ts_stats(base_path):
 
     """
 
+    This function helps to read the base data containing desired input and produces output specific to the `ts_cols_stats.csv` file
+
     Parameters
     ----------
     base_path
@@ -3078,7 +3146,7 @@ def ts_stats(base_path):
     Returns
     -------
 
-    """ 
+    """
 
     df = pd.read_csv(base_path + "ts_cols_stats.csv")
 
@@ -3101,7 +3169,6 @@ def ts_stats(base_path):
 
     c5 = list_ts_remove_append(all_stats[5], 1)
     c6 = list_ts_remove_append(all_stats[6], 1)
-    
 
     return c0, c1, c2, c3, c4, c5, c6
 
@@ -3110,6 +3177,9 @@ def ts_viz_generate(master_path, id_col, print_report=False, output_type="daily"
 
     """
 
+    This function helps to produce the output in the nested / recursive function supported by datapane. Eventually this is populated at the final report.
+
+
     Parameters
     ----------
     master_path
@@ -3117,14 +3187,14 @@ def ts_viz_generate(master_path, id_col, print_report=False, output_type="daily"
     id_col
         ID Column
     print_report
-        Option to specify whether the Report needs to be saved or not. True / False can be used to specify the needful. 
+        Option to specify whether the Report needs to be saved or not. True / False can be used to specify the needful.
     output_type
         Time category of analysis which can be between "Daily", "Hourly", "Weekly"
 
     Returns
     -------
 
-    """    
+    """
 
     try:
         c0, c1, c2, c3, c4, c5, c6 = ts_stats(master_path)
@@ -3200,6 +3270,8 @@ def anovos_report(
     output_type="daily",
 ):
     """
+
+    This function actually helps to produce the final report by scanning through the output processed from the data analyzer module.
 
     Parameters
     ----------
