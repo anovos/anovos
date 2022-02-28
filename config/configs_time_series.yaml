@@ -1,0 +1,147 @@
+#input_dataset: ETL configurations of main dataset.
+#input_dataset can be renamed but need to change the name in main script as well
+#keys of input_dataset are function names (cannot be renamed) & values are function arguments (value can be null to skip except for read_dataset)
+#delete_column/select_column: arguments can be in front or under as list_of_cols
+#list_of_cols: list or string with multiple columns separated by | (refer doc string for further details)
+input_dataset:
+  read_dataset:
+    file_path: "data/time_series_data/csv"
+    file_type: csv
+    file_configs:
+      header: True
+      delimiter: ","
+      inferSchema: True
+  delete_column: null
+  select_column: null
+
+timeseries_analyzer:
+  auto_detection: True
+  id_col: 'STATE'
+  tz_offset: 'local'
+  inspection: True
+  analysis_level: 'daily'
+  max_days: 3600
+
+anovos_basic_report:
+  basic_report: False
+  report_args:
+    id_col: STATE
+    label_col: null
+    event_label: null
+    output_path: report_stats
+
+#if anovos_basic_report.basic_report is True, then all configs below are ignored.
+stats_generator:
+  metric: ['global_summary','measures_of_counts','measures_of_centralTendency','measures_of_cardinality'
+            ,'measures_of_percentiles','measures_of_dispersion','measures_of_shape']
+  metric_args:
+    list_of_cols: all
+    drop_cols: ['STATE']
+
+quality_checker:
+  duplicate_detection:
+    list_of_cols: all
+    drop_cols: ['STATE']
+    treatment: True
+  
+  nullRows_detection:
+    list_of_cols: all
+    drop_cols: []
+    treatment: True
+    treatment_threshold: 0.75
+  
+  invalidEntries_detection:
+    list_of_cols: all
+    drop_cols: ['STATE']
+    treatment: True
+    output_mode: replace
+  
+  IDness_detection:
+    list_of_cols: all
+    drop_cols: ['STATE']
+    treatment: True
+    treatment_threshold: 0.9
+  
+  biasedness_detection:
+    list_of_cols: all
+    drop_cols: ['STATE']
+    treatment: True
+    treatment_threshold: 0.98
+
+  nullColumns_detection:
+    list_of_cols: all
+    drop_cols: ['STATE']
+    treatment: True
+    treatment_method: MMM
+    treatment_configs:
+      method_type: median
+      pre_existing_model: False
+      model_path: NA
+      output_mode: replace
+
+
+association_evaluator:
+
+  correlation_matrix:
+    list_of_cols: all
+    drop_cols: ['STATE']
+  
+  IV_calculation:
+    list_of_cols: all
+    drop_cols: STATE
+    label_col: null
+    event_label: null
+    encoding_configs:
+      bin_method: equal_frequency
+      bin_size: 10
+      monotonicity_check: 0
+
+  variable_clustering:
+    list_of_cols: all
+    drop_cols: 'STATE'
+
+
+report_preprocessing:
+  master_path: 'report_stats'
+  charts_to_objects:
+    list_of_cols: all
+    drop_cols: STATE
+    label_col: null
+    event_label: null
+    bin_method: equal_frequency
+    bin_size: 10
+    drift_detector: False
+    outlier_charts: False
+    source_path: "NA"
+
+report_generation:
+  master_path: 'report_stats'
+  id_col: 'STATE'
+  label_col: null
+  corr_threshold: 0.4
+  iv_threshold: 0.02
+  drift_threshold_model: 0.1
+  dataDict_path: 'data/time_series_data/data_dictionary.csv'
+  metricDict_path: 'data/metric_dictionary.csv'
+  final_report_path: 'report_stats'
+
+write_intermediate:
+  file_path: "intermediate_data"
+  file_type: csv
+  file_configs:
+    mode: overwrite
+    header: True
+    delimiter: ","
+    inferSchema: True
+
+write_main:
+  file_path: "output"
+  file_type: parquet
+  file_configs:
+    mode: overwrite
+    
+write_stats:
+  file_path: "stats"
+  file_type: parquet
+  file_configs:
+    mode: overwrite
