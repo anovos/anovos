@@ -1,6 +1,5 @@
 import subprocess
 from pathlib import Path
-
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -19,6 +18,9 @@ from anovos.data_transformer.transformers import (
     attribute_binning,
 )
 from anovos.shared.utils import attributeType_segregation, ends_with
+import warnings
+
+warnings.filterwarnings("ignore")
 
 global_theme = px.colors.sequential.Plasma
 global_theme_r = px.colors.sequential.Plasma_r
