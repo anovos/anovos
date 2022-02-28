@@ -1,8 +1,9 @@
-from anovos.feature_recommender.featrec_init import *
-import re
-import plotly.graph_objects as go
 import random
-import matplotlib.pyplot as plt
+import re
+
+import plotly.graph_objects as go
+
+from anovos.feature_recommender.featrec_init import *
 
 
 def feature_recommendation(
