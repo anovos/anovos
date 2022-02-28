@@ -29,9 +29,9 @@ def read_dataset(spark, file_path, file_type, file_configs={}):
         Path to input data (directory or filename).
         Compatible with local path and s3 path (when running in AWS environment).
     file_type
-        "csv", "parquet", "avro", "json". 
-        Avro data source requires an external package to run, which can be configured with spark-submit 
-        (--packages org.apache.spark:spark-avro_2.11:2.4.0). 
+        "csv", "parquet", "avro", "json".
+        Avro data source requires an external package to run, which can be configured with spark-submit
+        (--packages org.apache.spark:spark-avro_2.11:2.4.0).
     file_configs
         This optional argument is passed in a dictionary format as key/value pairs
         e.g. {"header": "True","delimiter": "|","inferSchema": "True"} for csv files.
@@ -56,17 +56,17 @@ def write_dataset(idf, file_path, file_type, file_configs={}, column_order=[]):
     idf
         Input Dataframe i.e. Spark DataFrame to be saved
     file_path
-        Path to output data (directory or filename). Compatible with local path and s3 path (when running in AWS environment). 
+        Path to output data (directory or filename). Compatible with local path and s3 path (when running in AWS environment).
     file_type
-        "csv", "parquet", "avro", "json". 
-        Avro data source requires an external package to run, which can be configured with spark-submit 
-        (--packages org.apache.spark:spark-avro_2.11:2.4.0). 
+        "csv", "parquet", "avro", "json".
+        Avro data source requires an external package to run, which can be configured with spark-submit
+        (--packages org.apache.spark:spark-avro_2.11:2.4.0).
     file_configs
-        This argument is passed in dictionary format as key/value pairs. Some of the potential keys are header, delimiter, 
-        mode, compression, repartition. 
-        compression options - uncompressed, gzip (doesn't work with avro), snappy (only valid for parquet) 
-        mode options - error (default), overwrite, append repartition - None (automatic partitioning) or an integer value () 
-        e.g. {"header":"True", "delimiter":",",'compression':'snappy','mode':'overwrite','repartition':'10'}. 
+        This argument is passed in dictionary format as key/value pairs. Some of the potential keys are header, delimiter,
+        mode, compression, repartition.
+        compression options - uncompressed, gzip (doesn't work with avro), snappy (only valid for parquet)
+        mode options - error (default), overwrite, append repartition - None (automatic partitioning) or an integer value ()
+        e.g. {"header":"True", "delimiter":",",'compression':'snappy','mode':'overwrite','repartition':'10'}.
         All the key/value pairs (except repartition, mode) written in this argument are passed as options to DataFrameWriter is available using
         Dataset.write operator. If the number of repartitions mentioned through this argument is less than the existing
         DataFrame partitions, then the coalesce operation is used instead of the repartition operation to make the
@@ -128,11 +128,11 @@ def concatenate_dataset(*idfs, method_type="name"):
     *idfs
         All dataframes to be concatenated (with the first dataframe columns)
     method_type
-        "index", "name". This argument needs to be passed as a keyword argument. 
-        The “index” method concatenates the dataframes by the column index (without shuffling columns). 
+        "index", "name". This argument needs to be passed as a keyword argument.
+        The “index” method concatenates the dataframes by the column index (without shuffling columns).
         If the sequence of column is not fixed among the dataframe, this method should be avoided.
-        The “name” method concatenates after shuffling and arranging columns as per the first dataframe order. 
-        First dataframe passed under idfs will define the final columns in the concatenated dataframe, and 
+        The “name” method concatenates after shuffling and arranging columns as per the first dataframe order.
+        First dataframe passed under idfs will define the final columns in the concatenated dataframe, and
         will throw error if any column in first dataframe is not available in any of other dataframes. (Default value = "name")
 
     Returns
