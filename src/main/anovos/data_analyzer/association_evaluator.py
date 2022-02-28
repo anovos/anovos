@@ -1,37 +1,26 @@
-"""This submodule focuses on understanding the interaction between different attributes and/or the relationship
+# coding=utf-8
+"""
+This submodule focuses on understanding the interaction between different attributes and/or the relationship
 between an attribute & the binary target variable.
 
 Association between attributes is measured by:
-
 - correlation_matrix
 - variable_clustering
-- Association between an attribute and binary target is measured by:
-	- IV_calculation
-	- IG_calculation
 
-Columns which are subjected to these analysis can be controlled by right combination of arguments - list_of_cols and
-drop_cols. All functions have following common arguments:
+Association between an attribute and binary target is measured by:
+- IV_calculation
+- IG_calculation
 
-- **idf**: Input dataframe - **ist_of_cols**: This argument, in a list format, is used to specify the columns which
-are subjected to the analysis in the input dataframe. Alternatively, instead of list, columns can be specified in a
-single text format where different column names are separated by pipe delimiter “|”. The user can also use “all” as
-an input to this argument to consider all columns. This is super useful instead of specifying all column names
-manually. - **drop_cols**: This argument, in a list format, is used to specify the columns which needs to be dropped
-from list_of_cols. Alternatively, instead of list, columns can be specified in a single text format where different
-column names are separated by pipe delimiter “|”. It is most useful when used coupled with “all” value of
-list_of_cols, when we need to consider all columns except few handful of them. - **print_impact**: This argument is
-to print out the statistics. """
-# coding=utf-8
+"""
+
 import itertools
 import math
-
 import pyspark
 from phik.phik import spark_phik_matrix_from_hist2d_dict
 from popmon.analysis.hist_numpy import get_2dgrid
 from pyspark.sql import Window
 from pyspark.sql import functions as F
 from varclushi import VarClusHi
-
 from anovos.data_analyzer.stats_generator import uniqueCount_computation
 from anovos.data_ingest.data_ingest import read_dataset
 from anovos.data_transformer.transformers import (
@@ -46,7 +35,8 @@ from anovos.shared.utils import attributeType_segregation
 def correlation_matrix(
     spark, idf, list_of_cols="all", drop_cols=[], stats_unique={}, print_impact=False
 ):
-    """This function calculates correlation coefficient statistical, which measures the strength of the relationship
+    """
+    This function calculates correlation coefficient statistical, which measures the strength of the relationship
     between the relative movements of two attributes. Pearson’s correlation coefficient is a standard approach of
     measuring correlation between two variables. However, it has some drawbacks: a) It works only with continuous
     variables, b) It only accounts for a linear relationship between variables, and c) It is sensitive to outliers.
@@ -66,9 +56,6 @@ def correlation_matrix(
     between attribute X and Y can be found at intersection of a) row with value X in ‘attribute’ column and b) column
     ‘Y’ (or row with value Y in ‘attribute’ column and column ‘X’).
 
-    - **idf** - **list_of_cols** - **drop_cols** - **stats_unique**: Arguments corresponding to read_dataset function
-    in dictionary format, to read output from measures_of_cardinality function of stats generator. - **print_impact**
-
     Parameters
     ----------
     spark
@@ -79,19 +66,22 @@ def correlation_matrix(
         List of columns to analyse e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-        "all" can be passed to include all columns for analysis.
-        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
-        drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
+        "all" can be passed to include all columns for analysis. This is super useful instead of specifying all column names manually.
+        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in drop_cols argument
+        is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
     drop_cols
         List of columns to be dropped e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
+        a few handful of them. (Default value = [])
     stats_unique
         Takes arguments for read_dataset (data_ingest module) function in a dictionary format
         to read pre-saved statistics on unique value count i.e. if measures_of_cardinality or
         uniqueCount_computation (data_analyzer.stats_generator module) has been computed & saved before. (Default value = {})
     print_impact
-        True, False (Default value = False)
+        True, False
+        This argument is to print out the statistics.(Default value = False)
 
     Returns
     -------
@@ -158,7 +148,8 @@ def variable_clustering(
     stats_mode={},
     print_impact=False,
 ):
-    """Variable Clustering groups attributes that are as correlated as possible among themselves within a cluster and
+    """
+    Variable Clustering groups attributes that are as correlated as possible among themselves within a cluster and
     as uncorrelated as possible with attribute in other clusters. The function is leveraging [VarClusHi] [2] library
     to do variable clustering; however, this library is not implemented in a scalable manner due to which the
     analysis is done on a sample dataset. Further, it is found to be a bit computational expensive especially when
@@ -171,13 +162,6 @@ def variable_clustering(
     RS_Ratio) can be chosen as a representative of the cluster while discarding the other attributes from that
     cluster. This can also help in achieving the dimension reduction, if required.
 
-    - **idf** - **list_of_cols** - **drop_cols** - **sample_size**: Sample size used for performing variable cluster.
-    Default is 100,000. - **stats_unique**: Arguments corresponding to read_dataset function in dictionary format,
-    to read output from measures_of_cardinality function of stats generator. This is used to remove single value
-    columns from the analysis purpose. - **stats_mode**: Arguments corresponding to read_dataset function in
-    dictionary format, to read output from measures_of_centralTendency function of stats generator. This is used for
-    MMM imputation as Variable Clustering doesn’t work with missing values. - **print_impact**
-
     Parameters
     ----------
     spark
@@ -188,26 +172,31 @@ def variable_clustering(
         List of columns to analyse e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-        "all" can be passed to include all columns for analysis.
-        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
-        drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
+        "all" can be passed to include all columns for analysis. This is super useful instead of specifying all column names manually.
+        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in drop_cols argument
+        is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
     drop_cols
         List of columns to be dropped e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
+        a few handful of them. (Default value = [])
     sample_size
         Maximum sample size (in terms of number of rows) taken for the computation.
         Sample dataset is extracted using random sampling. (Default value = 100000)
     stats_unique
         Takes arguments for read_dataset (data_ingest module) function in a dictionary format
         to read pre-saved statistics on unique value count i.e. if measures_of_cardinality or
-        uniqueCount_computation (data_analyzer.stats_generator module) has been computed & saved before. (Default value = {})
+        uniqueCount_computation (data_analyzer.stats_generator module) has been computed & saved before.
+        This is used to remove single value columns from the analysis purpose. (Default value = {})
     stats_mode
         Takes arguments for read_dataset (data_ingest module) function in a dictionary format
         to read pre-saved statistics on most frequently seen values i.e. if measures_of_centralTendency or
-        mode_computation (data_analyzer.stats_generator module) has been computed & saved before. (Default value = {})
+        mode_computation (data_analyzer.stats_generator module) has been computed & saved before.
+        This is used for MMM imputation as Variable Clustering doesn’t work with missing values. (Default value = {})
     print_impact
-        True, False (Default value = False)
+        True, False
+        This argument is to print out the statistics.(Default value = False)
 
     Returns
     -------
@@ -287,7 +276,8 @@ def IV_calculation(
     },
     print_impact=False,
 ):
-    """Information Value (IV) is simple and powerful technique to conduct attribute relevance analysis. It measures
+    """
+    Information Value (IV) is simple and powerful technique to conduct attribute relevance analysis. It measures
     how well an attribute is able to distinguish between a binary target variable i.e. label 0 from label 1,
     and hence helps in ranking attributes on the basis of their importance. In the heart of IV methodology are groups
     (bins) of observations. For categorical attributes, usually each category is a bin while numerical attributes
@@ -303,13 +293,6 @@ def IV_calculation(
     b) the WOE should be monotonic, i.e. either growing or decreasing with the bins, and c) missing values should be
     binned separately. An article  from listendata.com can be referred for good understanding of IV & WOE concepts.
 
-    - **idf** - **list_of_cols** - **drop_cols** - **label_col**: Name of label or target column in the input dataset
-    - **event_label**: Value of event (label 1) in the label column - **encoding_configs**: This argument takes input
-    in dictionary format with keys related to binning operation - 'bin_method' (default 'equal_frequency'),
-    'bin_size' (default 10) and 'monotonicity_check' (default 0). monotonicity_check of 1 will dynamically calculate
-    the bin_size ensuring monotonic nature and can be expensive operation. - **print_impact**
-
-
     Parameters
     ----------
     spark
@@ -320,32 +303,29 @@ def IV_calculation(
         List of columns to analyse e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-        "all" can be passed to include all columns for analysis.
-        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
-        drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
+        "all" can be passed to include all columns for analysis. This is super useful instead of specifying all column names manually.
+        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in drop_cols argument
+        is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
     drop_cols
         List of columns to be dropped e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
+        a few handful of them. (Default value = [])
     label_col
         Label/Target column (Default value = "label")
     event_label
         Value of (positive) event (i.e label 1) (Default value = 1)
     encoding_configs
-        Takes input in dictionary format. Default {} i.e. empty dict means no encoding is required.
+        Takes input in dictionary format. {} i.e. empty dict means no encoding is required.
         In case numerical columns are present and encoding is required, following keys shall be
-        provided - "bin_size" i.e. no. of bins for converting the numerical columns to categorical,
-        "bin_method" i.e. method of binning - "equal_frequency" or "equal_range" and
+        provided - "bin_size" (Default value = 10) i.e. no. of bins for converting the numerical columns to categorical,
+        "bin_method" i.e. method of binning - "equal_frequency" or "equal_range" (Default value = "equal_frequency") and
         "monotonicity_check" 1 for monotonic binning else 0. monotonicity_check of 1 will
-        dynamically calculate the bin_size ensuring monotonic nature but can be expensive operation.
+        dynamically calculate the bin_size ensuring monotonic nature but can be expensive operation (Default value = 0).
     print_impact
-        True, False (Default value = False)
-    "bin_size": 10
-
-    "monotonicity_check": 0
-
-    }
-
+        True, False
+        This argument is to print out the statistics.(Default value = False)
 
     Returns
     -------
@@ -444,7 +424,8 @@ def IG_calculation(
     },
     print_impact=False,
 ):
-    """Information Gain (IG) is another powerful technique for feature selection analysis. Information gain is
+    """
+    Information Gain (IG) is another powerful technique for feature selection analysis. Information gain is
     calculated by comparing the entropy of the dataset before and after a transformation (introduction of attribute
     in this particular case). Similar to IV calculation, each category is a bin for categorical attributes,
     while numerical attributes need to be split into categories.
@@ -454,12 +435,6 @@ def IG_calculation(
     Total Entropy= -%event*log⁡(%event)-(1-%event)*log⁡(1-%event)
 
     Entropy = ∑(-%〖event〗_i*log⁡(%〖event〗_i )-(1-%〖event〗_i )*log⁡(1-%〖event〗_i)
-
-    - **idf** - **list_of_cols** - **drop_cols** - **label_col**: Name of label or target column in the input dataset
-    - **event_label**: Value of event (label 1) in the label column - **encoding_configs**: This argument takes input
-    in dictionary format with keys related to binning operation - 'bin_method' (default 'equal_frequency'),
-    'bin_size' (default 10) and 'monotonicity_check' (default 0). monotonicity_check of 1 will dynamically calculate
-    the bin_size ensuring monotonic nature and can be expensive operation. - **print_impact**
 
 
     Parameters
@@ -472,31 +447,29 @@ def IG_calculation(
         List of columns to analyse e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-        "all" can be passed to include all columns for analysis.
-        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
-        drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
+        "all" can be passed to include all columns for analysis. This is super useful instead of specifying all column names manually.
+        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in drop_cols argument
+        is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
     drop_cols
         List of columns to be dropped e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
+        a few handful of them. (Default value = [])
     label_col
         Label/Target column (Default value = "label")
     event_label
         Value of (positive) event (i.e label 1) (Default value = 1)
     encoding_configs
-        Takes input in dictionary format. Default {} i.e. empty dict means no encoding is required.
+        Takes input in dictionary format. {} i.e. empty dict means no encoding is required.
         In case numerical columns are present and encoding is required, following keys shall be
-        provided - "bin_size" i.e. no. of bins for converting the numerical columns to categorical,
-        "bin_method" i.e. method of binning - "equal_frequency" or "equal_range" and
+        provided - "bin_size" (Default value = 10) i.e. no. of bins for converting the numerical columns to categorical,
+        "bin_method" i.e. method of binning - "equal_frequency" or "equal_range" (Default value = "equal_frequency") and
         "monotonicity_check" 1 for monotonic binning else 0. monotonicity_check of 1 will
-        dynamically calculate the bin_size ensuring monotonic nature but can be expensive operation.
+        dynamically calculate the bin_size ensuring monotonic nature but can be expensive operation (Default value = 0).
     print_impact
-        True, False (Default value = False)
-    "bin_size": 10
-
-    "monotonicity_check": 0
-
-    }
+        True, False
+        This argument is to print out the statistics.(Default value = False)
 
 
     Returns
