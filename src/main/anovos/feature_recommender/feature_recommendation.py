@@ -414,9 +414,9 @@ def find_attr_by_relevance(
             i
         ]
         top_results = np.argpartition(-cos_scores, range(len(list_user)))[
-            0 : len(list_user)
+            0: len(list_user)
         ]
-        for idx in top_results[0 : len(list_user)]:
+        for idx in top_results[0: len(list_user)]:
             single_score = "%.4f" % (cos_scores[idx])
             if float(single_score) >= threshold:
                 if name_column is None:
