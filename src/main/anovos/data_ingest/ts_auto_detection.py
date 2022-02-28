@@ -10,9 +10,7 @@ from anovos.data_analyzer.stats_generator import measures_of_percentiles
 from anovos.data_transformer.datetime import (
     timeUnits_extraction,
     unix_to_timestamp,
-    lagged_ts,
-)
-
+    lagged_ts)
 import csv
 import io
 import os
@@ -24,28 +22,7 @@ import dateutil.parser
 import pandas as pd
 import numpy as np
 
-
-def daypart_cat(column):
-    """calculate hour buckets after adding local timezone"""
-    if column is None:
-        return "Missing_NA"
-    elif (column >= 4) and (column < 7):
-        return "early_hours"
-    elif (column >= 10) and (column < 17):
-        return "work_hours"
-    elif (column >= 23) or (column < 4):
-        return "late_hours"
-    elif ((column >= 7) and (column < 10)) or ((column >= 17) and (column < 20)):
-        return "commuting_hours"
-    else:
-        return "other_hours"
-
-
-f_daypart_cat = F.udf(daypart_cat, T.StringType())
-
-
 ###regex based ts parser function
-
 
 def regex_date_time_parser(
     spark,
@@ -58,6 +35,33 @@ def regex_date_time_parser(
     save_output=None,
     output_mode="replace",
 ):
+
+    """"
+    Parameters
+    ----------
+    
+    spark
+        Spark session
+    idf
+        Input dataframe
+    id_col
+        ID Column
+    col
+        Column passed for Auto detection of Timestamp / date type
+    tz
+        Timezone offset (Option to chose between options like Local, GMT, UTC, etc.). Default option is set as "Local".
+    val_unique_cat
+        Maximum character length of the field.
+    trans_cat
+        Custom data type basis which further processing will be conditioned.
+    save_output
+        Output path where the transformed ddata can be saved
+    output_mode
+        Option to choose between Append or Replace. If the option Append is selected, the column names are Appended by "_ts" else it's replaced by the original column name
+
+    Returns
+    -------
+    """
 
     REGEX_PARTS = {
         "Y": r"(?:19[4-9]\d|20[0-3]\d)",  # 1940 to 2039
@@ -583,6 +587,20 @@ def regex_date_time_parser(
 
 def ts_loop_cols_pre(idf, id_col):
 
+
+    """"
+    Parameters
+    ----------
+    
+    idf
+        Input dataframe
+    id_col
+        ID Column
+
+    Returns
+    -------
+    """    
+
     lc1, lc2, lc3 = [], [], []
     for i in idf.dtypes:
         try:
@@ -632,25 +650,28 @@ def ts_loop_cols_pre(idf, id_col):
     return lc1, lc2, lc3
 
 
-def list_ts_remove_append(l, opt):
-    ll = []
-    if opt == 1:
-        for i in l:
-            if i[-3:] == "_ts":
-                ll.append(i[0:-3:])
-            else:
-                ll.append(i)
-        return ll
-    else:
-        for i in l:
-            if i[-3:] == "_ts":
-                ll.append(i)
-            else:
-                ll.append(i + "_ts")
-        return ll
-
-
 def ts_preprocess(spark, idf, id_col, output_path, tz_offset="local", run_type="local"):
+
+    """"
+    Parameters
+    ----------
+    
+    spark
+        Spark session
+    idf
+        Input dataframe
+    id_col
+        ID Column
+    output_path
+        Output path where the data would be saved
+    tz_offset
+        Timezone offset (Option to chose between options like Local, GMT, UTC, etc.). Default option is set as "Local".
+    run_type
+        Option to choose between run type "Local" or "EMR" or "Azure" basis the user flexibility. Default option is set as "Local".
+
+    Returns
+    -------
+    """    
 
     if run_type == "local":
         local_path = output_path
@@ -675,15 +696,12 @@ def ts_preprocess(spark, idf, id_col, output_path, tz_offset="local", run_type="
     ts_loop_cols = [ts_loop_col_dtls[0][i] for i in l1]
 
     pre_exist_ts_cols = [ts_loop_col_dtls[0][i] for i in l2]
-    print(ts_loop_cols)
-    print(pre_exist_ts_cols)
 
     for i in ts_loop_cols:
         try:
             idx = ts_loop_col_dtls[0].index(i)
             val_unique_cat = ts_loop_col_dtls[2][idx]
             trans_cat = ts_loop_col_dtls[1][idx]
-            print(i, val_unique_cat, trans_cat)
             idf = regex_date_time_parser(
                 spark,
                 idf,
