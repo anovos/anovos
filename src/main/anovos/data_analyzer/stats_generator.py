@@ -327,7 +327,7 @@ def mode_computation(spark, idf, list_of_cols="all", drop_cols=[], print_impact=
         List of Discrete (Categorical + Integer) columns to analyse e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-        "all" can be passed to include all discret columns for analysis. This is super useful instead of specifying all column names manually.
+        "all" can be passed to include all discrete columns for analysis. This is super useful instead of specifying all column names manually.
         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in drop_cols argument
         is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
     drop_cols
@@ -503,7 +503,7 @@ def uniqueCount_computation(
         List of Discrete (Categorical + Integer) columns to analyse e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-        "all" can be passed to include all discret columns for analysis. This is super useful instead of specifying all column names manually.
+        "all" can be passed to include all discrete columns for analysis. This is super useful instead of specifying all column names manually.
         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in drop_cols argument
         is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
     drop_cols
@@ -582,7 +582,7 @@ def measures_of_cardinality(
         List of Discrete (Categorical + Integer) columns to analyse e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-        "all" can be passed to include all discret columns for analysis. This is super useful instead of specifying all column names manually.
+        "all" can be passed to include all discrete columns for analysis. This is super useful instead of specifying all column names manually.
         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in drop_cols argument
         is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
     drop_cols

@@ -1,16 +1,7 @@
 # coding=utf-8
-"""This submodule focuses on assessing the data quality at both row-level and column-level and also provides an
-appropriate treatment option to fix quality issues. Columns subjected to this analysis can be controlled by the right
-combination of arguments - list_of_cols and drop_cols. All functions have the following arguments:
-
-- **idf**: Input dataframe - **list_of_cols**: This argument, in a list format, is used to specify the columns
-subjected to the analysis in the input dataframe. Instead of a list, columns can be specified in a single text format
-where different column names are separated by pipe delimiter “|”. The user can also use “all” as an input to this
-argument to consider all columns. This is super useful instead of specifying all column names manually. -
-**drop_cols**: In a list format, this argument is used to specify the columns that need to be dropped from
-list_of_cols. Instead of list, columns can be specified in a single text format where different column names are
-separated by pipe delimiter “|”. It is most useful when coupled with the “all” value of list_of_cols, when we need to
-consider all columns except a few handful of them. - **print_impact**: This argument is to print out the statistics.
+"""
+This submodule focuses on assessing the data quality at both row-level and column-level and also provides an
+appropriate treatment option to fix quality issues.
 
 At the row level, the following checks are done:
 
@@ -28,10 +19,8 @@ At the column level, the following checks are done:
 """
 import re
 import warnings
-
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
-
 from anovos.data_analyzer.stats_generator import (
     uniqueCount_computation,
     missingCount_computation,
@@ -55,11 +44,13 @@ from anovos.shared.utils import (
 def duplicate_detection(
     spark, idf, list_of_cols="all", drop_cols=[], treatment=False, print_impact=False
 ):
-    """As the name implies, this function detects duplication in the input dataset. This means, for a pair of
+    """
+    As the name implies, this function detects duplication in the input dataset. This means, for a pair of
     duplicate rows, the values in each column coincide. Duplication check is confined to the list of columns passed
     in the arguments. As part of treatment, duplicated rows are removed. This function returns two dataframes in
     tuple format; the 1st dataframe is the input dataset after deduplication (if treated).  The 2nd dataframe is of
-    schema – metric, value and contains the total number of rows and number of unique rows.
+    schema – metric, value and contains the total number of rows, number of unique rows, number of duplicate rows
+    and percentage of duplicate rows in total.
 
 
     Parameters
@@ -69,20 +60,23 @@ def duplicate_detection(
     idf
         Input Dataframe
     list_of_cols
-        List of columns to inspect e.g., ["col1","col2"].
+        List of columns to analyse e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-        "all" can be passed to include all columns for analysis.
-        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
-        drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
+        "all" can be passed to include all columns for analysis. This is super useful instead of specifying all column names manually.
+        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in drop_cols argument
+        is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
     drop_cols
         List of columns to be dropped e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
+        a few handful of them. (Default value = [])
     treatment
         Boolean argument – True or False. If True, duplicate rows are removed from the input dataframe. (Default value = False)
     print_impact
-        True, False (Default value = False)
+        True, False
+        This argument is to print out the statistics.(Default value = False)
 
     Returns
     -------
@@ -140,13 +134,14 @@ def nullRows_detection(
     treatment_threshold=0.8,
     print_impact=False,
 ):
-    """This function inspects the row quality and computes the number of columns that are missing for a row. This
+    """
+    This function inspects the row quality and computes the number of columns that are missing for a row. This
     metric is further aggregated to check how many columns are missing for how many rows (also at % level). Intuition
     is if too many columns are missing for a row, removing it from the modeling may give better results than relying
     on its imputed values. Therefore as part of the treatment, rows with missing columns above the specified
     threshold are removed. This function returns two dataframes in tuple format; the 1st dataframe is the input
-    dataset after filtering rows with a high number of missing columns (if treated). The 2nd dataframe is of schema –
-    null_cols_count, row_count, row_pct, flagged.
+    dataset after filtering rows with a high number of missing columns (if treated else original dataframe).
+    The 2nd dataframe is of schema – null_cols_count, row_count, row_pct, flagged/treated.
 
     | null_cols_count | row_count | row_pct | flagged |
     |-----------------|-----------|---------|---------|
@@ -155,7 +150,8 @@ def nullRows_detection(
 
 
     Interpretation: 1306 rows (4.01% of total rows) have 7 missing columns and flagged for are removal because
-    null\_cols\_count is above the threshold.
+    null_cols_count is above the threshold. If treatment is True, then flagged column is renamed as treated to
+    show rows which has been removed.
 
     Parameters
     ----------
@@ -164,16 +160,18 @@ def nullRows_detection(
     idf
         Input Dataframe
     list_of_cols
-        List of columns to inspect e.g., ["col1","col2"].
+        List of columns to analyse e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-        "all" can be passed to include all columns for analysis.
-        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
-        drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
+        "all" can be passed to include all columns for analysis. This is super useful instead of specifying all column names manually.
+        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in drop_cols argument
+        is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
     drop_cols
         List of columns to be dropped e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
+        a few handful of them. (Default value = [])
     treatment
         Boolean argument – True or False. If True, rows with high no. of null columns (defined by
         treatment_threshold argument) are removed from the input dataframe. (Default value = False)
@@ -183,7 +181,8 @@ def nullRows_detection(
         There is no row removal if the threshold is 1.0. And if the threshold is 0, all rows with
         null value are removed. (Default value = 0.8)
     print_impact
-        True, False. (Default value = False)
+        True, False
+        This argument is to print out the statistics.(Default value = False)
 
     Returns
     -------
@@ -215,17 +214,6 @@ def nullRows_detection(
         raise TypeError("Invalid input for Treatment Threshold Value")
 
     def null_count(*cols):
-        """
-
-        Parameters
-        ----------
-        *cols
-
-
-        Returns
-        -------
-
-        """
         return cols.count(None)
 
     f_null_count = F.udf(null_count, T.LongType())
@@ -276,15 +264,22 @@ def nullColumns_detection(
     stats_mode={},
     print_impact=False,
 ):
-    """This function inspects the column quality and computes the number of rows that are missing for a column. This
+    """
+    This function inspects the column quality and computes the number of rows that are missing for a column. This
     function also leverages statistics computed as part of the State Generator module. Statistics are not computed
     twice if already available.
 
-    As part of treatments, it currently supports 3 methods – Mean Median Mode (MMM), row_removal or column_removal (
-    more methods to be added soon). MMM replaces null value with the measure of central tendency (mode for
-    categorical features and mean/median for numerical features). row_removal removes all rows with any missing value
-    (output of this treatment is same as nullRows_detection with treatment_threshold of 0). column_removal remove a
-    column if %rows with a missing value is above treatment_threshold.
+    As part of treatments, it currently supports the following methods – Mean Median Mode (MMM), row_removal,
+    column_removal, KNN, regression, Matrix Factorization (MF), auto imputation (auto).
+    - MMM replaces null value with the measure of central tendency (mode for categorical features and mean/median for numerical features).
+    - row_removal removes all rows with any missing value (output of this treatment is same as nullRows_detection with treatment_threshold of 0).
+    - column_removal remove a column if %rows with a missing value is above treatment_threshold.
+    - KNN/regression create an imputation model for every to-be-imputed column based on the rest of columns in the list_of_cols columns.
+      KNN leverages sklearn.impute.KNNImputer and regression sklearn.impute.IterativeImputer. Since sklearn algorithms are not
+      scalable, we create imputation model on sample dataset and apply that model on the whole dataset in distributed manner using
+      pyspark pandas udf.
+    - Matrix Factorization leverages pyspark.ml.recommendation.ALS algorithm.
+    - auto imputation compares all imputation methods and select the best imputation method based on the least RMSE.
 
     This function returns two dataframes in tuple format – 1st dataframe is input dataset after imputation (if
     treated else the original dataset) and  2nd dataframe is of schema – attribute, missing_count, missing_pct.
@@ -300,7 +295,7 @@ def nullColumns_detection(
         List of columns to inspect e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-        "all" can be passed to include all (non-array) columns for analysis.
+        "all" can be passed to include all (non-array) columns for analysis. This is super useful instead of specifying all column names manually.
         "missing" (default) can be passed to include only those columns with missing values.
         One of the usecases where "all" may be preferable over "missing" is when the user wants to save
         the imputation model for the future use e.g. a column may not have missing value in the training
@@ -310,19 +305,18 @@ def nullColumns_detection(
     drop_cols
         List of columns to be dropped e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
+        a few handful of them. (Default value = [])
     treatment
         Boolean argument – True or False. If True, missing values are treated as per treatment_method argument. (Default value = False)
     treatment_method
-        MMM", "row_removal", "column_removal", "KNN", "regression", "MF", "auto".
-        MMM (Mean Median Mode) replaces null value by the measure of central tendency (mode for
-        categorical features and mean or median for numerical features).
-        row_removal removes all rows with any missing value.
-        column_removal remove a column if % of rows with missing value is above a threshold (defined
-        by key "treatment_threshold" under treatment_configs argument). (Default value = "row_removal")
+        "MMM", "row_removal", "column_removal", "KNN", "regression", "MF", "auto".
+        (Default value = "row_removal")
     treatment_configs
         Takes input in dictionary format.
-        For column_removal treatment, key ‘treatment_threshold’ is provided with a value between 0 to 1.
+        For column_removal treatment, key ‘treatment_threshold’ is provided with a value between 0 to 1 (remove column
+        if % of rows with missing value is above this threshold)
         For row_removal, this argument can be skipped.
         For MMM, arguments corresponding to imputation_MMM function (transformer module) are provided,
         where each key is an argument from imputation_MMM function.
@@ -347,7 +341,8 @@ def nullColumns_detection(
         to read pre-saved statistics on most frequently seen values i.e. if measures_of_centralTendency or
         mode_computation (data_analyzer.stats_generator module) has been computed & saved before. (Default value = {})
     print_impact
-        Default value = False)
+        True, False
+        This argument is to print out the statistics or the impact of imputation (if applicable).(Default value = False)
 
     Returns
     -------
@@ -435,6 +430,7 @@ def nullColumns_detection(
         if treatment_method == "column_removal":
             odf = idf.drop(*threshold_cols)
             if print_impact:
+                odf_print.show(len(list_of_cols))
                 print("Removed Columns: ", threshold_cols)
 
         if treatment_method == "row_removal":
@@ -508,6 +504,8 @@ def nullColumns_detection(
 
     else:
         odf = idf
+        if print_impact:
+            odf_print.show(len(list_of_cols))
 
     return odf, odf_print
 
@@ -535,23 +533,22 @@ def outlier_detection(
     stats_unique={},
     print_impact=False,
 ):
-    """In Machine Learning, outlier detection identifies values that deviate drastically from the rest of the
+    """
+    In Machine Learning, outlier detection identifies values that deviate drastically from the rest of the
     attribute values. An outlier may be caused simply by chance, measurement error, or inherent heavy-tailed
     distribution. This function identifies extreme values in both directions (or any direction provided by the user
     via detection_side argument). Outlier is identified by 3 different methodologies and tagged an outlier only if it
-    is validated by at least 2 methods (can be changed by the user via min_validation under detection_configs
-    argument).
+    is validated by at least 2 methods (can be changed by the user via min_validation under detection_configs argument).
 
-    - **Percentile Method**: In this methodology, a value higher than a certain (default 95th) percentile value is
-    considered as an outlier. Similarly, a value lower than a certain (default 5th) percentile value is considered as
-    an outlier.
+    - Percentile Method: In this methodology, a value higher than a certain (default 95th) percentile value is considered
+      as an outlier. Similarly, a value lower than a certain (default 5th) percentile value is considered as an outlier.
 
-    - **Standard Deviation Method**: In this methodology, if a value is a certain number of standard deviations (
-    default 3) away from the mean, it is identified as an outlier.
+    - Standard Deviation Method: In this methodology, if a value is a certain number of standard deviations (default 3)
+      away from the mean, it is identified as an outlier.
 
-    - **Interquartile Range (IQR) Method**: A value below Q1 – 1.5 IQR or above Q3 + 1.5 IQR are identified as
-    outliers, where Q1 is in first quantile/25th percentile, Q3 is in third quantile/75th percentile, and IQR is the
-    difference between third quantile & first quantile.
+    - Interquartile Range (IQR) Method: A value below Q1 – 1.5 IQR or above Q3 + 1.5 IQR are identified as outliers, where Q1
+      is in first quantile/25th percentile, Q3 is in third quantile/75th percentile, and IQR is the difference between
+      third quantile & first quantile.
 
     This function also leverages statistics which were computed as the part of the State Generator module so that
     statistics are not computed twice if already available.
@@ -572,39 +569,38 @@ def outlier_detection(
     idf
         Input Dataframe
     list_of_cols
-        List of numerical columns to inspect e.g., ["col1","col2"].
+        List of numerical columns to analyse e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-        "all" can be passed to include all numerical columns for analysis.
-        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
-        drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
+        "all" can be passed to include all numerical columns for analysis. This is super useful instead of specifying all column names manually.
+        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in drop_cols argument
+        is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
     drop_cols
         List of columns to be dropped e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
+        a few handful of them. (Default value = [])
     detection_side
-        upper", "lower", "both".
-        "lower" detects outliers in the lower spectrum of the column range, whereas "upper" detects
-        in the upper spectrum. "Both" detects in both upper and lower end of the spectrum. (Default value = "upper")
+        "upper", "lower", "both".
+        "lower" detects outliers in the lower spectrum of the column range, whereas "upper" detects in the upper spectrum.
+        "Both" detects in both upper and lower end of the spectrum. (Default value = "upper")
     detection_configs
         Takes input in dictionary format with keys representing upper & lower parameter for
         three outlier detection methodologies.
-        a) Percentile Method: In this methodology, a value higher than a certain (default 0.95)
-        percentile value is considered as an outlier. Similarly, a value lower than a certain
-        (default 0.05) percentile value is considered as an outlier.
-        b) Standard Deviation Method: In this methodology, if a value is certain number of
-        standard deviations (default 3.0) away from the mean, then it is identified as an outlier.
-        c) Interquartile Range (IQR) Method: A value which is below Q1 – k * IQR or
-        above Q3 + k * IQR (default k is 1.5) are identified as outliers, where Q1 is first quartile/
-        25th percentile, Q3 is third quartile/75th percentile and IQR is difference between
-        third quartile & first quartile.
-        If an attribute value is less (more) than its derived lower (upper) bound value,
-        it is considered as outlier by a methodology. A attribute value is considered as outlier
-        if it is declared as outlier by atleast 'min_validation' methodologies (default 2).
+        a) Percentile Method: lower and upper percentile threshold can be set via "pctile_lower" & "pctile_upper" (default 0.05 & 0.95)
+        Any value above "pctile_upper" is considered as an outlier. Similarly, a value lower than "pctile_lower" is considered as an outlier.
+        b) Standard Deviation Method: In this methodology, if a value which is below (mean - "stdev_lower" * standard deviation) or above
+        (mean + "stdev_upper" * standard deviation), then it is identified as an outlier (default 3.0 & 3.0).
+        c) Interquartile Range (IQR) Method: A value which is below (Q1 – "IQR_lower" * IQR) or above (Q3 + "IQR_lower" * IQR)
+        is identified as outliers, where Q1 is first quartile/25th percentile, Q3 is third quartile/75th percentile and IQR is difference between
+        third quartile & first quartile (default 1.5 & 1.5).
+        If an attribute value is less (more) than its derived lower (upper) bound value, it is considered as outlier by a methodology.
+        A attribute value is considered as outlier if it is declared as outlier by atleast 'min_validation' methodologies (default 2).
     treatment
         Boolean argument – True or False. If True, outliers are treated as per treatment_method argument. (Default value = False)
     treatment_method
-        null_replacement", "row_removal", "value_replacement".
+        "null_replacement", "row_removal", "value_replacement".
         In "null_replacement", outlier values are replaced by null so that it can be imputed by a
         reliable imputation methodology. In "value_replacement", outlier values are replaced by
         maximum or minimum permissible value by above methodologies. Lastly in "row_removal", rows
@@ -617,7 +613,7 @@ def outlier_detection(
         If pre_existing_model is False, this field can be used for saving the model.
         Default "NA" means there is neither pre-existing model nor there is a need to save one.
     output_mode
-        replace", "append".
+        "replace", "append".
         “replace” option replaces original columns with treated column. “append” option append treated
         column to the input dataset with a postfix "_outliered" e.g. column X is appended as X_outliered. (Default value = "replace")
     stats_unique
@@ -625,21 +621,8 @@ def outlier_detection(
         to read pre-saved statistics on unique value count i.e. if measures_of_cardinality or
         uniqueCount_computation (data_analyzer.stats_generator module) has been computed & saved before. (Default value = {})
     print_impact
-        True, False. (Default value = False)
-    "pctile_upper": 0.95
-
-    "stdev_lower": 3.0
-
-    "stdev_upper": 3.0
-
-    "IQR_lower": 1.5
-
-    "IQR_upper": 1.5
-
-    "min_validation": 2
-
-    }
-
+        True, False
+        This argument is to print out the statistics and the impact of treatment (if applicable).(Default value = False)
 
     Returns
     -------
@@ -916,14 +899,15 @@ def IDness_detection(
     stats_unique={},
     print_impact=False,
 ):
-    """IDness of an attribute is defined as the ratio of number of unique values seen in an attribute by number of
+    """
+    IDness of an attribute is defined as the ratio of number of unique values seen in an attribute by number of
     non-null rows. It varies between 0 to 100% where IDness of 100% means there are as many unique values as number
-    of rows (primary key in the input dataset). IDness is computed only for categorical features. This function
+    of rows (primary key in the input dataset). IDness is computed only for discrete features. This function
     leverages the statistics from Measures of Cardinality function and flag the columns if IDness is above a certain
     threshold. Such columns can be deleted from the modelling analysis if directed for a treatment.
 
     This function returns two dataframes in tuple format – 1st dataframe is input dataset after removing high IDness
-    columns (the original dataset if no treatment) and  2nd dataframe is of schema – attribute, , unique_values, IDness.
+    columns (if treated else the original dataset) and  2nd dataframe is of schema – attribute, unique_values, IDness.
 
     Parameters
     ----------
@@ -932,16 +916,18 @@ def IDness_detection(
     idf
         Input Dataframe
     list_of_cols
-        List of Discrete (Categorical + Integer) columns to inspect e.g., ["col1","col2"].
+        List of Discrete (Categorical + Integer) columns to analyse e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-        "all" can be passed to include all categorical columns for analysis.
-        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
-        drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
+        "all" can be passed to include all discrete columns for analysis. This is super useful instead of specifying all column names manually.
+        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in drop_cols argument
+        is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
     drop_cols
         List of columns to be dropped e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
+        a few handful of them. (Default value = [])
     treatment
         Boolean argument – True or False. If True, columns with high IDness (defined by
         treatment_threshold argument) are removed from the input dataframe. (Default value = False)
@@ -955,7 +941,8 @@ def IDness_detection(
         to read pre-saved statistics on unique value count i.e. if measures_of_cardinality or
         uniqueCount_computation (data_analyzer.stats_generator module) has been computed & saved before. (Default value = {})
     print_impact
-        True,False. (Default value = False)
+        True, False
+        This argument is to print out the statistics and the impact of treatment (if applicable).(Default value = False)
 
     Returns
     -------
@@ -1043,7 +1030,8 @@ def biasedness_detection(
     stats_mode={},
     print_impact=False,
 ):
-    """This function flags column if they are biased or skewed towards one specific value and is equivalent to
+    """
+    This function flags column if they are biased or skewed towards one specific value and leverages
     mode_pct computation from Measures of Central Tendency i.e. number of rows with mode value (most frequently seen
     value) divided by number of non-null values. It varies between 0 to 100% where biasedness of 100% means there is
     only a single value (other than null). The function flags a column if its biasedness is above a certain
@@ -1052,7 +1040,6 @@ def biasedness_detection(
     This function returns two dataframes in tuple format – 1st dataframe is input dataset after removing high biased
     columns (the original dataset if no treatment) and  2nd dataframe is of schema – attribute, mode, mode_pct.
 
-
     Parameters
     ----------
     spark
@@ -1060,16 +1047,18 @@ def biasedness_detection(
     idf
         Input Dataframe
     list_of_cols
-        List of Discrete (Categorical + Integer) columns to inspect e.g., ["col1","col2"].
+        List of Discrete (Categorical + Integer) columns to analyse e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-        "all" can be passed to include all discrete columns for analysis.
-        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
-        drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
+        "all" can be passed to include all discrete columns for analysis. This is super useful instead of specifying all column names manually.
+        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in drop_cols argument
+        is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
     drop_cols
         List of columns to be dropped e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
+        a few handful of them. (Default value = [])
     treatment
         Boolean argument – True or False. If True, columns with high biasedness (defined by
         treatment_threshold argument) are removed from the input dataframe. (Default value = False)
@@ -1083,7 +1072,8 @@ def biasedness_detection(
         to read pre-saved statistics on most frequently seen values i.e. if measures_of_centralTendency or
         mode_computation (data_analyzer.stats_generator module) has been computed & saved before. (Default value = {})
     print_impact
-        True, False (Default value = False)
+        True, False
+        This argument is to print out the statistics and the impact of treatment (if applicable).(Default value = False)
 
     Returns
     -------
@@ -1198,27 +1188,24 @@ def invalidEntries_detection(
     output_mode="replace",
     print_impact=False,
 ):
-    """This function checks for certain suspicious patterns in attributes’ values. These suspicious values can be
-    replaced as null and treated as missing. Patterns that are considered for this quality check:
+    """
+    This function checks for certain suspicious patterns in attributes’ values. Patterns that are considered for this quality check:
 
-    - Missing Values: The function checks for all text strings which directly or indirectly indicate the missing
-    value in an attribute. Currently, we check the following string values - '', ' ', 'nan', 'null', 'na', 'inf',
-    'n/a', 'not defined', 'none', 'undefined', 'blank'. The function also check for special characters such as ?, *,
-    to name a few.
+    - Missing Values: The function checks for all column values which directly or indirectly indicate the missing
+    value in an attribute such as 'nan', 'null', 'na', 'inf', 'n/a', 'not defined' etc. The function also check for special characters.
 
     - Repetitive Characters: Certain attributes’ values with repetitive characters may be default value or system
     error, rather than being a legit value etc xx, zzzzz, 99999 etc. Such values are flagged for the user to take an
     appropriate action. There may be certain false positive which are legit values.
 
-    - Consecutive Characters: Similar to repetitive characters, consecutive characters (at least 3 characters long)
-    such as abc, 1234 etc may not be legit values, and hence flagged. There may be certain false positive which are
-    legit values.
+    - Consecutive Characters: Similar to repetitive characters, consecutive characters (at least 3 characters long) such as abc, 1234 etc
+      may not be legit values, and hence flagged. There may be certain false positive which are legit values.
 
-    This function returns two dataframes in tuple format – 1st dataframe is input dataset after replacing flagged
-    values as null (or the original dataset if no treatment) and  2nd dataframe is of schema – attribute,
+    This function returns two dataframes in tuple format – 1st dataframe is input dataset after treating the invalid values
+    (or the original dataset if no treatment) and  2nd dataframe is of schema – attribute,
     invalid_entries, invalid_count, invalid_pct. All potential invalid values (separated by delimiter pipe “|”) are
     shown under invalid_entries column. Total number of rows impacted by these entries for each attribute is shown
-    under invalid_count. invalid_pct is invalid_count divided by number of rows
+    under invalid_count. invalid_pct is invalid_count divided by number of rows.
 
 
     Parameters
@@ -1228,18 +1215,20 @@ def invalidEntries_detection(
     idf
         Input Dataframe
     list_of_cols
-        List of Discrete (Categorical + Integer) columns to inspect e.g., ["col1","col2"].
+        List of Discrete (Categorical + Integer) columns to analyse e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-        "all" can be passed to include all discrete columns for analysis.
-        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
-        drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
+        "all" can be passed to include all discrete columns for analysis. This is super useful instead of specifying all column names manually.
+        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in drop_cols argument
+        is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
     drop_cols
         List of columns to be dropped e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
+        a few handful of them. (Default value = [])
     detection_type
-        auto","manual","both" (Default value = "auto")
+        "auto","manual","both" (Default value = "auto")
     invalid_entries
         List of values or regex patterns to be classified as invalid.
         Valid only for "auto" or "both" detection type. (Default value = [])
@@ -1249,9 +1238,9 @@ def invalidEntries_detection(
     partial_match
         Boolean argument – True or False. If True, values with substring same as invalid_entries is declared invalid. (Default value = False)
     treatment
-        Boolean argument – True or False. If True, invalid values are replaced by Null. (Default value = False)
+        Boolean argument – True or False. If True, outliers are treated as per treatment_method argument. (Default value = False)
     treatment_method
-        MMM", "null_replacement", "column_removal" (more methods to be added soon).
+        "MMM", "null_replacement", "column_removal" (more methods to be added soon).
         MMM (Mean Median Mode) replaces invalid value by the measure of central tendency (mode for
         categorical features and mean or median for numerical features).
         null_replacement removes all values with any invalid values as null.
@@ -1276,11 +1265,12 @@ def invalidEntries_detection(
         to read pre-saved statistics on most frequently seen values i.e. if measures_of_centralTendency or
         mode_computation (data_analyzer.stats_generator module) has been computed & saved before. (Default value = {})
     output_mode
-        replace", "append".
+        "replace", "append".
         “replace” option replaces original columns with treated column. “append” option append treated
         column to the input dataset with a postfix "_invalid" e.g. column X is appended as X_invalid. (Default value = "replace")
     print_impact
-        True, False. (Default value = False)
+        True, False
+        This argument is to print out the statistics.(Default value = False)
 
     Returns
     -------
