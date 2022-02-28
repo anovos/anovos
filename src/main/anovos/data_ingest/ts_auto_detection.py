@@ -1,3 +1,17 @@
+# coding=utf-8
+
+"""This module help produce the output containing a transformation through auto timestamp / date detection by reading the ingested dataframe from source.
+
+As a part of generation of the auto detection output, there are various functions created such as - 
+
+- regex_date_time_parser
+- ts_loop_cols_pre
+- ts_preprocess
+
+Respective functions have sections containing the detailed definition of the parameters used for computing.
+
+"""
+
 import pyspark
 import datetime
 from pyspark.sql import functions as F
@@ -10,7 +24,8 @@ from anovos.data_analyzer.stats_generator import measures_of_percentiles
 from anovos.data_transformer.datetime import (
     timeUnits_extraction,
     unix_to_timestamp,
-    lagged_ts)
+    lagged_ts,
+)
 import csv
 import io
 import os
@@ -24,6 +39,7 @@ import numpy as np
 
 ###regex based ts parser function
 
+
 def regex_date_time_parser(
     spark,
     idf,
@@ -36,10 +52,14 @@ def regex_date_time_parser(
     output_mode="replace",
 ):
 
-    """"
+    """ "
+
+    This function helps to produce the transformed output (if applicable) based on the auto-detection of timestamp / date type. The output from this function is decoupled as a part of ingestion.
+
+
     Parameters
     ----------
-    
+
     spark
         Spark session
     idf
@@ -512,86 +532,15 @@ def regex_date_time_parser(
         return output_df
 
 
-# def check_val_ind(val):
-#     if val is None:
-#         return 0
-#     else:
-#         return val
-
-
-# def ts_loop_cols_pre(idf, id_col):
-#     lc = []
-#     ts_col = []
-#     for i in idf.dtypes:
-#         if (
-#             (i[1] in ["string", "object"])
-#             or (
-#                 i[1] in ["long", "bigint"]
-#                 and (
-#                     check_val_ind(
-#                         idf.select(F.max(F.length(i[0])))
-#                         .rdd.flatMap(lambda x: x)
-#                         .collect()[0]
-#                     )
-#                     > 9
-#                 )
-#                 and (idf.select(i[0]).distinct())
-#             )
-#         ) and i[0] != id_col:
-#             lc.append(i[0])
-#         else:
-#             pass
-
-#         if i[1] in ["timestamp", "date"] and i[0] != id_col:
-#             ts_col.append(i[0])
-#     return lc, ts_col
-
-
-# def ts_loop_cols_pre(idf, id_col):
-#     lc = []
-#     ts_col = []
-#     for i in idf.dtypes:
-#         if (
-#             (i[1] in ["string", "object"])
-#             or (
-#                 (i[1] in ["string", "int"])
-#                 and (idf.select(F.length(i[0])).distinct().count() == 1)
-#                 and (
-#                     (
-#                         idf.select(F.length(i[0])).rdd.flatMap(lambda x: x).collect()[0]
-#                         >= 4
-#                     )
-#                 )
-#             )
-#             or (
-#                 i[1] in ["long", "bigint"]
-#                 and (
-#                     check_val_ind(
-#                         idf.select(F.max(F.length(i[0])))
-#                         .rdd.flatMap(lambda x: x)
-#                         .collect()[0]
-#                     )
-#                     > 9
-#                 )
-#                 and (idf.select(i[0]).distinct())
-#             )
-#         ) and i[0] != id_col:
-#             lc.append(i[0])
-#         else:
-#             pass
-
-#         if i[1] in ["timestamp", "date"] and i[0] != id_col:
-#             ts_col.append(i[0])
-#     return lc, ts_col
-
-
 def ts_loop_cols_pre(idf, id_col):
 
+    """ "
 
-    """"
+    This function helps to analyze the potential columns which can be passed for tiime series check. The columns are passed on to the auto-detection block.
+
     Parameters
     ----------
-    
+
     idf
         Input dataframe
     id_col
@@ -599,7 +548,7 @@ def ts_loop_cols_pre(idf, id_col):
 
     Returns
     -------
-    """    
+    """
 
     lc1, lc2, lc3 = [], [], []
     for i in idf.dtypes:
@@ -652,10 +601,13 @@ def ts_loop_cols_pre(idf, id_col):
 
 def ts_preprocess(spark, idf, id_col, output_path, tz_offset="local", run_type="local"):
 
-    """"
+    """ "
+
+    This function helps to read the input spark dataframe as source and do all the necessary processing. All the intermediate data created through this step foro the Time Series Analyzer.
+
     Parameters
     ----------
-    
+
     spark
         Spark session
     idf
@@ -671,7 +623,7 @@ def ts_preprocess(spark, idf, id_col, output_path, tz_offset="local", run_type="
 
     Returns
     -------
-    """    
+    """
 
     if run_type == "local":
         local_path = output_path
