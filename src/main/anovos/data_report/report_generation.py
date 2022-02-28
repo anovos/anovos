@@ -19,6 +19,8 @@ import datapane as dp
 from statsmodels.tsa.stattools import adfuller, kpss
 from sklearn.preprocessing import PowerTransformer
 from anovos.shared.utils import ends_with
+import warnings
+warnings.filterwarnings("ignore")
 
 global_theme = px.colors.sequential.Plasma
 global_theme_r = px.colors.sequential.Plasma_r
