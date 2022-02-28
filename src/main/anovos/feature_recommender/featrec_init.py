@@ -45,17 +45,17 @@ def recommendation_data_prep(df, name_column, desc_column):
     """
     if not isinstance(df, pd.DataFrame):
         raise TypeError("Invalid input for df")
-    if name_column not in df.columns and name_column != None:
+    if name_column not in df.columns and name_column is not None:
         raise TypeError("Invalid input for name_column")
-    if desc_column not in df.columns and desc_column != None:
+    if desc_column not in df.columns and desc_column is not None:
         raise TypeError("Invalid input for desc_column")
-    if name_column == None and desc_column == None:
+    if name_column is None and desc_column is None:
         raise TypeError("Need at least one input for either name_column or desc_column")
     df_prep = copy.deepcopy(df)
-    if name_column == None:
+    if name_column is None:
         df_prep[desc_column] = df_prep[desc_column].astype(str)
         df_prep_com = df_prep[desc_column]
-    elif desc_column == None:
+    elif desc_column is None:
         df_prep[name_column] = df_prep[name_column].astype(str)
         df_prep_com = df_prep[name_column]
     else:

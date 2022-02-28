@@ -102,7 +102,7 @@ def feature_recommendation(
         df_rec_fr = df_rec_fer
         list_embedding_train_fr = list_embedding_train_fer
 
-    if name_column == None:
+    if name_column is None:
         df_out = pd.DataFrame(
             columns=[
                 "Input_Attribute_Description",
@@ -114,7 +114,7 @@ def feature_recommendation(
                 "Source",
             ]
         )
-    elif desc_column == None:
+    elif desc_column is None:
         df_out = pd.DataFrame(
             columns=[
                 "Input_Attribute_Name",
@@ -147,7 +147,7 @@ def feature_recommendation(
         top_results = np.argpartition(-cos_scores, range(top_n))[0:top_n]
         for idx in top_results[0:top_n]:
             single_score = "%.4f" % (cos_scores[idx])
-            if name_column == None:
+            if name_column is None:
                 if float(single_score) >= threshold:
                     df_append = pd.DataFrame(
                         [
@@ -194,7 +194,7 @@ def feature_recommendation(
                             "Source",
                         ],
                     )
-            elif desc_column == None:
+            elif desc_column is None:
                 if float(single_score) >= threshold:
                     df_append = pd.DataFrame(
                         [
@@ -334,7 +334,7 @@ def find_attr_by_relevance(
         building_corpus[i] = re.sub("[^A-Za-z0-9]+", " ", building_corpus[i])
         building_corpus[i] = camel_case_split(building_corpus[i])
         building_corpus[i] = building_corpus[i].lower().strip()
-    if name_column == None:
+    if name_column is None:
         df_out = pd.DataFrame(
             columns=[
                 "Input_Feature_Description",
@@ -342,7 +342,7 @@ def find_attr_by_relevance(
                 "Input_Attribute_Similarity_Score",
             ]
         )
-    elif desc_column == None:
+    elif desc_column is None:
         df_out = pd.DataFrame(
             columns=[
                 "Input_Feature_Description",
@@ -363,7 +363,7 @@ def find_attr_by_relevance(
     list_embedding_user = model_fer.encode(list_user, convert_to_tensor=True)
     list_embedding_building = model_fer.encode(building_corpus, convert_to_tensor=True)
     for i, feature in enumerate(building_corpus):
-        if name_column == None:
+        if name_column is None:
             df_append = pd.DataFrame(
                 columns=[
                     "Input_Feature_Description",
@@ -371,7 +371,7 @@ def find_attr_by_relevance(
                     "Input_Attribute_Similarity_Score",
                 ]
             )
-        elif desc_column == None:
+        elif desc_column is None:
             df_append = pd.DataFrame(
                 columns=[
                     "Input_Feature_Description",
@@ -397,7 +397,7 @@ def find_attr_by_relevance(
         for idx in top_results[0 : len(list_user)]:
             single_score = "%.4f" % (cos_scores[idx])
             if float(single_score) >= threshold:
-                if name_column == None:
+                if name_column is None:
                     df_append = df_append.append(
                         {
                             "Input_Feature_Description": feature,
@@ -408,7 +408,7 @@ def find_attr_by_relevance(
                         },
                         ignore_index=True,
                     )
-                elif desc_column == None:
+                elif desc_column is None:
                     df_append = df_append.append(
                         {
                             "Input_Feature_Description": feature,
@@ -434,7 +434,7 @@ def find_attr_by_relevance(
                         ignore_index=True,
                     )
         if len(df_append) == 0:
-            if name_column == None:
+            if name_column is None:
                 df_append = df_append.append(
                     {
                         "Input_Feature_Description": feature,
@@ -443,7 +443,7 @@ def find_attr_by_relevance(
                     },
                     ignore_index=True,
                 )
-            elif desc_column == None:
+            elif desc_column is None:
                 df_append = df_append.append(
                     {
                         "Input_Feature_Description": feature,
