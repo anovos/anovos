@@ -85,16 +85,6 @@ association_evaluator:
   correlation_matrix:
     list_of_cols: all
     drop_cols: ['STATE']
-  
-  IV_calculation:
-    list_of_cols: all
-    drop_cols: STATE
-    label_col: null
-    event_label: null
-    encoding_configs:
-      bin_method: equal_frequency
-      bin_size: 10
-      monotonicity_check: 0
 
   variable_clustering:
     list_of_cols: all
