@@ -456,20 +456,27 @@ def ts_analyzer(
         ts_processed_feat_df = ts_processed_feats(
             idf, i, id_col, tz_offset, cnt_row, cnt_unique_id
         )
-        ts_processed_feat_df.persist()
+        ts_processed_feat_df.persist(pyspark.StorageLevel.DISK_ONLY)
 
-        for j in range(1, 3):
-            f = ts_eligiblity_check(
-                spark,
-                ts_processed_feat_df,
-                id_col=id_col,
-                opt=j,
-                tz_offset=tz_offset,
-            )
-            f.to_csv(
-                ends_with(local_path) + "stats_" + str(i) + "_" + str(j) + ".csv",
-                index=False,
-            )
+        # for j in range(1, 3):
+        #     f = ts_eligiblity_check(
+        #         spark,
+        #         ts_processed_feat_df,
+        #         id_col=id_col,
+        #         opt=j,
+        #         tz_offset=tz_offset,
+        #     )
+        #     f.to_csv(
+        #         ends_with(local_path) + "stats_" + str(i) + "_" + str(j) + ".csv",
+        #         index=False,
+        #     )
+
+        f1 = ts_eligiblity_check(spark,ts_processed_feat_df,id_col=id_col,opt=1,tz_offset=tz_offset)
+        f1.to_csv(ends_with(local_path) + "stats_" + str(i) + "_" + str(1) + ".csv",index=False)
+
+        f2 = ts_eligiblity_check(spark,ts_processed_feat_df,id_col=id_col,opt=2,tz_offset=tz_offset)
+        f2.to_csv(ends_with(local_path) + "stats_" + str(i) + "_" + str(2) + ".csv",index=False)
+        
 
         for k in [num_cols, cat_cols]:
             for l in k:
@@ -492,7 +499,8 @@ def ts_analyzer(
                         ends_with(local_path) + i + "_" + l + "_" + m + ".csv",
                         index=False,
                     )
-
+        ts_processed_feat_df.unpersist()
+        
     if run_type == "emr":
         bash_cmd = (
             "aws s3 cp --recursive "
