@@ -1,6 +1,10 @@
-from re import finditer
 import copy
+import os
+from re import finditer
+
 import pandas as pd
+from sentence_transformers import SentenceTransformer
+from torch.hub import _get_torch_home
 
 from feature_exploration import (
     df_input_fer,
@@ -9,8 +13,101 @@ from feature_exploration import (
     industry_column,
     usecase_column,
     source_column,
-    model_fer,
 )
+
+
+def detect_model_path():
+    """
+
+    Returns
+    -------
+    Local Feature Explorer and Recommender semantic model path (if the model is pre-downloaded)
+    """
+    transformers_path = os.getenv("SENTENCE_TRANSFORMERS_HOME")
+    if transformers_path is None:
+        try:
+            torch_home = _get_torch_home()
+        except ImportError:
+            torch_home = os.path.expanduser(
+                os.getenv(
+                    "TORCH_HOME",
+                    os.path.join(os.getenv("XDG_CACHE_HOME", "~/.cache"), "torch"),
+                )
+            )
+        transformers_path = os.path.join(torch_home, "sentence_transformers")
+    model_path = os.path.join(
+        transformers_path, "sentence-transformers_all-mpnet-base-v2"
+    )
+    return model_path
+
+
+def model_download():
+    print("Starting the Semantic Model download")
+    SentenceTransformer("all-mpnet-base-v2")
+    print("Model downloading finished")
+
+
+class _TransformerModel:
+    def __init__(self):
+        self._model = None
+
+    @property
+    def model(self) -> SentenceTransformer:
+        if self._model is None:
+            model_path = detect_model_path()
+            if os.path.exists(model_path):
+                self._model = SentenceTransformer(model_path)
+            else:
+                raise FileNotFoundError(
+                    "Model has not been downloaded. Please use model_download() function to download the model first"
+                )
+        return self._model
+
+
+model_fer = _TransformerModel()
+
+
+def init_input_fer():
+    """
+
+    Returns
+    -------
+    Loading the Feature Explorer and Recommender (FER) Input DataFrame (FER corpus)
+    """
+    input_path_fer = "https://raw.githubusercontent.com/anovos/anovos/main/data/feature_recommender/flatten_fr_db.csv"
+    df_input_fer = pd.read_csv(input_path_fer)
+    return df_input_fer
+
+
+def get_column_name(df):
+    """
+
+    Parameters
+    ----------
+    df
+        Input DataFrame
+
+    Returns
+    -------
+    feature_name_column
+        Column name of Feature Name in the input DataFrame (string)
+    feature_desc_column
+        Column name of Feature Description in the input DataFrame (string)
+    industry_column
+        Column name of Industry in the input DataFrame (string)
+    usecase_column
+        Column name of Usecase in the input DataFrame (string)
+    """
+    feature_name_column = str(df.columns.tolist()[0])
+    feature_desc_column = str(df.columns.tolist()[1])
+    industry_column = str(df.columns.tolist()[2])
+    usecase_column = str(df.columns.tolist()[3])
+    return (
+        feature_name_column,
+        feature_desc_column,
+        industry_column,
+        usecase_column,
+    )
 
 
 def camel_case_split(input):

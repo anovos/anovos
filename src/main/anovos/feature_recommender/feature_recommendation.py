@@ -420,27 +420,17 @@ def find_attr_by_relevance(
             single_score = "%.4f" % (cos_scores[idx])
             if float(single_score) >= threshold:
                 if name_column is None:
-                    df_append = df_append.append(
-                        {
-                            "Input_Feature_Description": feature,
-                            "Recommended_Input_Attribute_Description": df_user[
-                                desc_column
-                            ].iloc[int(idx)],
-                            "Input_Attribute_Similarity_Score": single_score,
-                        },
-                        ignore_index=True,
-                    )
+                    df_append.loc[len(df_append.index)] = [
+                        feature,
+                        df_user[desc_column].iloc[int(idx)],
+                        single_score,
+                    ]
                 elif desc_column is None:
-                    df_append = df_append.append(
-                        {
-                            "Input_Feature_Description": feature,
-                            "Recommended_Input_Attribute_Name": df_user[
-                                name_column
-                            ].iloc[int(idx)],
-                            "Input_Attribute_Similarity_Score": single_score,
-                        },
-                        ignore_index=True,
-                    )
+                    df_append.loc[len(df_append.index)] = [
+                        feature,
+                        df_user[name_column].iloc[int(idx)],
+                        single_score,
+                    ]
                 else:
                     df_append = df_append.append(
                         {
@@ -457,34 +447,14 @@ def find_attr_by_relevance(
                     )
         if len(df_append) == 0:
             if name_column is None:
-                df_append = df_append.append(
-                    {
-                        "Input_Feature_Description": feature,
-                        "Recommended_Input_Attribute_Description": "Null",
-                        "Input_Attribute_Similarity_Score": "Null",
-                    },
-                    ignore_index=True,
-                )
+                df_append.loc[len(df_append.index)] = [feature, "N/A", "N/A"]
             elif desc_column is None:
-                df_append = df_append.append(
-                    {
-                        "Input_Feature_Description": feature,
-                        "Recommended_Input_Attribute_Name": "Null",
-                        "Input_Attribute_Similarity_Score": "Null",
-                    },
-                    ignore_index=True,
-                )
+                df_append.loc[len(df_append.index)] = [feature, "N/A", "N/A"]
             else:
-                df_append = df_append.append(
-                    {
-                        "Input_Feature_Description": feature,
-                        "Recommended_Input_Attribute_Name": "Null",
-                        "Recommended_Input_Attribute_Description": "Null",
-                        "Input_Attribute_Similarity_Score": "Null",
-                    },
-                    ignore_index=True,
-                )
-        df_out = df_out.append(df_append, ignore_index=True)
+                df_append.loc[len(df_append.index)] = [feature, "N/A", "N/A", "N/A"]
+            df_out = pd.concat(
+                [df_out, df_append], ignore_index=True, axis=0, join="outer"
+            )
     return df_out
 
 
