@@ -632,8 +632,6 @@ def ts_preprocess(spark, idf, id_col, output_path, tz_offset="local", run_type="
 
     Path(local_path).mkdir(parents=True, exist_ok=True)
 
-    idf.persist()
-
     num_cols, cat_cols, other_cols = attributeType_segregation(idf)
 
     ts_loop_col_dtls = ts_loop_cols_pre(idf, id_col)
@@ -665,6 +663,7 @@ def ts_preprocess(spark, idf, id_col, output_path, tz_offset="local", run_type="
                 save_output=None,
                 output_mode="replace",
             )
+            idf.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
 
         except:
             pass
