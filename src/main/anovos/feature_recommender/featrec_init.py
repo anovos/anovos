@@ -214,7 +214,19 @@ def feature_recommendation_prep():
     list_train_fer, df_rec_fer = recommendation_data_prep(
         df_groupby_fer, feature_name_column, feature_name_column
     )
-    list_embedding_train_fer = model_fer.model.encode(
-        list_train_fer, convert_to_tensor=True
-    )
-    return list_train_fer, df_rec_fer, list_embedding_train_fer
+
+    return list_train_fer, df_rec_fer
+
+
+class EmbeddingsTrainFer:
+    def __init__(self, list_train_fer):
+        self.list_train_fer = list_train_fer
+        self._embeddings = None
+
+    @property
+    def get(self):
+        if self._embeddings is None:
+            self._embeddings = model_fer.model.encode(
+                self.list_train_fer, convert_to_tensor=True
+            )
+        return self._embeddings
