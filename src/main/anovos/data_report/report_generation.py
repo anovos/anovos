@@ -2752,19 +2752,45 @@ def ts_viz_2_3(base_path, ts_col, num_cols):
 
     ts_v = []
 
-    for i in ts_col:
+    if len(ts_col) > 1:
 
-        f = list(
-            pd.read_csv(
-                ends_with(base_path) + "stats_" + i + "_2.csv"
-            ).count_unique_dates.values
-        )[0]
+        for i in ts_col:
 
-        if len(ts_col) > 1:
+            f = list(
+                pd.read_csv(
+                    ends_with(base_path) + "stats_" + i + "_2.csv"
+                ).count_unique_dates.values
+            )[0]
 
             if f >= 24:
 
                 ts_v.append(dp.Group(ts_viz_2_2(base_path, i, num_cols), label=i))
+            else:
+                ts_v.append(
+                    dp.Group(
+                        dp.Text(
+                            "The plots couldn't be displayed as x must have 2 complete cycles requires 24 observations. x only has "
+                            + str(f)
+                            + " observation(s)"
+                        ),
+                        label=i,
+                    )
+                )
+
+    else:
+
+        for i in ts_col:
+
+            f = list(
+                pd.read_csv(
+                    ends_with(base_path) + "stats_" + i + "_2.csv"
+                ).count_unique_dates.values
+            )[0]
+
+            if f >= 24:
+
+                ts_v.append(dp.Group(ts_viz_2_2(base_path, i, num_cols), label=i))
+                ts_v.append(dp.Plot(blank_chart, label="_"))
 
             else:
 
@@ -2778,28 +2804,9 @@ def ts_viz_2_3(base_path, ts_col, num_cols):
                         label=i,
                     )
                 )
-        else:
+                ts_v.append(dp.Plot(blank_chart, label="_"))
 
-            if f >= 24:
-
-                ts_v.append(dp.Group(ts_viz_2_2(base_path, i, num_cols), label=i))
-
-            else:
-
-                ts_v.append(
-                    dp.Group(
-                        dp.Text(
-                            "The plots couldn't be displayed as x must have 2 complete cycles requires 24 observations. x only has "
-                            + str(f)
-                            + " observation(s)"
-                        ),
-                        label=i,
-                    )
-                )
-
-            ts_v.append(dp.Plot(blank_chart, label="_"))
-
-        return dp.Select(blocks=ts_v, type=dp.SelectType.DROPDOWN)
+    return dp.Select(blocks=ts_v, type=dp.SelectType.DROPDOWN)
 
 
 def ts_landscape(base_path, ts_cols, id_col):
