@@ -2510,14 +2510,6 @@ def list_ts_remove_append(l, opt):
         return ll
 
 
-blank_chart = go.Figure()
-blank_chart.update_layout(autosize=False, width=10, height=10)
-blank_chart.layout.plot_bgcolor = global_plot_bg_color
-blank_chart.layout.paper_bgcolor = global_paper_bg_color
-blank_chart.update_xaxes(visible=False)
-blank_chart.update_yaxes(visible=False)
-
-
 def ts_viz_1_1(base_path, x_col, y_col, output_type="daily"):
 
     """

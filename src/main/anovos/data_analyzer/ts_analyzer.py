@@ -45,7 +45,7 @@ import numpy as np
 
 def daypart_cat(column):
 
-    """ "
+    """
     This functioin helps to convert the input hour part into the respective day parts. The different dayparts are Early Hours, Work Hours, Late Hours, Commuting Hours, Other Hours based on the hour value.
 
     Parameters
@@ -79,7 +79,7 @@ f_daypart_cat = F.udf(daypart_cat, T.StringType())
 
 def ts_processed_feats(idf, col, id_col, tz, cnt_row, cnt_unique_id):
 
-    """ "
+    """
     This function helps to extract time units from the input dataframe on a processed column being timestamp / date.
 
     Parameters
@@ -151,7 +151,7 @@ def ts_processed_feats(idf, col, id_col, tz, cnt_row, cnt_unique_id):
 
 def ts_eligiblity_check(spark, idf, id_col, opt=1, tz_offset="local"):
 
-    """ "
+    """
     This function helps to extract various metrics which can help to understand the nature of timestamp / date column for a given dataset.
 
     Parameters
@@ -258,7 +258,7 @@ def ts_viz_data(
     n_cat=10,
 ):
 
-    """ "
+    """
 
     This function helps to produce the processed dataframe with the relevant aggregation at the time frequency chosen for a given column as seen against the timestamp / date column.
 
@@ -406,7 +406,7 @@ def ts_analyzer(
     run_type="local",
 ):
 
-    """ "
+    """
 
     This function helps to produce the processed output in an aggregate form considering the input dataframe with processed timestamp / date column. The aggregation happens across Mean, Median, Min & Max for the Numerical / Categorical column.
 
