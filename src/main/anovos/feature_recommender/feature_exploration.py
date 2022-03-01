@@ -1,21 +1,24 @@
+from anovos.feature_recommender.featrec_init import *
+from sentence_transformers import util
 import pandas as pd
 import numpy as np
-from sentence_transformers import SentenceTransformer
-from sentence_transformers import util
 
-model_fer = SentenceTransformer("all-mpnet-base-v2")
-input_path_fer = "https://raw.githubusercontent.com/anovos/anovos/main/data/feature_recommender/flatten_fr_db.csv"
-df_input_fer = pd.read_csv(input_path_fer)
-df_input_fer = df_input_fer.rename(columns=lambda x: x.strip().replace(" ", "_"))
-feature_name_column = str(df_input_fer.columns.tolist()[0])
-feature_desc_column = str(df_input_fer.columns.tolist()[1])
-industry_column = str(df_input_fer.columns.tolist()[2])
-usecase_column = str(df_input_fer.columns.tolist()[3])
-source_column = str(df_input_fer.columns.tolist()[4])
+df_input_fer = feature_exploration_prep()
+(
+    feature_name_column,
+    feature_desc_column,
+    industry_column,
+    usecase_column,
+) = get_column_name(df_input_fer)
 
 
 def list_all_industry():
-    """:return: DataFrame of all the supported industries as part of feature exploration/recommendation"""
+    """
+
+    Returns
+    -------
+    DataFrame of all the supported industries as part of feature exploration/recommendation
+    """
     odf_uni = df_input_fer.iloc[:, 2].unique()
     odf = pd.DataFrame(odf_uni, columns=["Industry"])
     return odf
@@ -65,8 +68,10 @@ def process_usecase(usecase: str, semantic: bool):
     usecase = usecase.replace("[^A-Za-z0-9 ]+", " ")
     all_usecase = list_all_usecase()["Usecase"].to_list()
     if semantic and usecase not in all_usecase:
-        all_usecase_embeddings = model_fer.encode(all_usecase, convert_to_tensor=True)
-        usecase_embeddings = model_fer.encode(usecase, convert_to_tensor=True)
+        all_usecase_embeddings = model_fer.model.encode(
+            all_usecase, convert_to_tensor=True
+        )
+        usecase_embeddings = model_fer.model.encode(usecase, convert_to_tensor=True)
         cos_scores = util.pytorch_cos_sim(usecase_embeddings, all_usecase_embeddings)[0]
         first_match_index = int(np.argpartition(-cos_scores, 0)[0])
         processed_usecase = all_usecase[first_match_index]
@@ -101,8 +106,10 @@ def process_industry(industry: str, semantic: bool):
     industry = industry.replace("[^A-Za-z0-9 ]+", " ")
     all_industry = list_all_industry()["Industry"].to_list()
     if semantic and industry not in all_industry:
-        all_industry_embeddings = model_fer.encode(all_industry, convert_to_tensor=True)
-        industry_embeddings = model_fer.encode(industry, convert_to_tensor=True)
+        all_industry_embeddings = model_fer.model.encode(
+            all_industry, convert_to_tensor=True
+        )
+        industry_embeddings = model_fer.model.encode(industry, convert_to_tensor=True)
         cos_scores = util.pytorch_cos_sim(industry_embeddings, all_industry_embeddings)[
             0
         ]

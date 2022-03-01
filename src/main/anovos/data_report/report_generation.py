@@ -41,12 +41,7 @@ from loguru import logger
 import dateutil.parser
 from statsmodels.tsa.seasonal import seasonal_decompose
 import plotly.tools as tls
-import plotly.express as px
-import plotly.graph_objects as go
-import pandas as pd
-import numpy as np
 from plotly.subplots import make_subplots
-import datapane as dp
 from statsmodels.tsa.stattools import adfuller, kpss
 from sklearn.preprocessing import PowerTransformer
 from anovos.shared.utils import ends_with
@@ -58,13 +53,12 @@ global_theme = px.colors.sequential.Plasma
 global_theme_r = px.colors.sequential.Plasma_r
 global_plot_bg_color = "rgba(0,0,0,0)"
 global_paper_bg_color = "rgba(0,0,0,0)"
-
 default_template = (
     dp.HTML(
         """
         <html>
             <img src="https://mobilewalla-anovos.s3.amazonaws.com/anovos.png"
-                style="height:100px;display:flex;margin:auto;float:right" 
+                style="height:100px;display:flex;margin:auto;float:right"
             />
         </html>"""
     ),
@@ -74,36 +68,28 @@ default_template = (
 
 def remove_u_score(col):
     """
-
     This functions help to remove the "_" present in a specific text
-
     Parameters
     ----------
     col
         Analysis column containing "_" present gets replaced along with upper case conversion
-
     Returns
     -------
-
     """
     col_ = col.split("_")
     bl = []
-
     for i in col_:
         if i == "nullColumns" or i == "nullRows":
             bl.append("Null")
         else:
             bl.append(i[0].upper() + i[1:])
-
     return " ".join(bl)
 
 
 def line_chart_gen_stability(df1, df2, col):
 
     """
-
     This function helps to produce charts which are specific to data stability index. It taken into account the stability input along with the analysis column to produce the desired output.
-
     Parameters
     ----------
     df1
@@ -112,23 +98,18 @@ def line_chart_gen_stability(df1, df2, col):
         Analysis dataframe pertaining to historical data
     col
         Analysis column
-
     Returns
     -------
-
     """
 
     def val_cat(val):
         """
-
         Parameters
         ----------
         val
 
-
         Returns
         -------
-
         """
         if val >= 3.5:
             return "Very Stable"
@@ -144,7 +125,6 @@ def line_chart_gen_stability(df1, df2, col):
             return "Out of Range"
 
     val_si = list(df2[df2["attribute"] == col].stability_index.values)[0]
-
     f1 = go.Figure()
     f1.add_trace(
         go.Indicator(
@@ -170,13 +150,10 @@ def line_chart_gen_stability(df1, df2, col):
             title={"text": "Order of Stability: " + val_cat(val_si)},
         )
     )
-
     f1.update_layout(height=400, font={"color": "black", "family": "Arial"})
     f5 = "Stability Index for " + str(col.upper())
-
     if len(df1.columns) > 0:
         df1 = df1[df1["attribute"] == col]
-
         f2 = px.line(
             df1,
             x="idx",
@@ -188,7 +165,6 @@ def line_chart_gen_stability(df1, df2, col):
         f2.update_traces(line_color=global_theme[2], marker=dict(size=14))
         f2.layout.plot_bgcolor = global_plot_bg_color
         f2.layout.paper_bgcolor = global_paper_bg_color
-
         f3 = px.line(
             df1,
             x="idx",
@@ -200,7 +176,6 @@ def line_chart_gen_stability(df1, df2, col):
         f3.update_traces(line_color=global_theme[6], marker=dict(size=14))
         f3.layout.plot_bgcolor = global_plot_bg_color
         f3.layout.paper_bgcolor = global_paper_bg_color
-
         f4 = px.line(
             df1,
             x="idx",
@@ -212,7 +187,6 @@ def line_chart_gen_stability(df1, df2, col):
         f4.update_traces(line_color=global_theme[4], marker=dict(size=14))
         f4.layout.plot_bgcolor = global_plot_bg_color
         f4.layout.paper_bgcolor = global_paper_bg_color
-
         return dp.Group(
             dp.Text("#"),
             dp.Text(f5),
@@ -221,7 +195,6 @@ def line_chart_gen_stability(df1, df2, col):
             rows=4,
             label=col,
         )
-
     else:
         return dp.Group(dp.Text("#"), dp.Text(f5), dp.Plot(f1), rows=3, label=col)
 
@@ -229,9 +202,7 @@ def line_chart_gen_stability(df1, df2, col):
 def data_analyzer_output(master_path, avl_recs_tab, tab_name):
 
     """
-
     This section produces output in form of datapane objects which is specific to the different data analyzer modules. It is used by referring to the Master path along with the Available list of metrics & the Tab name.
-
     Parameters
     ----------
     master_path
@@ -240,24 +211,19 @@ def data_analyzer_output(master_path, avl_recs_tab, tab_name):
         Available file names from the analysis tab
     tab_name
         Analysis tab from association_evaluator / quality_checker / stats_generator
-
     Returns
     -------
-
     """
 
     df_list = []
     df_plot_list = []
     # @FIXME: unused variables
     plot_list = []
-
     avl_recs_tab = [x for x in avl_recs_tab if "global_summary" not in x]
-
     for index, i in enumerate(avl_recs_tab):
         data = pd.read_csv(ends_with(master_path) + str(i) + ".csv")
         if len(data.index) == 0:
             continue
-
         if tab_name == "quality_checker":
             if i == "duplicate_detection":
                 duplicate_recs = pd.read_csv(
@@ -284,7 +250,6 @@ def data_analyzer_output(master_path, avl_recs_tab, tab_name):
                     ].value.values
                     * 100.0
                 )
-
                 unique_rows_count = f" No. Of Unique Rows: ** {_unique_rows_count}, **"
                 # @FIXME: variable names exists in outer scope
                 rows_count = f" No. of Rows: ** {_rows_count}, **"
@@ -292,7 +257,6 @@ def data_analyzer_output(master_path, avl_recs_tab, tab_name):
                     f" No. of Duplicate Rows: ** {_duplicate_rows_count}, **"
                 )
                 duplicate_pct = f" Percentage of Duplicate Rows: ** {_duplicate_pct}%**"
-
                 df_list.append(
                     [
                         dp.Text("### " + str(remove_u_score(i))),
@@ -307,7 +271,6 @@ def data_analyzer_output(master_path, avl_recs_tab, tab_name):
                         dp.Text("#"),
                     ]
                 )
-
             elif i == "outlier_detection":
                 df_list.append(
                     [
@@ -320,7 +283,6 @@ def data_analyzer_output(master_path, avl_recs_tab, tab_name):
                         "outlier_charts_placeholder",
                     ]
                 )
-
             else:
                 df_list.append(
                     [
@@ -334,13 +296,9 @@ def data_analyzer_output(master_path, avl_recs_tab, tab_name):
                         dp.Text("#"),
                     ]
                 )
-
         elif tab_name == "association_evaluator":
-
             for j in avl_recs_tab:
-
                 if j == "correlation_matrix":
-
                     df_list_ = pd.read_csv(
                         ends_with(master_path) + str(j) + ".csv"
                     ).round(3)
@@ -364,9 +322,7 @@ def data_analyzer_output(master_path, avl_recs_tab, tab_name):
                             label=remove_u_score(j),
                         )
                     )
-
                 elif j == "variable_clustering":
-
                     df_list_ = (
                         pd.read_csv(ends_with(master_path) + str(j) + ".csv")
                         .round(3)
@@ -392,14 +348,11 @@ def data_analyzer_output(master_path, avl_recs_tab, tab_name):
                             label=remove_u_score(j),
                         )
                     )
-
                 else:
-
                     try:
                         df_list_ = pd.read_csv(
                             ends_with(master_path) + str(j) + ".csv"
                         ).round(3)
-
                         col_nm = [
                             x for x in list(df_list_.columns) if "attribute" not in x
                         ]
@@ -427,7 +380,6 @@ def data_analyzer_output(master_path, avl_recs_tab, tab_name):
                     except Exception as e:
                         logger.error(f"processing failed, error {e}")
                         pass
-
             if len(avl_recs_tab) == 1:
                 df_plot_list.append(
                     dp.Group(
@@ -440,7 +392,6 @@ def data_analyzer_output(master_path, avl_recs_tab, tab_name):
                 )
             else:
                 pass
-
             return df_plot_list
         else:
             df_list.append(
@@ -449,10 +400,8 @@ def data_analyzer_output(master_path, avl_recs_tab, tab_name):
                     label=remove_u_score(avl_recs_tab[index]),
                 )
             )
-
     if tab_name == "quality_checker" and len(avl_recs_tab) == 1:
         return df_list[0], [dp.Text("#"), dp.Plot(blank_chart)]
-
     elif tab_name == "stats_generator" and len(avl_recs_tab) == 1:
         return [
             df_list[0],
@@ -473,7 +422,6 @@ def drift_stability_ind(
         drift_tab: "drift_statistics"
     missing_recs_stability: Missing files from the stability tab
         stability_tab:"stability_index, stabilityIndex_metrics"
-
     Parameters
     ----------
     missing_recs_drift
@@ -485,34 +433,26 @@ def drift_stability_ind(
 
     Returns
     -------
-
     """
-
     if len(missing_recs_drift) == len(drift_tab):
         drift_ind = 0
     else:
         drift_ind = 1
-
     if len(missing_recs_stability) == len(stability_tab):
         stability_ind = 0
     elif ("stabilityIndex_metrics" in missing_recs_stability) and (
         "stability_index" not in missing_recs_stability
     ):
-
         stability_ind = 0.5
     else:
         stability_ind = 1
-
     return drift_ind, stability_ind
 
 
 def chart_gen_list(master_path, chart_type, type_col=None):
 
     """
-
     This function helps to produce the charts in a list object form nested by a datapane object.
-
-
     Parameters
     ----------
     master_path
@@ -521,14 +461,10 @@ def chart_gen_list(master_path, chart_type, type_col=None):
         Files containing only the specific chart names for the specific chart category
     type_col
         None. Default value is kept as None
-
     Returns
     -------
-
     """
-
     plot_list = []
-
     for i in chart_type:
         col_name = i[i.find("_") + 1 :]
         if type_col == "numerical":
@@ -558,7 +494,6 @@ def chart_gen_list(master_path, chart_type, type_col=None):
                     label=col_name,
                 )
             )
-
     return plot_list
 
 
@@ -572,9 +507,7 @@ def executive_summary_gen(
     print_report=False,
 ):
     """
-
     This function helps to produce output specific to the Executive Summary Tab.
-
     Parameters
     ----------
     master_path
@@ -591,12 +524,9 @@ def executive_summary_gen(
         Correlation threshold beyond which attributes can be categorized under correlated.
     print_report
         Printing option flexibility. Default value is kept as False.
-
     Returns
     -------
-
     """
-
     try:
         obj_dtls = json.load(
             open(ends_with(master_path) + "freqDist_" + str(label_col))
@@ -617,18 +547,15 @@ def executive_summary_gen(
                 )
             ]
         )
-
         label_fig_.update_traces(textposition="inside", textinfo="percent+label")
         label_fig_.update_layout(
             legend=dict(orientation="h", x=0.5, yanchor="bottom", xanchor="center")
         )
-
         label_fig_.layout.plot_bgcolor = global_plot_bg_color
         label_fig_.layout.paper_bgcolor = global_paper_bg_color
     except Exception as e:
         logger.error(f"processing failed, error {e}")
         label_fig_ = None
-
     a1 = (
         "The dataset contains  **"
         + str(f"{rows_count:,d}")
@@ -648,7 +575,6 @@ def executive_summary_gen(
         )
     else:
         if label_fig_ is None:
-
             a2 = dp.Group(
                 dp.Text("- Target variable is **" + str(label_col) + "** "),
                 dp.Text("- Data Diagnosis:"),
@@ -661,7 +587,6 @@ def executive_summary_gen(
                 dp.Text("- Data Diagnosis:"),
                 rows=3,
             )
-
     try:
         x1 = list(
             pd.read_csv(ends_with(master_path) + "measures_of_dispersion.csv")
@@ -675,7 +600,6 @@ def executive_summary_gen(
     except Exception as e:
         logger.error(f"processing failed, error {e}")
         x1_1 = ["High Variance", None]
-
     try:
         x2 = list(
             pd.read_csv(ends_with(master_path) + "measures_of_shape.csv")
@@ -689,7 +613,6 @@ def executive_summary_gen(
     except Exception as e:
         logger.error(f"processing failed, error {e}")
         x2_1 = ["Positive Skewness", None]
-
     try:
         x3 = list(
             pd.read_csv(ends_with(master_path) + "measures_of_shape.csv")
@@ -703,7 +626,6 @@ def executive_summary_gen(
     except Exception as e:
         logger.error(f"processing failed, error {e}")
         x3_1 = ["Negative Skewness", None]
-
     try:
         x4 = list(
             pd.read_csv(ends_with(master_path) + "measures_of_shape.csv")
@@ -714,11 +636,9 @@ def executive_summary_gen(
             x4_1 = ["High Kurtosis", x4]
         else:
             x4_1 = ["High Kurtosis", None]
-
     except Exception as e:
         logger.error(f"processing failed, error {e}")
         x4_1 = ["High Kurtosis", None]
-
     try:
         x5 = list(
             pd.read_csv(ends_with(master_path) + "measures_of_shape.csv")
@@ -732,7 +652,6 @@ def executive_summary_gen(
     except Exception as e:
         logger.error(f"processing failed, error {e}")
         x5_1 = ["Low Kurtosis", None]
-
     try:
         x6 = list(
             pd.read_csv(ends_with(master_path) + "measures_of_counts.csv")
@@ -746,7 +665,6 @@ def executive_summary_gen(
     except Exception as e:
         logger.error(f"processing failed, error {e}")
         x6_1 = ["Low Fill Rates", None]
-
     try:
         biasedness_df = pd.read_csv(ends_with(master_path) + "biasedness_detection.csv")
         if "treated" in biasedness_df:
@@ -760,7 +678,6 @@ def executive_summary_gen(
     except Exception as e:
         logger.error(f"processing failed, error {e}")
         x7_1 = ["High Biasedness", None]
-
     try:
         x8 = list(
             pd.read_csv(
@@ -774,14 +691,12 @@ def executive_summary_gen(
     except Exception as e:
         logger.error(f"processing failed, error {e}")
         x8_1 = ["Outliers", None]
-
     try:
         corr_matrx = pd.read_csv(ends_with(master_path) + "correlation_matrix.csv")
         corr_matrx = corr_matrx[list(corr_matrx.attribute.values)]
         corr_matrx = corr_matrx.where(
             np.triu(np.ones(corr_matrx.shape), k=1).astype(np.bool)
         )
-
         to_drop = [
             column
             for column in corr_matrx.columns
@@ -794,7 +709,6 @@ def executive_summary_gen(
     except Exception as e:
         logger.error(f"processing failed, error {e}")
         x9_1 = ["High Correlation", None]
-
     try:
         x10 = list(
             pd.read_csv(ends_with(master_path) + "IV_calculation.csv")
@@ -808,7 +722,6 @@ def executive_summary_gen(
     except Exception as e:
         logger.error(f"processing failed, error {e}")
         x10_1 = ["Significant Attributes", None]
-
     blank_list_df = []
     for i in [x1_1, x2_1, x3_1, x4_1, x5_1, x6_1, x7_1, x8_1, x9_1, x10_1]:
         try:
@@ -817,7 +730,6 @@ def executive_summary_gen(
         except Exception as e:
             logger.error(f"processing failed, error {e}")
             blank_list_df.append([i[0], "NA"])
-
     list_n = []
     x1 = pd.DataFrame(blank_list_df, columns=["Metric", "Attribute"])
     x1["Value"] = "✔"
@@ -826,11 +738,9 @@ def executive_summary_gen(
     ).split(",")
     remainder_cols = list(set(all_cols) - set(x1.Attribute.values))
     total_metrics = set(list(x1.Metric.values))
-
     for i in remainder_cols:
         for j in total_metrics:
             list_n.append([j, i])
-
     x2 = pd.DataFrame(list_n, columns=["Metric", "Attribute"])
     x2["Value"] = "✘"
     x = x1.append(x2, ignore_index=True)
@@ -852,12 +762,9 @@ def executive_summary_gen(
             ]
         ]
     )
-
     x = x[x.Attribute.values != "NA"]
-
     if ds_ind[0] == 1 and ds_ind[1] >= 0.5:
         a5 = "Data Health based on Drift Metrics & Stability Index : "
-
         report = dp.Group(
             dp.Text("# "),
             dp.Text("**Key Report Highlights**"),
@@ -895,10 +802,8 @@ def executive_summary_gen(
             dp.Text("# "),
             label="Executive Summary",
         )
-
     if ds_ind[0] == 0 and ds_ind[1] >= 0.5:
         a5 = "Data Health based on Stability Index : "
-
         report = dp.Group(
             dp.Text("# "),
             dp.Text("**Key Report Highlights**"),
@@ -929,10 +834,8 @@ def executive_summary_gen(
             dp.Text("# "),
             label="Executive Summary",
         )
-
     if ds_ind[0] == 1 and ds_ind[1] == 0:
         a5 = "Data Health based on Drift Metrics : "
-
         report = dp.Group(
             dp.Text("# "),
             dp.Text("**Key Report Highlights**"),
@@ -956,7 +859,6 @@ def executive_summary_gen(
             dp.Text("# "),
             label="Executive Summary",
         )
-
     if ds_ind[0] == 0 and ds_ind[1] == 0:
         report = dp.Group(
             dp.Text("# "),
@@ -968,12 +870,10 @@ def executive_summary_gen(
             dp.Text("# "),
             label="Executive Summary",
         )
-
     if print_report:
         dp.Report(default_template[0], default_template[1], report).save(
             ends_with(master_path) + "executive_summary.html", open=True
         )
-
     return report
 
 
@@ -983,7 +883,6 @@ def wiki_generator(
 ):
     """
     This function helps to produce output specific to the Wiki Tab.
-
     Parameters
     ----------
     master_path
@@ -994,10 +893,8 @@ def wiki_generator(
         Metric dictionary path. Default value is kept as None.
     print_report
         Printing option flexibility. Default value is kept as False.
-
     Returns
     -------
-
     """
     try:
         datatype_df = pd.read_csv(ends_with(master_path) + "data_type.csv")
@@ -1008,7 +905,6 @@ def wiki_generator(
     except Exception:
         logger.info("generate an empty dataframe with columns attribute and data_type ")
         datatype_df = pd.DataFrame(columns=["attribute", "data_type"], index=range(1))
-
     try:
         data_dict = pd.read_csv(dataDict_path).merge(
             datatype_df, how="outer", on="attribute"
@@ -1017,7 +913,6 @@ def wiki_generator(
         logger.error(f"file {dataDict_path} doesn't exist, cannot read data dict")
     except Exception:
         data_dict = datatype_df
-
     try:
         metric_dict = pd.read_csv(metricDict_path)
     except FileNotFoundError:
@@ -1032,12 +927,11 @@ def wiki_generator(
             ],
             index=range(1),
         )
-
     report = dp.Group(
         dp.Text("# "),
         dp.Text(
             """
-            *A quick reference to the attributes from the dataset (Data Dictionary) 
+            *A quick reference to the attributes from the dataset (Data Dictionary)
             and the metrics computed in the report (Metric Dictionary).*
             """
         ),
@@ -1061,12 +955,10 @@ def wiki_generator(
         dp.Text("# "),
         label="Wiki",
     )
-
     if print_report:
         dp.Report(default_template[0], default_template[1], report).save(
             ends_with(master_path) + "wiki_generator.html", open=True
         )
-
     return report
 
 
@@ -1080,9 +972,7 @@ def descriptive_statistics(
     print_report=False,
 ):
     """
-
     This function helps to produce output specific to the Descriptive Stats Tab.
-
     Parameters
     ----------
     master_path
@@ -1099,19 +989,15 @@ def descriptive_statistics(
         Categorical charts (barplot) all collated in a list format supported as per datapane objects
     print_report
         Printing option flexibility. Default value is kept as False.
-
     Returns
     -------
-
     """
     if "global_summary" in avl_recs_SG:
         cnt = 0
     else:
         cnt = 1
-
     if len(missing_recs_SG) + cnt == len(SG_tabs):
         return "null_report"
-
     else:
         if "global_summary" in avl_recs_SG:
             l1 = dp.Group(
@@ -1147,13 +1033,9 @@ def descriptive_statistics(
                 ),
                 rows=8,
             )
-
         else:
-
             l1 = dp.Text("# ")
-
         if len(data_analyzer_output(master_path, avl_recs_SG, "stats_generator")) > 0:
-
             l2 = dp.Text("### Statistics by Metric Type")
             l3 = dp.Group(
                 dp.Select(
@@ -1167,11 +1049,8 @@ def descriptive_statistics(
         else:
             l2 = dp.Text("# ")
             l3 = dp.Text("# ")
-
         if len(all_charts_num_1_) == 0 and len(all_charts_cat_1_) == 0:
-
             l4 = 1
-
         elif len(all_charts_num_1_) == 0 and len(all_charts_cat_1_) > 0:
             l4 = (
                 dp.Text("# "),
@@ -1180,9 +1059,7 @@ def descriptive_statistics(
                 dp.Text("# "),
                 dp.Text("# "),
             )
-
         elif len(all_charts_num_1_) > 0 and len(all_charts_cat_1_) == 0:
-
             l4 = (
                 dp.Text("# "),
                 dp.Text("### Attribute Visualization"),
@@ -1190,9 +1067,7 @@ def descriptive_statistics(
                 dp.Text("# "),
                 dp.Text("# "),
             )
-
         else:
-
             l4 = (
                 dp.Text("# "),
                 dp.Text("### Attribute Visualization"),
@@ -1220,7 +1095,6 @@ def descriptive_statistics(
                 dp.Text("# "),
                 dp.Text("# "),
             )
-
     if l4 == 1:
         report = dp.Group(
             l1,
@@ -1242,12 +1116,10 @@ def descriptive_statistics(
             dp.Text("# "),
             label="Descriptive Statistics",
         )
-
     if print_report:
         dp.Report(default_template[0], default_template[1], report).save(
             ends_with(master_path) + "descriptive_statistics.html", open=True
         )
-
     return report
 
 
@@ -1260,9 +1132,7 @@ def quality_check(
     print_report=False,
 ):
     """
-
     This function helps to produce output specific to the Quality Checker Tab.
-
     Parameters
     ----------
     master_path
@@ -1277,18 +1147,13 @@ def quality_check(
         Numerical charts (outlier charts) all collated in a list format supported as per datapane objects
     print_report
         Printing option flexibility. Default value is kept as False.
-
     Returns
     -------
-
     """
-
     c_ = []
     r_ = []
-
     if len(missing_recs_QC) == len(QC_tabs):
         return "null_report"
-
     else:
         row_wise = ["duplicate_detection", "nullRows_detection"]
         col_wise = [
@@ -1298,17 +1163,12 @@ def quality_check(
             "invalidEntries_detection",
             "outlier_detection",
         ]
-
         row_wise_ = [p for p in row_wise if p in avl_recs_QC]
         col_wise_ = [p for p in col_wise if p in avl_recs_QC]
-
         len_row_wise = len([p for p in row_wise if p in avl_recs_QC])
         len_col_wise = len([p for p in col_wise if p in avl_recs_QC])
-
         if len_row_wise == 0:
-
             c = data_analyzer_output(master_path, col_wise_, "quality_checker")
-
             for i in c:
                 for j in i:
                     if j == "outlier_charts_placeholder" and len(all_charts_num_3_) > 1:
@@ -1324,7 +1184,6 @@ def quality_check(
                         c_.append(dp.Plot(blank_chart))
                     else:
                         c_.append(j)
-
             report = dp.Group(
                 dp.Text("# "),
                 dp.Text(
@@ -1338,15 +1197,11 @@ def quality_check(
                 rows=8,
                 label="Quality Check",
             )
-
         elif len_col_wise == 0:
-
             r = data_analyzer_output(master_path, row_wise_, "quality_checker")
-
             for i in r:
                 for j in i:
                     r_.append(j)
-
             report = dp.Group(
                 dp.Text("# "),
                 dp.Text(
@@ -1360,11 +1215,8 @@ def quality_check(
                 rows=8,
                 label="Quality Check",
             )
-
         else:
-
             c = data_analyzer_output(master_path, col_wise_, "quality_checker")
-
             for i in c:
                 for j in i:
                     if j == "outlier_charts_placeholder" and len(all_charts_num_3_) > 1:
@@ -1380,13 +1232,10 @@ def quality_check(
                         c_.append(dp.Plot(blank_chart))
                     else:
                         c_.append(j)
-
             r = data_analyzer_output(master_path, row_wise_, "quality_checker")
-
             for i in r:
                 for j in i:
                     r_.append(j)
-
             report = dp.Group(
                 dp.Text("# "),
                 dp.Text(
@@ -1409,12 +1258,10 @@ def quality_check(
                 dp.Text("# "),
                 label="Quality Check",
             )
-
     if print_report:
         dp.Report(default_template[0], default_template[1], report).save(
             ends_with(master_path) + "quality_check.html", open=True
         )
-
     return report
 
 
@@ -1429,9 +1276,7 @@ def attribute_associations(
     print_report=False,
 ):
     """
-
     This function helps to produce output specific to the Attribute Association Tab.
-
     Parameters
     ----------
     master_path
@@ -1450,20 +1295,14 @@ def attribute_associations(
         Categorical charts (barplot) all collated in a list format supported as per datapane objects
     print_report
         Printing option flexibility. Default value is kept as False.
-
     Returns
     -------
-
     """
-
     if (len(missing_recs_AE) == len(AE_tabs)) and (
         (len(all_charts_num_2_) + len(all_charts_cat_2_)) == 0
     ):
-
         return "null_report"
-
     else:
-
         if len(all_charts_num_2_) == 0 and len(all_charts_cat_2_) == 0:
             target_association_rep = dp.Text("##")
         else:
@@ -1472,27 +1311,25 @@ def attribute_associations(
                     dp.Text("### Attribute to Target Association"),
                     dp.Text(
                         """
-                        *Bivariate Distribution considering the event captured across different 
+                        *Bivariate Distribution considering the event captured across different
                         attribute splits (or categories)*
                         """
                     ),
                     dp.Select(blocks=all_charts_num_2_, type=dp.SelectType.DROPDOWN),
                     label="Numerical",
                 )
-
             elif len(all_charts_num_2_) == 0 and len(all_charts_cat_2_) > 0:
                 target_association_rep = dp.Group(
                     dp.Text("### Attribute to Target Association"),
                     dp.Text(
                         """
-                        *Bivariate Distribution considering the event captured across different 
+                        *Bivariate Distribution considering the event captured across different
                         attribute splits (or categories)*
                         """
                     ),
                     dp.Select(blocks=all_charts_cat_2_, type=dp.SelectType.DROPDOWN),
                     label="Categorical",
                 )
-
             else:
                 target_association_rep = dp.Group(
                     dp.Text("### Attribute to Target Association"),
@@ -1517,20 +1354,18 @@ def attribute_associations(
                     ),
                     dp.Text(
                         """
-                        *Event Rate is defined as % of event label (i.e. label 1) in a bin or a categorical 
+                        *Event Rate is defined as % of event label (i.e. label 1) in a bin or a categorical
                         value of an attribute.*
                         """
                     ),
                     dp.Text("# "),
                 )
-
     if len(missing_recs_AE) == len(AE_tabs):
-
         report = dp.Group(
             dp.Text("# "),
             dp.Text(
                 """
-                *This section analyzes the interaction between different attributes and/or the relationship between 
+                *This section analyzes the interaction between different attributes and/or the relationship between
                 an attribute & the binary target variable.*
                 """
             ),
@@ -1540,9 +1375,7 @@ def attribute_associations(
             dp.Text("## "),
             label="Attribute Associations",
         )
-
     else:
-
         report = dp.Group(
             dp.Text("# "),
             dp.Text(
@@ -1567,12 +1400,10 @@ def attribute_associations(
             dp.Text("## "),
             label="Attribute Associations",
         )
-
     if print_report:
         dp.Report(default_template[0], default_template[1], report).save(
             ends_with(master_path) + "attribute_associations.html", open=True
         )
-
     return report
 
 
@@ -1585,9 +1416,7 @@ def data_drift_stability(
     print_report=False,
 ):
     """
-
     This function helps to produce output specific to the Data Drift & Stability Tab.
-
     Parameters
     ----------
     master_path
@@ -1602,16 +1431,11 @@ def data_drift_stability(
         Charts (histogram/barplot) all collated in a list format supported as per datapane objects
     print_report
         Printing option flexibility. Default value is kept as False.
-
     Returns
     -------
-
     """
-
     line_chart_list = []
-
     if ds_ind[0] > 0:
-
         fig_metric_drift = go.Figure()
         fig_metric_drift.add_trace(
             go.Scatter(
@@ -1622,7 +1446,6 @@ def data_drift_stability(
                 name=metric_drift[0],
             )
         )
-
         fig_metric_drift.add_trace(
             go.Scatter(
                 x=list(drift_df[drift_df.flagged.values == 1][metric_drift[1]].values),
@@ -1632,7 +1455,6 @@ def data_drift_stability(
                 name=metric_drift[1],
             )
         )
-
         fig_metric_drift.add_trace(
             go.Scatter(
                 x=list(drift_df[drift_df.flagged.values == 1][metric_drift[2]].values),
@@ -1642,7 +1464,6 @@ def data_drift_stability(
                 name=metric_drift[2],
             )
         )
-
         fig_metric_drift.add_trace(
             go.Scatter(
                 x=list(drift_df[drift_df.flagged.values == 1][metric_drift[3]].values),
@@ -1652,7 +1473,6 @@ def data_drift_stability(
                 name=metric_drift[3],
             )
         )
-
         fig_metric_drift.add_vrect(
             x0=0,
             x1=drift_threshold_model,
@@ -1661,7 +1481,6 @@ def data_drift_stability(
             layer="below",
             line_width=1,
         ),
-
         fig_metric_drift.update_layout(
             legend=dict(orientation="h", x=0.5, yanchor="bottom", xanchor="center")
         )
@@ -1673,9 +1492,7 @@ def data_drift_stability(
         fig_metric_drift.update_yaxes(
             showline=True, linewidth=2, gridcolor=px.colors.sequential.Greys[2]
         )
-
         #     Drift Chart - 2
-
         fig_gauge_drift = go.Figure(
             go.Indicator(
                 domain={"x": [0, 1], "y": [0, 1]},
@@ -1703,27 +1520,22 @@ def data_drift_stability(
                 },
             )
         )
-
         fig_gauge_drift.update_layout(font={"color": "black", "family": "Arial"})
 
         def drift_text_gen(drifted_feats, len_feats):
-
             """
-
             Parameters
             ----------
             drifted_feats
                 count of attributes drifted
             len_feats
                 count of attributes passed for analysis
-
             Returns
             -------
-
             """
             if drifted_feats == 0:
                 text = """
-                *Drift barometer does not indicate any drift in the underlying data. Please refer to the metric 
+                *Drift barometer does not indicate any drift in the underlying data. Please refer to the metric
                 values as displayed in the above table & comparison plot for better understanding*
                 """
             elif drifted_feats == 1:
@@ -1752,18 +1564,13 @@ def data_drift_stability(
 
     else:
         pass
-
     if ds_ind[0] == 0 and ds_ind[1] == 0:
-
         return "null_report"
-
     elif ds_ind[0] == 0 and ds_ind[1] > 0.5:
-
         for i in total_unstable_attr:
             line_chart_list.append(
                 line_chart_gen_stability(df1=df_stability, df2=df_si_, col=i)
             )
-
         report = dp.Group(
             dp.Text("# "),
             dp.Text(
@@ -1784,16 +1591,13 @@ def data_drift_stability(
             ),
             label="Drift & Stability",
         )
-
     elif ds_ind[0] == 1 and ds_ind[1] == 0:
-
         if len(all_drift_charts_) > 0:
-
             report = dp.Group(
                 dp.Text("# "),
                 dp.Text(
                     """
-                    *This section examines the dataset stability wrt the baseline dataset (via computing drift 
+                    *This section examines the dataset stability wrt the baseline dataset (via computing drift
                     statistics) and/or wrt the historical datasets (via computing stability index).*
                     """
                 ),
@@ -1810,7 +1614,7 @@ def data_drift_stability(
                 dp.Select(blocks=all_drift_charts_, type=dp.SelectType.DROPDOWN),
                 dp.Text(
                     """
-                    *Source & Target datasets were compared to see the % deviation at decile level for numerical 
+                    *Source & Target datasets were compared to see the % deviation at decile level for numerical
                     attributes and at individual category level for categorical attributes*
                     """
                 ),
@@ -1834,7 +1638,7 @@ def data_drift_stability(
                 dp.Text("# "),
                 dp.Text(
                     """
-                    *This section examines the dataset stability wrt the baseline dataset (via computing drift 
+                    *This section examines the dataset stability wrt the baseline dataset (via computing drift
                     statistics) and/or wrt the historical datasets (via computing stability index).*
                     """
                 ),
@@ -1862,21 +1666,17 @@ def data_drift_stability(
                 ),
                 label="Drift & Stability",
             )
-
     elif ds_ind[0] == 1 and ds_ind[1] >= 0.5:
-
         for i in total_unstable_attr:
             line_chart_list.append(
                 line_chart_gen_stability(df1=df_stability, df2=df_si_, col=i)
             )
-
         if len(all_drift_charts_) > 0:
-
             report = dp.Group(
                 dp.Text("# "),
                 dp.Text(
                     """
-                    *This section examines the dataset stability wrt the baseline dataset (via computing drift 
+                    *This section examines the dataset stability wrt the baseline dataset (via computing drift
                     statistics) and/or wrt the historical datasets (via computing stability index).*
                     """
                 ),
@@ -1893,7 +1693,7 @@ def data_drift_stability(
                 dp.Select(blocks=all_drift_charts_, type=dp.SelectType.DROPDOWN),
                 dp.Text(
                     """
-                    *Source & Target datasets were compared to see the % deviation at decile level for numerical 
+                    *Source & Target datasets were compared to see the % deviation at decile level for numerical
                     attributes and at individual category level for categorical attributes*
                     """
                 ),
@@ -1927,7 +1727,7 @@ def data_drift_stability(
                 dp.Text("# "),
                 dp.Text(
                     """
-                    *This section examines the dataset stability wrt the baseline dataset (via computing drift 
+                    *This section examines the dataset stability wrt the baseline dataset (via computing drift
                     statistics) and/or wrt the historical datasets (via computing stability index).*
                     """
                 ),
@@ -1964,19 +1764,16 @@ def data_drift_stability(
                 ),
                 label="Drift & Stability",
             )
-
     elif ds_ind[0] == 0 and ds_ind[1] >= 0.5:
-
         for i in total_unstable_attr:
             line_chart_list.append(
                 line_chart_gen_stability(df1=df_stability, df2=df_si_, col=i)
             )
-
         report = dp.Group(
             dp.Text("# "),
             dp.Text(
                 """
-                *This section examines the dataset stability wrt the baseline dataset (via computing drift statistics) 
+                *This section examines the dataset stability wrt the baseline dataset (via computing drift statistics)
                 and/or wrt the historical datasets (via computing stability index).*
                 """
             ),
@@ -1992,21 +1789,17 @@ def data_drift_stability(
             ),
             label="Drift & Stability",
         )
-
     else:
-
         for i in total_unstable_attr:
             line_chart_list.append(
                 line_chart_gen_stability(df1=df_stability, df2=df_si_, col=i)
             )
-
         if len(all_drift_charts_) > 0:
-
             report = dp.Group(
                 dp.Text("# "),
                 dp.Text(
                     """
-                    *This section examines the dataset stability wrt the baseline dataset (via computing drift 
+                    *This section examines the dataset stability wrt the baseline dataset (via computing drift
                     statistics) and/or wrt the historical datasets (via computing stability index).*
                     """
                 ),
@@ -2023,7 +1816,7 @@ def data_drift_stability(
                 dp.Select(blocks=all_drift_charts_, type=dp.SelectType.DROPDOWN),
                 dp.Text(
                     """
-                    *Source & Target datasets were compared to see the % deviation at decile level for numerical 
+                    *Source & Target datasets were compared to see the % deviation at decile level for numerical
                     attributes and at individual category level for categorical attributes*
                     """
                 ),
@@ -2053,12 +1846,11 @@ def data_drift_stability(
                 label="Drift & Stability",
             )
         else:
-
             report = dp.Group(
                 dp.Text("# "),
                 dp.Text(
                     """
-                    *This section examines the dataset stability wrt the baseline dataset (via computing drift 
+                    *This section examines the dataset stability wrt the baseline dataset (via computing drift
                     statistics) and/or wrt the historical datasets (via computing stability index).*
                     """
                 ),
@@ -2095,12 +1887,10 @@ def data_drift_stability(
                 ),
                 label="Drift & Stability",
             )
-
     if print_report:
         dp.Report(default_template[0], default_template[1], report).save(
             ends_with(master_path) + "data_drift_stability.html", open=True
         )
-
     return report
 
 
@@ -2109,7 +1899,6 @@ def plotSeasonalDecompose(
 ):
 
     """
-
     This function helps to produce output specific to the Seasonal Decomposition of Time Series. Ideally it's expected to source a data containing atleast 2 cycles or 24 months as the most.
 
     Parameters
@@ -2124,12 +1913,9 @@ def plotSeasonalDecompose(
         Metric of aggregation. Options can be between "Median", "Mean", "Min", "Max"
     title
         "Title Description"
-
     Returns
     -------
-
     """
-
     df = pd.read_csv(ends_with(base_path) + x_col + "_" + y_col + "_daily.csv").dropna()
 
     df[x_col] = pd.to_datetime(df[x_col], format="%Y-%m-%d %H:%M:%S.%f")
@@ -3451,15 +3237,12 @@ def anovos_report(
         )
     else:
         numcols_name = ""
-
     all_files = os.listdir(master_path)
-
     eventDist_charts = [x for x in all_files if "eventDist" in x]
     stats_files = [x for x in all_files if ".csv" in x]
     freq_charts = [x for x in all_files if "freqDist" in x]
     outlier_charts = [x for x in all_files if "outlier" in x]
     drift_charts = [x for x in all_files if "drift" in x and ".csv" not in x]
-
     all_charts_num_1_ = chart_gen_list(
         master_path, chart_type=freq_charts, type_col="numerical"
     )
@@ -3476,7 +3259,6 @@ def anovos_report(
         master_path, chart_type=eventDist_charts, type_col="categorical"
     )
     all_drift_charts_ = chart_gen_list(master_path, chart_type=drift_charts)
-
     for x in [
         all_charts_num_1_,
         all_charts_num_2_,
@@ -3489,9 +3271,7 @@ def anovos_report(
             x.append(dp.Plot(blank_chart, label=" "))
         else:
             x
-
     mapping_tab_list = []
-
     for i in stats_files:
         if i.split(".csv")[0] in SG_tabs:
             mapping_tab_list.append([i.split(".csv")[0], "Descriptive Statistics"])
@@ -3503,26 +3283,20 @@ def anovos_report(
             mapping_tab_list.append([i.split(".csv")[0], "Data Drift & Data Stability"])
         else:
             mapping_tab_list.append([i.split(".csv")[0], "null"])
-
     xx = pd.DataFrame(mapping_tab_list, columns=["file_name", "tab_name"])
     xx_avl = list(set(xx.file_name.values))
-
     for i in SG_tabs:
         if i in xx_avl:
             avl_SG.append(i)
-
     for j in QC_tabs:
         if j in xx_avl:
             avl_QC.append(j)
-
     for k in AE_tabs:
         if k in xx_avl:
             avl_AE.append(k)
-
     missing_SG = list(set(SG_tabs) - set(avl_SG))
     missing_QC = list(set(QC_tabs) - set(avl_QC))
     missing_AE = list(set(AE_tabs) - set(avl_AE))
-
     missing_drift = list(
         set(drift_tab)
         - set(xx[xx.tab_name.values == "Data Drift & Data Stability"].file_name.values)
@@ -3531,11 +3305,9 @@ def anovos_report(
         set(stability_tab)
         - set(xx[xx.tab_name.values == "Data Drift & Data Stability"].file_name.values)
     )
-
     ds_ind = drift_stability_ind(
         missing_drift, drift_tab, missing_stability, stability_tab
     )
-
     if ds_ind[0] > 0:
         drift_df = pd.read_csv(
             ends_with(master_path) + "drift_statistics.csv"
@@ -3548,9 +3320,7 @@ def anovos_report(
             .melt(id_vars="attribute", value_vars=metric_drift)
             .sort_values(by=["variable", "value"], ascending=False)
         )
-
         drifted_feats = drift_df[drift_df.flagged.values == 1].shape[0]
-
     if ds_ind[1] > 0.5:
         df_stability = pd.read_csv(
             ends_with(master_path) + "stabilityIndex_metrics.csv"
@@ -3570,7 +3340,6 @@ def anovos_report(
         ]
         unstable_attr = list(df_si_[df_si_.flagged.values == 1].attribute.values)
         total_unstable_attr = list(df_si_.attribute.values)
-
     elif ds_ind[1] == 0.5:
         df_si_ = pd.read_csv(ends_with(master_path) + "stability_index.csv")
         df_si = df_si_[
@@ -3587,10 +3356,8 @@ def anovos_report(
         total_unstable_attr = list(df_si_.attribute.values)
         df_stability = pd.DataFrame()
         n_df_stability = "the"
-
     else:
         pass
-
     tab1 = executive_summary_gen(
         master_path, label_col, ds_ind, id_col, iv_threshold, corr_threshold
     )
@@ -3613,37 +3380,27 @@ def anovos_report(
     tab6 = data_drift_stability(
         master_path, ds_ind, id_col, drift_threshold_model, all_drift_charts_
     )
-
     tab7 = ts_viz_generate(ends_with(master_path), id_col, output_type)
-
     final_tabs_list = []
-
     for i in [tab1, tab2, tab3, tab4, tab5, tab6, tab7]:
-
         if i == "null_report":
             pass
         else:
             final_tabs_list.append(i)
-
     if run_type in ("local", "databricks"):
-
         dp.Report(
             default_template[0],
             default_template[1],
             dp.Select(blocks=final_tabs_list, type=dp.SelectType.TABS),
         ).save(ends_with(final_report_path) + "ml_anovos_report.html", open=True)
-
     elif run_type == "emr":
-
         dp.Report(
             default_template[0],
             default_template[1],
             dp.Select(blocks=final_tabs_list, type=dp.SelectType.TABS),
         ).save("ml_anovos_report.html", open=True)
-
         bash_cmd = "aws s3 cp ml_anovos_report.html " + ends_with(final_report_path)
         subprocess.check_output(["bash", "-c", bash_cmd])
     else:
         raise ValueError("Invalid run_type")
-
     print("Report generated successfully at the specified location")

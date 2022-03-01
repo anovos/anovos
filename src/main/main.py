@@ -522,11 +522,11 @@ def main(all_configs, run_type):
                     f"execution time w/o report (in sec) ={round(end - start_main, 4)}"
                 )
 
-            if (key == "transformers") & (args != None):
+            if (key == "transformers") & (args is not None):
                 for subkey, value in args.items():
-                    if value != None:
+                    if value is not None:
                         for subkey2, value2 in value.items():
-                            if value2 != None:
+                            if value2 is not None:
                                 start = timeit.default_timer()
                                 print("\n" + subkey2 + ": \n")
                                 f = getattr(transformers, subkey2)

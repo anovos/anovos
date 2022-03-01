@@ -6,8 +6,8 @@ Association between attributes is measured by:
 - correlation_matrix
 - variable_clustering
 - Association between an attribute and binary target is measured by:
-	- IV_calculation
-	- IG_calculation
+    - IV_calculation
+    - IG_calculation
 
 Columns which are subjected to these analysis can be controlled by right combination of arguments - list_of_cols and
 drop_cols. All functions have following common arguments:

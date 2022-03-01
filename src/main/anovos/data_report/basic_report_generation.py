@@ -40,7 +40,7 @@ default_template = (
     dp.HTML(
         """
         <html>
-            <img src="https://mobilewalla-anovos.s3.amazonaws.com/anovos.png" 
+            <img src="https://mobilewalla-anovos.s3.amazonaws.com/anovos.png"
                  style="height:100px;display:flex;margin:auto;float:right"/>
         </html>
         """
@@ -524,7 +524,7 @@ def anovos_basic_report(
         dp.Text("# "),
         dp.Text(
             """
-            *This section analyzes the interaction between different attributes and/or the relationship 
+            *This section analyzes the interaction between different attributes and/or the relationship
             between an attribute & the binary target variable.*
             """
         ),
