@@ -1,0 +1,12 @@
+attribute,definition
+STATE,state name
+ST_ABB,state abbreviation
+YR,"year, 1970,...,1986"
+P_CAP,public capital
+HWY,highway capital
+WATER,water utility capital
+UTIL,utility capital
+PC,private capital
+GSP,gross state product
+EMP,employment
+UNEMP,unemployment rate
