@@ -471,12 +471,21 @@ def ts_analyzer(
         #         index=False,
         #     )
 
-        f1 = ts_eligiblity_check(spark,ts_processed_feat_df,id_col=id_col,opt=1,tz_offset=tz_offset)
-        f1.to_csv(ends_with(local_path) + "stats_" + str(i) + "_" + str(1) + ".csv",index=False)
+        f1 = ts_eligiblity_check(
+            spark, ts_processed_feat_df, id_col=id_col, opt=1, tz_offset=tz_offset
+        )
+        f1.to_csv(
+            ends_with(local_path) + "stats_" + str(i) + "_" + str(1) + ".csv",
+            index=False,
+        )
 
-        f2 = ts_eligiblity_check(spark,ts_processed_feat_df,id_col=id_col,opt=2,tz_offset=tz_offset)
-        f2.to_csv(ends_with(local_path) + "stats_" + str(i) + "_" + str(2) + ".csv",index=False)
-        
+        f2 = ts_eligiblity_check(
+            spark, ts_processed_feat_df, id_col=id_col, opt=2, tz_offset=tz_offset
+        )
+        f2.to_csv(
+            ends_with(local_path) + "stats_" + str(i) + "_" + str(2) + ".csv",
+            index=False,
+        )
 
         for k in [num_cols, cat_cols]:
             for l in k:
@@ -500,7 +509,7 @@ def ts_analyzer(
                         index=False,
                     )
         ts_processed_feat_df.unpersist()
-        
+
     if run_type == "emr":
         bash_cmd = (
             "aws s3 cp --recursive "
