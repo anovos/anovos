@@ -91,6 +91,8 @@ import tensorflow
 from tensorflow.keras.models import load_model, Model
 from tensorflow.keras.layers import Dense, Input, BatchNormalization, LeakyReLU
 
+platform_root_path = {"azure": "dbfs:/"}
+
 
 def attribute_binning(
     spark,
@@ -1739,7 +1741,7 @@ def imputation_sklearn(
         to read pre-saved statistics on missing count/pct i.e. if measures_of_counts or
         missingCount_computation (data_analyzer.stats_generator module) has been computed & saved before. (Default value = {})
     run_type
-        local", "emr" (Default value = "local")
+        "local", "emr", "azure" (Default value = "local")
     print_impact
         True, False (Default value = False)
 
@@ -2169,6 +2171,7 @@ def auto_imputation(
     null_pct=0.1,
     stats_missing={},
     output_mode="replace",
+    run_type="local",
     print_impact=True,
 ):
     """auto_imputation tests for 5 imputation methods using the other imputation functions provided in this module
@@ -2224,6 +2227,8 @@ def auto_imputation(
         replace", "append".
         “replace” option replaces original columns with transformed column. “append” option append transformed
         column to the input dataset with a postfix "_imputed" e.g. column X is appended as X_imputed. (Default value = "replace")
+    run_type
+        "local", "emr", "azure" (Default value = "local")
     print_impact
         True, False (Default value = True)
 
@@ -2232,14 +2237,21 @@ def auto_imputation(
 
     """
 
+    if run_type in list(platform_root_path.keys()):
+        root_path = platform_root_path[run_type]
+    else:
+        root_path = ""
+
     if stats_missing == {}:
         missing_df = missingCount_computation(spark, idf)
         missing_df.write.parquet(
-            "intermediate_data/imputation_comparison/missingCount_computation",
+            root_path
+            + "intermediate_data/imputation_comparison/missingCount_computation",
             mode="overwrite",
         )
         stats_missing = {
-            "file_path": "intermediate_data/imputation_comparison/missingCount_computation",
+            "file_path": root_path
+            + "intermediate_data/imputation_comparison/missingCount_computation",
             "file_type": "parquet",
         }
     else:
@@ -2315,10 +2327,11 @@ def auto_imputation(
         )
 
     idf_null.write.parquet(
-        "intermediate_data/imputation_comparison/test_dataset", mode="overwrite"
+        root_path + "intermediate_data/imputation_comparison/test_dataset",
+        mode="overwrite",
     )
     idf_null = spark.read.parquet(
-        "intermediate_data/imputation_comparison/test_dataset"
+        root_path + "intermediate_data/imputation_comparison/test_dataset"
     )
 
     method1 = imputation_MMM(
@@ -2522,7 +2535,7 @@ def autoencoder_latentFeatures(
         “append” option append transformed columns with format latent_<col_index> to the input dataset,
         e.g. latent_0, latent_1 will be appended if reduction_params=2. (Default value = "replace")
     run_type
-        local", "emr" (Default value = "local")
+        "local", "emr", "azure" (Default value = "local")
     print_impact
         True, False (Default value = False)
     "model_path": "NA"}
@@ -2548,14 +2561,21 @@ def autoencoder_latentFeatures(
         warnings.warn("No Latent Features Generated - No Column(s) to Transform")
         return idf
 
+    if run_type in list(platform_root_path.keys()):
+        root_path = platform_root_path[run_type]
+    else:
+        root_path = ""
+
     if stats_missing == {}:
         missing_df = missingCount_computation(spark, idf, list_of_cols)
         missing_df.write.parquet(
-            "intermediate_data/autoencoder_latentFeatures/missingCount_computation",
+            root_path
+            + "intermediate_data/autoencoder_latentFeatures/missingCount_computation",
             mode="overwrite",
         )
         stats_missing = {
-            "file_path": "intermediate_data/autoencoder_latentFeatures/missingCount_computation",
+            "file_path": root_path
+            + "intermediate_data/autoencoder_latentFeatures/missingCount_computation",
             "file_type": "parquet",
         }
     else:
@@ -2609,11 +2629,13 @@ def autoencoder_latentFeatures(
             .withColumn("attribute", F.concat(F.col("attribute"), F.lit("_scaled")))
         )
         missing_df_scaled.write.parquet(
-            "intermediate_data/autoencoder_latentFeatures/missingCount_computation_scaled",
+            root_path
+            + "intermediate_data/autoencoder_latentFeatures/missingCount_computation_scaled",
             mode="overwrite",
         )
         stats_missing_scaled = {
-            "file_path": "intermediate_data/autoencoder_latentFeatures/missingCount_computation_scaled",
+            "file_path": root_path
+            + "intermediate_data/autoencoder_latentFeatures/missingCount_computation_scaled",
             "file_type": "parquet",
         }
         idf_imputed = f(
@@ -2797,6 +2819,7 @@ def PCA_latentFeatures(
     imputation_configs={"imputation_function": "imputation_MMM"},
     stats_missing={},
     output_mode="replace",
+    run_type="local",
     print_impact=False,
 ):
     """Similar to autoencoder_latentFeatures, PCA_latentFeatures also generates latent features which reduces the
@@ -2874,6 +2897,8 @@ def PCA_latentFeatures(
         “replace” option replaces original columns with transformed columns: latent_<col_index>.
         “append” option append transformed columns with format latent_<col_index> to the input dataset,
         e.g. latent_0, latent_1. (Default value = "replace")
+    run_type
+        "local", "emr", "azure" (Default value = "local")
     print_impact
         True, False (Default value = False)
     "model_path": "NA"}
@@ -2899,14 +2924,20 @@ def PCA_latentFeatures(
         warnings.warn("No Latent Features Generated - No Column(s) to Transform")
         return idf
 
+    if run_type in list(platform_root_path.keys()):
+        root_path = platform_root_path[run_type]
+    else:
+        root_path = ""
+
     if stats_missing == {}:
         missing_df = missingCount_computation(spark, idf, list_of_cols)
         missing_df.write.parquet(
-            "intermediate_data/PCA_latentFeatures/missingCount_computation",
+            root_path + "intermediate_data/PCA_latentFeatures/missingCount_computation",
             mode="overwrite",
         )
         stats_missing = {
-            "file_path": "intermediate_data/PCA_latentFeatures/missingCount_computation",
+            "file_path": root_path
+            + "intermediate_data/PCA_latentFeatures/missingCount_computation",
             "file_type": "parquet",
         }
     else:
@@ -2960,11 +2991,13 @@ def PCA_latentFeatures(
             .withColumn("attribute", F.concat(F.col("attribute"), F.lit("_scaled")))
         )
         missing_df_scaled.write.parquet(
-            "intermediate_data/PCA_latentFeatures/missingCount_computation_scaled",
+            root_path
+            + "intermediate_data/PCA_latentFeatures/missingCount_computation_scaled",
             mode="overwrite",
         )
         stats_missing_scaled = {
-            "file_path": "intermediate_data/PCA_latentFeatures/missingCount_computation_scaled",
+            "file_path": root_path
+            + "intermediate_data/PCA_latentFeatures/missingCount_computation_scaled",
             "file_type": "parquet",
         }
         idf_imputed = f(
