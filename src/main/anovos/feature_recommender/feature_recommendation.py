@@ -13,6 +13,7 @@ from anovos.feature_recommender.featrec_init import (
     camel_case_split,
     feature_recommendation_prep,
     get_column_name,
+    EmbeddingsTrainFer,
 )
 from anovos.feature_recommender.feature_exploration import (
     list_usecase_by_industry,
@@ -20,7 +21,8 @@ from anovos.feature_recommender.feature_exploration import (
     process_usecase,
 )
 
-list_train_fer, df_rec_fer, list_embedding_train_fer = feature_recommendation_prep()
+list_train_fer, df_rec_fer = feature_recommendation_prep()
+list_embedding_train_fer = EmbeddingsTrainFer(list_train_fer)
 (
     feature_name_column,
     feature_desc_column,
@@ -83,7 +85,7 @@ def feature_recommendation(
         df_rec_fr = df_rec_fer[df_rec_fer.iloc[:, 2].str.contains(suggested_industry)]
         list_keep = list(df_rec_fr.index)
         list_embedding_train_fr = [
-            list_embedding_train_fer.tolist()[x] for x in list_keep
+            list_embedding_train_fer.get().tolist()[x] for x in list_keep
         ]
         df_rec_fr = df_rec_fr.reset_index(drop=True)
     elif suggested_usecase != "all" and suggested_industry == "all":
@@ -91,7 +93,7 @@ def feature_recommendation(
         df_rec_fr = df_rec_fer[df_rec_fer.iloc[:, 3].str.contains(suggested_usecase)]
         list_keep = list(df_rec_fr.index)
         list_embedding_train_fr = [
-            list_embedding_train_fer.tolist()[x] for x in list_keep
+            list_embedding_train_fer.get().tolist()[x] for x in list_keep
         ]
         df_rec_fr = df_rec_fr.reset_index(drop=True)
     elif suggested_usecase != "all" and suggested_industry != "all":
@@ -104,7 +106,7 @@ def feature_recommendation(
         if len(df_rec_fr) > 0:
             list_keep = list(df_rec_fr.index)
             list_embedding_train_fr = [
-                list_embedding_train_fer.tolist()[x] for x in list_keep
+                list_embedding_train_fer.get().tolist()[x] for x in list_keep
             ]
             df_rec_fr = df_rec_fr.reset_index(drop=True)
         else:
@@ -123,7 +125,7 @@ def feature_recommendation(
             return df_out
     else:
         df_rec_fr = df_rec_fer
-        list_embedding_train_fr = list_embedding_train_fer
+        list_embedding_train_fr = list_embedding_train_fer.get()
 
     if name_column is None:
         df_out = pd.DataFrame(
