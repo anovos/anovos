@@ -1,3 +1,17 @@
+# coding=utf-8
+
+"""This module help produce the output containing a transformation through auto timestamp / date detection by reading the ingested dataframe from source.
+
+As a part of generation of the auto detection output, there are various functions created such as - 
+
+- regex_date_time_parser
+- ts_loop_cols_pre
+- ts_preprocess
+
+Respective functions have sections containing the detailed definition of the parameters used for computing.
+
+"""
+
 import pyspark
 import datetime
 from pyspark.sql import functions as F
@@ -12,7 +26,6 @@ from anovos.data_transformer.datetime import (
     unix_to_timestamp,
     lagged_ts,
 )
-
 import csv
 import io
 import os
@@ -24,46 +37,6 @@ import dateutil.parser
 import pandas as pd
 import numpy as np
 
-
-def output_to_local(output_path):
-    """
-
-    Parameters
-    ----------
-    output_path :
-
-
-    Returns
-    -------
-
-    """
-    punctuations = ":"
-    for x in output_path:
-        if x in punctuations:
-            local_path = output_path.replace(x, "")
-            local_path = "/" + local_path
-    return local_path
-
-
-def daypart_cat(column):
-    """calculate hour buckets after adding local timezone"""
-    if column is None:
-        return "Missing_NA"
-    elif (column >= 4) and (column < 7):
-        return "early_hours"
-    elif (column >= 10) and (column < 17):
-        return "work_hours"
-    elif (column >= 23) or (column < 4):
-        return "late_hours"
-    elif ((column >= 7) and (column < 10)) or ((column >= 17) and (column < 20)):
-        return "commuting_hours"
-    else:
-        return "other_hours"
-
-
-f_daypart_cat = F.udf(daypart_cat, T.StringType())
-
-
 ###regex based ts parser function
 
 
@@ -73,9 +46,42 @@ def regex_date_time_parser(
     id_col,
     col,
     tz,
+    val_unique_cat,
+    trans_cat,
     save_output=None,
     output_mode="replace",
 ):
+
+    """ "
+
+    This function helps to produce the transformed output (if applicable) based on the auto-detection of timestamp / date type. The output from this function is decoupled as a part of ingestion.
+
+
+    Parameters
+    ----------
+
+    spark
+        Spark session
+    idf
+        Input dataframe
+    id_col
+        ID Column
+    col
+        Column passed for Auto detection of Timestamp / date type
+    tz
+        Timezone offset (Option to chose between options like Local, GMT, UTC, etc.). Default option is set as "Local".
+    val_unique_cat
+        Maximum character length of the field.
+    trans_cat
+        Custom data type basis which further processing will be conditioned.
+    save_output
+        Output path where the transformed ddata can be saved
+    output_mode
+        Option to choose between Append or Replace. If the option Append is selected, the column names are Appended by "_ts" else it's replaced by the original column name
+
+    Returns
+    -------
+    """
 
     REGEX_PARTS = {
         "Y": r"(?:19[4-9]\d|20[0-3]\d)",  # 1940 to 2039
@@ -267,14 +273,11 @@ def regex_date_time_parser(
         for label, pattern in REGEX_FORMATTED.items()
     }
 
-    if (
-        idf.select(col).dtypes[0][1] == "timestamp"
-        or idf.select(col).dtypes[0][1] == "date"
-    ):
+    if trans_cat == "dt":
 
         return idf
 
-    elif idf.select(col).dtypes[0][1] in ["long", "bigint"]:
+    elif trans_cat in ["long_c", "bigint_c"]:
 
         precision_chk = (
             idf.select(F.max(F.length(col))).rdd.flatMap(lambda x: x).collect()[0]
@@ -297,7 +300,8 @@ def regex_date_time_parser(
         else:
             return output_df
 
-    elif idf.select(col).dtypes[0][1] == "string":
+    elif trans_cat == "string":
+
         list_dates = list(set(idf.select(col).rdd.flatMap(lambda x: x).collect()))
 
         def regex_text(text, longest=True, context_max_len=999, dayfirst=False):
@@ -450,117 +454,227 @@ def regex_date_time_parser(
         else:
             return idf
 
+    elif trans_cat in ["string_c", "int_c"]:
+
+        if int(val_unique_cat) == 4:
+
+            output_df = idf.select(col).withColumn(
+                col + "_ts", F.col(col).cast("string").cast("date")
+            )
+
+        elif int(val_unique_cat) == 6:
+
+            output_df = (
+                idf.select(col)
+                .withColumn(col, F.concat(col, F.lit("01")))
+                .withColumn(col + "_ts", F.to_date(col, "yyyyMMdd"))
+            )
+
+        elif int(val_unique_cat) == 8:
+
+            f = (
+                idf.select(
+                    F.max(F.substring(col, 1, 4)),
+                    F.max(F.substring(col, 5, 2)),
+                    F.max(F.substring(col, 7, 2)),
+                )
+                .rdd.flatMap(lambda x: x)
+                .collect()
+            )
+
+            if int(f[1]) > 12:
+                frmt = "yyyyddMM"
+            elif int(f[2]) > 12:
+                frmt = "yyyyMMdd"
+            else:
+                return idf
+
+            output_df = idf.select(F.col(col).cast("string")).withColumn(
+                col + "_ts", F.to_date(col, frmt)
+            )
+
+        else:
+            return idf
+
+    else:
+
+        return idf
+
+    # if ((output_df.where(F.col(col + "_ts").isNull()).count()) / output_df.count()) > 0.9:
+
+    #     return idf
+
+    # else:
+    #     pass
+
     if output_mode == "replace":
+
         output_df = (
             idf.join(output_df, col, "left_outer")
             .drop(col)
             .withColumnRenamed(col + "_ts", col)
             .orderBy(id_col, col)
         )
+
     elif output_mode == "append":
+
         output_df = idf.join(output_df, col, "left_outer").orderBy(id_col, col + "_ts")
+
     else:
+
         return "Incorrect Output Mode Selected"
 
-    if save_output is not None:
+    if save_output:
+
         output_df.write.parquet(save_output, mode="overwrite")
 
     else:
         return output_df
 
 
-def check_val_ind(val):
-    if val is None:
-        return 0
-    else:
-        return val
-
-
 def ts_loop_cols_pre(idf, id_col):
-    lc = []
-    ts_col = []
+
+    """ "
+
+    This function helps to analyze the potential columns which can be passed for tiime series check. The columns are passed on to the auto-detection block.
+
+    Parameters
+    ----------
+
+    idf
+        Input dataframe
+    id_col
+        ID Column
+
+    Returns
+    -------
+    """
+
+    lc1, lc2, lc3 = [], [], []
     for i in idf.dtypes:
-        if (
-            (i[1] in ["string", "object"])
-            or (
-                i[1] in ["long", "bigint"]
-                and (
-                    check_val_ind(
-                        idf.select(F.max(F.length(i[0])))
-                        .rdd.flatMap(lambda x: x)
-                        .collect()[0]
-                    )
-                    > 9
-                )
-                and (idf.select(i[0]).distinct())
+        try:
+            col_len = (
+                idf.select(F.max(F.length(i[0]))).rdd.flatMap(lambda x: x).collect()[0]
             )
-        ) and i[0] != id_col:
-            lc.append(i[0])
+        except:
+            col_len = 0
+        if idf.select(i[0]).dropna().distinct().count() == 0:
+            lc1.append(i[0])
+            lc2.append("NA")
+            lc3.append(col_len)
+        elif (
+            (i[0] != id_col)
+            & (idf.select(F.length(i[0])).distinct().count() == 1)
+            & (col_len >= 4)
+        ):
+            if i[1] == "string":
+                lc1.append(i[0])
+                lc2.append("string_c")
+                lc3.append(col_len)
+            elif i[1] == "long":
+                lc1.append(i[0])
+                lc2.append("long_c")
+                lc3.append(col_len)
+            elif i[1] == "bigint":
+                lc1.append(i[0])
+                lc2.append("bigint_c")
+                lc3.append(col_len)
+            elif i[1] == "int":
+                lc1.append(i[0])
+                lc2.append("int_c")
+                lc3.append(col_len)
+        elif (i[0] != id_col) & (i[1] in ["string", "object"]):
+            lc1.append(i[0])
+            lc2.append("string")
+            lc3.append(col_len)
+        elif (i[0] != id_col) & (i[1] in ["timestamp", "date"]):
+            lc1.append(i[0])
+            lc2.append("dt")
+            lc3.append(col_len)
         else:
-            pass
+            lc1.append(i[0])
+            lc2.append("NA")
+            lc3.append(col_len)
 
-        if i[1] in ["timestamp", "date"] and i[0] != id_col:
-            ts_col.append(i[0])
-    return lc, ts_col
-
-
-def list_ts_remove_append(l, opt):
-    ll = []
-    if opt == 1:
-        for i in l:
-            if i[-3:] == "_ts":
-                ll.append(i[0:-3:])
-            else:
-                ll.append(i)
-        return ll
-    else:
-        for i in l:
-            if i[-3:] == "_ts":
-                ll.append(i)
-            else:
-                ll.append(i + "_ts")
-        return ll
+    return lc1, lc2, lc3
 
 
 def ts_preprocess(spark, idf, id_col, output_path, tz_offset="local", run_type="local"):
 
+    """ "
+
+    This function helps to read the input spark dataframe as source and do all the necessary processing. All the intermediate data created through this step foro the Time Series Analyzer.
+
+    Parameters
+    ----------
+
+    spark
+        Spark session
+    idf
+        Input dataframe
+    id_col
+        ID Column
+    output_path
+        Output path where the data would be saved
+    tz_offset
+        Timezone offset (Option to chose between options like Local, GMT, UTC, etc.). Default option is set as "Local".
+    run_type
+        Option to choose between run type "Local" or "EMR" or "Azure" basis the user flexibility. Default option is set as "Local".
+
+    Returns
+    -------
+    """
+
     if run_type == "local":
         local_path = output_path
-    elif run_type == "databricks":
-        local_path = output_to_local(output_path)
-    elif run_type == "emr":
-        local_path = "report_stats"
     else:
-        raise ValueError("Invalid run_type")
+        local_path = "report_stats"
 
     Path(local_path).mkdir(parents=True, exist_ok=True)
 
+    idf.persist()
+
     num_cols, cat_cols, other_cols = attributeType_segregation(idf)
 
-    ts_loop_cols = ts_loop_cols_pre(idf, id_col)[0]
-    pre_exist_ts_cols = ts_loop_cols_pre(idf, id_col)[1]
+    ts_loop_col_dtls = ts_loop_cols_pre(idf, id_col)
+
+    l1, l2 = [], []
+    for index, i in enumerate(ts_loop_col_dtls[1]):
+        if i != "NA":
+            l1.append(index)
+        if i == "dt":
+            l2.append(index)
+
+    ts_loop_cols = [ts_loop_col_dtls[0][i] for i in l1]
+
+    pre_exist_ts_cols = [ts_loop_col_dtls[0][i] for i in l2]
 
     for i in ts_loop_cols:
         try:
+            idx = ts_loop_col_dtls[0].index(i)
+            val_unique_cat = ts_loop_col_dtls[2][idx]
+            trans_cat = ts_loop_col_dtls[1][idx]
             idf = regex_date_time_parser(
                 spark,
                 idf,
                 id_col,
                 i,
                 tz_offset,
+                val_unique_cat,
+                trans_cat,
                 save_output=None,
                 output_mode="replace",
             )
-            idf.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
+
         except:
             pass
 
-    ts_loop_cols_post = ts_loop_cols_pre(idf, id_col)[1]
+    odf = idf.distinct()
+
+    ts_loop_cols_post = [x[0] for x in idf.dtypes if x[1] in ["timestamp", "date"]]
 
     num_cols = [x for x in num_cols if x not in [id_col] + ts_loop_cols_post]
     cat_cols = [x for x in cat_cols if x not in [id_col] + ts_loop_cols_post]
-
-    odf = idf.distinct()
 
     c1 = ts_loop_cols
     c2 = list(set(ts_loop_cols_post) - set(pre_exist_ts_cols))
