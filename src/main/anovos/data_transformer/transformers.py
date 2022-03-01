@@ -91,7 +91,7 @@ import tensorflow
 from tensorflow.keras.models import load_model, Model
 from tensorflow.keras.layers import Dense, Input, BatchNormalization, LeakyReLU
 
-platform_root_path = {"azure": "dbfs:/"}
+platform_root_path = {"databricks": "dbfs:/"}
 
 
 def attribute_binning(
@@ -1741,7 +1741,7 @@ def imputation_sklearn(
         to read pre-saved statistics on missing count/pct i.e. if measures_of_counts or
         missingCount_computation (data_analyzer.stats_generator module) has been computed & saved before. (Default value = {})
     run_type
-        "local", "emr", "azure" (Default value = "local")
+        "local", "emr", "databricks" (Default value = "local")
     print_impact
         True, False (Default value = False)
 
@@ -2228,7 +2228,7 @@ def auto_imputation(
         “replace” option replaces original columns with transformed column. “append” option append transformed
         column to the input dataset with a postfix "_imputed" e.g. column X is appended as X_imputed. (Default value = "replace")
     run_type
-        "local", "emr", "azure" (Default value = "local")
+        "local", "emr", "databricks" (Default value = "local")
     print_impact
         True, False (Default value = True)
 
@@ -2535,7 +2535,7 @@ def autoencoder_latentFeatures(
         “append” option append transformed columns with format latent_<col_index> to the input dataset,
         e.g. latent_0, latent_1 will be appended if reduction_params=2. (Default value = "replace")
     run_type
-        "local", "emr", "azure" (Default value = "local")
+        "local", "emr", "databricks" (Default value = "local")
     print_impact
         True, False (Default value = False)
     "model_path": "NA"}
@@ -2898,7 +2898,7 @@ def PCA_latentFeatures(
         “append” option append transformed columns with format latent_<col_index> to the input dataset,
         e.g. latent_0, latent_1. (Default value = "replace")
     run_type
-        "local", "emr", "azure" (Default value = "local")
+        "local", "emr", "databricks" (Default value = "local")
     print_impact
         True, False (Default value = False)
     "model_path": "NA"}
