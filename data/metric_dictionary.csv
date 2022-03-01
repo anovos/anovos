@@ -65,16 +65,27 @@ Drift & Stability,Data Stability Analysis,,mean_si,Stability Index by metric - m
 Drift & Stability,Data Stability Analysis,,stddev_si,Stability Index by metric - Standard Deviation i.e. analyzing the stability of attribute standard deviation over multiple timeperiod
 Drift & Stability,Data Stability Analysis,,kurtosis_si,Stability Index by metric - Kurtosis i.e. analyzing the stability of attribute kurtosis over multiple timeperiod
 Drift & Stability,Data Stability Analysis,,stability_index,"Weighted average of stability index from all 3 metrics - mean, standard deviation and kurtosis"
-Time Series Analyzer,,,,summarizes the information about timestamp features and how they are interactive with other attributes
-Time Series Analyzer,Basic Landscaping,,Analyzed Attribute,
-Time Series Analyzer,Basic Landscaping,,Attributes identified,
-Time Series Analyzer,Basic Landscaping,,Attributes Pre-Existig,
-Time Series Analyzer,Basic Landscaping,,Overall TimeStamp,
-Time Series Analyzer,Time Stamp Data Diagnosis,Consistency Analysis Of Dates,index,
-Time Series Analyzer,Time Stamp Data Diagnosis,Consistency Analysis Of Dates,id_date_pair,
-Time Series Analyzer,Time Stamp Data Diagnosis,Consistency Analysis Of Dates,date_id_pair,
-Time Series Analyzer,Time Stamp Data Diagnosis,Vital Statistics,index,
-Time Series Analyzer,Time Stamp Data Diagnosis,Vital Statistics,value,
-Time Series Analyzer,Stationarity & Transformations,ADF Test Statistic,"mean, median, min, max",
-Time Series Analyzer,Stationarity & Transformations,KPSS Test Statistic,"mean, median, min, max",
-Time Series Analyzer,Stationarity & Transformations,Box-Cox Transformation,"mean, median, min, max",
+Time Series Analyzer,,,,Summarizes the information about timestamp features and how they are interactive with other attributes
+Time Series Analyzer,Basic Landscaping,,Analyzed Attributes,Potential timestamp atttributes located
+Time Series Analyzer,Basic Landscaping,,Attributes identified,Attributes identified as timestamp attributes identified by module
+Time Series Analyzer,Basic Landscaping,,Attributes Pre-Existing,Attributes identified as timestamp attributes without pre-processing
+Time Series Analyzer,Basic Landscaping,,Overall TimeStamp,Overall timestamp attributes identified
+Time Series Analyzer,Time Stamp Data Diagnosis,Consistency Analysis Of Dates,index,Different percentiles to determine the regularity of time series
+Time Series Analyzer,Time Stamp Data Diagnosis,Consistency Analysis Of Dates,id_date_pair,Proportion of dates within each ID
+Time Series Analyzer,Time Stamp Data Diagnosis,Consistency Analysis Of Dates,date_id_pair,The count of IDs across unique dates
+Time Series Analyzer,Time Stamp Data Diagnosis,Vital Statistics,index,"Different statistical parameter w.r.t time series data e.g., count_unique_dates, min_date, max_date, modal_date, date_diff, missing_data, mean, variance, stdev, cov"
+Time Series Analyzer,Time Stamp Data Diagnosis,Vital Statistics,value,Value of different statistical parameter w.r.t time series data
+Time Series Analyzer,Visualization across the Shortlisted Timestamp Attributes,,"daily, weekly, hourly","daily, weekly, hourly view of statistical values of shorlisted timestamp attributes"
+Time Series Analyzer,Decomposed view,Observed,"mean, median, min, max",Observed statistical value in time series
+Time Series Analyzer,Decomposed view,Trend,"mean, median, min, max",The increasing or decreasing statistical values in the time series.
+Time Series Analyzer,Decomposed view,Seasonal,"mean, median, min, max",Different statistical value at repeating short-term cycle in the series.
+Time Series Analyzer,Decomposed view,Residuals,"mean, median, min, max",The random variation in statistical values in the time series.
+Time Series Analyzer,Stationarity & Transformations,ADF Test Statistic,,"Augmented Dickey Fuller test (ADF Test) is a common statistical test used to test whether a given Time series is stationary or not. The more negative the statistic, the more likely we are to reject the null hypothesis. "
+Time Series Analyzer,Stationarity & Transformations,ADF Test Statistic,P-value,"For ADF test, If the p-value is less than the significance level of 0.05, we can reject the null hypothesis and take that the series is stationary"
+Time Series Analyzer,Stationarity & Transformations,ADF Test Statistic,"mean, median, min, max",Test statistical values
+Time Series Analyzer,Stationarity & Transformations,KPSS Test Statistic,,"KPSS test is a statistical test to check for stationarity of a series around a deterministic trend. Like ADF test, the KPSS test is also commonly used to analyse the stationarity of a series."
+Time Series Analyzer,Stationarity & Transformations,KPSS Test Statistic,P-value,"For KPSS test, If the p-value is high, we cannot reject the null hypothesis. So the series is stationary."
+Time Series Analyzer,Stationarity & Transformations,KPSS Test Statistic,"mean, median, min, max",Test statistical values
+Time Series Analyzer,Stationarity & Transformations,Box-Cox Transformation,,A Box Cox transformation is a transformation of non-normal dependent variables into a normal shape
+Time Series Analyzer,Stationarity & Transformations,Box-Cox Transformation,"mean, median, min, max",Column-wise statistical value of transformed data
+Time Series Analyzer,Stationarity & Transformations,Box-Cox Transformation,mathematical transform used,Type of mathematical transform used based on lambda value
