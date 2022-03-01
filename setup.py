@@ -19,8 +19,9 @@ setup(
         "anovos.data_analyzer",
         "anovos.drift",
         "anovos.data_report",
-        "anovos.feature_recommender"
+        "anovos.feature_recommender",
     ],
+    package_data={"anovos.feature_recommender": ["data/*.csv"]},
     description="An Open Source tool for Feature Engineering in Machine Learning",
     long_description=README,
     long_description_content_type="text/markdown",
