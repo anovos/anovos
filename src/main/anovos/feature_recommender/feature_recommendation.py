@@ -1,17 +1,24 @@
-from anovos.feature_recommender.featrec_init import *
+import copy
+import random
+import re
+
+import numpy as np
+import pandas as pd
+import plotly.graph_objects as go
+from sentence_transformers import util
+
+from anovos.feature_recommender.featrec_init import (
+    recommendation_data_prep,
+    model_fer,
+    camel_case_split,
+    feature_recommendation_prep,
+    get_column_name,
+)
 from anovos.feature_recommender.feature_exploration import (
+    list_usecase_by_industry,
     process_industry,
     process_usecase,
-    list_usecase_by_industry,
 )
-from sentence_transformers import util
-import pandas as pd
-import numpy as np
-import re
-import copy
-import plotly.graph_objects as go
-import random
-import matplotlib.pyplot as plt
 
 list_train_fer, df_rec_fer, list_embedding_train_fer = feature_recommendation_prep()
 (
