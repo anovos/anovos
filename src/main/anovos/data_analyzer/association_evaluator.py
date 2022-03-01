@@ -86,10 +86,7 @@ def correlation_matrix(
     Returns
     -------
     DataFrame
-        [attribute,*col_names]
-        Correlation between attribute X and Y can be found at an intersection of
-        a) row with value X in ‘attribute’ column and column ‘Y’, or
-        b) row with value Y in ‘attribute’ column and column ‘X’.
+        [attribute,*attribute_names]
 
     """
 
@@ -163,9 +160,9 @@ def variable_clustering(
 
     [2]: https://github.com/jingtt/varclushi   "VarCluShi"
 
-    It returns a Spark Dataframe with schema – Cluster, Attribute, RS_Ratio. The attribute with the lowest (1 —
-    RS_Ratio) can be chosen as a representative of the cluster while discarding the other attributes from that
-    cluster. This can also help in achieving the dimension reduction, if required.
+    It returns a Spark Dataframe with schema – Cluster, Attribute, RS_Ratio. Attributes similar to each other are grouped
+    together with the same cluster id. The attribute with the lowest (1 — RS_Ratio) can be chosen as a representative of the cluster
+    while discarding the other attributes from that cluster. This can also help in achieving the dimension reduction, if required.
 
     Parameters
     ----------
@@ -207,8 +204,6 @@ def variable_clustering(
     -------
     DataFrame
         [Cluster, Attribute, RS_Ratio]
-        Attributes similar to each other are grouped together with the same cluster id.
-        Attribute with the lowest (1 — RS_Ratio) can be chosen as a representative of the cluster.
 
     """
 

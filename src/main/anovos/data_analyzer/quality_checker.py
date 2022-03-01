@@ -48,9 +48,9 @@ def duplicate_detection(
     As the name implies, this function detects duplication in the input dataset. This means, for a pair of
     duplicate rows, the values in each column coincide. Duplication check is confined to the list of columns passed
     in the arguments. As part of treatment, duplicated rows are removed. This function returns two dataframes in
-    tuple format; the 1st dataframe is the input dataset after deduplication (if treated).  The 2nd dataframe is of
-    schema – metric, value and contains the total number of rows, number of unique rows, number of duplicate rows
-    and percentage of duplicate rows in total.
+    tuple format; the 1st dataframe is the input dataset after deduplication (if treated else the original dataset).
+    The 2nd dataframe is of schema – metric, value and contains the total number of rows, number of unique rows,
+    number of duplicate rows and percentage of duplicate rows in total.
 
 
     Parameters
@@ -83,7 +83,7 @@ def duplicate_detection(
     odf : DataFrame
         de-duplicated dataframe if treated, else original input dataframe.
     odf_print : DataFrame
-        of schema [metric, value] and contains metrics - number of rows, number of unique rows,
+        schema [metric, value] and contains metrics - number of rows, number of unique rows,
         number of duplicate rows and percentage of duplicate rows in total.
 
     """
@@ -141,11 +141,11 @@ def nullRows_detection(
 ):
     """
     This function inspects the row quality and computes the number of columns that are missing for a row. This
-    metric is further aggregated to check how many columns are missing for how many rows (also at % level). Intuition
+    metric is further aggregated to check how many columns are missing for how many rows (or % rows). Intuition
     is if too many columns are missing for a row, removing it from the modeling may give better results than relying
     on its imputed values. Therefore as part of the treatment, rows with missing columns above the specified
     threshold are removed. This function returns two dataframes in tuple format; the 1st dataframe is the input
-    dataset after filtering rows with a high number of missing columns (if treated else original dataframe).
+    dataset after filtering rows with a high number of missing columns (if treated else the original dataframe).
     The 2nd dataframe is of schema – null_cols_count, row_count, row_pct, flagged/treated.
 
     | null_cols_count | row_count | row_pct | flagged |
@@ -192,12 +192,13 @@ def nullRows_detection(
     Returns
     -------
     odf : DataFrame
-        the dataframe after row removal if treated, else original input dataframe.
+        Dataframe after row removal if treated, else original input dataframe.
     odf_print : DataFrame
-        of schema [null_cols_count, row_count, row_pct, flagged/treated]. null_cols_count is defined as
-        no. of missing columns in a row. row_count is no. of rows with null_cols_count missing columns.
-        row_pct is row_count divided by number of rows. flagged/treated is 1 if null_cols_count is more than
-        (threshold  X Number of Columns), else 0.
+        schema [null_cols_count, row_count, row_pct, flagged/treated].
+        null_cols_count is defined as no. of missing columns in a row.
+        row_count is no. of rows with null_cols_count missing columns.
+        row_pct is row_count divided by number of rows.
+        flagged/treated is 1 if null_cols_count is more than (threshold  X Number of Columns), else 0.
 
     """
 
@@ -359,10 +360,11 @@ def nullColumns_detection(
     Returns
     -------
     odf : DataFrame
-        the imputed dataframe if treated, else original input dataframe.
+        Imputed dataframe if treated, else original input dataframe.
     odf_print : DataFrame
-        of schema [attribute, missing_count, missing_pct]. missing_count is number of rows
-        with null values for an attribute and missing_pct is missing_count divided by number of rows.
+        schema [attribute, missing_count, missing_pct].
+        missing_count is number of rows with null values for an attribute, and
+        missing_pct is missing_count divided by number of rows.
     """
     if stats_missing == {}:
         odf_print = missingCount_computation(spark, idf)
@@ -643,10 +645,11 @@ def outlier_detection(
     Returns
     -------
     odf : DataFrame
-        the imputed dataframe if treated, else original input dataframe.
+        Imputed dataframe if treated, else original input dataframe.
     odf_print : DataFrame
-         of schema [attribute, lower_outliers, upper_outliers]. lower_outliers is no. of outliers
-         found in the lower spectrum of the attribute range and upper_outliers is outlier count in the upper spectrum.
+        schema [attribute, lower_outliers, upper_outliers].
+        lower_outliers is no. of outliers found in the lower spectrum of the attribute range, and
+        upper_outliers is outlier count in the upper spectrum.
 
     """
 
@@ -813,17 +816,6 @@ def outlier_detection(
         idf = idf.withColumn(i, F.col(i).cast(j))
 
     def composite_outlier(*v):
-        """
-
-        Parameters
-        ----------
-        *v
-
-
-        Returns
-        -------
-
-        """
         output = []
         for idx, e in enumerate(v):
             if e is None:
@@ -968,11 +960,12 @@ def IDness_detection(
     Returns
     -------
     odf : DataFrame
-        the dataframe after column removal if treated, else original input dataframe.
+        Dataframe after column removal if treated, else original input dataframe.
     odf_print : DataFrame
-        of schema [attribute, unique_values, IDness, flagged/treated]. unique_values is no. of distinct
-       values in a column, IDness is unique_values divided by no. of non-null values. A column is flagged 1
-       if IDness is above the threshold, else 0.
+        schema [attribute, unique_values, IDness, flagged/treated].
+        unique_values is no. of distinct values in a column,
+        IDness is unique_values divided by no. of non-null values.
+        A column is flagged 1 if IDness is above the threshold, else 0.
     """
 
     if list_of_cols == "all":
@@ -1104,10 +1097,12 @@ def biasedness_detection(
     Returns
     -------
     odf : DataFrame
-        the dataframe after column removal if treated, else original input dataframe.
+        Dataframe after column removal if treated, else original input dataframe.
     odf_print : DataFrame
-        of schema [attribute, mode, mode_rows, mode_pct, flagged/treated]. mode is the most frequently seen value,
-        mode_rows is number of rows with mode value and mode_pct is number of rows with mode value divided by non-null values.
+        schema [attribute, mode, mode_rows, mode_pct, flagged/treated].
+        mode is the most frequently seen value,
+        mode_rows is number of rows with mode value, and
+        mode_pct is number of rows with mode value divided by non-null values.
         A column is flagged 1 if mode_pct is above the threshold else 0.
     """
 
@@ -1306,11 +1301,12 @@ def invalidEntries_detection(
     Returns
     -------
     odf : DataFrame
-        the dataframe after treatment if applicable, else original input dataframe.
+        Dataframe after treatment if applicable, else original input dataframe.
     odf_print : DataFrame
-        of schema [attribute, invalid_entries, invalid_count, invalid_pct].
-        invalid_entries are all potential invalid values (separated by delimiter pipe “|”), invalid_count is no.
-        of rows which are impacted by invalid entries and invalid_pct is invalid_count divided by no of rows.
+        schema [attribute, invalid_entries, invalid_count, invalid_pct].
+        invalid_entries are all potential invalid values (separated by delimiter pipe “|”),
+        invalid_count is no. of rows which are impacted by invalid entries, and
+        invalid_pct is invalid_count divided by no of rows.
 
     """
 
@@ -1399,17 +1395,6 @@ def invalidEntries_detection(
     ]
 
     def detect(*v):
-        """
-
-        Parameters
-        ----------
-        *v
-
-
-        Returns
-        -------
-
-        """
         output = []
         for idx, e in enumerate(v):
             if e is None:
