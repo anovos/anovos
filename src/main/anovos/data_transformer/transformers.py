@@ -22,19 +22,7 @@ supported through this modules are listed below:
 - outlier_categories
 - expression_parser
 
-Columns which are subjected to these analysis can be controlled by right combination of arguments
- - list_of_cols and drop_cols. Most of the functions have following common arguments:
-
-- *idf*: Input dataframe - *list_of_cols*: This argument, in a list format, is used to specify the columns which are
-subjected to the analysis in the input dataframe. Alternatively, instead of list, columns can be specified in a
-single text format where different column names are separated by pipe delimiter “|”. The user can also use “all” as
-an input to this argument to consider all valid columns. This is super useful instead of specifying all column names
-manually. - *drop_cols*: This argument, in a list format, is used to specify the columns which needs to be dropped
-from list_of_cols. Alternatively, instead of list, columns can be specified in a single text format where different
-column names are separated by pipe delimiter “|”. It is most useful when used coupled with “all” value of
-list_of_cols, when we need to consider all columns except few handful of them. - *output_mode*: replace or append.
-“replace” option replaces original columns with transformed column, whereas “append” option append transformed column
-to the input dataset. - *print_impact*: This argument is to print out the statistics. """
+"""
 import copy
 import os
 import pickle
@@ -43,7 +31,6 @@ import subprocess
 import tempfile
 import warnings
 from itertools import chain
-
 import numpy as np
 import pandas as pd
 import pyspark
@@ -79,12 +66,9 @@ from anovos.data_analyzer.stats_generator import (
 from anovos.data_ingest.data_ingest import read_dataset, recast_column
 from anovos.shared.utils import attributeType_segregation, get_dtype
 
-# check the following issue for more details
-# https://github.com/scikit-learn/scikit-learn/issues/16833
-# explicitly require this experimental feature
+# enable_iterative_imputer is prequisite for importing IterativeImputer
+# check the following issue for more details https://github.com/scikit-learn/scikit-learn/issues/16833
 from sklearn.experimental import enable_iterative_imputer  # noqa
-
-#  now you can import normally from sklearn.impute
 from sklearn.impute import KNNImputer, IterativeImputer
 
 import tensorflow
@@ -105,10 +89,11 @@ def attribute_binning(
     output_mode="replace",
     print_impact=False,
 ):
-    """Attribute binning (or discretization) is a method of numerical attribute into discrete (integer or categorical
+    """
+    Attribute binning (or discretization) is a method of numerical attribute into discrete (integer or categorical
     values) using pre-defined number of bins. This data pre-processing technique is used to reduce the effects of
     minor observation errors. Also, Binning introduces non-linearity and tends to improve the performance of the
-    model. In this function, we are focussing on unsupervised way of binning i.e. without considering the target
+    model. In this function, we are focussing on unsupervised way of binning i.e. without taking the target
     variable into account - Equal Range Binning, Equal Frequency Binning. In Equal Range method, each bin is of equal
     size/width and computed as:
 
@@ -123,16 +108,6 @@ def attribute_binning(
 
     *bins cutoff=[min, wthpctile, 2wthpctile….,max ]*
 
-    - *idf* - *list_of_cols:* If ‘all’ is passed for this argument, then only numerical attributes are selected. -
-    *drop_cols* - *method_type: equal_frequency, equal_range* - *bin_size: Number of bins* - *bin_dtype:* numerical,
-    categorical*.* Original value is replaced with Integer (1,2,…) with ‘numerical’ input and replaced with string
-    describing min and max value observed in the bin ("minval-maxval") - *pre_existing_model:* This argument takes
-    Boolean type input – True or False. True if the file with bin cutoff values exists already, False Otherwise. -
-    *model_path:* If pre_existing_model is True, this argument is path for pre-saved model file. If
-    pre_existing_model is False, this field can be used for saving the model file. Default NA means there is neither
-    pre-saved model file nor there is a need to save one. - *output_mode:* All transformed columns are appended with
-    the naming convention - "{original.column.name}_binned". - *print_impact*
-
 
     Parameters
     ----------
@@ -144,21 +119,23 @@ def attribute_binning(
         List of numerical columns to transform e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-        "all" can be passed to include all numerical columns for analysis.
+        "all" can be passed to include all numerical columns for analysis. This is super useful instead of specifying all column names manually.
         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
     drop_cols
         List of columns to be dropped e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
+        a few handful of them. (Default value = [])
     method_type
-        equal_frequency", "equal_range".
+        "equal_frequency", "equal_range".
         In "equal_range" method, each bin is of equal size/width and in "equal_frequency", each bin has
         equal no. of rows, though the width of bins may vary. (Default value = "equal_range")
     bin_size
         Number of bins. (Default value = 10)
     bin_dtype
-        numerical", "categorical".
+        "numerical", "categorical".
         With "numerical" option, original value is replaced with an Integer (1,2,…) and
         with "categorical" option, original replaced with a string describing min and max value allowed
         in the bin ("minval-maxval"). (Default value = "numerical")
@@ -169,15 +146,17 @@ def attribute_binning(
         If pre_existing_model is False, this argument can be used for saving the model.
         Default "NA" means there is neither pre-existing model nor there is a need to save one.
     output_mode
-        replace", "append".
+        "replace", "append".
         “replace” option replaces original columns with transformed column. “append” option append transformed
         column to the input dataset with a postfix "_binned" e.g. column X is appended as X_binned. (Default value = "replace")
     print_impact
         True, False (Default value = False)
+        This argument is to print the number of categories generated for each attribute (may or may be not same as bin_size)
 
     Returns
     -------
-
+    DataFrame
+        Binned Dataframe
     """
 
     num_cols = attributeType_segregation(idf)[0]
@@ -264,19 +243,6 @@ def attribute_binning(
             df_model.write.parquet(model_path + "/attribute_binning", mode="overwrite")
 
     def bucket_label(value, index):
-        """
-
-        Parameters
-        ----------
-        value
-            param index:
-        index
-
-
-        Returns
-        -------
-
-        """
         if value is None:
             return None
 
@@ -338,23 +304,13 @@ def monotonic_binning(
     bin_dtype="numerical",
     output_mode="replace",
 ):
-    """This function constitutes supervised way of binning the numerical attribute into discrete (integer or
+    """
+    This function constitutes supervised way of binning the numerical attribute into discrete (integer or
     categorical values) attribute. Instead of pre-defined fixed number of bins, number of bins are dynamically
     computed to ensure the monotonic nature of bins i.e. % event should increase or decrease with the bin. Monotonic
     nature of bins is evaluated by looking at spearman rank correlation, which should be either +1 or -1, between the
     bin index and % event. In case, the monotonic nature is not attained, user defined fixed number of bins are used
     for the binning.
-
-    - *idf*
-    - *list_of_cols:* If 'all' is passed for this argument, then only numerical attributes are selected.
-    - *drop_cols*
-    - *label_col*: Name of label or target column in the input dataset
-    - *event_label*: Value of event (label 1) in the label column
-    - *method_type*: equal_frequency, equal_range_
-    - *bin_size*: Number of bins_
-    - *bin_dtype:* numerical, categorical_._ Original value is replaced with Integer (1,2,…) with 'numerical' input
-    and replaced with string describing min and max value observed in the bin '&lt;bin_cutoffi &gt;- &lt;bin_cutoffi+1&gt;'
-    - *output_mode:* All transformed columns are appended with the naming convention -  "{original.column.name}_binned".
 
     Parameters
     ----------
@@ -366,36 +322,39 @@ def monotonic_binning(
         List of numerical columns to transform e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-        "all" can be passed to include all numerical columns for analysis.
+        "all" can be passed to include all numerical columns for analysis. This is super useful instead of specifying all column names manually.
         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
     drop_cols
         List of columns to be dropped e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
+        a few handful of them. (Default value = [])
     label_col
         Label/Target column (Default value = "label")
     event_label
         Value of (positive) event (i.e label 1) (Default value = 1)
     bin_method
-        equal_frequency", "equal_range".
+        "equal_frequency", "equal_range".
         In "equal_range" method, each bin is of equal size/width and in "equal_frequency", each bin has
         equal no. of rows, though the width of bins may vary. (Default value = "equal_range")
     bin_size
         Default number of bins in case monotonicity is not achieved.
     bin_dtype
-        numerical", "categorical".
+        "numerical", "categorical".
         With "numerical" option, original value is replaced with an Integer (1,2,…) and
         with "categorical" option, original replaced with a string describing min and max value allowed
         in the bin ("minval-maxval"). (Default value = "numerical")
     output_mode
-        replace", "append".
+        "replace", "append".
         “replace” option replaces original columns with transformed column. “append” option append transformed
         column to the input dataset with a postfix "_binned" e.g. column X is appended as X_binned. (Default value = "replace")
 
     Returns
     -------
-
+    DataFrame
+        Binned Dataframe
     """
     num_cols = attributeType_segregation(idf)[0]
     if list_of_cols == "all":
@@ -493,7 +452,8 @@ def cat_to_num_unsupervised(
     output_mode="replace",
     print_impact=False,
 ):
-    """This is unsupervised method of converting a categorical attribute into numerical attribute(s). This is among
+    """
+    This is unsupervised method of converting a categorical attribute into numerical attribute(s). This is among
     the most important transformations required for any modelling exercise, as most of the machine learning
     algorithms cannot process categorical values. It covers two popular encoding techniques – label encoding &
     one-hot encoding.
@@ -505,18 +465,6 @@ def cat_to_num_unsupervised(
     attribute will be added as a feature in a form of dummy/binary attribute. However, using this method on high
     cardinality attributes can further aggravate the dimensionality issue.
 
-    - *idf* - *list_of_cols:* If 'all' is passed for this argument, then only categorical attributes are selected. -
-    *drop_cols* - *method_type:* 1 (for Label Encoding) or 0 (for One hot encoding) - *index_order:* frequencyDesc,
-    frequencyAsc, alphabetDesc, alphabetAsc (Valid only for Label Encoding) - *onehot_dropLast:* This argument takes
-    Boolean type input – True or False. if True, it drops one last column in one hot encoding - *pre_existing_model:*
-    This argument takes Boolean type input – True or False. True if the encoding models exist already,
-    False Otherwise. - *model_path:* If pre_existing_model is True, this argument is path for pre-saved model. If
-    pre_existing_model is False, this field can be used for saving the mode. Default NA means there is neither
-    pre-saved model nor there is a need to save one. - *output_mode:* All transformed columns are appended with the
-    naming convention - "{original.column.name}_index" for label encoding. &amp; "{original.column.name}_{n}" for one
-    hot encoding, n varies from 0 to unique value count. - *print_impact*
-
-
     Parameters
     ----------
     spark
@@ -527,24 +475,25 @@ def cat_to_num_unsupervised(
         List of categorical columns to transform e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-        "all" can be passed to include all categorical columns for analysis.
+        "all" can be passed to include all categorical columns for analysis. This is super useful instead of specifying all column names manually.
         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
     drop_cols
         List of columns to be dropped e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
+        a few handful of them. (Default value = [])
     method_type
         1 for Label Encoding or 0 for One hot encoding.
         In label encoding, each categorical value is assigned a unique integer based on alphabetical
-        or frequency ordering (both ascending & descending options are available that can be selected by
-        index_order argument).
+        or frequency ordering (both ascending & descending options are available that can be selected by index_order argument).
         In one-hot encoding, every unique value in the column will be added in a form of dummy/binary column. (Default value = 1)
     index_order
-        frequencyDesc", "frequencyAsc", "alphabetDesc", "alphabetAsc".
+        "frequencyDesc", "frequencyAsc", "alphabetDesc", "alphabetAsc".
         Valid only for Label Encoding method_type. (Default value = "frequencyDesc")
     cardinality_threshold
-        Defines threshold to skip columns with higher cardinality values from encoding. Default value is 100.
+        Defines threshold to skip columns with higher cardinality values from encoding (Warning is issued). (Default value = 100)
     pre_existing_model
         Boolean argument – True or False. True if encoding model exists already, False Otherwise. (Default value = False)
     model_path
@@ -552,14 +501,19 @@ def cat_to_num_unsupervised(
         If pre_existing_model is False, this argument can be used for saving the model.
         Default "NA" means there is neither pre existing model nor there is a need to save one.
     output_mode
-        replace", "append".
+        "replace", "append".
         “replace” option replaces original columns with transformed column. “append” option append transformed
-        column to the input dataset with a postfix "_index" e.g. column X is appended as X_index. (Default value = "replace")
-    print_impac
+        column to the input dataset with a postfix "_index" for label encoding e.g. column X is appended as X_index, or
+        a postfix "_{n}" for one hot encoding, n varies from 0 to unique value count e.g. column X is appended as X_0,
+        X_1, X_2 (n = 3 i.e. no. of unique values for X). (Default value = "replace")
+    print_impact
         True, False (Default value = False)
+        This argument is to print out the change in schema (one hot encoding) or descriptive statistics (label encoding)
 
     Returns
     -------
+    DataFrame
+        Encoded Dataframe
 
     """
 
@@ -667,17 +621,6 @@ def cat_to_num_unsupervised(
         odf = odf_encoded
 
         def vector_to_array(v):
-            """
-
-            Parameters
-            ----------
-            v
-
-
-            Returns
-            -------
-
-            """
             v = DenseVector(v)
             new_array = list([int(x) for x in v])
             return new_array
@@ -762,7 +705,8 @@ def cat_to_num_supervised(
     output_mode="replace",
     print_impact=False,
 ):
-    """This is a supervised method to convert a categorical attribute into a numerical attribute. It takes a
+    """
+    This is a supervised method to convert a categorical attribute into a numerical attribute. It takes a
     label/target column to indicate whether the event is positive or negative. For each column, the positive event
     rate for each categorical value is used as the encoded numerical value.
 
@@ -776,22 +720,6 @@ def cat_to_num_supervised(
     in avoiding creating too many dummy variables which may cause dimensionality issue and it also works with
     categorical attributes without an order or rank.
 
-    - *spark*: Spark Session
-    - *idf*
-    - *list_of_cols*: If 'all' is passed for this argument, then only categorical attributes are selected.
-    - *drop_cols*
-    - *label_col*: Label/Target column
-    - *event_label:* Value of (positive) event (i.e label 1)
-    - *pre_existing_model*: Boolean argument - True or False. True if model (original and mapped numerical value for
-     each column) exists already, False Otherwise.
-    - *model_path*: If pre_existing_model is True, this argument is path for referring the pre-saved model.
-    If pre_existing_model is False, this argument can be used for saving the model. Default "NA" means there is neither
-     pre-existing model nor there is a need to save one.
-    - *output_mode*: "append" option appends transformed column with the naming convention
-    - "{original.column.name}_encoded".
-    - *print_impact*
-
-
     Parameters
     ----------
     spark
@@ -799,16 +727,18 @@ def cat_to_num_supervised(
     idf
         Input Dataframe
     list_of_cols
-        List of catigorical columns to transform e.g., ["col1","col2"].
+        List of categorical columns to transform e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-        "all" can be passed to include all (non-array) columns for analysis.
+        "all" can be passed to include all categorical columns for analysis. This is super useful instead of specifying all column names manually.
         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
     drop_cols
         List of columns to be dropped e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
+        a few handful of them. (Default value = [])
     label_col
         Label/Target column (Default value = "label")
     event_label
@@ -821,16 +751,17 @@ def cat_to_num_supervised(
         If pre_existing_model is False, this argument can be used for saving the model.
         Default "NA" is used to save the model for optimization purpose.
     output_mode
-        replace", "append".
+        "replace", "append".
         “replace” option replaces original columns with transformed column. “append” option append transformed
-        column to the input dataset with a postfix "_encoded" e.g. column X is appended as X_encoded.
-         (Default value = "replace")
+        column to the input dataset with a postfix "_encoded" e.g. column X is appended as X_encoded. (Default value = "replace")
     print_impact
         True, False (Default value = False)
+        This argument is to print out the descriptive statistics of encoded columns.
 
     Returns
     -------
-
+    DataFrame
+        Encoded Dataframe
     """
 
     cat_cols = attributeType_segregation(idf)[1]
@@ -929,24 +860,12 @@ def z_standardization(
     output_mode="replace",
     print_impact=False,
 ):
-    """Standardization is commonly used in data pre-processing process. z_standardization standardizes the selected
+    """
+    Standardization is commonly used in data pre-processing process. z_standardization standardizes the selected
     attributes of an input dataframe by normalizing each attribute to have standard deviation of 1 and mean of 0. For
     each attribute, the standard deviation (s) and mean (u) are calculated and a sample x will be standardized into (
     x-u)/s. If the standard deviation of an attribute is 0, it will be excluded in standardization and a warning will
     be shown. None values will be kept as None in the output dataframe.
-
-    - *spark*: Spark Session
-    - *idf*
-    - *list_of_cols*: "all" can be passed to include all numerical columns.
-    - *drop_cols*
-    - *pre_existing_model*: Boolean argument - True or False. True if model files (Mean/stddev for each feature) exists already,
-    False otherwise
-    - *model_path*: If pre_existing_model is True, this argument is path for referring the pre-saved model.
-    If pre_existing_model is False, this argument can be used for saving the model. Default "NA" means there is neither
-     pre-existing model nor there is a need to save one.
-    - *output_mode*: "append" option appends transformed column with the naming convention - "{original.column.name}_scaled".
-    - *print_impact*
-
 
     Parameters
     ----------
@@ -958,13 +877,15 @@ def z_standardization(
         List of numerical columns to transform e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-        "all" can be passed to include all numerical columns for analysis.
+        "all" can be passed to include all numerical columns for analysis. This is super useful instead of specifying all column names manually.
         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
     drop_cols
         List of columns to be dropped e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
+        a few handful of them. (Default value = [])
     pre_existing_model
         Boolean argument – True or False. True if model files (Mean/stddev for each feature) exists already, False Otherwise (Default value = False)
     model_path
@@ -972,14 +893,17 @@ def z_standardization(
         If pre_existing_model is False, this argument can be used for saving the model.
         Default "NA" means there is neither pre-existing model nor there is a need to save one.
     output_mode
-        replace", "append".
+        "replace", "append".
         “replace” option replaces original columns with transformed column. “append” option append transformed
         column to the input dataset with a postfix "_scaled" e.g. column X is appended as X_scaled. (Default value = "replace")
     print_impact
         True, False (Default value = False)
+        This argument is to print out the before and after descriptive statistics of rescaled columns.
 
     Returns
     -------
+    DataFrame
+        Rescaled Dataframe
 
     """
     num_cols = attributeType_segregation(idf)[0]
@@ -1085,13 +1009,15 @@ def IQR_standardization(
         List of numerical columns to transform e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-        "all" can be passed to include all numerical columns for analysis.
+        "all" can be passed to include all numerical columns for analysis. This is super useful instead of specifying all column names manually.
         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
     drop_cols
         List of columns to be dropped e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
+        a few handful of them. (Default value = [])
     pre_existing_model
         Boolean argument – True or False. True if model files (25/50/75 percentile for each feature) exists already, False Otherwise (Default value = False)
     model_path
@@ -1099,15 +1025,17 @@ def IQR_standardization(
         If pre_existing_model is False, this argument can be used for saving the model.
         Default "NA" means there is neither pre-existing model nor there is a need to save one.
     output_mode
-        replace", "append".
+        "replace", "append".
         “replace” option replaces original columns with transformed column. “append” option append transformed
         column to the input dataset with a postfix "_scaled" e.g. column X is appended as X_scaled. (Default value = "replace")
     print_impact
         True, False (Default value = False)
+        This argument is to print out the before and after descriptive statistics of rescaled columns.
 
     Returns
     -------
-
+    DataFrame
+        Rescaled Dataframe
     """
     num_cols = attributeType_segregation(idf)[0]
     if list_of_cols == "all":
@@ -1209,13 +1137,15 @@ def normalization(
         List of numerical columns to transform e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-        "all" can be passed to include all numerical columns for analysis.
+        "all" can be passed to include all numerical columns for analysis. This is super useful instead of specifying all column names manually.
         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
     drop_cols
         List of columns to be dropped e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
+        a few handful of them. (Default value = [])
     pre_existing_model
         Boolean argument – True or False. True if normalization/scalar model exists already, False Otherwise (Default value = False)
     model_path
@@ -1223,14 +1153,17 @@ def normalization(
         If pre_existing_model is False, this argument can be used for saving the model.
         Default "NA" means there is neither pre-existing model nor there is a need to save one.
     output_mode
-        replace", "append".
+        "replace", "append".
         “replace” option replaces original columns with transformed column. “append” option append transformed
         column to the input dataset with a postfix "_scaled" e.g. column X is appended as X_scaled. (Default value = "replace")
     print_impact
         True, False (Default value = False)
+        This argument is to print out before and after descriptive statistics of rescaled columns.
 
     Returns
     -------
+    DataFrame
+        Rescaled Dataframe
 
     """
     num_cols = attributeType_segregation(idf)[0]
@@ -1275,17 +1208,6 @@ def normalization(
     scaledData = scalerModel.transform(assembled_data)
 
     def vector_to_array(v):
-        """
-
-        Parameters
-        ----------
-        v
-
-
-        Returns
-        -------
-
-        """
         return v.toArray().tolist()
 
     f_vector_to_array = F.udf(vector_to_array, T.ArrayType(T.FloatType()))
@@ -1345,28 +1267,14 @@ def imputation_MMM(
     stats_mode={},
     print_impact=False,
 ):
-    """This function handles missing value related issues by substituting null values by the measure of central
+    """
+    This function handles missing value related issues by substituting null values by the measure of central
     tendency (mode for categorical features and mean/median for numerical features). For numerical attributes,
     it leverages [Imputer](https://spark.apache.org/docs/latest/api/python/reference/api/pyspark.ml.feature.Imputer
     .html) functionality of Spark MLlib. Though, Imputer can be used for categorical attributes but this feature is
     available only in Spark3.x, therefore for categorical features, we compute mode or leverage mode computation from
     Measures of Central Tendency.
 
-    - *idf*
-    - *list_of_cols*: 'missing' can be used for this argument, in which case, it will analyse only those columns with
-     any missing value.
-    - *drop_cols*
-    - *method_type*: median (default), mean. Valid only for Numerical attributes.
-    - *pre_existing_model*: This argument takes Boolean type input – True or False. True if the encoding models exist
-    already, False Otherwise.
-    - *model_path*: If pre_existing_model is True, this argument is path for pre-saved model. If pre_existing_model is
-    False, this field can be used for saving the mode. Default NA means there is neither pre-saved model nor there is a need to save one.
-    - *output_mode*: All transformed columns are appended with the naming convention - "{original.column.name}_imputed".
-    - *stats_missing*: Arguments corresponding to read_dataset function in dictionary format, to read
-     output from measures_of_counts function of stats generator
-    - *stats_mode*: Arguments corresponding to read_dataset function in dictionary format, to read output
-    from measures_of_centralTendency function of stats generator
-    - *print_impact*
 
     Parameters
     ----------
@@ -1379,6 +1287,7 @@ def imputation_MMM(
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
         "all" can be passed to include all (non-array) columns for analysis.
+        This is super useful instead of specifying all column names manually.
         "missing" (default) can be passed to include only those columns with missing values.
         One of the usecases where "all" may be preferable over "missing" is when the user wants to save
         the imputation model for the future use e.g. a column may not have missing value in the training
@@ -1388,9 +1297,11 @@ def imputation_MMM(
     drop_cols
         List of columns to be dropped e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
+        a few handful of them. (Default value = [])
     method_type
-        median", "mean" (valid only for for numerical columns attributes).
+        "median", "mean" (valid only for for numerical columns attributes).
         Mode is only option for categorical columns. (Default value = "median")
     pre_existing_model
         Boolean argument – True or False. True if imputation model exists already, False otherwise. (Default value = False)
@@ -1399,7 +1310,7 @@ def imputation_MMM(
         If pre_existing_model is False, this argument can be used for saving the model.
         Default "NA" means there is neither pre-existing model nor there is a need to save one.
     output_mode
-        replace", "append".
+        "replace", "append".
         “replace” option replaces original columns with transformed column. “append” option append transformed
         column to the input dataset with a postfix "_imputed" e.g. column X is appended as X_imputed. (Default value = "replace")
     stats_missing
@@ -1412,9 +1323,12 @@ def imputation_MMM(
         mode_computation (data_analyzer.stats_generator module) has been computed & saved before. (Default value = {})
     print_impact
         True, False (Default value = False)
+        This argument is to print out before and after missing counts of imputed columns.
 
     Returns
     -------
+    DataFrame
+        Imputed Dataframe
 
     """
     if stats_missing == {}:
@@ -1662,9 +1576,9 @@ def imputation_sklearn(
     run_type="local",
     print_impact=False,
 ):
-    """The function "imputation_sklearn" trains a sklearn imputer to handle missing values in numerical columns. It
-    learns how to impute the missing value of a sample using the rest of the samples. Two methods are supported via
-    this function: “KNN” and “regression”.
+    """
+    The function "imputation_sklearn" leverages sklearn imputer algorithms. Two methods are supported via this function:
+    “KNN” and “regression”.
 
     “KNN” option trains a sklearn.impute.KNNImputer which is based on k-Nearest Neighbors algorithm. The missing
     values of a sample are imputed using the mean of its 5 nearest neighbors in the training set. “regression” option
@@ -1674,29 +1588,10 @@ def imputation_sklearn(
 
     However, sklearn imputers are not scalable, which might be slow if the size of the input dataframe is large.
     Thus, an input sample_size (the default value is 500,000) can be set to control the number of samples to be used
-    to train the imputer. If the total number of samples exceeds sample_size, the rest of the samples will be imputed
+    to train the imputer. If the total number of input dataset exceeds sample_size, the rest of the samples will be imputed
     using the trained imputer in a scalable manner. This is one of the way to demonstrate how Anovos has been
     designed as a scalable feature engineering library.
 
-    - *spark*: Spark Session
-    - *idf*
-    - *list_of_cols*: "all" can be passed to include all numerical columns. "missing" can be used to only include
-    numerical columns with any missing value.
-    - *drop_cols*
-    - *method_type*: "KNN" or "regression". "KNN" option trains a sklearn.impute.KNNImputer. "regression" option trains
-    a sklearn.impute.IterativeImputer.
-    - *sample_size*: Maximum rows for training the sklearn imputer
-
-    - *pre_existing_model*: Boolean argument - True or False. True if imputation model exists already, False otherwise.
-    - *model_path*: If pre_existing_model is True, this argument is path for referring the pre-saved model.
-    If pre_existing_model is False, this argument can be used for saving the model. Default "NA" means there is neither
-     pre-existing model nor there is a need to save one.
-    - *output_mode*: "append" option appends transformed column with the naming convention - "{original.column.name}_imputed".
-    - *stats_missing*: Takes arguments for read_dataset (data_ingest module) function in a dictionary format to
-    read pre-saved statistics on missing count/pct i.e. if measures_of_counts or missingCount_computation
-     (data_analyzer.stats_generator module) has been computed & saved before.
-    - *emr_mode*: Boolean argument - True or False. True if it is run on EMR, False otherwise.
-    - *print_impact*
 
     Parameters
     ----------
@@ -1705,10 +1600,11 @@ def imputation_sklearn(
     idf
         Input Dataframe
     list_of_cols
-        List of numerical columns to impute e.g., ["col1","col2"].
+        List of columns to impute e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
         "all" can be passed to include all (non-array) columns for analysis.
+        This is super useful instead of specifying all column names manually.
         "missing" (default) can be passed to include only those columns with missing values.
         One of the usecases where "all" may be preferable over "missing" is when the user wants to save
         the imputation model for the future use e.g. a column may not have missing value in the training
@@ -1718,9 +1614,11 @@ def imputation_sklearn(
     drop_cols
         List of columns to be dropped e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
+        a few handful of them. (Default value = [])
     method_type
-        KNN", "regression".
+        "KNN", "regression".
         "KNN" option trains a sklearn.impute.KNNImputer. "regression" option trains a sklearn.impute.IterativeImputer (Default value = "KNN")
     sample_size
         Maximum rows for training the sklearn imputer (Default value = 500000)
@@ -1731,7 +1629,7 @@ def imputation_sklearn(
         If pre_existing_model is False, this argument can be used for saving the model.
         Default "NA" means there is neither pre-existing model nor there is a need to save one.
     output_mode
-        replace", "append".
+        "replace", "append".
         “replace” option replaces original columns with transformed column. “append” option append transformed
         column to the input dataset with a postfix "_imputed" e.g. column X is appended as X_imputed. (Default value = "replace")
     stats_missing
@@ -1739,12 +1637,15 @@ def imputation_sklearn(
         to read pre-saved statistics on missing count/pct i.e. if measures_of_counts or
         missingCount_computation (data_analyzer.stats_generator module) has been computed & saved before. (Default value = {})
     run_type
-        local", "emr" (Default value = "local")
+        "local", "emr" (Default value = "local")
     print_impact
         True, False (Default value = False)
+        This argument is to print out before and after missing counts of imputed columns.
 
     Returns
     -------
+    DataFrame
+        Imputed Dataframe
 
     """
 
@@ -1860,17 +1761,6 @@ def imputation_sklearn(
 
     @F.pandas_udf(returnType=T.ArrayType(T.DoubleType()))
     def prediction(*cols):
-        """
-
-        Parameters
-        ----------
-        *cols
-
-
-        Returns
-        -------
-
-        """
         X = pd.concat(cols, axis=1)
         return pd.Series(row.tolist() for row in imputer.transform(X))
 
@@ -1936,24 +1826,15 @@ def imputation_matrixFactorization(
     stats_missing={},
     print_impact=False,
 ):
-    """imputation_matrixFactorization uses collaborative filtering technique to impute missing values. Collaborative
+    """
+    imputation_matrixFactorization uses collaborative filtering technique to impute missing values. Collaborative
     filtering is commonly used in recommender systems to fill the missing user-item entries and PySpark provides an
     implementation using alternating least squares (ALS) algorithm, which is used in this function. To fit our
-    problem into the ALS model, each attribute is treated as an item and an id columns needs to be specified by the
-    user to generate the user-item pairs. Subsequently, all user-item pairs with known values will be used to train
+    problem into the ALS model, each attribute is treated as an item and an id column needs to be specified by the
+    user to generate the user-item pairs. In the case, ID column doesn't exist in the dataset and proxu ID column is
+    implicitly generated by the function. Subsequently, all user-item pairs with known values will be used to train
     the ALS model and the trained model can be used to predict the user-item pairs with missing values.
 
-    - *spark*: Spark Session
-    - *idf*
-    - *list_of_cols*: "all" can be passed to include all numerical columns.  "missing" can be used to only
-    include numerical columns with any missing value.
-    - *drop_cols*
-    - *id_col*: name of the column representing ID. "" (by default) can be used if there is no ID column.
-    - *output_mode*: "append" option appends transformed column with the naming convention - "{original.column.name}_imputed".
-    - *stats_missing*: Takes arguments for read_dataset (data_ingest module) function in a dictionary format to
-     read pre-saved statistics on missing count/pct i.e. if measures_of_counts or missingCount_computation
-      (data_analyzer.stats_generator module) has been computed & saved before.
-    - *print_impact*
 
     Parameters
     ----------
@@ -1962,22 +1843,27 @@ def imputation_matrixFactorization(
     idf
         Input Dataframe
     list_of_cols
-        List of numerical columns to impute e.g., ["col1","col2"].
+        List of columns to impute e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
         "all" can be passed to include all (non-array) columns for analysis.
+        This is super useful instead of specifying all column names manually.
         "missing" (default) can be passed to include only those columns with missing values.
+        One of the usecases where "all" may be preferable over "missing" is when the user wants to save
+        the imputation model for the future use e.g. a column may not have missing value in the training
+        dataset but missing values may possibly appear in the prediction dataset.
         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
     drop_cols
         List of columns to be dropped e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
+        a few handful of them. (Default value = [])
     id_col
-        name of the column representing ID.
-        "" (by default) can be used if there is no ID column.
+        ID column (Default value = "")
     output_mode
-        replace", "append".
+        "replace", "append".
         “replace” option replaces original columns with transformed column. “append” option append transformed
         column to the input dataset with a postfix "_imputed" e.g. column X is appended as X_imputed. (Default value = "replace")
     stats_missing
@@ -1986,9 +1872,12 @@ def imputation_matrixFactorization(
         missingCount_computation (data_analyzer.stats_generator module) has been computed & saved before. (Default value = {})
     print_impact
         True, False (Default value = False)
+        This argument is to print out before and after missing counts of imputed columns.
 
     Returns
     -------
+    DataFrame
+        Imputed Dataframe
 
     """
 
@@ -2171,7 +2060,8 @@ def auto_imputation(
     output_mode="replace",
     print_impact=True,
 ):
-    """auto_imputation tests for 5 imputation methods using the other imputation functions provided in this module
+    """
+    auto_imputation tests for 5 imputation methods using the other imputation functions provided in this module
     and returns the one with the best performance. The 5 methods are: (1) imputation_MMM with method_type="mean" (2)
     imputation_MMM with method_type="median" (3) imputation_sklearn with method_type="KNN" (4) imputation_sklearn
     with method_type="regression" (5) imputation_matrixFactorization
@@ -2185,15 +2075,6 @@ def auto_imputation(
     they will be automatically imputed using imputation_MMM. In addition, if there is only one numerical attribute to
     impute, only method (1) and (2) will be tested because the rest of the methods require more than one column.
 
-    - *spark*: Spark Session - *idf* - *list_of_cols*: "all" can be passed to include all columns. "missing" can be
-    used to only include columns with any missing value. - *drop_cols* - *id_col*: name of the column representing
-    ID. "" (by default) can be used if there is no ID column. - *null_pct*: proportion of the valid input data to be
-    replaced by None to form the test data - *stats_missing*: Takes arguments for read_dataset (data_ingest module)
-    function in a dictionary format to read pre-saved statistics on missing count/pct i.e. if measures_of_counts or
-    missingCount_computation (data_analyzer.stats_generator module) has been computed & saved before. -
-    *output_mode*: "append" option appends transformed column with the naming convention - "{
-    original.column.name}_imputed". - *print_impact*
-
 
     Parameters
     ----------
@@ -2206,14 +2087,21 @@ def auto_imputation(
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
         "all" can be passed to include all (non-array) columns for analysis.
+        This is super useful instead of specifying all column names manually.
         "missing" (default) can be passed to include only those columns with missing values.
+        One of the usecases where "all" may be preferable over "missing" is when the user wants to save
+        the imputation model for the future use e.g. a column may not have missing value in the training
+        dataset but missing values may possibly appear in the prediction dataset.
+        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
+        drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
     drop_cols
         List of columns to be dropped e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
+        a few handful of them. (Default value = [])
     id_col
-        name of the column representing ID.
-        "" (by default) can be used if there is no ID column.
+        ID column (Default value = "")
     null_pct
         proportion of the valid input data to be replaced by None to form the test data (Default value = 0.1)
     stats_missing
@@ -2221,14 +2109,18 @@ def auto_imputation(
         to read pre-saved statistics on missing count/pct i.e. if measures_of_counts or
         missingCount_computation (data_analyzer.stats_generator module) has been computed & saved before. (Default value = {})
     output_mode
-        replace", "append".
+        "replace", "append".
         “replace” option replaces original columns with transformed column. “append” option append transformed
         column to the input dataset with a postfix "_imputed" e.g. column X is appended as X_imputed. (Default value = "replace")
     print_impact
-        True, False (Default value = True)
+        True, False (Default value = False)
+        This argument is to print out before and after missing counts of imputed columns. It also print the name of best
+        performing imputation method along with RMSE details.
 
     Returns
     -------
+    DataFrame
+        Imputed Dataframe
 
     """
 
@@ -2427,7 +2319,8 @@ def autoencoder_latentFeatures(
     run_type="local",
     print_impact=False,
 ):
-    """Many machine learning models suffer from "the curse of dimensionality" when the number of features is too
+    """
+    Many machine learning models suffer from "the curse of dimensionality" when the number of features is too
     large. autoencoder_latentFeatures is able to reduce the dimensionality by compressing input attributes to a
     smaller number of latent features.
 
@@ -2448,26 +2341,6 @@ def autoencoder_latentFeatures(
     the output values for its latent features will all be None. Thus data imputation is also recommended if missing
     values exist, which can be done within the function by setting inputs *imputation* and *imputation_configs*.
 
-    - *spark*: Spark Session - *idf* - *list_of_cols*: "all" can be passed to include all numerical columns. -
-    *drop_cols* - *reduction_params*: Determines the number of encoded features in the result. If reduction_params <
-    1, int(reduction_params * <number of columns>) columns will be generated. Else, reduction_params columns will be
-    generated. - *sample_size*: Maximum rows for training the autoencoder model using tensorflow - *batch_size*:
-    Integer - number of samples per gradient update when fitting the tensorflow model. - *pre_existing_model*:
-    Boolean argument - True or False. True if model exists already, False Otherwise. - *model_path*: If
-    pre_existing_model is True, this argument is path for referring the pre-saved model. If pre_existing_model is
-    False, this argument can be used for saving the model. Default "NA" means there is neither pre-existing model nor
-    there is a need to save one. - *standardization*: Boolean argument - True or False. True, if the standardization
-    required. - *standardization_configs*: z_standardization function arguments in dictionary format. - *imputation*:
-    Boolean argument - True or False. True, if the imputation required. - *imputation_configs*: Takes input in
-    dictionary format. Imputation function name is provided with key "imputation_name". Optional arguments pertaining
-    to that imputation function can be provided with argument name as key. - *stats_missing*: Takes arguments for
-    read_dataset (data_ingest module) function in a dictionary format to read pre-saved statistics on missing
-    count/pct i.e. if measures_of_counts or missingCount_computation (data_analyzer.stats_generator module) has been
-    computed & saved before. - *emr_mode*: Boolean argument - True or False. True if it is run on EMR,
-    False otherwise. - *output_mode*: "replace" option replaces original columns with transformed columns:
-    latent_<col_index>. "append" option append transformed columns with format latent_<col_index> to the input
-    dataset, e.g. latent_0, latent_1 will be appended if reduction_params=2. - *print_impact*
-
 
     Parameters
     ----------
@@ -2479,13 +2352,15 @@ def autoencoder_latentFeatures(
         List of numerical columns to encode e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-        "all" can be passed to include all numerical columns for analysis.
+        "all" can be passed to include all numerical columns for analysis. This is super useful instead of specifying all column names manually.
         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
     drop_cols
         List of columns to be dropped e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
+        a few handful of them. (Default value = [])
     reduction_params
         Determines the number of encoded features in the result.
         If reduction_params < 1, int(reduction_params * <number of columns>)
@@ -2493,9 +2368,9 @@ def autoencoder_latentFeatures(
     sample_size
         Maximum rows for training the autoencoder model using tensorflow. (Default value = 500000)
     epochs
-        Integer - number of epochs to train the tensorflow model. (Default value = 100)
+        Number of epochs to train the tensorflow model. (Default value = 100)
     batch_size
-        Integer - number of samples per gradient update when fitting the tensorflow model. (Default value = 256)
+        Number of samples per gradient update when fitting the tensorflow model. (Default value = 256)
     pre_existing_model
         Boolean argument – True or False. True if model exists already, False Otherwise (Default value = False)
     model_path
@@ -2517,19 +2392,20 @@ def autoencoder_latentFeatures(
         to read pre-saved statistics on missing count/pct i.e. if measures_of_counts or
         missingCount_computation (data_analyzer.stats_generator module) has been computed & saved before. (Default value = {})
     output_mode
-        replace", "append".
+        "replace", "append".
         “replace” option replaces original columns with transformed columns: latent_<col_index>.
         “append” option append transformed columns with format latent_<col_index> to the input dataset,
         e.g. latent_0, latent_1 will be appended if reduction_params=2. (Default value = "replace")
     run_type
-        local", "emr" (Default value = "local")
+        "local", "emr" (Default value = "local")
     print_impact
-        True, False (Default value = False)
-    "model_path": "NA"}
-
+        True, False
+        This argument is to print descriptive statistics of the latest features (Default value = False)
 
     Returns
     -------
+    DataFrame
+        Dataframe with Latent Features
 
     """
 
@@ -2709,8 +2585,6 @@ def autoencoder_latentFeatures(
                 model.save(model_path + "/autoencoders_latentFeatures/model.h5")
 
     class ModelWrapperPickable:
-        """ """
-
         def __init__(self, model):
             self.model = model
 
@@ -2731,31 +2605,8 @@ def autoencoder_latentFeatures(
     model_wrapper = ModelWrapperPickable(encoder)
 
     def compute_output_pandas_udf(model_wrapper):
-        """Spark pandas udf for model prediction.
-
-        Parameters
-        ----------
-        model_wrapper
-
-
-        Returns
-        -------
-
-        """
-
         @F.pandas_udf(returnType=T.ArrayType(T.DoubleType()))
         def predict_pandas_udf(*cols):
-            """
-
-            Parameters
-            ----------
-            *cols
-
-
-            Returns
-            -------
-
-            """
             X = pd.concat(cols, axis=1)
             return pd.Series(row.tolist() for row in model_wrapper.model.predict(X))
 
@@ -2799,7 +2650,8 @@ def PCA_latentFeatures(
     output_mode="replace",
     print_impact=False,
 ):
-    """Similar to autoencoder_latentFeatures, PCA_latentFeatures also generates latent features which reduces the
+    """
+    Similar to autoencoder_latentFeatures, PCA_latentFeatures also generates latent features which reduces the
     dimensionality of the input dataframe but through a different technique: Principal Component Analysis (PCA). PCA
     algorithm produces principal components such that it can describe most of the remaining variance and all the
     principal components are orthogonal to each other. The final number of generated principal components is
@@ -2813,20 +2665,6 @@ def PCA_latentFeatures(
     data imputation is also recommended if missing values exist, which can be done within the function by setting
     inputs *imputation* and *imputation_configs*.
 
-    - *spark*: Spark Session
-    - *idf*
-    - *list_of_cols*: "all" can be passed to include all numerical columns.
-    - *drop_cols*
-    - *explained_variance_cutoff*: Determines the number of encoded columns in the output. If N is the smallest  integer such that top N encoded columns explain more than explained_variance_cutoff variance, these N columns will be selected.
-    - *pre_existing_model*: Boolean argument - True or False. True if model exists already, False Otherwise
-    - *model_path*: If pre_existing_model is True, this argument is path for referring the pre-saved model. If pre_existing_model is False, this argument can be used for saving the model. Default "NA" means there is neither pre-existing model nor there is a need to save one.
-    - *standardization*: Boolean argument - True or False. True, if the standardization required.
-    - *standardization_configs*: z_standardization function arguments in dictionary format.
-    - *imputation*: Boolean argument - True or False. True, if the imputation required.
-    - *imputation_configs*: Takes input in dictionary format. Imputation function name is provided with key "imputation_name". optional arguments pertaining to that imputation function can be provided with argument name as key.
-    - *stats_missing*: Takes arguments for read_dataset (data_ingest module) function in a dictionary format to read pre-saved statistics on missing count/pct i.e. if measures_of_counts or missingCount_computation (data_analyzer.stats_generator module) has been computed & saved before.
-    - *output_mode*: "replace" option replaces original columns with transformed columns: latent_<col_index>. "append" option append transformed columns with format latent_<col_index> to the input dataset, e.g. latent_0, latent_1.
-    - *print_impact*
 
     Parameters
     ----------
@@ -2838,16 +2676,18 @@ def PCA_latentFeatures(
         List of numerical columns to encode e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-        "all" can be passed to include all numerical columns for analysis.
+        "all" can be passed to include all numerical columns for analysis. This is super useful instead of specifying all column names manually.
         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
     drop_cols
         List of columns to be dropped e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
+        a few handful of them. (Default value = [])
     explained_variance_cutoff
-        Determines the number of encoded columns in the output. If N is the smallest
-        integer such that top N encoded columns explain more than explained_variance_cutoff
+        Determines the number of latent columns in the output. If N is the smallest
+        integer such that top N latent columns explain more than explained_variance_cutoff
         variance, these N columns will be selected. (Default value = 0.95)
     pre_existing_model
         Boolean argument – True or False. True if model exists already, False Otherwise (Default value = False)
@@ -2870,17 +2710,18 @@ def PCA_latentFeatures(
         to read pre-saved statistics on missing count/pct i.e. if measures_of_counts or
         missingCount_computation (data_analyzer.stats_generator module) has been computed & saved before. (Default value = {})
     output_mode
-        replace", "append".
+        "replace", "append".
         “replace” option replaces original columns with transformed columns: latent_<col_index>.
         “append” option append transformed columns with format latent_<col_index> to the input dataset,
         e.g. latent_0, latent_1. (Default value = "replace")
     print_impact
-        True, False (Default value = False)
-    "model_path": "NA"}
-
+        True, False
+        This argument is to print descriptive statistics of the latest features (Default value = False)
 
     Returns
     -------
+    DataFrame
+        Dataframe with Latent Features
 
     """
 
@@ -3006,17 +2847,6 @@ def PCA_latentFeatures(
             pca.write().overwrite().save(model_path + "/PCA_latentFeatures/pca_path")
 
     def vector_to_array(v):
-        """
-
-        Parameters
-        ----------
-        v
-
-
-        Returns
-        -------
-
-        """
         return v.toArray().tolist()
 
     f_vector_to_array = F.udf(vector_to_array, T.ArrayType(T.FloatType()))
@@ -3057,40 +2887,33 @@ def feature_transformation(
     output_mode="replace",
     print_impact=False,
 ):
-    """As the name indicates, feature_transformation performs mathematical transformation over selected attributes.
+    """
+    As the name indicates, feature_transformation performs mathematical transformation over selected attributes.
     The following methods are supported for an input attribute x: ln(x), log10(x), log2(x), e^x, 2^x, 10^x, N^x,
     square and cube root of x, x^2, x^3, x^N, trigonometric transformations of x (sin, cos, tan, asin, acos, atan),
     radians, x%N, x!, 1/x, floor and ceiling of x and x rounded to N decimal places. Some transformations only work
     with positive or non-negative input values such as log and square root and an error will be returned if violated.
 
-    - *idf*
-    - *list_of_cols*: "all" can be passed to include all numerical columns.
-    - *drop_cols*
-    - *method_type*: "ln", "log10", "log2", "exp", "powOf2" (2^x), "powOf10" (10^x), "powOfN" (N^x), "sqrt" (square
-    root), "cbrt" - (cube root), "sq" (square), "cb" (cube), "toPowerN" (x^N), "sin", "cos", "tan", "asin", "acos",
-    "atan", "radians", "remainderDivByN" (x%N), "factorial" (x!), "mul_inv" (1/x), "floor", "ceil", "roundN" (round
-    to N decimal places)
-    - *N*: None by default. If method_type is "powOfN", "toPowerN", "remainderDivByN" or "roundN", N will be used as the required constant.
-    - *output_mode*: "append" option appends transformed column with the naming convention - "{original.column.name}_{transformation.name}".
-    - *print_impact*
 
     Parameters
     ----------
     idf
         Input Dataframe
     list_of_cols
-        List of numerical columns to encode e.g., ["col1","col2"].
+        List of numerical columns to transform e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-        "all" can be passed to include all numerical columns for analysis.
+        "all" can be passed to include all numerical columns for analysis. This is super useful instead of specifying all column names manually.
         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
     drop_cols
         List of columns to be dropped e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
+        a few handful of them. (Default value = [])
     method_type
-        ln", "log10", "log2", "exp", "powOf2" (2^x), "powOf10" (10^x), "powOfN" (N^x),
+        "ln", "log10", "log2", "exp", "powOf2" (2^x), "powOf10" (10^x), "powOfN" (N^x),
         "sqrt" (square root), "cbrt" (cube root), "sq" (square), "cb" (cube), "toPowerN" (x^N),
         "sin", "cos", "tan", "asin", "acos", "atan", "radians",
         "remainderDivByN" (x%N), "factorial" (x!), "mul_inv" (1/x),
@@ -3099,15 +2922,18 @@ def feature_transformation(
         None by default. If method_type is "powOfN", "toPowerN", "remainderDivByN" or "roundN", N will
         be used as the required constant.
     output_mode
-        replace", "append".
+        "replace", "append".
         “replace” option replaces original columns with transformed columns.
         “append” option append transformed columns with a postfix (E.g. "_ln", "_powOf<N>")
         to the input dataset. (Default value = "replace")
     print_impact
-        True, False (Default value = False)
+        True, False
+        This argument is to print before and after descriptive statistics of the transformed features (Default value = False)
 
     Returns
     -------
+    DataFrame
+        Transformed Dataframe
 
     """
 
@@ -3185,17 +3011,6 @@ def feature_transformation(
     }
 
     def get_col_name(i):
-        """
-
-        Parameters
-        ----------
-        i
-
-
-        Returns
-        -------
-
-        """
         if output_mode == "replace":
             return i
         else:
@@ -3227,27 +3042,18 @@ def boxcox_transformation(
     output_mode="replace",
     print_impact=False,
 ):
-    """Some machine learning algorithms require the input data to follow normal distributions. Thus, when the input
+    """
+    Some machine learning algorithms require the input data to follow normal distributions. Thus, when the input
     data is too skewed, boxcox_transformation can be used to transform it into a more normal-like distribution. The
-    transformed value of a sample x depends on a coefficient lambda: (1) if lambda = 0, x is transformed into log(x);
-    (2) if lambda !=0, x is transformed into (x^lambda-1)/lambda. The value of lambda can be either specified by the
-    user or automatically selected within the function. If lambda needs to be selected within the function,
-    a range of values (0, 1, -1, 0.5, -0.5, 2, -2, 0.25, -0.25, 3, -3, 4, -4, 5, -5) will be tested and the lambda,
-    which optimizes the KolmogorovSmirnovTest by PySpark with the theoretical distribution being normal, will be used
-    to perform the transformation. Different lambda values can be assigned to different attributes but one attribute
-    can only be assigned one lambda value.
+    transformed value of a sample x depends on a coefficient lambda:
+    (1) if lambda = 0, x is transformed into log(x);
+    (2) if lambda !=0, x is transformed into (x^lambda-1)/lambda.
 
-    - *idf*
-    - *list_of_cols*: "all" can be passed to include all numerical columns.
-    - *drop_cols*
-    - *boxcox_lambda*: Lambda value for box_cox transormation. If boxcox_lambda is not None, it
-     will be directly used for the transformation. It can be a (1) list: each element represents a lambda value for
-          an attribute and the length of the list must be the same as the number of columns to transform. (2) int/float:
-          all attributes will be assigned the same lambda value. Else, search for the best lambda among
-           [1,-1,0.5,-0.5,2,-2,0.25,-0.25,3,-3,4,-4,5,-5] for each column and apply the transformation
-    - *output_mode*: "append" option appends transformed column with the naming convention
-    - "{original.column.name}__bxcx_{lambda}".
-    - *print_impact*
+    The value of lambda can be either specified by the user or automatically selected within the function.
+    If lambda needs to be selected within the function, a range of values (0, 1, -1, 0.5, -0.5, 2, -2, 0.25, -0.25, 3, -3, 4, -4, 5, -5)
+    will be tested and the lambda, which optimizes the KolmogorovSmirnovTest by PySpark with the theoretical distribution being normal,
+    will be used to perform the transformation. Different lambda values can be assigned to different attributes but one attribute
+    can only be assigned one lambda value.
 
 
     Parameters
@@ -3255,16 +3061,18 @@ def boxcox_transformation(
     idf
         Input Dataframe
     list_of_cols
-        List of numerical columns to encode e.g., ["col1","col2"].
+        List of numerical columns to transform e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-        "all" can be passed to include all numerical columns for analysis.
+        "all" can be passed to include all numerical columns for analysis. This is super useful instead of specifying all column names manually.
         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
     drop_cols
         List of columns to be dropped e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
+        a few handful of them. (Default value = [])
     boxcox_lambda
         Lambda value for box_cox transormation.
         If boxcox_lambda is not None, it will be directly used for the transformation. It can be a
@@ -3274,15 +3082,18 @@ def boxcox_transformation(
         Else, search for the best lambda among [1,-1,0.5,-0.5,2,-2,0.25,-0.25,3,-3,4,-4,5,-5]
         for each column and apply the transformation (Default value = None)
     output_mode
-        replace", "append".
+        "replace", "append".
         “replace” option replaces original columns with transformed columns.
         “append” option append transformed columns with a postfix "_bxcx_<lambda>"
         to the input dataset. (Default value = "replace")
     print_impact
-        True, False (Default value = False)
+        True, False
+        This argument is to print before and after descriptive statistics of the transformed features (Default value = False)
 
     Returns
     -------
+    DataFrame
+        Transformed Dataframe
 
     """
 
@@ -3397,23 +3208,16 @@ def outlier_categories(
     output_mode="replace",
     print_impact=False,
 ):
-    """This function replaces less frequently seen values (called as outlier values in the current context) in a
-    categorical column by 'others'. Outlier values can be defined in two ways – a) Max N categories, where N is used
-    defined value. In this method, top N-1 frequently seen categories are considered and rest are clubbed under
-    single category 'others'. or Alternatively, b) Coverage – top frequently seen categories are considered till it
-    covers minimum N% of rows and rest lesser seen values are mapped to mapped to others. Even if the Coverage is
-    less, maximum category constraint is given priority. Further, there is a caveat that when multiple categories
-    have same rank. Then, number of categorical values can be more than max_category defined by the user.
+    """
+    This function replaces less frequently seen values (called as outlier values in the current context) in a
+    categorical column by 'others'. Outlier values can be defined in two ways –
+    a) Max N categories, where N is used defined value. In this method, top N-1 frequently seen categories are considered
+    and rest are clubbed under single category 'others'. or Alternatively,
+    b) Coverage – top frequently seen categories are considered till it covers minimum N% of rows and rest lesser seen values
+    are mapped to mapped to others. Even if the Coverage is less, maximum category constraint is given priority. Further,
+    there is a caveat that when multiple categories have same rank. Then, number of categorical values can be more than
+    max_category defined by the user.
 
-    - *idf*
-    - *list_of_cols*: 'missing' can be used for this argument, in which case, it will analyse only those columns with any missing value.
-    - *drop_cols*
-    - *coverage*: Minimum % of rows mapped to actual category name and rest will be mapped to others
-    - *max_category*: Maximum number of categories allowed
-    - *pre_existing_model*: This argument takes Boolean type input – True or False. True if the file with outlier values exist already for each attribute, False Otherwise.
-    - *model_path*: If pre_existing_model is True, this argument is path for pre-saved model file. If pre_existing_model is False, this field can be used for saving the model file. Default NA means there is neither pre-saved model nor there is a need to save one.
-    - *output_mode*: All transformed columns are appended with the naming convention - "{original.column.name}_ outliered ".
-    - *print_impact*
 
     Parameters
     ----------
@@ -3421,17 +3225,19 @@ def outlier_categories(
         Spark Session
     idf
         Input Dataframe
-    list_of_cols
+        list_of_cols
         List of categorical columns to transform e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-        "all" can be passed to include all categorical columns for analysis.
+        "all" can be passed to include all categorical columns for analysis. This is super useful instead of specifying all column names manually.
         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
     drop_cols
         List of columns to be dropped e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = [])
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
+        a few handful of them. (Default value = [])
     coverage
         Defines the minimum % of rows that will be mapped to actual category name and the rest to be mapped
         to others and takes value between 0 to 1. Coverage of 0.8 can be interpreted as top frequently seen
@@ -3447,14 +3253,17 @@ def outlier_categories(
         If pre_existing_model is False, this field can be used for saving the model.
         Default "NA" means there is neither pre-existing model nor there is a need to save one.
     output_mode
-        replace", "append".
+        "replace", "append".
         “replace” option replaces original columns with transformed column. “append” option append transformed
         column to the input dataset with a postfix "_outliered" e.g. column X is appended as X_outliered. (Default value = "replace")
     print_impact
-        True, False (Default value = False)
+        True, False
+        This argument is to print before and after unique count of the transformed features (Default value = False)
 
     Returns
     -------
+    DataFrame
+        Transformed Dataframe
 
     """
 
@@ -3560,18 +3369,11 @@ def outlier_categories(
 
 
 def expression_parser(idf, list_of_expr, postfix="", print_impact=False):
-    """expression_parser can be used to evaluate a list of SQL expressions and output the result as new features. It
+    """
+    expression_parser can be used to evaluate a list of SQL expressions and output the result as new features. It
     is able to handle column names containing special characters such as “.”, “-”, “@”, “^”, etc, by converting them
     to “_” first before the evaluation and convert them back to the original names before returning the output
     dataframe.
-
-    - *idf*
-    - *list_of_expr*: List of expressions to evaluate as new features e.g., ["expr1","expr2"]. Alternatively,
-     expressions can be specified in a string format, where different expressions are separated by pipe delimiter
-      "|" e.g., "expr1|expr2".
-    - *postfix*: postfix for new feature name.Naming convention "f" + expression_index + postfix e.g. with postfix of
-    "new", new added features are named as f0new, f1new etc.
-    - *print_impact*
 
 
     Parameters
@@ -3586,10 +3388,13 @@ def expression_parser(idf, list_of_expr, postfix="", print_impact=False):
         postfix for new feature name.Naming convention "f" + expression_index + postfix
         e.g. with postfix of "new", new added features are named as f0new, f1new etc. (Default value = "")
     print_impact
-        True, False (Default value = False)
+        True, False
+        This argument is to print the descriptive statistics of the parsed features (Default value = False)
 
     Returns
     -------
+    DataFrame
+        Parsed Dataframe
 
     """
     if isinstance(list_of_expr, str):
