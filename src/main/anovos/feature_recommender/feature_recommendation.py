@@ -8,23 +8,25 @@ import plotly.graph_objects as go
 from sentence_transformers import util
 
 from anovos.feature_recommender.featrec_init import (
-    list_train_fer,
     recommendation_data_prep,
-    df_rec_fer,
-    list_embedding_train_fer,
     model_fer,
-    industry_column,
-    usecase_column,
     camel_case_split,
+    feature_recommendation_prep,
+    get_column_name,
 )
 from anovos.feature_recommender.feature_exploration import (
-    process_usecase,
+    list_usecase_by_industry,
     process_industry,
+    process_usecase,
+)
+
+list_train_fer, df_rec_fer, list_embedding_train_fer = feature_recommendation_prep()
+(
     feature_name_column,
     feature_desc_column,
-    source_column,
-    list_usecase_by_industry,
-)
+    industry_column,
+    usecase_column,
+) = get_column_name(df_rec_fer)
 
 
 def feature_recommendation(
@@ -115,7 +117,6 @@ def feature_recommendation(
                     "Feature_Similarity_Score",
                     "Industry",
                     "Usecase",
-                    "Source",
                 ]
             )
             print("Industry/Usecase pair does not exist.")
@@ -133,7 +134,6 @@ def feature_recommendation(
                 "Feature_Similarity_Score",
                 "Industry",
                 "Usecase",
-                "Source",
             ]
         )
     elif desc_column is None:
@@ -145,7 +145,6 @@ def feature_recommendation(
                 "Feature_Similarity_Score",
                 "Industry",
                 "Usecase",
-                "Source",
             ]
         )
     else:
@@ -158,10 +157,9 @@ def feature_recommendation(
                 "Feature_Similarity_Score",
                 "Industry",
                 "Usecase",
-                "Source",
             ]
         )
-    list_embedding_user = model_fer.encode(list_user, convert_to_tensor=True)
+    list_embedding_user = model_fer.model.encode(list_user, convert_to_tensor=True)
     for i, feature in enumerate(list_user):
         cos_scores = util.pytorch_cos_sim(list_embedding_user, list_embedding_train_fr)[
             i
@@ -180,7 +178,6 @@ def feature_recommendation(
                                 "%.4f" % (cos_scores[idx]),
                                 df_rec_fr[industry_column].iloc[int(idx)],
                                 df_rec_fr[usecase_column].iloc[int(idx)],
-                                df_rec_fr[source_column].iloc[int(idx)],
                             ]
                         ],
                         columns=[
@@ -190,7 +187,6 @@ def feature_recommendation(
                             "Feature_Similarity_Score",
                             "Industry",
                             "Usecase",
-                            "Source",
                         ],
                     )
                 else:
@@ -198,12 +194,11 @@ def feature_recommendation(
                         [
                             [
                                 df_user[desc_column].iloc[i],
-                                "Null",
-                                "Null",
-                                "Null",
-                                "Null",
-                                "Null",
-                                "Null",
+                                "N/A",
+                                "N/A",
+                                "N/A",
+                                "N/A",
+                                "N/A",
                             ]
                         ],
                         columns=[
@@ -213,7 +208,6 @@ def feature_recommendation(
                             "Feature_Similarity_Score",
                             "Industry",
                             "Usecase",
-                            "Source",
                         ],
                     )
             elif desc_column is None:
@@ -227,7 +221,6 @@ def feature_recommendation(
                                 "%.4f" % (cos_scores[idx]),
                                 df_rec_fr[industry_column].iloc[int(idx)],
                                 df_rec_fr[usecase_column].iloc[int(idx)],
-                                df_rec_fr[source_column].iloc[int(idx)],
                             ]
                         ],
                         columns=[
@@ -237,20 +230,18 @@ def feature_recommendation(
                             "Feature_Similarity_Score",
                             "Industry",
                             "Usecase",
-                            "Source",
                         ],
                     )
                 else:
                     df_append = pd.DataFrame(
                         [
                             [
-                                df_user[desc_column].iloc[i],
-                                "Null",
-                                "Null",
-                                "Null",
-                                "Null",
-                                "Null",
-                                "Null",
+                                df_user[name_column].iloc[i],
+                                "N/A",
+                                "N/A",
+                                "N/A",
+                                "N/A",
+                                "N/A",
                             ]
                         ],
                         columns=[
@@ -260,7 +251,6 @@ def feature_recommendation(
                             "Feature_Similarity_Score",
                             "Industry",
                             "Usecase",
-                            "Source",
                         ],
                     )
             else:
@@ -275,7 +265,6 @@ def feature_recommendation(
                                 "%.4f" % (cos_scores[idx]),
                                 df_rec_fr[industry_column].iloc[int(idx)],
                                 df_rec_fr[usecase_column].iloc[int(idx)],
-                                df_rec_fr[source_column].iloc[int(idx)],
                             ]
                         ],
                         columns=[
@@ -286,7 +275,6 @@ def feature_recommendation(
                             "Feature_Similarity_Score",
                             "Industry",
                             "Usecase",
-                            "Source",
                         ],
                     )
                 else:
@@ -295,12 +283,11 @@ def feature_recommendation(
                             [
                                 df_user[name_column].iloc[i],
                                 df_user[desc_column].iloc[i],
-                                "Null",
-                                "Null",
-                                "Null",
-                                "Null",
-                                "Null",
-                                "Null",
+                                "N/A",
+                                "N/A",
+                                "N/A",
+                                "N/A",
+                                "N/A",
                             ]
                         ],
                         columns=[
@@ -311,10 +298,11 @@ def feature_recommendation(
                             "Feature_Similarity_Score",
                             "Industry",
                             "Usecase",
-                            "Source",
                         ],
                     )
-            df_out = df_out.append(df_append, ignore_index=True)
+            df_out = pd.concat(
+                [df_out, df_append], ignore_index=True, axis=0, join="outer"
+            )
     return df_out
 
 
@@ -382,8 +370,10 @@ def find_attr_by_relevance(
             ]
         )
     list_user, df_user = recommendation_data_prep(df, name_column, desc_column)
-    list_embedding_user = model_fer.encode(list_user, convert_to_tensor=True)
-    list_embedding_building = model_fer.encode(building_corpus, convert_to_tensor=True)
+    list_embedding_user = model_fer.model.encode(list_user, convert_to_tensor=True)
+    list_embedding_building = model_fer.model.encode(
+        building_corpus, convert_to_tensor=True
+    )
     for i, feature in enumerate(building_corpus):
         if name_column is None:
             df_append = pd.DataFrame(
@@ -432,19 +422,12 @@ def find_attr_by_relevance(
                         single_score,
                     ]
                 else:
-                    df_append = df_append.append(
-                        {
-                            "Input_Feature_Description": feature,
-                            "Recommended_Input_Attribute_Name": df_user[
-                                name_column
-                            ].iloc[int(idx)],
-                            "Recommended_Input_Attribute_Description": df_user[
-                                desc_column
-                            ].iloc[int(idx)],
-                            "Input_Attribute_Similarity_Score": single_score,
-                        },
-                        ignore_index=True,
-                    )
+                    df_append.loc[len(df_append.index)] = [
+                        feature,
+                        df_user[name_column].iloc[int(idx)],
+                        df_user[desc_column].iloc[int(idx)],
+                        single_score,
+                    ]
         if len(df_append) == 0:
             if name_column is None:
                 df_append.loc[len(df_append.index)] = [feature, "N/A", "N/A"]
@@ -452,9 +435,7 @@ def find_attr_by_relevance(
                 df_append.loc[len(df_append.index)] = [feature, "N/A", "N/A"]
             else:
                 df_append.loc[len(df_append.index)] = [feature, "N/A", "N/A", "N/A"]
-            df_out = pd.concat(
-                [df_out, df_append], ignore_index=True, axis=0, join="outer"
-            )
+        df_out = pd.concat([df_out, df_append], ignore_index=True, axis=0, join="outer")
     return df_out
 
 
@@ -480,7 +461,6 @@ def sankey_visualization(df, industry_included=False, usecase_included=False):
         "Feature_Similarity_Score",
         "Industry",
         "Usecase",
-        "Source",
     ]
     attr_proper_col_list = [
         "Input_Feature_Description",
@@ -522,7 +502,7 @@ def sankey_visualization(df, industry_included=False, usecase_included=False):
     usecase_target = "Usecase"
     df_iter = copy.deepcopy(df)
     for i in range(len(df_iter)):
-        if str(df_iter[name_score][i]) == "Null":
+        if str(df_iter[name_score][i]) == "N/A":
             df = df.drop([i])
     df = df.reset_index(drop=True)
     source = []

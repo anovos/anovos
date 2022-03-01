@@ -6,15 +6,6 @@ import pandas as pd
 from sentence_transformers import SentenceTransformer
 from torch.hub import _get_torch_home
 
-from feature_exploration import (
-    df_input_fer,
-    feature_desc_column,
-    feature_name_column,
-    industry_column,
-    usecase_column,
-    source_column,
-)
-
 
 def detect_model_path():
     """
@@ -178,18 +169,52 @@ def recommendation_data_prep(df, name_column, desc_column):
     return list_corpus, df_prep
 
 
-df_groupby_fer = (
-    df_input_fer.groupby([feature_name_column, feature_desc_column])
-    .agg(
-        {
-            industry_column: lambda x: ", ".join(set(x.dropna())),
-            usecase_column: lambda x: ", ".join(set(x.dropna())),
-            source_column: lambda x: ", ".join(set(x.dropna())),
-        }
+def feature_exploration_prep():
+    """
+
+    Returns
+    -------
+    df_input_fer
+        DataFrame used in Feature Exploration functions
+    """
+    df_input_fer = init_input_fer()
+    df_input_fer = df_input_fer.rename(columns=lambda x: x.strip().replace(" ", "_"))
+    return df_input_fer
+
+
+def feature_recommendation_prep():
+    """
+
+    Returns
+    -------
+    list_train_fer
+        List of prepared data for Feature Recommendation functions
+    df_red_fer
+        DataFrame used in Feature Recommendation functions
+    list_embedding_train_fer
+        List of embedding tensor for Feature Recommendation functions
+    """
+    df_input_fer = init_input_fer()
+    (
+        feature_name_column,
+        feature_desc_column,
+        industry_column,
+        usecase_column,
+    ) = get_column_name(df_input_fer)
+    df_groupby_fer = (
+        df_input_fer.groupby([feature_name_column, feature_desc_column])
+        .agg(
+            {
+                industry_column: lambda x: ", ".join(set(x.dropna())),
+                usecase_column: lambda x: ", ".join(set(x.dropna())),
+            }
+        )
+        .reset_index()
     )
-    .reset_index()
-)
-list_train_fer, df_rec_fer = recommendation_data_prep(
-    df_groupby_fer, feature_name_column, feature_name_column
-)
-list_embedding_train_fer = model_fer.encode(list_train_fer, convert_to_tensor=True)
+    list_train_fer, df_rec_fer = recommendation_data_prep(
+        df_groupby_fer, feature_name_column, feature_name_column
+    )
+    list_embedding_train_fer = model_fer.model.encode(
+        list_train_fer, convert_to_tensor=True
+    )
+    return list_train_fer, df_rec_fer, list_embedding_train_fer
