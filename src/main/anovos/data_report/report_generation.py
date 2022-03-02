@@ -103,14 +103,6 @@ def line_chart_gen_stability(df1, df2, col):
     """
 
     def val_cat(val):
-        """
-        Parameters
-        ----------
-        val
-
-        Returns
-        -------
-        """
         if val >= 3.5:
             return "Very Stable"
         elif val >= 3 and val < 3.5:
@@ -415,21 +407,17 @@ def drift_stability_ind(
     missing_recs_drift, drift_tab, missing_recs_stability, stability_tab
 ):
     """
-
     This function helps to produce the drift & stability indicator for further processing. Ideally a data with both drift & stability should produce a list of [1,1]
-
-    missing_recs_drift: Missing files from the drift tab
-        drift_tab: "drift_statistics"
-    missing_recs_stability: Missing files from the stability tab
-        stability_tab:"stability_index, stabilityIndex_metrics"
     Parameters
     ----------
     missing_recs_drift
-        param drift_tab
-    missing_recs_stability
-        param stability_tab
+        Missing files from the drift tab
     drift_tab
+        "drift_statistics"
+    missing_recs_stability
+        Missing files from the stability tab
     stability_tab
+        "stability_index, stabilityIndex_metrics"
 
     Returns
     -------

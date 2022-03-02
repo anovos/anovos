@@ -69,17 +69,6 @@ from anovos.shared.spark import spark
 
 
 def ETL(args):
-    """
-
-    Parameters
-    ----------
-    argsOneHotEncoder
-
-
-    Returns
-    -------
-
-    """
     f = getattr(data_ingest, "read_dataset")
     read_args = args.get("read_dataset", None)
     if read_args:
@@ -99,23 +88,6 @@ def ETL(args):
 
 
 def save(data, write_configs, folder_name, reread=False):
-    """
-
-    Parameters
-    ----------
-    dataOneHotEncoder
-        param write_configs:
-    folder_nameOneHotEncoder
-        param reread: (Default value = False)
-    write_configsOneHotEncoder
-
-    rereadOneHotEncoder
-         (Default value = False)
-
-    Returns
-    -------
-
-    """
     if write_configs:
         if "file_path" not in write_configs:
             raise TypeError("file path missing for writing data")
@@ -134,19 +106,6 @@ def save(data, write_configs, folder_name, reread=False):
 
 
 def stats_args(all_configs, func):
-    """
-
-    Parameters
-    ----------
-    all_configsOneHotEncoder
-        param func:
-    funcOneHotEncoder
-
-
-    Returns
-    -------
-
-    """
     stats_configs = all_configs.get("stats_generator", None)
     write_configs = all_configs.get("write_stats", None)
     report_input_path = ""
@@ -208,17 +167,15 @@ def stats_args(all_configs, func):
 
 def main(all_configs, run_type):
     """
-
     Parameters
     ----------
-    all_configsOneHotEncoder
-        param run_type:
-    run_typeOneHotEncoder
-
+    all_configs
+        configs read from yaml file
+    run_type
+        "local", "databricks", "emr"
 
     Returns
     -------
-
     """
     start_main = timeit.default_timer()
     df = ETL(all_configs.get("input_dataset"))
