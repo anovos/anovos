@@ -26,11 +26,11 @@ setup(
     long_description=README,
     long_description_content_type="text/markdown",
     install_requires=INSTALL_PACKAGES,
-    version="0.1.1",
+    version="0.2.0",
     url="https://github.com/anovos/anovos.git",
     author="Team Anovos",
     author_email="info@anovos.ai",
-    keywords=["machine learning", "open source", "feature engineering", "analytics"],
+    keywords=["machine learning", "open source", "feature engineering", "analytics", "apache spark", "feature recommendation"],
     tests_require=["pytest", "coverage"],
     python_requires=">=3.7",
 )
