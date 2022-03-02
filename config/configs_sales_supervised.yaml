@@ -45,7 +45,7 @@ quality_checker:
   invalidEntries_detection:
     list_of_cols: all
     drop_cols: [ 'Item_Identifier' ]
-    treatment: True
+    treatment: False
     output_mode: replace
   
   IDness_detection:

@@ -53,7 +53,7 @@ quality_checker:
   invalidEntries_detection:
     list_of_cols: all
     drop_cols: ['STATE']
-    treatment: True
+    treatment: False
     output_mode: replace
   
   IDness_detection:
