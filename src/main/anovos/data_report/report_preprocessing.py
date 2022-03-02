@@ -29,17 +29,6 @@ cat_cols = []
 
 
 def master_to_local(master_path):
-    """
-
-    Parameters
-    ----------
-    master_path
-
-
-    Returns
-    -------
-
-    """
     punctuations = ":"
     for x in master_path:
         if x in punctuations:
