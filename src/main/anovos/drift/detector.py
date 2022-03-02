@@ -591,7 +591,7 @@ def feature_stability_estimation(
         attributes in string. For example, {'X|Y|Z': 'X**2+Y/Z', 'A': 'log(A)'}
     metric_weightages
         Takes input in dictionary format with keys being the metric name - "mean","stdev","kurtosis"
-        and value being the weightage of the metric (between 0 and 1). Sum of all weightages must be 1. 
+        and value being the weightage of the metric (between 0 and 1). Sum of all weightages must be 1.
         (Default value = {"mean": 0.5, "stddev": 0.3, "kurtosis": 0.2})
     threshold
         A column is flagged if the stability index is below the threshold, which varies between 0 and 4.
