@@ -56,6 +56,8 @@ def daypart_cat(column):
 
     Returns
     -------
+    DataFrame
+        Column
     """
 
     # calculate hour buckets after adding local timezone
@@ -100,6 +102,7 @@ def ts_processed_feats(idf, col, id_col, tz, cnt_row, cnt_unique_id):
 
     Returns
     -------
+    DataFrame
     """
 
     if cnt_row == cnt_unique_id:
@@ -170,6 +173,7 @@ def ts_eligiblity_check(spark, idf, id_col, opt=1, tz_offset="local"):
 
     Returns
     -------
+    DataFrame
     """
 
     lagged_df = lagged_ts(
@@ -284,6 +288,7 @@ def ts_viz_data(
 
     Returns
     -------
+    DataFrame
     """
 
     y_col_org = y_col
@@ -432,6 +437,7 @@ def ts_analyzer(
 
     Returns
     -------
+    Output[CSV]
     """
 
     if run_type == "local":
