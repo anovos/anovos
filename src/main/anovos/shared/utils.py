@@ -130,3 +130,26 @@ def pairwise_reduce(op, x):
             v[-1] = op(v[-1], x[-1])
         x = v
     return x[0]
+
+
+def output_to_local(output_path):
+    """
+
+    Parameters
+    ----------
+    output_path :
+        input_path. e.g. dbfs:/sample_path
+
+
+    Returns
+    -------
+    type
+        path after removing ":" and appending "/" . e.g. /dbfs/sample_path
+
+    """
+    punctuations = ":"
+    for x in output_path:
+        if x in punctuations:
+            local_path = output_path.replace(x, "")
+            local_path = "/" + local_path
+    return local_path
