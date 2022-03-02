@@ -176,7 +176,6 @@ def main(all_configs, run_type):
 
     Returns
     -------
-    None
     """
     start_main = timeit.default_timer()
     df = ETL(all_configs.get("input_dataset"))
