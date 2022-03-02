@@ -1,5 +1,4 @@
 import pytest
-from pyspark.sql import DataFrame
 
 from anovos.drift.validations import check_list_of_columns
 

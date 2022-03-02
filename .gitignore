@@ -4,6 +4,9 @@
 # DS store
 *.DS_Store
 
+#CRC Files
+*.crc
+
 # Docker
 docker-stacks/
 
