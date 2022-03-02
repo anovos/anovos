@@ -166,6 +166,17 @@ def stats_args(all_configs, func):
 
 
 def main(all_configs, run_type):
+    """
+    Parameters
+    ----------
+    all_configs
+        configs read from yaml file
+    run_type
+        "local", "databricks", "emr"
+
+    Returns
+    -------
+    """
     start_main = timeit.default_timer()
     df = ETL(all_configs.get("input_dataset"))
 
