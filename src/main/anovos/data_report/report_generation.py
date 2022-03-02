@@ -75,6 +75,7 @@ def remove_u_score(col):
         Analysis column containing "_" present gets replaced along with upper case conversion
     Returns
     -------
+    String
     """
     col_ = col.split("_")
     bl = []
@@ -100,6 +101,7 @@ def line_chart_gen_stability(df1, df2, col):
         Analysis column
     Returns
     -------
+    DatapaneObject
     """
 
     def val_cat(val):
@@ -110,6 +112,7 @@ def line_chart_gen_stability(df1, df2, col):
 
         Returns
         -------
+        String
         """
         if val >= 3.5:
             return "Very Stable"
@@ -213,6 +216,7 @@ def data_analyzer_output(master_path, avl_recs_tab, tab_name):
         Analysis tab from association_evaluator / quality_checker / stats_generator
     Returns
     -------
+    DatapaneObject
     """
 
     df_list = []
@@ -433,6 +437,7 @@ def drift_stability_ind(
 
     Returns
     -------
+    List
     """
     if len(missing_recs_drift) == len(drift_tab):
         drift_ind = 0
@@ -463,6 +468,7 @@ def chart_gen_list(master_path, chart_type, type_col=None):
         None. Default value is kept as None
     Returns
     -------
+    DatapaneObject
     """
     plot_list = []
     for i in chart_type:
@@ -526,6 +532,7 @@ def executive_summary_gen(
         Printing option flexibility. Default value is kept as False.
     Returns
     -------
+    DatapaneObject / Output[HTML]
     """
     try:
         obj_dtls = json.load(
@@ -895,6 +902,7 @@ def wiki_generator(
         Printing option flexibility. Default value is kept as False.
     Returns
     -------
+    DatapaneObject / Output[HTML]
     """
     try:
         datatype_df = pd.read_csv(ends_with(master_path) + "data_type.csv")
@@ -991,6 +999,7 @@ def descriptive_statistics(
         Printing option flexibility. Default value is kept as False.
     Returns
     -------
+    DatapaneObject / Output[HTML]
     """
     if "global_summary" in avl_recs_SG:
         cnt = 0
@@ -1149,6 +1158,7 @@ def quality_check(
         Printing option flexibility. Default value is kept as False.
     Returns
     -------
+    DatapaneObject / Output[HTML]
     """
     c_ = []
     r_ = []
@@ -1297,6 +1307,7 @@ def attribute_associations(
         Printing option flexibility. Default value is kept as False.
     Returns
     -------
+    DatapaneObject / Output[HTML]
     """
     if (len(missing_recs_AE) == len(AE_tabs)) and (
         (len(all_charts_num_2_) + len(all_charts_cat_2_)) == 0
@@ -1433,6 +1444,7 @@ def data_drift_stability(
         Printing option flexibility. Default value is kept as False.
     Returns
     -------
+    DatapaneObject / Output[HTML]
     """
     line_chart_list = []
     if ds_ind[0] > 0:
@@ -1532,6 +1544,7 @@ def data_drift_stability(
                 count of attributes passed for analysis
             Returns
             -------
+            String
             """
             if drifted_feats == 0:
                 text = """
@@ -1915,6 +1928,7 @@ def plotSeasonalDecompose(
         "Title Description"
     Returns
     -------
+    Plot
     """
     df = pd.read_csv(ends_with(base_path) + x_col + "_" + y_col + "_daily.csv").dropna()
 
@@ -2024,6 +2038,7 @@ def gen_time_series_plots(base_path, x_col, y_col, time_cat):
 
     Returns
     -------
+    Plot
 
     """
 
@@ -2274,6 +2289,7 @@ def list_ts_remove_append(l, opt):
 
     Returns
     -------
+    List
 
     """
 
@@ -2311,7 +2327,7 @@ def ts_viz_1_1(base_path, x_col, y_col, output_type="daily"):
 
     Returns
     -------
-
+    Plot
     """
 
     ts_fig = gen_time_series_plots(base_path, x_col, y_col, output_type)
@@ -2336,7 +2352,7 @@ def ts_viz_1_2(base_path, ts_col, col_list, output_type="daily"):
 
     Returns
     -------
-
+    DatapaneObject
     """
 
     bl = []
@@ -2370,7 +2386,7 @@ def ts_viz_1_3(base_path, ts_col, num_cols, cat_cols, output_type):
 
     Returns
     -------
-
+    DatapaneObject
     """
 
     ts_v = []
@@ -2461,7 +2477,7 @@ def ts_viz_2_1(base_path, x_col, y_col):
 
     Returns
     -------
-
+    DatapaneObject
     """
 
     ts_fig = []
@@ -2493,7 +2509,7 @@ def ts_viz_2_2(base_path, ts_col, col_list):
 
     Returns
     -------
-
+    DatapaneObject
     """
 
     bl = []
@@ -2523,7 +2539,7 @@ def ts_viz_2_3(base_path, ts_col, num_cols):
 
     Returns
     -------
-
+    DatapaneObject
     """
 
     ts_v = []
@@ -2602,7 +2618,7 @@ def ts_landscape(base_path, ts_cols, id_col):
 
     Returns
     -------
-
+    DatapaneObject
     """
 
     if ts_cols is None:
@@ -2702,7 +2718,7 @@ def lambda_cat(val):
 
     Returns
     -------
-
+    String
     """
 
     if val < -1:
@@ -2736,7 +2752,7 @@ def ts_viz_3_1(base_path, x_col, y_col):
 
     Returns
     -------
-
+    DatapaneObject
     """
 
     ts_fig = []
@@ -2869,7 +2885,7 @@ def ts_viz_3_2(base_path, ts_col, col_list):
 
     Returns
     -------
-
+    DatapaneObject
     """
 
     bl = []
@@ -2900,7 +2916,7 @@ def ts_viz_3_3(base_path, ts_col, num_cols):
 
     Returns
     -------
-
+    DatapaneObject
     """
 
     ts_v = []
@@ -2928,7 +2944,7 @@ def ts_stats(base_path):
         Base path which is the same as Master path where the aggregated data resides.
     Returns
     -------
-
+    List
     """
 
     df = pd.read_csv(base_path + "ts_cols_stats.csv")
@@ -2976,7 +2992,7 @@ def ts_viz_generate(master_path, id_col, print_report=False, output_type="daily"
 
     Returns
     -------
-
+    DatapaneObject / Output[HTML]
     """
 
     try:
@@ -3083,7 +3099,7 @@ def anovos_report(
 
     Returns
     -------
-
+    Output[HTML]
     """
 
     if run_type == "emr":
