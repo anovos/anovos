@@ -140,7 +140,6 @@ def output_to_local(output_path):
     output_path :
         input_path. e.g. dbfs:/sample_path
 
-
     Returns
     -------
     type
