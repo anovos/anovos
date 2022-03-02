@@ -43,6 +43,26 @@ import pandas as pd
 import numpy as np
 
 
+def output_to_local(output_path):
+    """
+
+    Parameters
+    ----------
+    output_path :
+
+
+    Returns
+    -------
+
+    """
+    punctuations = ":"
+    for x in output_path:
+        if x in punctuations:
+            local_path = output_path.replace(x, "")
+            local_path = "/" + local_path
+    return local_path
+
+
 def daypart_cat(column):
 
     """
@@ -436,8 +456,12 @@ def ts_analyzer(
 
     if run_type == "local":
         local_path = output_path
-    else:
+    elif run_type == "databricks":
+        local_path = output_to_local(output_path)
+    elif run_type == "emr":
         local_path = "report_stats"
+    else:
+        raise ValueError("Invalid run_type")
 
     Path(local_path).mkdir(parents=True, exist_ok=True)
 
