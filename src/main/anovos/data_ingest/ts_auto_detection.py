@@ -69,7 +69,7 @@ def regex_date_time_parser(
     col
         Column passed for Auto detection of Timestamp / date type
     tz
-        Timezone offset (Option to chose between options like Local, GMT, UTC, etc.). Default option is set as "Local".
+        Timezone offset (Option to chose between options like Local, GMT, UTC). Default option is set as "Local".
     val_unique_cat
         Maximum character length of the field.
     trans_cat
@@ -278,15 +278,13 @@ def regex_date_time_parser(
 
         return idf
 
-    elif trans_cat in ["long_c", "bigint_c"]:
+    elif (trans_cat in ["long_c", "bigint_c", "int_c"]) & (
+        int(val_unique_cat) in [10, 13]
+    ):
 
-        precision_chk = (
-            idf.select(F.max(F.length(col))).rdd.flatMap(lambda x: x).collect()[0]
-        )
-
-        if precision_chk == 10:
+        if int(val_unique_cat) == 10:
             precision = "s"
-        elif precision_chk == 13:
+        elif int(val_unique_cat) == 13:
             precision = "ms"
         else:
             precision = "ms"
@@ -448,7 +446,7 @@ def regex_date_time_parser(
                 ]
             )
 
-        if len(bl) > 50:
+        if len(bl) >= 1:
             columns = [col, col + "_ts"]
             # output_df = spark.createDataFrame(spark.parallelize(bl),columns)
             output_df = spark.createDataFrame(pd.DataFrame(bl, columns=columns))
@@ -487,6 +485,18 @@ def regex_date_time_parser(
                 frmt = "yyyyddMM"
             elif int(f[2]) > 12:
                 frmt = "yyyyMMdd"
+            elif (
+                (int(f[0]) > 1970 & int(f[0]) < 2049)
+                & (int(f[1]) > 0 & int(f[1]) <= 12)
+                & (int(f[2]) > 0 & int(f[2]) <= 31)
+            ):
+                frmt = "yyyyMMdd"
+            elif (
+                (int(f[0]) > 1970 & int(f[0]) < 2049)
+                & (int(f[1]) > 0 & int(f[1]) <= 31)
+                & (int(f[2]) > 0 & int(f[2]) <= 12)
+            ):
+                frmt = "yyyyddMM"
             else:
                 return idf
 
@@ -567,7 +577,7 @@ def ts_loop_cols_pre(idf, id_col):
         elif (
             (i[0] != id_col)
             & (idf.select(F.length(i[0])).distinct().count() == 1)
-            & (col_len >= 4)
+            & (col_len in [4, 6, 8])
         ):
             if i[1] == "string":
                 lc1.append(i[0])
@@ -625,7 +635,7 @@ def ts_preprocess(spark, idf, id_col, output_path, tz_offset="local", run_type="
 
     Returns
     -------
-    DataFrame
+    DataFrame,Output[CSV]
     """
 
     if run_type == "local":

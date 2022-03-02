@@ -436,6 +436,7 @@ def ts_analyzer(
 
     Returns
     -------
+    Output[CSV]
     """
 
     if run_type == "local":
