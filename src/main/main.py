@@ -69,17 +69,6 @@ from anovos.shared.spark import spark
 
 
 def ETL(args):
-    """
-
-    Parameters
-    ----------
-    argsOneHotEncoder
-
-
-    Returns
-    -------
-
-    """
     f = getattr(data_ingest, "read_dataset")
     read_args = args.get("read_dataset", None)
     if read_args:
@@ -99,23 +88,6 @@ def ETL(args):
 
 
 def save(data, write_configs, folder_name, reread=False):
-    """
-
-    Parameters
-    ----------
-    dataOneHotEncoder
-        param write_configs:
-    folder_nameOneHotEncoder
-        param reread: (Default value = False)
-    write_configsOneHotEncoder
-
-    rereadOneHotEncoder
-         (Default value = False)
-
-    Returns
-    -------
-
-    """
     if write_configs:
         if "file_path" not in write_configs:
             raise TypeError("file path missing for writing data")
@@ -134,19 +106,6 @@ def save(data, write_configs, folder_name, reread=False):
 
 
 def stats_args(all_configs, func):
-    """
-
-    Parameters
-    ----------
-    all_configsOneHotEncoder
-        param func:
-    funcOneHotEncoder
-
-
-    Returns
-    -------
-
-    """
     stats_configs = all_configs.get("stats_generator", None)
     write_configs = all_configs.get("write_stats", None)
     report_input_path = ""
@@ -207,19 +166,6 @@ def stats_args(all_configs, func):
 
 
 def main(all_configs, run_type):
-    """
-
-    Parameters
-    ----------
-    all_configsOneHotEncoder
-        param run_type:
-    run_typeOneHotEncoder
-
-
-    Returns
-    -------
-
-    """
     start_main = timeit.default_timer()
     df = ETL(all_configs.get("input_dataset"))
 
@@ -532,15 +478,28 @@ def main(all_configs, run_type):
                                 f = getattr(transformers, subkey2)
                                 extra_args = stats_args(all_configs, subkey2)
                                 if subkey2 in (
+                                    "imputation_sklearn",
+                                    "autoencoder_latentFeatures",
+                                    "auto_imputation",
+                                    "PCA_latentFeatures",
+                                ):
+                                    extra_args["run_type"] = run_type
+                                if subkey2 in (
                                     "normalization",
                                     "feature_transformation",
                                     "boxcox_transformation",
                                     "expression_parser",
                                 ):
-                                    df_transformed = f(df, **value2, print_impact=True)
+                                    df_transformed = f(
+                                        df, **value2, **extra_args, print_impact=False
+                                    )
                                 else:
                                     df_transformed = f(
-                                        spark, df, **value2, print_impact=True
+                                        spark,
+                                        df,
+                                        **value2,
+                                        **extra_args,
+                                        print_impact=False,
                                     )
                                 df = save(
                                     df_transformed,
@@ -579,9 +538,11 @@ def main(all_configs, run_type):
 
             if (key == "report_generation") & (args is not None):
                 start = timeit.default_timer()
-                analysis_level = all_configs.get("timeseries_analyzer", None).get(
-                    "analysis_level", None
-                )
+                timeseries_analyzer = all_configs.get("timeseries_analyzer", None)
+                if timeseries_analyzer:
+                    analysis_level = timeseries_analyzer.get("analysis_level", None)
+                else:
+                    analysis_level = None
                 anovos_report(**args, run_type=run_type, output_type=analysis_level)
                 end = timeit.default_timer()
                 logger.info(
