@@ -37,7 +37,8 @@ def statistics(
     model_directory: str = "drift_statistics",
     print_impact: bool = False,
 ):
-    """When the performance of a deployed machine learning model degrades in production, one potential reason is that
+    """
+    When the performance of a deployed machine learning model degrades in production, one potential reason is that
     the data used in training and prediction are not following the same distribution.
 
     Data drift mainly includes the following manifestations:
@@ -97,71 +98,40 @@ def statistics(
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
         "all" can be passed to include all (non-array) columns for analysis.
         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
-        drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
+        drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
     drop_cols
         List of columns to be dropped e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = None)
     method_type
-        PSI", "JSD", "HD", "KS","all".
+        "PSI", "JSD", "HD", "KS","all".
         "all" can be passed to calculate all drift metrics.
         One or more methods can be passed in a form of list or string where different metrics are separated
-        by pipe delimiter “|” e.g. ["PSI", "JSD"] or "PSI|JSD"
+        by pipe delimiter “|” e.g. ["PSI", "JSD"] or "PSI|JSD". (Default value = "PSI")
     bin_method
-        equal_frequency", "equal_range".
+        "equal_frequency", "equal_range".
         In "equal_range" method, each bin is of equal size/width and in "equal_frequency", each bin
-        has equal no. of rows, though the width of bins may vary.
+        has equal no. of rows, though the width of bins may vary. (Default value = "equal_range")
     bin_size
-        Number of bins for creating histogram
+        Number of bins for creating histogram. (Default value = 10)
     threshold
-        A column is flagged if any drift metric is above the threshold.
+        A column is flagged if any drift metric is above the threshold. (Default value = 0.1)
     pre_existing_source
         Boolean argument – True or False. True if the drift_statistics folder (binning model &
-        frequency counts for each attribute) exists already, False Otherwise.
+        frequency counts for each attribute) exists already, False Otherwise. (Default value = False)
     source_path
         If pre_existing_source is False, this argument can be used for saving the drift_statistics folder.
         The drift_statistics folder will have attribute_binning (binning model) & frequency_counts sub-folders.
         If pre_existing_source is True, this argument is path for referring the drift_statistics folder.
-        Default "NA" for temporarily saving source dataset attribute_binning folder.
+        Default "NA" for temporarily saving source dataset attribute_binning folder. (Default value = "NA")
     model_directory
         If pre_existing_source is False, this argument can be used for saving the drift stats to folder.
         The default drift statics directory is drift_statistics folder will have attribute_binning
         If pre_existing_source is True, this argument is model_directory for referring the drift statistics dir.
-        Default "drift_statistics" for temporarily saving source dataset attribute_binning folder.
+        Default "drift_statistics" for temporarily saving source dataset attribute_binning folder. (Default value = "drift_statistics")
     print_impact
-        True, False
-    spark
-        type spark: SparkSession
-    idf_target
-        type idf_target: DataFrame
-    idf_source
-        type idf_source: DataFrame
-    spark: SparkSession
-
-    idf_target: DataFrame
-
-    idf_source: DataFrame
-
-    list_of_cols: list
-         (Default value = "all")
-    drop_cols: list
-         (Default value = None)
-    method_type: str
-         (Default value = "PSI")
-    bin_method: str
-         (Default value = "equal_range")
-    bin_size: int
-         (Default value = 10)
-    threshold: float
-         (Default value = 0.1)
-    pre_existing_source: bool
-         (Default value = False)
-    source_path: str
-         (Default value = "NA")
-    model_directory: str
-         (Default value = "drift_statistics")
-    print_impact: bool
-         (Default value = False)
+        True, False. (Default value = False)
+        This argument is to print out the drift statistics of all attributes and attributes meeting the threshold.
 
     Returns
     -------
@@ -283,7 +253,8 @@ def stability_index_computation(
     threshold=1,
     print_impact=False,
 ):
-    """The data stability is represented by a single metric to summarise the stability of an attribute over multiple
+    """
+    The data stability is represented by a single metric to summarise the stability of an attribute over multiple
     time periods. For example, given 6 datasets collected in 6 consecutive time periods (D1, D2, …, D6),
     data stability index of an attribute measures how stable the attribute is from D1 to D6.
 
@@ -402,7 +373,7 @@ def stability_index_computation(
     metric_weightages
         Takes input in dictionary format with keys being the metric name - "mean","stdev","kurtosis"
         and value being the weightage of the metric (between 0 and 1). Sum of all weightages must be 1.
-         (Default value = {"mean": 0.5)
+         (Default value = {"mean": 0.5, "stddev": 0.3, "kurtosis": 0.2})
     existing_metric_path
         This argument is path for referring pre-existing metrics of historical datasets and is
         of schema [idx, attribute, mean, stdev, kurtosis].
@@ -416,7 +387,7 @@ def stability_index_computation(
         unstable: 1≤SI<2, marginally stable: 2≤SI<3, stable: 3≤SI<3.5 and very stable: 3.5≤SI≤4. (Default value = 1)
     print_impact
         True, False (Default value = False)
-
+        This argument is to print out the stability metrics of all attributes and potential unstable attributes.
 
     Returns
     -------
@@ -520,18 +491,6 @@ def stability_index_computation(
     odf = spark.createDataFrame(result, schema=schema)
 
     def score_cv(cv, thresholds=[0.03, 0.1, 0.2, 0.5]):
-        """
-
-        Parameters
-        ----------
-        cv
-
-        thresholds
-
-        Returns
-        -------
-
-        """
         if cv is None:
             return None
         else:
@@ -605,7 +564,7 @@ def feature_stability_estimation(
     1. Estimate mean and stddev for the new feature based on attribute metrics (no existing resource found to
     estimate Feature kurtosis). Estimated mean and stddev are generated for each time period using the
     formula below according to [1]:
-    ![feature_stability_formulae.png](https://raw.githubusercontent.com/anovos/anovos-docs/main/docs/assets/feature_stability_formulae.png)
+    ![https://raw.githubusercontent.com/anovos/anovos-docs/main/docs/assets/feature_stability_formulae.png](https://raw.githubusercontent.com/anovos/anovos-docs/main/docs/assets/feature_stability_formulae.png)
     2. Calculate Coefficient of variation (CV) for estimated feature mean and stddev. Each CV can be then mapped
     to an integer between 0 and 4 to generate the metric stability index.
     3. Similar to the attribute stability index, each metric is assigned a weightage between 0 and 1, where the
@@ -632,13 +591,15 @@ def feature_stability_estimation(
         attributes in string. For example, {'X|Y|Z': 'X**2+Y/Z', 'A': 'log(A)'}
     metric_weightages
         Takes input in dictionary format with keys being the metric name - "mean","stdev","kurtosis"
-        and value being the weightage of the metric (between 0 and 1). Sum of all weightages must be 1. (Default value = {"mean": 0.5)
+        and value being the weightage of the metric (between 0 and 1). Sum of all weightages must be 1. 
+        (Default value = {"mean": 0.5, "stddev": 0.3, "kurtosis": 0.2})
     threshold
         A column is flagged if the stability index is below the threshold, which varies between 0 and 4.
         The following criteria can be used to classify stability_index (SI): very unstable: 0≤SI<1,
         unstable: 1≤SI<2, marginally stable: 2≤SI<3, stable: 3≤SI<3.5 and very stable: 3.5≤SI≤4. (Default value = 1)
     print_impact
         True, False (Default value = False)
+        This argument is to print out the stability metrics of all newly generated features and potential unstable features.
 
     Returns
     -------
@@ -653,23 +614,6 @@ def feature_stability_estimation(
     """
 
     def stats_estimation(attributes, transformation, mean, stddev):
-        """
-
-        Parameters
-        ----------
-        attributes
-
-        transformation
-
-        mean
-
-        stddev
-
-
-        Returns
-        -------
-
-        """
         attribute_means = list(zip(attributes, mean))
         first_dev = []
         second_dev = []
@@ -778,18 +722,6 @@ def feature_stability_estimation(
     odf = spark.createDataFrame(output, schema=schema)
 
     def score_cv(cv, thresholds=[0.03, 0.1, 0.2, 0.5]):
-        """
-
-        Parameters
-        ----------
-        cv
-
-        thresholds
-
-        Returns
-        -------
-
-        """
         if cv is None:
             return None
         else:
