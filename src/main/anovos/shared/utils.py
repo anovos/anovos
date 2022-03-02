@@ -96,7 +96,7 @@ def ends_with(string, end_str="/"):
     Parameters
     ----------
     string
-        s3:mw-bucket"
+        "s3:mw-bucket"
     end_str
         return: "s3:mw-bucket/" (Default value = "/")
 
@@ -116,9 +116,9 @@ def pairwise_reduce(op, x):
     Parameters
     ----------
     op
-        param x:
+        Operation
     x
-
+        Input list
 
     Returns
     -------
