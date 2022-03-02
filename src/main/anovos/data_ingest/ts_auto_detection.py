@@ -37,7 +37,6 @@ import dateutil.parser
 import pandas as pd
 import numpy as np
 
-
 ###regex based ts parser function
 
 
