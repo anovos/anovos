@@ -575,7 +575,7 @@ def ts_loop_cols_pre(idf, id_col):
         elif (
             (i[0] != id_col)
             & (idf.select(F.length(i[0])).distinct().count() == 1)
-            & (col_len >= 4)
+            & (col_len in [4,6,8])
         ):
             if i[1] == "string":
                 lc1.append(i[0])
