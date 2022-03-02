@@ -21,7 +21,7 @@ from pyspark.sql import types as T
 from pyspark.sql import Window
 from loguru import logger
 import calendar
-from anovos.shared.utils import attributeType_segregation, ends_with
+from anovos.shared.utils import attributeType_segregation, ends_with, output_to_local
 from anovos.data_analyzer.stats_generator import measures_of_percentiles
 from anovos.data_ingest.ts_auto_detection import ts_preprocess
 from anovos.data_transformer.datetime import (
@@ -56,8 +56,7 @@ def daypart_cat(column):
 
     Returns
     -------
-    DataFrame
-        Column
+    String
     """
 
     # calculate hour buckets after adding local timezone
@@ -442,8 +441,12 @@ def ts_analyzer(
 
     if run_type == "local":
         local_path = output_path
-    else:
+    elif run_type == "databricks":
+        local_path = output_to_local(output_path)
+    elif run_type == "emr":
         local_path = "report_stats"
+    else:
+        raise ValueError("Invalid run_type")
 
     Path(local_path).mkdir(parents=True, exist_ok=True)
 
