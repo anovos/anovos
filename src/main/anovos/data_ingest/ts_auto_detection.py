@@ -81,6 +81,7 @@ def regex_date_time_parser(
 
     Returns
     -------
+    DataFrame
     """
 
     REGEX_PARTS = {
@@ -558,6 +559,7 @@ def ts_loop_cols_pre(idf, id_col):
 
     Returns
     -------
+    List
     """
 
     lc1, lc2, lc3 = [], [], []
@@ -575,7 +577,7 @@ def ts_loop_cols_pre(idf, id_col):
         elif (
             (i[0] != id_col)
             & (idf.select(F.length(i[0])).distinct().count() == 1)
-            & (col_len in [4,6,8])
+            & (col_len in [4, 6, 8])
         ):
             if i[1] == "string":
                 lc1.append(i[0])
@@ -633,6 +635,7 @@ def ts_preprocess(spark, idf, id_col, output_path, tz_offset="local", run_type="
 
     Returns
     -------
+    DataFrame,Output[CSV]
     """
 
     if run_type == "local":
