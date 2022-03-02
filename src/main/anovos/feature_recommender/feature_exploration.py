@@ -1,4 +1,11 @@
-from anovos.feature_recommender.featrec_init import *
+"""Feature explorer helps list down the potential features from our corpus based
+on user defined industry or/and use case.
+"""
+from anovos.feature_recommender.featrec_init import (
+    feature_exploration_prep,
+    get_column_name,
+    model_fer,
+)
 from sentence_transformers import util
 import pandas as pd
 import numpy as np
@@ -14,6 +21,7 @@ df_input_fer = feature_exploration_prep()
 
 def list_all_industry():
     """
+    Lists down all the Industries that are supported in Feature Recommender module.
 
     Returns
     -------
@@ -26,6 +34,7 @@ def list_all_industry():
 
 def list_all_usecase():
     """
+    Lists down all the Use cases that are supported in Feature Recommender module.
 
     Returns
     -------
@@ -38,6 +47,8 @@ def list_all_usecase():
 
 def list_all_pair():
     """
+    Lists down all the Industry/Use case pairs that are supported in Feature Recommender module.
+
     Returns
     -------
     DataFrame of all the supported Industry/Usecase pairs as part of feature exploration/recommendation
@@ -126,13 +137,14 @@ def process_industry(industry: str, semantic: bool):
 
 def list_usecase_by_industry(industry, semantic=True):
     """
+    Lists down all the Use cases that are supported in Feature Recommender Package based on the Input Industry.
 
     Parameters
     ----------
-    industry
-        Input industry (string)
-    semantic
-        Input semantic (boolean) - Whether the input needs to go through semantic similarity or not. Default is True.
+    industry : str
+        Input industry
+    semantic : bool
+        Input semantic - Whether the input needs to go through semantic similarity or not. Default is True.
 
     Returns
     -------
@@ -146,13 +158,14 @@ def list_usecase_by_industry(industry, semantic=True):
 
 def list_industry_by_usecase(usecase, semantic=True):
     """
+    Lists down all the Use cases that are supported in Feature Recommender Package based on the Input Industry.
 
     Parameters
     ----------
-    usecase
-        Input usecase (string)
-    semantic
-        Input semantic (boolean) - Whether the input needs to go through semantic similarity or not. Default is True.
+    usecase : str
+        Input usecase
+    semantic : bool
+        Input semantic - Whether the input needs to go through semantic similarity or not. Default is True.
 
     Returns
     -------
@@ -166,19 +179,29 @@ def list_industry_by_usecase(usecase, semantic=True):
 
 def list_feature_by_industry(industry, num_of_feat=100, semantic=True):
     """
+    Lists down all the Features that are available in Feature Recommender Package based on the Input Industry.
 
     Parameters
     ----------
-    industry
-        Input industry (string)
-    num_of_feat
+    industry : str
+        Input industry
+    num_of_feat : int
         Number of features to be displayed in the output.
         Value can be either integer, or 'all' - display all features matched with the input. Default is 100.
-    semantic
-        Input semantic (boolean) - Whether the input needs to go through semantic similarity or not. Default is True.
+    semantic : bool
+        Input semantic - Whether the input needs to go through semantic similarity or not. Default is True.
 
     Returns
     -------
+    DataFrame
+        Columns are:
+        - Feature Name: Name of the suggested Feature
+        - Feature Description: Description of the suggested Feature
+        - Industry: Industry name of the suggested Feature
+        - Usecase: Usecase name of the suggested Feature
+        - Source: Source of the suggested Feature
+
+        The list of features is sorted by the Usecases' Feature Popularity to the Input Industry.
 
     """
     if type(num_of_feat) != int or num_of_feat < 0:
@@ -201,19 +224,30 @@ def list_feature_by_industry(industry, num_of_feat=100, semantic=True):
 
 def list_feature_by_usecase(usecase, num_of_feat=100, semantic=True):
     """
+    Lists down all the Features that are available in Feature Recommender Package based on the Input Usecase.
 
     Parameters
     ----------
-    usecase
-        Input usecase (string)
-    num_of_feat
+    usecase : str
+        Input usecase
+    num_of_feat : int
         Number of features to be displayed in the output.
         Value can be either integer, or 'all' - display all features matched with the input.  Default is 100.
-    semantic
-        Input semantic (boolean) - Whether the input needs to go through semantic similarity or not. Default is True.
+    semantic : bool
+        Input semantic - Whether the input needs to go through semantic similarity or not. Default is True.
 
     Returns
     -------
+    DataFrame
+        Columns are:
+
+        - Feature Name: Name of the suggested Feature
+        - Feature Description: Description of the suggested Feature
+        - Industry: Industry name of the suggested Feature
+        - Usecase: Usecase name of the suggested Feature
+        - Source: Source of the suggested Feature
+
+        The list of features is sorted by the Industries' Feature Popularity to the Input Usecase.
 
     """
     if type(num_of_feat) != int or num_of_feat < 0:
@@ -236,6 +270,8 @@ def list_feature_by_usecase(usecase, num_of_feat=100, semantic=True):
 
 def list_feature_by_pair(industry, usecase, num_of_feat=100, semantic=True):
     """
+    Lists down all the Features that are available in Feature Recommender Package based
+    on the Input Industry/Usecase pair
 
     Parameters
     ----------
@@ -251,6 +287,14 @@ def list_feature_by_pair(industry, usecase, num_of_feat=100, semantic=True):
 
     Returns
     -------
+    DataFrame
+        Columns are:
+
+        - Feature Name: Name of the suggested Feature
+        - Feature Description: Description of the suggested Feature
+        - Industry: Industry name of the suggested Feature
+        - Usecase: Usecase name of the suggested Feature
+        - Source: Source of the suggested Feature
 
     """
     if type(num_of_feat) != int or num_of_feat < 0:

@@ -1,3 +1,34 @@
+# coding=utf-8
+
+"""This module generates the final report output specific to the intermediate data generated across each of the modules. The final report, however, can be proccessed through the config.yaml file or by generating it through the respective functions.
+
+Below are some of the functions used to process the final output.
+
+- line_chart_gen_stability
+- data_analyzer_output
+- drift_stability_ind
+- chart_gen_list
+- executive_summary_gen
+- wiki_generator
+- descriptive_statistics
+- quality_check
+- attribute_associations
+- data_drift_stability
+- plotSeasonalDecompose
+- gen_time_series_plots
+- list_ts_remove_append
+- ts_viz_1_1 — ts_viz_1_3
+- ts_viz_2_1 — ts_viz_2_3
+- ts_viz_3_1 — ts_viz_3_3
+- ts_landscape
+- ts_stats
+- ts_viz_generate
+- anovos_report
+
+However, each of the functions have been detailed in the respective sections across the parameters used.
+
+"""
+
 import json
 import os
 import subprocess
@@ -7,7 +38,16 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from loguru import logger
+import dateutil.parser
+from statsmodels.tsa.seasonal import seasonal_decompose
+import plotly.tools as tls
+from plotly.subplots import make_subplots
+from statsmodels.tsa.stattools import adfuller, kpss
+from sklearn.preprocessing import PowerTransformer
 from anovos.shared.utils import ends_with
+import warnings
+
+warnings.filterwarnings("ignore")
 
 global_theme = px.colors.sequential.Plasma
 global_theme_r = px.colors.sequential.Plasma_r
@@ -28,6 +68,7 @@ default_template = (
 
 def remove_u_score(col):
     """
+    This functions help to remove the "_" present in a specific text
     Parameters
     ----------
     col
@@ -46,7 +87,9 @@ def remove_u_score(col):
 
 
 def line_chart_gen_stability(df1, df2, col):
+
     """
+    This function helps to produce charts which are specific to data stability index. It taken into account the stability input along with the analysis column to produce the desired output.
     Parameters
     ----------
     df1
@@ -149,7 +192,9 @@ def line_chart_gen_stability(df1, df2, col):
 
 
 def data_analyzer_output(master_path, avl_recs_tab, tab_name):
+
     """
+    This section produces output in form of datapane objects which is specific to the different data analyzer modules. It is used by referring to the Master path along with the Available list of metrics & the Tab name.
     Parameters
     ----------
     master_path
@@ -161,10 +206,10 @@ def data_analyzer_output(master_path, avl_recs_tab, tab_name):
     Returns
     -------
     """
+
     df_list = []
     df_plot_list = []
     # @FIXME: unused variables
-    txt_list = []
     plot_list = []
     avl_recs_tab = [x for x in avl_recs_tab if "global_summary" not in x]
     for index, i in enumerate(avl_recs_tab):
@@ -362,6 +407,7 @@ def drift_stability_ind(
     missing_recs_drift, drift_tab, missing_recs_stability, stability_tab
 ):
     """
+    This function helps to produce the drift & stability indicator for further processing. Ideally a data with both drift & stability should produce a list of [1,1]
     Parameters
     ----------
     missing_recs_drift
@@ -392,7 +438,9 @@ def drift_stability_ind(
 
 
 def chart_gen_list(master_path, chart_type, type_col=None):
+
     """
+    This function helps to produce the charts in a list object form nested by a datapane object.
     Parameters
     ----------
     master_path
@@ -447,6 +495,7 @@ def executive_summary_gen(
     print_report=False,
 ):
     """
+    This function helps to produce output specific to the Executive Summary Tab.
     Parameters
     ----------
     master_path
@@ -821,6 +870,7 @@ def wiki_generator(
     master_path, dataDict_path=None, metricDict_path=None, print_report=False
 ):
     """
+    This function helps to produce output specific to the Wiki Tab.
     Parameters
     ----------
     master_path
@@ -910,6 +960,7 @@ def descriptive_statistics(
     print_report=False,
 ):
     """
+    This function helps to produce output specific to the Descriptive Stats Tab.
     Parameters
     ----------
     master_path
@@ -1069,6 +1120,7 @@ def quality_check(
     print_report=False,
 ):
     """
+    This function helps to produce output specific to the Quality Checker Tab.
     Parameters
     ----------
     master_path
@@ -1212,6 +1264,7 @@ def attribute_associations(
     print_report=False,
 ):
     """
+    This function helps to produce output specific to the Attribute Association Tab.
     Parameters
     ----------
     master_path
@@ -1351,6 +1404,7 @@ def data_drift_stability(
     print_report=False,
 ):
     """
+    This function helps to produce output specific to the Data Drift & Stability Tab.
     Parameters
     ----------
     master_path
@@ -1416,7 +1470,7 @@ def data_drift_stability(
             line_width=1,
         ),
         fig_metric_drift.update_layout(
-            legend=dict(orientation="h", x=0.5, yanchor="top", xanchor="center")
+            legend=dict(orientation="h", x=0.5, yanchor="bottom", xanchor="center")
         )
         fig_metric_drift.layout.plot_bgcolor = global_plot_bg_color
         fig_metric_drift.layout.paper_bgcolor = global_paper_bg_color
@@ -1505,26 +1559,26 @@ def data_drift_stability(
             line_chart_list.append(
                 line_chart_gen_stability(df1=df_stability, df2=df_si_, col=i)
             )
-            report = dp.Group(
-                dp.Text("# "),
-                dp.Text(
-                    """
-                    *This section examines the dataset stability wrt the baseline dataset (via computing drift
-                    statistics) and/or wrt the historical datasets (via computing stability index).*
-                    """
-                ),
-                dp.Text("# "),
-                dp.Text("# "),
-                dp.Text("### Data Stability Analysis"),
-                dp.DataTable(df_si),
-                dp.Select(blocks=line_chart_list, type=dp.SelectType.DROPDOWN),
-                dp.Group(
-                    dp.Text("**Stability Index Interpretation:**"),
-                    dp.Plot(plot_index_stability),
-                    rows=2,
-                ),
-                label="Drift & Stability",
-            )
+        report = dp.Group(
+            dp.Text("# "),
+            dp.Text(
+                """
+                *This section examines the dataset stability wrt the baseline dataset (via computing drift 
+                statistics) and/or wrt the historical datasets (via computing stability index).*
+                """
+            ),
+            dp.Text("# "),
+            dp.Text("# "),
+            dp.Text("### Data Stability Analysis"),
+            dp.DataTable(df_si),
+            dp.Select(blocks=line_chart_list, type=dp.SelectType.DROPDOWN),
+            dp.Group(
+                dp.Text("**Stability Index Interpretation:**"),
+                dp.Plot(plot_index_stability),
+                rows=2,
+            ),
+            label="Drift & Stability",
+        )
     elif ds_ind[0] == 1 and ds_ind[1] == 0:
         if len(all_drift_charts_) > 0:
             report = dp.Group(
@@ -1828,6 +1882,1151 @@ def data_drift_stability(
     return report
 
 
+def plotSeasonalDecompose(
+    base_path, x_col, y_col, metric_col="median", title="Seasonal Decomposition"
+):
+
+    """
+    This function helps to produce output specific to the Seasonal Decomposition of Time Series. Ideally it's expected to source a data containing atleast 2 cycles or 24 months as the most.
+
+    Parameters
+    ----------
+    base_path
+        Base path which is the same as Master path where the aggregated data resides.
+    x_col
+        Timestamp / date column name
+    y_col
+        Numerical column names
+    metric_col
+        Metric of aggregation. Options can be between "Median", "Mean", "Min", "Max"
+    title
+        "Title Description"
+    Returns
+    -------
+    """
+    df = pd.read_csv(ends_with(base_path) + x_col + "_" + y_col + "_daily.csv").dropna()
+
+    df[x_col] = pd.to_datetime(df[x_col], format="%Y-%m-%d %H:%M:%S.%f")
+    df = df.set_index(x_col)
+
+    if len([x for x in df.columns if "min" in x]) == 0:
+
+        #         result = seasonal_decompose(df[metric_col],model="additive")
+        pass
+
+    else:
+
+        result = seasonal_decompose(df[metric_col], model="additive", period=12)
+
+        fig = make_subplots(
+            rows=2,
+            cols=2,
+            subplot_titles=["Observed", "Trend", "Seasonal", "Residuals"],
+        )
+        #         fig = go.Figure()
+
+        fig.add_trace(
+            go.Scatter(
+                x=df.index,
+                y=result.observed,
+                name="Observed",
+                mode="lines+markers",
+                line=dict(color=global_theme[0]),
+            ),
+            row=1,
+            col=1,
+        )
+
+        fig.add_trace(
+            go.Scatter(
+                x=df.index,
+                y=result.trend,
+                name="Trend",
+                mode="lines+markers",
+                line=dict(color=global_theme[2]),
+            ),
+            row=1,
+            col=2,
+        )
+
+        fig.add_trace(
+            go.Scatter(
+                x=df.index,
+                y=result.seasonal,
+                name="Seasonal",
+                mode="lines+markers",
+                line=dict(color=global_theme[4]),
+            ),
+            row=2,
+            col=1,
+        )
+
+        fig.add_trace(
+            go.Scatter(
+                x=df.index,
+                y=result.resid,
+                name="Residuals",
+                mode="lines+markers",
+                line=dict(color=global_theme[6]),
+            ),
+            row=2,
+            col=2,
+        )
+
+        #         fig.add_trace(go.Scatter(x=df.index, y=result.observed, name ="Observed", mode='lines+markers',line=dict(color=global_theme[0])))
+
+        #         fig.add_trace(go.Scatter(x=df.index, y=result.trend, name ="Trend", mode='lines+markers',line=dict(color=global_theme[2])))
+
+        #         fig.add_trace(go.Scatter(x=df.index, y=result.seasonal, name ="Seasonal", mode='lines+markers',line=dict(color=global_theme[4])))
+
+        #         fig.add_trace(go.Scatter(x=df.index, y=result.resid, name ="Residuals", mode='lines+markers',line=dict(color=global_theme[6])))
+
+        fig.layout.plot_bgcolor = global_plot_bg_color
+        fig.layout.paper_bgcolor = global_paper_bg_color
+        fig.update_xaxes(gridcolor=px.colors.sequential.Greys[1])
+        fig.update_yaxes(gridcolor=px.colors.sequential.Greys[1])
+        fig.update_layout(autosize=True, width=2000, height=800)
+        fig.update_layout(
+            legend=dict(orientation="h", x=0.5, yanchor="bottom", xanchor="center")
+        )
+
+        return fig
+
+
+def gen_time_series_plots(base_path, x_col, y_col, time_cat):
+
+    """
+
+    This function helps to produce Time Series Plots by sourcing the aggregated data as Daily/Hourly/Weekly level.
+
+    Parameters
+    ----------
+    base_path
+        Base path which is the same as Master path where the aggregated data resides.
+    x_col
+        Timestamp / date column name
+    y_col
+        Numerical column names
+    time_cat
+        Time category of analysis which can be between "Daily", "Hourly", "Weekly"
+
+    Returns
+    -------
+
+    """
+
+    df = pd.read_csv(
+        ends_with(base_path) + x_col + "_" + y_col + "_" + time_cat + ".csv"
+    ).dropna()
+
+    if len([x for x in df.columns if "min" in x]) == 0:
+
+        if time_cat == "daily":
+
+            # x_col = x_col + "_ts"
+
+            fig = px.line(
+                df,
+                x=x_col,
+                y="count",
+                color=y_col,
+                color_discrete_sequence=global_theme,
+            )
+
+            fig.update_layout(
+                xaxis=dict(
+                    rangeselector=dict(
+                        buttons=list(
+                            [
+                                dict(
+                                    count=1,
+                                    label="1m",
+                                    step="month",
+                                    stepmode="backward",
+                                ),
+                                dict(
+                                    count=3,
+                                    label="3m",
+                                    step="month",
+                                    stepmode="backward",
+                                ),
+                                dict(
+                                    count=6,
+                                    label="6m",
+                                    step="month",
+                                    stepmode="backward",
+                                ),
+                                dict(
+                                    count=1, label="YTD", step="year", stepmode="todate"
+                                ),
+                                dict(
+                                    count=1,
+                                    label="1y",
+                                    step="year",
+                                    stepmode="backward",
+                                ),
+                                dict(step="all"),
+                            ]
+                        )
+                    ),
+                    rangeslider=dict(visible=True),
+                    type="date",
+                )
+            )
+
+        elif time_cat == "weekly":
+
+            fig = px.bar(
+                df,
+                x="dow",
+                y="count",
+                color=y_col,
+                color_discrete_sequence=global_theme,
+            )
+        #             fig.update_layout(barmode='stack')
+
+        elif time_cat == "hourly":
+
+            fig = px.bar(
+                df,
+                x="daypart_cat",
+                y="count",
+                color=y_col,
+                color_discrete_sequence=global_theme,
+            )
+        #             fig.update_layout(barmode='stack')
+
+        else:
+            pass
+
+    else:
+
+        if time_cat == "daily":
+
+            # x_col = x_col + "_ts"
+            f1 = go.Scatter(
+                x=list(df[x_col]),
+                y=list(df["min"]),
+                name="Min",
+                line=dict(color=global_theme[6]),
+            )
+            f2 = go.Scatter(
+                x=list(df[x_col]),
+                y=list(df["max"]),
+                name="Max",
+                line=dict(color=global_theme[4]),
+            )
+            f3 = go.Scatter(
+                x=list(df[x_col]),
+                y=list(df["mean"]),
+                name="Mean",
+                line=dict(color=global_theme[2]),
+            )
+            f4 = go.Scatter(
+                x=list(df[x_col]),
+                y=list(df["median"]),
+                name="Median",
+                line=dict(color=global_theme[0]),
+            )
+
+            fig = go.Figure(data=[f1, f2, f3, f4])
+
+            fig.update_layout(
+                xaxis=dict(
+                    rangeselector=dict(
+                        buttons=list(
+                            [
+                                dict(
+                                    count=1,
+                                    label="1m",
+                                    step="month",
+                                    stepmode="backward",
+                                ),
+                                dict(
+                                    count=3,
+                                    label="3m",
+                                    step="month",
+                                    stepmode="backward",
+                                ),
+                                dict(
+                                    count=6,
+                                    label="6m",
+                                    step="month",
+                                    stepmode="backward",
+                                ),
+                                dict(
+                                    count=1, label="YTD", step="year", stepmode="todate"
+                                ),
+                                dict(
+                                    count=1,
+                                    label="1y",
+                                    step="year",
+                                    stepmode="backward",
+                                ),
+                                dict(step="all"),
+                            ]
+                        )
+                    ),
+                    rangeslider=dict(visible=True),
+                    type="date",
+                )
+            )
+
+        elif time_cat == "weekly":
+
+            f1 = go.Bar(
+                x=list(df["dow"]),
+                y=list(df["min"]),
+                marker_color=global_theme[6],
+                name="Min",
+            )
+            f2 = go.Bar(
+                x=list(df["dow"]),
+                y=list(df["max"]),
+                marker_color=global_theme[4],
+                name="Max",
+            )
+            f3 = go.Bar(
+                x=list(df["dow"]),
+                y=list(df["mean"]),
+                marker_color=global_theme[2],
+                name="Mean",
+            )
+            f4 = go.Bar(
+                x=list(df["dow"]),
+                y=list(df["median"]),
+                marker_color=global_theme[0],
+                name="Median",
+            )
+
+            fig = go.Figure(data=[f1, f2, f3, f4])
+            fig.update_layout(barmode="group")
+
+        elif time_cat == "hourly":
+
+            f1 = go.Bar(
+                x=list(df["daypart_cat"]),
+                y=list(df["min"]),
+                marker_color=global_theme[6],
+                name="Min",
+            )
+            f2 = go.Bar(
+                x=list(df["daypart_cat"]),
+                y=list(df["max"]),
+                marker_color=global_theme[4],
+                name="Max",
+            )
+            f3 = go.Bar(
+                x=list(df["daypart_cat"]),
+                y=list(df["mean"]),
+                marker_color=global_theme[2],
+                name="Mean",
+            )
+            f4 = go.Bar(
+                x=list(df["daypart_cat"]),
+                y=list(df["median"]),
+                marker_color=global_theme[0],
+                name="Median",
+            )
+
+            fig = go.Figure(data=[f1, f2, f3, f4])
+            fig.update_layout(barmode="group")
+
+        else:
+            pass
+
+    fig.layout.plot_bgcolor = global_plot_bg_color
+    fig.layout.paper_bgcolor = global_paper_bg_color
+    fig.update_xaxes(gridcolor=px.colors.sequential.Greys[1])
+    fig.update_yaxes(gridcolor=px.colors.sequential.Greys[1])
+    fig.update_layout(
+        legend=dict(orientation="h", x=0.5, yanchor="bottom", xanchor="center")
+    )
+
+    return fig
+
+
+def list_ts_remove_append(l, opt):
+
+    """
+
+    This function helps to remove or append "_ts" from any list.
+
+
+    Parameters
+    ----------
+    l
+        List containing column name
+    opt
+        Option to choose between 1 & Others to enable the functionality of removing or appending "_ts" within the elements of a list
+
+    Returns
+    -------
+
+    """
+
+    ll = []
+    if opt == 1:
+        for i in l:
+            if i[-3:] == "_ts":
+                ll.append(i[0:-3:])
+            else:
+                ll.append(i)
+        return ll
+    else:
+        for i in l:
+            if i[-3:] == "_ts":
+                ll.append(i)
+            else:
+                ll.append(i + "_ts")
+        return ll
+
+
+def ts_viz_1_1(base_path, x_col, y_col, output_type="daily"):
+
+    """
+
+    Parameters
+    ----------
+    base_path
+        Base path which is the same as Master path where the aggregated data resides.
+    x_col
+        Timestamp / date column name
+    y_col
+        Numerical column names
+    output_type
+        Time category of analysis which can be between "Daily", "Hourly", "Weekly"
+
+    Returns
+    -------
+
+    """
+
+    ts_fig = gen_time_series_plots(base_path, x_col, y_col, output_type)
+
+    return ts_fig
+
+
+def ts_viz_1_2(base_path, ts_col, col_list, output_type="daily"):
+
+    """
+
+    Parameters
+    ----------
+    base_path
+        Base path which is the same as Master path where the aggregated data resides.
+    ts_col
+        Timestamp / date column name
+    col_list
+        Numerical / Categorical column names
+    output_type
+        Time category of analysis which can be between "Daily", "Hourly", "Weekly"
+
+    Returns
+    -------
+
+    """
+
+    bl = []
+
+    for i in col_list:
+        if len(col_list) > 1:
+            bl.append(dp.Group(ts_viz_1_1(base_path, ts_col, i, output_type), label=i))
+        else:
+            bl.append(dp.Group(ts_viz_1_1(base_path, ts_col, i, output_type), label=i))
+            bl.append(dp.Plot(blank_chart, label="_"))
+
+    return dp.Select(blocks=bl, type=dp.SelectType.DROPDOWN)
+
+
+def ts_viz_1_3(base_path, ts_col, num_cols, cat_cols, output_type):
+
+    """
+
+    Parameters
+    ----------
+    base_path
+        Base path which is the same as Master path where the aggregated data resides.
+    ts_col
+        Timestamp / date column name
+    num_cols
+        Numerical column names
+    cat_cols
+        Categorical column names
+    output_type
+        Time category of analysis which can be between "Daily", "Hourly", "Weekly"
+
+    Returns
+    -------
+
+    """
+
+    ts_v = []
+    # print(num_cols)
+    # print(cat_cols)
+    if len(num_cols) == 0:
+        for i in ts_col:
+            if len(ts_col) > 1:
+                ts_v.append(
+                    dp.Group(ts_viz_1_2(base_path, i, cat_cols, output_type), label=i)
+                )
+            else:
+                ts_v.append(
+                    dp.Group(ts_viz_1_2(base_path, i, cat_cols, output_type), label=i)
+                )
+                ts_v.append(dp.Plot(blank_chart, label="_"))
+
+    elif len(cat_cols) == 0:
+        for i in ts_col:
+            if len(ts_col) > 1:
+                ts_v.append(
+                    dp.Group(ts_viz_1_2(base_path, i, num_cols, output_type), label=i)
+                )
+            else:
+                ts_v.append(
+                    dp.Group(ts_viz_1_2(base_path, i, num_cols, output_type), label=i)
+                )
+                ts_v.append(dp.Plot(blank_chart, label="_"))
+
+    elif len(num_cols) >= 1 & len(cat_cols) >= 1:
+
+        for i in ts_col:
+            if len(ts_col) > 1:
+                ts_v.append(
+                    dp.Group(
+                        dp.Select(
+                            blocks=[
+                                dp.Group(
+                                    ts_viz_1_2(base_path, i, num_cols, output_type),
+                                    label="Numerical",
+                                ),
+                                dp.Group(
+                                    ts_viz_1_2(base_path, i, cat_cols, output_type),
+                                    label="Categorical",
+                                ),
+                            ],
+                            type=dp.SelectType.TABS,
+                        ),
+                        label=i,
+                    )
+                )
+            else:
+                ts_v.append(
+                    dp.Group(
+                        dp.Select(
+                            blocks=[
+                                dp.Group(
+                                    ts_viz_1_2(base_path, i, num_cols, output_type),
+                                    label="Numerical",
+                                ),
+                                dp.Group(
+                                    ts_viz_1_2(base_path, i, cat_cols, output_type),
+                                    label="Categorical",
+                                ),
+                            ],
+                            type=dp.SelectType.TABS,
+                        ),
+                        label=i,
+                    )
+                )
+                ts_v.append(dp.Plot(blank_chart, label="_"))
+
+    return dp.Select(blocks=ts_v, type=dp.SelectType.DROPDOWN)
+
+
+def ts_viz_2_1(base_path, x_col, y_col):
+
+    """
+
+    Parameters
+    ----------
+    base_path
+        Base path which is the same as Master path where the aggregated data resides.
+    x_col
+        Timestamp / date column name
+    y_col
+        Numerical column names
+
+    Returns
+    -------
+
+    """
+
+    ts_fig = []
+
+    for i in ["mean", "median", "min", "max"]:
+
+        ts_fig.append(
+            dp.Plot(
+                plotSeasonalDecompose(base_path, x_col, y_col, metric_col=i),
+                label=i.title(),
+            )
+        )
+
+    return dp.Select(blocks=ts_fig, type=dp.SelectType.TABS)
+
+
+def ts_viz_2_2(base_path, ts_col, col_list):
+
+    """
+
+    Parameters
+    ----------
+    base_path
+        Base path which is the same as Master path where the aggregated data resides.
+    ts_col
+        Timestamp / date column name
+    col_list
+        Numerical column names
+
+    Returns
+    -------
+
+    """
+
+    bl = []
+
+    for i in col_list:
+        if len(col_list) > 1:
+            bl.append(dp.Group(ts_viz_2_1(base_path, ts_col, i), label=i))
+        else:
+            bl.append(dp.Group(ts_viz_2_1(base_path, ts_col, i), label=i))
+            bl.append(dp.Group(dp.Plot(blank_chart, label=" "), label=" "))
+
+    return dp.Select(blocks=bl, type=dp.SelectType.DROPDOWN)
+
+
+def ts_viz_2_3(base_path, ts_col, num_cols):
+
+    """
+
+    Parameters
+    ----------
+    base_path
+        Base path which is the same as Master path where the aggregated data resides.
+    ts_col
+        Timestamp / date column name
+    num_cols
+        Numerical column names
+
+    Returns
+    -------
+
+    """
+
+    ts_v = []
+
+    if len(ts_col) > 1:
+
+        for i in ts_col:
+
+            f = list(
+                pd.read_csv(
+                    ends_with(base_path) + "stats_" + i + "_2.csv"
+                ).count_unique_dates.values
+            )[0]
+
+            if f >= 24:
+
+                ts_v.append(dp.Group(ts_viz_2_2(base_path, i, num_cols), label=i))
+            else:
+                ts_v.append(
+                    dp.Group(
+                        dp.Text(
+                            "The plots couldn't be displayed as x must have 2 complete cycles requires 24 observations. x only has "
+                            + str(f)
+                            + " observation(s)"
+                        ),
+                        label=i,
+                    )
+                )
+
+    else:
+
+        for i in ts_col:
+
+            f = list(
+                pd.read_csv(
+                    ends_with(base_path) + "stats_" + i + "_2.csv"
+                ).count_unique_dates.values
+            )[0]
+
+            if f >= 24:
+
+                ts_v.append(dp.Group(ts_viz_2_2(base_path, i, num_cols), label=i))
+                ts_v.append(dp.Plot(blank_chart, label="_"))
+
+            else:
+
+                ts_v.append(
+                    dp.Group(
+                        dp.Text(
+                            "The plots couldn't be displayed as x must have 2 complete cycles requires 24 observations. x only has "
+                            + str(f)
+                            + " observation(s)"
+                        ),
+                        label=i,
+                    )
+                )
+                ts_v.append(dp.Plot(blank_chart, label="_"))
+
+    return dp.Select(blocks=ts_v, type=dp.SelectType.DROPDOWN)
+
+
+def ts_landscape(base_path, ts_cols, id_col):
+
+    """
+
+    This function helps to produce a basic landscaping view of the data by picking up the base path for reading the aggregated data and specified by the timestamp / date column & the ID column.
+
+    Parameters
+    ----------
+    base_path
+        Base path which is the same as Master path where the aggregated data resides.
+    ts_col
+        Timestamp / date column name
+    id_col
+        ID Column
+
+    Returns
+    -------
+
+    """
+
+    if ts_cols is None:
+
+        return dp.Text("#")
+    else:
+        df_stats_ts = []
+        for i in ts_cols:
+            if len(ts_cols) > 1:
+                df_stats_ts.append(
+                    dp.Group(
+                        dp.Group(
+                            dp.Text("#   "),
+                            dp.Text("*ID considered here is : " + str(id_col) + "*"),
+                            dp.Text("#   "),
+                            dp.Text("#### Consistency Analysis Of Dates"),
+                            dp.DataTable(
+                                pd.read_csv(
+                                    ends_with(base_path) + "stats_" + i + "_1.csv"
+                                )
+                                .set_index("attribute")
+                                .T,
+                                label=i,
+                            ),
+                            rows=5,
+                        ),
+                        dp.Group(
+                            dp.Text(
+                                "*The Percentile distribution across different bins of ID-Date / Date-ID combination should be in a considerable range to determine the regularity of Time series. In an ideal scenario the proportion of dates within each ID should be same. Also, the count of IDs across unique dates should be consistent for a balanced distribution*"
+                            ),
+                            dp.Text("#   "),
+                            dp.Text("#### Vital Statistics"),
+                            dp.DataTable(
+                                pd.read_csv(
+                                    ends_with(base_path) + "stats_" + i + "_2.csv"
+                                ).T.rename(columns={0: ""}),
+                                label=i,
+                            ),
+                            rows=4,
+                        ),
+                        label=i,
+                        rows=2,
+                    )
+                )
+
+            else:
+                df_stats_ts.append(
+                    dp.Group(
+                        dp.Group(
+                            dp.Text("#   "),
+                            dp.Text("*ID considered here is : " + str(id_col) + "*"),
+                            dp.Text("#### Consistency Analysis Of Dates"),
+                            dp.Text("#   "),
+                            dp.DataTable(
+                                pd.read_csv(
+                                    ends_with(base_path) + "stats_" + i + "_1.csv"
+                                )
+                                .set_index("attribute")
+                                .T,
+                                label=i,
+                            ),
+                            rows=5,
+                        ),
+                        dp.Group(
+                            dp.Text("#   "),
+                            dp.Text("#### Vital Statistics"),
+                            dp.DataTable(
+                                pd.read_csv(
+                                    ends_with(base_path) + "stats_" + i + "_2.csv"
+                                ).T.rename(columns={0: ""}),
+                                label=i,
+                            ),
+                            rows=3,
+                        ),
+                        label=i,
+                        rows=2,
+                    )
+                )
+                df_stats_ts.append(dp.Plot(blank_chart, label="_"))
+
+        return dp.Group(
+            dp.Text("### Time Stamp Data Diagnosis"),
+            dp.Select(blocks=df_stats_ts, type=dp.SelectType.DROPDOWN),
+            rows=2,
+        )
+
+
+def lambda_cat(val):
+
+    """
+
+    Parameters
+    ----------
+
+    val
+        Value of Box Cox Test which translates into the transformation to be applied.
+
+    Returns
+    -------
+
+    """
+
+    if val < -1:
+        return "Reciprocal Square Transform"
+    elif val >= -1 and val < -0.5:
+        return "Reciprocal Transform"
+    elif val >= -0.5 and val < 0:
+        return "Receiprocal Square Root Transform"
+    elif val >= 0 and val < 0.5:
+        return "Log Transform"
+    elif val >= 0.5 and val < 1:
+        return "Square Root Transform"
+    elif val >= 1 and val < 2:
+        return "No Transform"
+    elif val >= 2:
+        return "Square Transform"
+
+
+def ts_viz_3_1(base_path, x_col, y_col):
+
+    """
+
+    Parameters
+    ----------
+    base_path
+        Base path which is the same as Master path where the aggregated data resides.
+    x_col
+        Timestamp / date column name
+    y_col
+        Numerical column names
+
+    Returns
+    -------
+
+    """
+
+    ts_fig = []
+
+    df = pd.read_csv(ends_with(base_path) + x_col + "_" + y_col + "_daily.csv").dropna()
+    df[x_col] = pd.to_datetime(df[x_col], format="%Y-%m-%d %H:%M:%S.%f")
+    df = df.set_index(x_col)
+
+    for metric_col in ["mean", "median", "min", "max"]:
+
+        adf_test = round(adfuller(df[metric_col])[0], 3), round(
+            adfuller(df[metric_col])[1], 3
+        )
+        kpss_test = round(kpss(df[metric_col], regression="ct")[0], 3), round(
+            kpss(df[metric_col], regression="ct")[1], 3
+        )
+        #         df[metric_col] = df[metric_col].apply(lambda x: boxcox1p(x,0.25))
+        #         lambda_box_cox = round(boxcox(df[metric_col])[1],5)
+        fit = PowerTransformer(method="yeo-johnson")
+        lambda_box_cox = round(
+            fit.fit(np.array(df[metric_col]).reshape(-1, 1)).lambdas_[0], 3
+        )
+        #         df[metric_col+"_transformed"] = boxcox(df[metric_col],lmbda=lambda_box_cox)
+        df[metric_col + "_transformed"] = fit.transform(
+            np.array(df[metric_col]).reshape(-1, 1)
+        )
+
+        fig = make_subplots(
+            rows=1, cols=2, subplot_titles=["Pre-Transformation", "Post-Transformation"]
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=df.index,
+                y=df[metric_col],
+                mode="lines+markers",
+                name=metric_col,
+                line=dict(color=global_theme[1]),
+            ),
+            row=1,
+            col=1,
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=df.index,
+                y=df[metric_col + "_transformed"],
+                mode="lines+markers",
+                name=metric_col + "_transformed",
+                line=dict(color=global_theme[7]),
+            ),
+            row=1,
+            col=2,
+        )
+        fig.layout.plot_bgcolor = global_plot_bg_color
+        fig.layout.paper_bgcolor = global_paper_bg_color
+        fig.update_xaxes(gridcolor=px.colors.sequential.Greys[1])
+        fig.update_yaxes(gridcolor=px.colors.sequential.Greys[1])
+        fig.update_layout(autosize=True, width=2000, height=400)
+        fig.update_layout(
+            legend=dict(orientation="h", x=0.5, yanchor="bottom", xanchor="center")
+        )
+
+        if adf_test[1] < 0.05:
+            adf_flag = True
+        else:
+            adf_flag = False
+
+        if kpss_test[1] < 0.05:
+            kpss_flag = True
+        else:
+            kpss_flag = False
+
+        ts_fig.append(
+            dp.Group(
+                dp.Group(
+                    dp.BigNumber(
+                        heading="ADF Test Statistic",
+                        value=adf_test[0],
+                        change=adf_test[1],
+                        is_upward_change=adf_flag,
+                    ),
+                    dp.BigNumber(
+                        heading="KPSS Test Statistic",
+                        value=kpss_test[0],
+                        change=kpss_test[1],
+                        is_upward_change=kpss_flag,
+                    ),
+                    dp.BigNumber(
+                        heading="Box-Cox Transformation",
+                        value=lambda_box_cox,
+                        change=str(lambda_cat(lambda_box_cox)),
+                        is_upward_change=True,
+                    ),
+                    columns=3,
+                ),
+                dp.Text("#### Transformation View"),
+                dp.Text(
+                    "Below Transformation is basis the inferencing from the Box Cox Transformation. The Lambda value of "
+                    + str(lambda_box_cox)
+                    + " indicates a "
+                    + str(lambda_cat(lambda_box_cox))
+                    + ". A Pre-Post Transformation Visualization is done for better clarity. "
+                ),
+                dp.Plot(fig),
+                dp.Text("**Guidelines :** "),
+                dp.Text(
+                    "**ADF** : *The more negative the statistic, the more likely we are to reject the null hypothesis. If the p-value is less than the significance level of 0.05, we can reject the null hypothesis and take that the series is stationary*"
+                ),
+                dp.Text(
+                    "**KPSS** : *If the p-value is high, we cannot reject the null hypothesis. So the series is stationary.*"
+                ),
+                label=metric_col.title(),
+            )
+        )
+
+    return dp.Select(blocks=ts_fig, type=dp.SelectType.TABS)
+
+
+def ts_viz_3_2(base_path, ts_col, col_list):
+
+    """
+
+    Parameters
+    ----------
+    base_path
+        Base path which is the same as Master path where the aggregated data resides.
+    ts_col
+        Timestamp / date column name
+    col_list
+        Numerical column names
+
+    Returns
+    -------
+
+    """
+
+    bl = []
+
+    for i in col_list:
+        # print(i)
+        if len(num_cols) > 1:
+            bl.append(dp.Group(ts_viz_3_1(base_path, ts_col, i), label=i))
+        else:
+            bl.append(dp.Group(ts_viz_3_1(base_path, ts_col, i), label=i))
+            bl.append(dp.Group(dp.Plot(blank_chart, label=" "), label=" "))
+
+    return dp.Select(blocks=bl, type=dp.SelectType.DROPDOWN)
+
+
+def ts_viz_3_3(base_path, ts_col, num_cols):
+
+    """
+
+    Parameters
+    ----------
+    base_path
+        Base path which is the same as Master path where the aggregated data resides.
+    ts_col
+        Timestamp / date column name
+    num_cols
+        Numerical column names
+
+    Returns
+    -------
+
+    """
+
+    ts_v = []
+    tt = ts_col
+    for i in tt:
+        # print(i)
+        if len(tt) > 1:
+            ts_v.append(dp.Group(ts_viz_3_2(base_path, i, num_cols), label=i))
+        else:
+            ts_v.append(dp.Group(ts_viz_3_2(base_path, i, num_cols), label=i))
+            ts_v.append(dp.Plot(blank_chart, label="_"))
+
+    return dp.Select(blocks=ts_v, type=dp.SelectType.DROPDOWN)
+
+
+def ts_stats(base_path):
+
+    """
+
+    This function helps to read the base data containing desired input and produces output specific to the `ts_cols_stats.csv` file
+
+    Parameters
+    ----------
+    base_path
+        Base path which is the same as Master path where the aggregated data resides.
+    Returns
+    -------
+
+    """
+
+    df = pd.read_csv(base_path + "ts_cols_stats.csv")
+
+    all_stats = []
+    for i in range(0, 7):
+        try:
+            all_stats.append(df[df.index.values == i].values[0][0].split(","))
+        except:
+            all_stats.append([])
+
+    c0 = pd.DataFrame(all_stats[0], columns=["attributes"])
+    c1 = pd.DataFrame(list_ts_remove_append(all_stats[1], 1), columns=["attributes"])
+    c1["Analyzed Attributes"] = "✔"
+    c2 = pd.DataFrame(list_ts_remove_append(all_stats[2], 1), columns=["attributes"])
+    c2["Attributes Identified"] = "✔"
+    c3 = pd.DataFrame(list_ts_remove_append(all_stats[3], 1), columns=["attributes"])
+    c3["Attributes Pre-Existed"] = "✔"
+    c4 = pd.DataFrame(list_ts_remove_append(all_stats[4], 1), columns=["attributes"])
+    c4["Overall TimeStamp Attributes"] = "✔"
+
+    c5 = list_ts_remove_append(all_stats[5], 1)
+    c6 = list_ts_remove_append(all_stats[6], 1)
+
+    return c0, c1, c2, c3, c4, c5, c6
+
+
+def ts_viz_generate(master_path, id_col, print_report=False, output_type="daily"):
+
+    """
+
+    This function helps to produce the output in the nested / recursive function supported by datapane. Eventually this is populated at the final report.
+
+
+    Parameters
+    ----------
+    master_path
+        Master path where the aggregated data resides.
+    id_col
+        ID Column
+    print_report
+        Option to specify whether the Report needs to be saved or not. True / False can be used to specify the needful.
+    output_type
+        Time category of analysis which can be between "Daily", "Hourly", "Weekly"
+
+    Returns
+    -------
+
+    """
+
+    try:
+        c0, c1, c2, c3, c4, c5, c6 = ts_stats(master_path)
+
+    except:
+        return "null_report"
+
+    stats_df = (
+        c0.merge(c1, on="attributes", how="left")
+        .merge(c2, on="attributes", how="left")
+        .merge(c3, on="attributes", how="left")
+        .merge(c4, on="attributes", how="left")
+        .fillna("✘")
+    )
+
+    global num_cols
+    global cat_cols
+
+    num_cols, cat_cols = c5, c6
+
+    final_ts_cols = list(ts_stats(master_path)[4].attributes.values)
+
+    report = dp.Group(
+        dp.Text("# "),
+        dp.Text(
+            "*This section summarizes the information about timestamp features and how they are interactive with other attributes. An exhaustive diagnosis is done by looking at different time series components, how they could be useful in deriving insights for further downstream applications*"
+        ),
+        dp.Text("# "),
+        dp.Text("# "),
+        dp.Text("### Basic Landscaping"),
+        dp.Text(
+            "Out of **"
+            + str(len(list(ts_stats(master_path)[1].attributes.values)))
+            + "** potential attributes in the data, the module could locate **"
+            + str(len(final_ts_cols))
+            + "** attributes as Timestamp"
+        ),
+        dp.DataTable(stats_df),
+        ts_landscape(master_path, final_ts_cols, id_col),
+        dp.Text(
+            "*Lower the **CoV** (Coefficient Of Variation), Higher the Consistency between the consecutive dates. Similarly the Mean & Variance should be consistent over time*"
+        ),
+        dp.Text("### Visualization across the Shortlisted Timestamp Attributes"),
+        ts_viz_1_3(master_path, final_ts_cols, num_cols, cat_cols, output_type),
+        dp.Text("### Decomposed View"),
+        ts_viz_2_3(master_path, final_ts_cols, num_cols),
+        dp.Text("### Stationarity & Transformations"),
+        ts_viz_3_3(master_path, final_ts_cols, num_cols),
+        dp.Text("#"),
+        dp.Text("#"),
+        label="Time Series Analyzer",
+    )
+
+    if print_report:
+        dp.Report(default_template[0], default_template[1], report).save(
+            ends_with(master_path) + "time_series_analyzer.html", open=True
+        )
+
+    return report
+
+
 def anovos_report(
     master_path,
     id_col="",
@@ -1839,8 +3038,12 @@ def anovos_report(
     metricDict_path=".",
     run_type="local",
     final_report_path=".",
+    output_type="daily",
 ):
     """
+
+    This function actually helps to produce the final report by scanning through the output processed from the data analyzer module.
+
     Parameters
     ----------
     master_path
@@ -1863,9 +3066,14 @@ def anovos_report(
         local or emr or databricks option. Default is kept as local
     final_report_path
         Path where the report will be saved. (Default value = ".")
+    output_type
+        Time category of analysis which can be between "Daily", "Hourly", "Weekly"
+
     Returns
     -------
+
     """
+
     if run_type == "emr":
         bash_cmd = (
             "aws s3 cp --recursive "
@@ -1875,11 +3083,13 @@ def anovos_report(
         )
         master_path = "report_stats"
         subprocess.check_output(["bash", "-c", bash_cmd])
+
     if "global_summary.csv" not in os.listdir(master_path):
         print(
             "Minimum supporting data is unavailable, hence the Report could not be generated."
         )
         return None
+
     global global_summary_df
     global numcols_name
     global catcols_name
@@ -1902,6 +3112,7 @@ def anovos_report(
     global n_df_stability
     global stability_interpretation_table
     global plot_index_stability
+
     SG_tabs = [
         "measures_of_counts",
         "measures_of_centralTendency",
@@ -1929,6 +3140,7 @@ def anovos_report(
     drift_tab = ["drift_statistics"]
     stability_tab = ["stability_index", "stabilityIndex_metrics"]
     avl_SG, avl_QC, avl_AE = [], [], []
+
     stability_interpretation_table = pd.DataFrame(
         [
             ["0-1", "Very Unstable"],
@@ -1962,13 +3174,16 @@ def anovos_report(
             )
         ]
     )
+
     plot_index_stability.update_layout(margin=dict(l=20, r=700, t=20, b=20))
+
     blank_chart = go.Figure()
     blank_chart.update_layout(autosize=False, width=10, height=10)
     blank_chart.layout.plot_bgcolor = global_plot_bg_color
     blank_chart.layout.paper_bgcolor = global_paper_bg_color
     blank_chart.update_xaxes(visible=False)
     blank_chart.update_yaxes(visible=False)
+
     global_summary_df = pd.read_csv(ends_with(master_path) + "global_summary.csv")
     rows_count = int(
         global_summary_df[global_summary_df.metric.values == "rows_count"].value.values[
@@ -2153,8 +3368,9 @@ def anovos_report(
     tab6 = data_drift_stability(
         master_path, ds_ind, id_col, drift_threshold_model, all_drift_charts_
     )
+    tab7 = ts_viz_generate(ends_with(master_path), id_col, output_type)
     final_tabs_list = []
-    for i in [tab1, tab2, tab3, tab4, tab5, tab6]:
+    for i in [tab1, tab2, tab3, tab4, tab5, tab6, tab7]:
         if i == "null_report":
             pass
         else:

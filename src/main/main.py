@@ -51,14 +51,14 @@ import copy
 import subprocess
 import sys
 import timeit
-
 import yaml
 from loguru import logger
-
+from anovos.data_ingest import data_ingest
+from anovos.data_ingest.ts_auto_detection import ts_preprocess
 from anovos.data_analyzer import association_evaluator
 from anovos.data_analyzer import quality_checker
 from anovos.data_analyzer import stats_generator
-from anovos.data_ingest import data_ingest
+from anovos.data_analyzer.ts_analyzer import ts_analyzer
 from anovos.data_transformer import transformers
 from anovos.data_report import report_preprocessing
 from anovos.data_report.basic_report_generation import anovos_basic_report
@@ -230,6 +230,48 @@ def main(all_configs, run_type):
             logger.info(f"{key}, execution time (in secs) = {round(end - start, 4)}")
             continue
 
+        if (key == "timeseries_analyzer") & (args is not None):
+
+            auto_detection_flag = args.get("auto_detection", False)
+            id_col = args.get("id_col", None)
+            tz_val = args.get("tz_offset", None)
+            inspection_flag = args.get("inspection", False)
+            analysis_level = args.get("analysis_level", None)
+            max_days_limit = args.get("max_days", None)
+
+            if auto_detection_flag:
+                start = timeit.default_timer()
+                df = ts_preprocess(
+                    spark,
+                    df,
+                    id_col,
+                    output_path=report_input_path,
+                    tz_offset=tz_val,
+                    run_type=run_type,
+                )
+                end = timeit.default_timer()
+                logger.info(
+                    f"{key} and subkey:auto_detection, execution time (in secs) ={round(end - start, 4)}"
+                )
+
+            if inspection_flag:
+                start = timeit.default_timer()
+                ts_analyzer(
+                    spark,
+                    df,
+                    id_col,
+                    max_days=max_days_limit,
+                    output_path=report_input_path,
+                    output_type=analysis_level,
+                    tz_offset=tz_val,
+                    run_type=run_type,
+                )
+                end = timeit.default_timer()
+                logger.info(
+                    f"{key} and subkey:inspection, execution time (in secs) ={round(end - start, 4)}"
+                )
+            continue
+
         if (
             (key == "anovos_basic_report")
             & (args is not None)
@@ -237,7 +279,10 @@ def main(all_configs, run_type):
         ):
             start = timeit.default_timer()
             anovos_basic_report(
-                spark, df, **args.get("report_args", {}), run_type=run_type
+                spark,
+                df,
+                **args.get("report_args", {}),
+                run_type=run_type,
             )
             end = timeit.default_timer()
             logger.info(
@@ -490,7 +535,15 @@ def main(all_configs, run_type):
                         )
 
             if (key == "report_generation") & (args is not None):
-                anovos_report(**args, run_type=run_type)
+                start = timeit.default_timer()
+                analysis_level = all_configs.get("timeseries_analyzer", None).get(
+                    "analysis_level", None
+                )
+                anovos_report(**args, run_type=run_type, output_type=analysis_level)
+                end = timeit.default_timer()
+                logger.info(
+                    f"{key} and subkey:full_report, execution time (in secs) ={round(end - start, 4)}"
+                )
 
     save(df, write_main, folder_name="final_dataset", reread=False)
 

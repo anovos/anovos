@@ -1,6 +1,5 @@
 import subprocess
 from pathlib import Path
-
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -19,6 +18,9 @@ from anovos.data_transformer.transformers import (
     attribute_binning,
 )
 from anovos.shared.utils import attributeType_segregation, ends_with
+import warnings
+
+warnings.filterwarnings("ignore")
 
 global_theme = px.colors.sequential.Plasma
 global_theme_r = px.colors.sequential.Plasma_r
@@ -442,6 +444,7 @@ def charts_to_objects(
     bin_size=10,
     coverage=1.0,
     drift_detector=False,
+    outlier_charts=False,
     source_path="NA",
     master_path=".",
     stats_unique={},
@@ -624,8 +627,9 @@ def charts_to_objects(
                     pass
 
         if col in num_cols:
-            f = plot_outlier(spark, idf, col, split_var=None)
-            f.write_json(ends_with(local_path) + "outlier_" + col)
+            if outlier_charts:
+                f = plot_outlier(spark, idf, col, split_var=None)
+                f.write_json(ends_with(local_path) + "outlier_" + col)
             f = plot_frequency(
                 spark,
                 idf_encoded.drop(col).withColumnRenamed(col + "_binned", col),
