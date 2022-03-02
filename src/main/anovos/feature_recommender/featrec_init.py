@@ -1,10 +1,11 @@
-from sentence_transformers import SentenceTransformer
-from re import finditer
-import pandas as pd
-import numpy as np
 import copy
 import os
+from re import finditer
+
+import pandas as pd
+from sentence_transformers import SentenceTransformer
 from torch.hub import _get_torch_home
+import site
 
 
 def detect_model_path():
@@ -65,7 +66,10 @@ def init_input_fer():
     -------
     Loading the Feature Explorer and Recommender (FER) Input DataFrame (FER corpus)
     """
-    input_path_fer = "https://raw.githubusercontent.com/anovos/anovos/main/data/feature_recommender/flatten_fr_db.csv"
+    site_path = site.getsitepackages()[0]
+    input_path_fer = os.path.join(
+        site_path, "anovos/feature_recommender/data/flatten_fr_db.csv"
+    )
     df_input_fer = pd.read_csv(input_path_fer)
     return df_input_fer
 
@@ -143,17 +147,17 @@ def recommendation_data_prep(df, name_column, desc_column):
     """
     if not isinstance(df, pd.DataFrame):
         raise TypeError("Invalid input for df")
-    if name_column not in df.columns and name_column != None:
+    if name_column not in df.columns and name_column is not None:
         raise TypeError("Invalid input for name_column")
-    if desc_column not in df.columns and desc_column != None:
+    if desc_column not in df.columns and desc_column is not None:
         raise TypeError("Invalid input for desc_column")
-    if name_column == None and desc_column == None:
+    if name_column is None and desc_column is None:
         raise TypeError("Need at least one input for either name_column or desc_column")
     df_prep = copy.deepcopy(df)
-    if name_column == None:
+    if name_column is None:
         df_prep[desc_column] = df_prep[desc_column].astype(str)
         df_prep_com = df_prep[desc_column]
-    elif desc_column == None:
+    elif desc_column is None:
         df_prep[name_column] = df_prep[name_column].astype(str)
         df_prep_com = df_prep[name_column]
     else:
@@ -214,7 +218,19 @@ def feature_recommendation_prep():
     list_train_fer, df_rec_fer = recommendation_data_prep(
         df_groupby_fer, feature_name_column, feature_name_column
     )
-    list_embedding_train_fer = model_fer.model.encode(
-        list_train_fer, convert_to_tensor=True
-    )
-    return list_train_fer, df_rec_fer, list_embedding_train_fer
+
+    return list_train_fer, df_rec_fer
+
+
+class EmbeddingsTrainFer:
+    def __init__(self, list_train_fer):
+        self.list_train_fer = list_train_fer
+        self._embeddings = None
+
+    @property
+    def get(self):
+        if self._embeddings is None:
+            self._embeddings = model_fer.model.encode(
+                self.list_train_fer, convert_to_tensor=True
+            )
+        return self._embeddings

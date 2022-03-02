@@ -1,19 +1,29 @@
-from anovos.feature_recommender.featrec_init import *
+"""Feature recommender recommends features based on ingested data dictionary by the user."""
+import copy
+import random
+import re
+
+import numpy as np
+import pandas as pd
+import plotly.graph_objects as go
+from sentence_transformers import util
+
+from anovos.feature_recommender.featrec_init import (
+    recommendation_data_prep,
+    model_fer,
+    camel_case_split,
+    feature_recommendation_prep,
+    get_column_name,
+    EmbeddingsTrainFer,
+)
 from anovos.feature_recommender.feature_exploration import (
+    list_usecase_by_industry,
     process_industry,
     process_usecase,
-    list_usecase_by_industry,
 )
-from sentence_transformers import util
-import pandas as pd
-import numpy as np
-import re
-import copy
-import plotly.graph_objects as go
-import random
-import matplotlib.pyplot as plt
 
-list_train_fer, df_rec_fer, list_embedding_train_fer = feature_recommendation_prep()
+list_train_fer, df_rec_fer = feature_recommendation_prep()
+list_embedding_train_fer = EmbeddingsTrainFer(list_train_fer)
 (
     feature_name_column,
     feature_desc_column,
@@ -32,29 +42,40 @@ def feature_recommendation(
     top_n=2,
     threshold=0.3,
 ):
-    """
+    """Recommends features to users based on their input attributes, and their goal industry and/or use case
 
     Parameters
     ----------
-    df
+    df : DataFrame
         Input DataFrame - Users' Data dictionary. It is expected to consist of attribute name and/or attribute description
-    name_column
-        Input, column name of Attribute Name in Input DataFrame (string). Default is None.
-    desc_column
-        Input, column name of Attribute Description in Input DataFrame (string). Default is None.
-    suggested_industry
-        Input, Industry of interest to the user (if any) to be filtered out (string). Default is 'all', meaning all Industries available.
-    suggested_usecase
-        Input, Usecase of interest to the user (if any) to be filtered out (string). Default is 'all', meaning all Usecases available.
-    semantic
-        Input semantic (boolean) - Whether the input needs to go through semantic similarity or not. Default is True.
-    top_n
-        Number of features displayed (int). Default is 2
-    threshold
-        Input threshold value (float). Default is 0.3
+    name_column : str
+        Input, column name of Attribute Name in Input DataFrame. Default is None.
+    desc_column : str
+        Input, column name of Attribute Description in Input DataFrame. Default is None.
+    suggested_industry : str
+        Input, Industry of interest to the user (if any) to be filtered out. Default is 'all', meaning all Industries available.
+    suggested_usecase : str
+        Input, Usecase of interest to the user (if any) to be filtered out. Default is 'all', meaning all Usecases available.
+    semantic : bool
+        Input semantic - Whether the input needs to go through semantic similarity or not. Default is True.
+    top_n : int
+        Number of features displayed. Default is 2
+    threshold : float
+        Input threshold value. Default is 0.3
 
     Returns
     -------
+    DataFrame
+        Columns are:
+
+        - Input Attribute Name: Name of the input Attribute
+        - Input Attribute Description: Description of the input Attribute
+        - Recommended Feature Name: Name of the recommended Feature
+        - Recommended Feature Description: Description of the recommended Feature
+        - Feature Similarity Score: Semantic similarity score between input Attribute and recommended Feature
+        - Industry: Industry name of the recommended Feature
+        - Usecase: Usecase name of the recommended Feature
+        - Source: Source of the recommended Feature
 
     """
     if not isinstance(df, pd.DataFrame):
@@ -76,7 +97,7 @@ def feature_recommendation(
         df_rec_fr = df_rec_fer[df_rec_fer.iloc[:, 2].str.contains(suggested_industry)]
         list_keep = list(df_rec_fr.index)
         list_embedding_train_fr = [
-            list_embedding_train_fer.tolist()[x] for x in list_keep
+            list_embedding_train_fer.get().tolist()[x] for x in list_keep
         ]
         df_rec_fr = df_rec_fr.reset_index(drop=True)
     elif suggested_usecase != "all" and suggested_industry == "all":
@@ -84,7 +105,7 @@ def feature_recommendation(
         df_rec_fr = df_rec_fer[df_rec_fer.iloc[:, 3].str.contains(suggested_usecase)]
         list_keep = list(df_rec_fr.index)
         list_embedding_train_fr = [
-            list_embedding_train_fer.tolist()[x] for x in list_keep
+            list_embedding_train_fer.get().tolist()[x] for x in list_keep
         ]
         df_rec_fr = df_rec_fr.reset_index(drop=True)
     elif suggested_usecase != "all" and suggested_industry != "all":
@@ -97,7 +118,7 @@ def feature_recommendation(
         if len(df_rec_fr) > 0:
             list_keep = list(df_rec_fr.index)
             list_embedding_train_fr = [
-                list_embedding_train_fer.tolist()[x] for x in list_keep
+                list_embedding_train_fer.get().tolist()[x] for x in list_keep
             ]
             df_rec_fr = df_rec_fr.reset_index(drop=True)
         else:
@@ -116,7 +137,7 @@ def feature_recommendation(
             return df_out
     else:
         df_rec_fr = df_rec_fer
-        list_embedding_train_fr = list_embedding_train_fer
+        list_embedding_train_fr = list_embedding_train_fer.get()
 
     if name_column is None:
         df_out = pd.DataFrame(
@@ -302,23 +323,33 @@ def feature_recommendation(
 def find_attr_by_relevance(
     df, building_corpus, name_column=None, desc_column=None, threshold=0.3
 ):
-    """
+    """Provide a comprehensive mapping method from users&#39; input attributes to their own feature corpus,
+     and therefore, help with the process of creating features in cold-start problems
+
 
     Parameters
     ----------
-    df
+    df : DataFrame
         Input DataFrame - Users' Data dictionary. It is expected to consist of attribute name and/or attribute description
-    building_corpus
-        Input Feature Description (list)
-    name_column
-        Input, column name of Attribute Name in Input DataFrame (string). Default is None.
-    desc_column
-        Input, column name of Attribute Description in Input DataFrame (string). Default is None.
-    threshold
-        Input threshold value (float). Default is 0.3
+    building_corpus : list
+        Input Feature Description
+    name_column : str
+        Input, column name of Attribute Name in Input DataFrame. Default is None.
+    desc_column : str
+        Input, column name of Attribute Description in Input DataFrame. Default is None.
+    threshold : float
+        Input threshold value Default is 0.3
 
     Returns
     -------
+    DataFrame
+        Columns are:
+
+        - Input Feature Desc: Description of the input Feature
+        - Recommended Input Attribute Name: Name of the recommended Feature
+        - Recommended Input Attribute Description: Description of the recommended Feature
+        - Input Attribute Similarity Score: Semantic similarity score between input Attribute and recommended Feature
+
 
     """
     if not isinstance(df, pd.DataFrame):
@@ -433,19 +464,21 @@ def find_attr_by_relevance(
 
 
 def sankey_visualization(df, industry_included=False, usecase_included=False):
-    """
+    """Visualize Feature Recommendation functions through Sankey plots
 
     Parameters
     ----------
-    df
+    df : DataFrame
         Input DataFrame. This DataFrame needs to be output of feature_recommendation or find_attr_by_relevance, or in the same format.
-    industry_included
-        Whether the plot needs to include industry mapping or not (boolean). Default is False
-    usecase_included
-        Whether the plot needs to include usecase mapping or not (boolean). Default is False
+    industry_included : bool
+        Whether the plot needs to include industry mapping or not. Default is False
+    usecase_included : bool
+        Whether the plot needs to include usecase mapping or not. Default is False
 
     Returns
     -------
+    A `plotly` graph object.
+
 
     """
     fr_proper_col_list = [
