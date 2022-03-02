@@ -81,6 +81,7 @@ def regex_date_time_parser(
 
     Returns
     -------
+    DataFrame
     """
 
     REGEX_PARTS = {
@@ -548,6 +549,7 @@ def ts_loop_cols_pre(idf, id_col):
 
     Returns
     -------
+    Three lists
     """
 
     lc1, lc2, lc3 = [], [], []
@@ -623,6 +625,7 @@ def ts_preprocess(spark, idf, id_col, output_path, tz_offset="local", run_type="
 
     Returns
     -------
+    DataFrame
     """
 
     if run_type == "local":
