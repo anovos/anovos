@@ -19,7 +19,7 @@ from pyspark.sql import types as T
 from pyspark.sql import Window
 from loguru import logger
 import calendar
-from anovos.shared.utils import attributeType_segregation, ends_with
+from anovos.shared.utils import attributeType_segregation, ends_with, output_to_local
 from anovos.data_analyzer.stats_generator import measures_of_percentiles
 from anovos.data_transformer.datetime import (
     timeUnits_extraction,
@@ -36,26 +36,6 @@ from pathlib import Path
 import dateutil.parser
 import pandas as pd
 import numpy as np
-
-
-def output_to_local(output_path):
-    """
-
-    Parameters
-    ----------
-    output_path :
-
-
-    Returns
-    -------
-
-    """
-    punctuations = ":"
-    for x in output_path:
-        if x in punctuations:
-            local_path = output_path.replace(x, "")
-            local_path = "/" + local_path
-    return local_path
 
 
 ###regex based ts parser function
