@@ -166,17 +166,6 @@ def stats_args(all_configs, func):
 
 
 def main(all_configs, run_type):
-    """
-    Parameters
-    ----------
-    all_configs
-        configs read from yaml file
-    run_type
-        "local", "databricks", "emr"
-
-    Returns
-    -------
-    """
     start_main = timeit.default_timer()
     df = ETL(all_configs.get("input_dataset"))
 
@@ -208,7 +197,7 @@ def main(all_configs, run_type):
                 reread=True,
             )
             end = timeit.default_timer()
-            logger.info(f"{key}, execution time (in secs) = {round(end - start, 4)}")
+            logger.info(f"{key}: execution time (in secs) = {round(end - start, 4)}")
             continue
 
         if (key == "join_dataset") & (args is not None):
@@ -227,7 +216,7 @@ def main(all_configs, run_type):
                 reread=True,
             )
             end = timeit.default_timer()
-            logger.info(f"{key}, execution time (in secs) = {round(end - start, 4)}")
+            logger.info(f"{key}: execution time (in secs) = {round(end - start, 4)}")
             continue
 
         if (key == "timeseries_analyzer") & (args is not None):
@@ -251,7 +240,7 @@ def main(all_configs, run_type):
                 )
                 end = timeit.default_timer()
                 logger.info(
-                    f"{key} and subkey:auto_detection, execution time (in secs) ={round(end - start, 4)}"
+                    f"{key}, auto_detection: execution time (in secs) ={round(end - start, 4)}"
                 )
 
             if inspection_flag:
@@ -268,7 +257,7 @@ def main(all_configs, run_type):
                 )
                 end = timeit.default_timer()
                 logger.info(
-                    f"{key} and subkey:inspection, execution time (in secs) ={round(end - start, 4)}"
+                    f"{key}, inspection: execution time (in secs) ={round(end - start, 4)}"
                 )
             continue
 
@@ -286,7 +275,7 @@ def main(all_configs, run_type):
             )
             end = timeit.default_timer()
             logger.info(
-                f"Basic Report, execution time (in secs) ={round(end - start, 4)}"
+                f"Basic Report: execution time (in secs) ={round(end - start, 4)}"
             )
             continue
 
@@ -294,7 +283,7 @@ def main(all_configs, run_type):
             if (key == "stats_generator") & (args is not None):
                 for m in args["metric"]:
                     start = timeit.default_timer()
-                    logger.debug("\n" + m + ": \n")
+                    print("\n" + m + ": \n")
                     f = getattr(stats_generator, m)
                     df_stats = f(spark, df, **args["metric_args"], print_impact=False)
                     if report_input_path:
@@ -316,16 +305,31 @@ def main(all_configs, run_type):
 
                     end = timeit.default_timer()
                     logger.info(
-                        f"{key}, metric:{m}, execution time (in secs) ={round(end - start, 4)}"
+                        f"{key}, {m}: execution time (in secs) ={round(end - start, 4)}"
                     )
 
             if (key == "quality_checker") & (args is not None):
                 for subkey, value in args.items():
                     if value is not None:
                         start = timeit.default_timer()
-                        logger.debug("\n" + subkey + ": \n")
+                        print("\n" + subkey + ": \n")
                         f = getattr(quality_checker, subkey)
                         extra_args = stats_args(all_configs, subkey)
+                        if subkey == "nullColumns_detection":
+                            if "invalidEntries_detection" in args.keys():
+                                if args.get("invalidEntries_detection").get(
+                                    "treatment", None
+                                ):
+                                    extra_args["stats_missing"] = {}
+                            if "outlier_detection" in args.keys():
+                                if args.get("outlier_detection").get("treatment", None):
+                                    if (
+                                        args.get("outlier_detection").get(
+                                            "treatment_method", None
+                                        )
+                                        == "null_replacement"
+                                    ):
+                                        extra_args["stats_missing"] = {}
                         df, df_stats = f(
                             spark, df, **value, **extra_args, print_impact=False
                         )
@@ -355,14 +359,14 @@ def main(all_configs, run_type):
                             ).show(100)
                         end = timeit.default_timer()
                         logger.info(
-                            f"{key} and subkey:{subkey}, execution time (in secs) ={round(end - start, 4)}"
+                            f"{key}, {subkey}: execution time (in secs) ={round(end - start, 4)}"
                         )
 
             if (key == "association_evaluator") & (args is not None):
                 for subkey, value in args.items():
                     if value is not None:
                         start = timeit.default_timer()
-                        logger.debug("\n" + subkey + ": \n")
+                        print("\n" + subkey + ": \n")
                         f = getattr(association_evaluator, subkey)
                         extra_args = stats_args(all_configs, subkey)
                         df_stats = f(
@@ -387,7 +391,7 @@ def main(all_configs, run_type):
                             ).show(100)
                         end = timeit.default_timer()
                         logger.info(
-                            f"{key} and subkey:{subkey}, execution time (in secs) ={round(end - start, 4)}"
+                            f"{key}, {subkey}: execution time (in secs) ={round(end - start, 4)}"
                         )
 
             if (key == "drift_detector") & (args is not None):
@@ -424,7 +428,7 @@ def main(all_configs, run_type):
                             ).show(100)
                         end = timeit.default_timer()
                         logger.info(
-                            f"{key} and subkey:{subkey}, execution time (in secs) ={round(end - start, 4)}"
+                            f"{key}, {subkey}: execution time (in secs) ={round(end - start, 4)}"
                         )
 
                     if (subkey == "stability_index") & (value is not None):
@@ -472,7 +476,7 @@ def main(all_configs, run_type):
                             ).show(100)
                         end = timeit.default_timer()
                         logger.info(
-                            f"{key} and subkey:{subkey}, execution time (in secs) ={round(end - start, 4)}"
+                            f"{key}, {subkey}: execution time (in secs) ={round(end - start, 4)}"
                         )
 
                 logger.info(
@@ -502,7 +506,7 @@ def main(all_configs, run_type):
                                     "expression_parser",
                                 ):
                                     df_transformed = f(
-                                        df, **value2, **extra_args, print_impact=False
+                                        df, **value2, **extra_args, print_impact=True
                                     )
                                 else:
                                     df_transformed = f(
@@ -510,7 +514,7 @@ def main(all_configs, run_type):
                                         df,
                                         **value2,
                                         **extra_args,
-                                        print_impact=False,
+                                        print_impact=True,
                                     )
                                 df = save(
                                     df_transformed,
@@ -520,12 +524,8 @@ def main(all_configs, run_type):
                                     reread=True,
                                 )
                                 end = timeit.default_timer()
-                                print(
-                                    key,
-                                    subkey,
-                                    subkey2,
-                                    ", execution time (in secs) =",
-                                    round(end - start, 4),
+                                logger.info(
+                                    f"{key}, {subkey2}: execution time (in secs) ={round(end - start, 4)}"
                                 )
 
             if (key == "report_preprocessing") & (args is not None):
@@ -544,7 +544,7 @@ def main(all_configs, run_type):
                         )
                         end = timeit.default_timer()
                         logger.info(
-                            f"{key} and subkey:{subkey}, execution time (in secs) ={round(end - start, 4)}"
+                            f"{key}, {subkey}: execution time (in secs) ={round(end - start, 4)}"
                         )
 
             if (key == "report_generation") & (args is not None):
@@ -557,7 +557,7 @@ def main(all_configs, run_type):
                 anovos_report(**args, run_type=run_type, output_type=analysis_level)
                 end = timeit.default_timer()
                 logger.info(
-                    f"{key} and subkey:full_report, execution time (in secs) ={round(end - start, 4)}"
+                    f"{key}, full_report: execution time (in secs) ={round(end - start, 4)}"
                 )
 
     save(df, write_main, folder_name="final_dataset", reread=False)
