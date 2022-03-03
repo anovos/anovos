@@ -101,7 +101,7 @@ quality_checker:
   invalidEntries_detection:
     list_of_cols: all
     drop_cols: ['ifa']
-    treatment: False
+    treatment: True
     output_mode: replace
   
   IDness_detection:
