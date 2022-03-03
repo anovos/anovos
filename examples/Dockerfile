@@ -1,6 +1,7 @@
 ARG spark_version=2.4.8
+ARG image_version=latest
 
-FROM anovos/anovos-notebook-${spark_version}
+FROM anovos/anovos-notebook-${spark_version}:${image_version}
 
 WORKDIR /
 USER root

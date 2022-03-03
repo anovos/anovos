@@ -1,9 +1,13 @@
-name: Release
+name: Release to PyPI
 on:
   release:
+    types: [published]
   push:
     branches:
       - main
+    paths-ignore:
+      - '**.md'
+      - '.github/**'
 
 jobs:
   build:

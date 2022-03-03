@@ -1,0 +1,11 @@
+Attribute Name,Attribute Description
+churn,"1 if customer cancelled service, 0 if not"
+AccountWeeks,number of weeks customer has had active account
+ContractRenewal,"1 if customer recently renewed contract, 0 if not"
+DataPlan,"1 if customer has data plan, 0 if not"
+DataUsage,gigabytes of monthly data usage
+CustServCalls,number of calls into customer service
+DayMins,average daytime minutes per month
+DayCalls,average number of daytime calls
+MonthlyCharge,average monthly bill
+OverageFee,largest overage fee in last 12 months
