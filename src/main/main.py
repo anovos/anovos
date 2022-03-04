@@ -408,7 +408,12 @@ def main(all_configs, run_type):
                             f"running drift statistics detector using {value['configs']}"
                         )
                         df_stats = ddetector.statistics(
-                            spark, df, source, **value["configs"], print_impact=False
+                            spark,
+                            df,
+                            source,
+                            **value["configs"],
+                            run_type=run_type,
+                            print_impact=False,
                         )
                         if report_input_path:
                             save_stats(
@@ -493,6 +498,7 @@ def main(all_configs, run_type):
                                 f = getattr(transformers, subkey2)
                                 extra_args = stats_args(all_configs, subkey2)
                                 if subkey2 in (
+                                    "cat_to_num_supervised",
                                     "imputation_sklearn",
                                     "autoencoder_latentFeatures",
                                     "auto_imputation",
