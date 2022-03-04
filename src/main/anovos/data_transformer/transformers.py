@@ -705,6 +705,7 @@ def cat_to_num_supervised(
     pre_existing_model=False,
     model_path="NA",
     output_mode="replace",
+    run_type="local",
     print_impact=False,
 ):
     """
@@ -751,11 +752,13 @@ def cat_to_num_supervised(
     model_path
         If pre_existing_model is True, this argument is path for referring the pre-saved model.
         If pre_existing_model is False, this argument can be used for saving the model.
-        Default "NA" is used to save the model for optimization purpose.
+        Default "NA" is used to save the model in "intermediate_data/" folder for optimization purpose.
     output_mode
         "replace", "append".
         “replace” option replaces original columns with transformed column. “append” option append transformed
         column to the input dataset with a postfix "_encoded" e.g. column X is appended as X_encoded. (Default value = "replace")
+    run_type
+        "local", "emr", "databricks" (Default value = "local")
     print_impact
         True, False (Default value = False)
         This argument is to print out the descriptive statistics of encoded columns.
@@ -810,6 +813,15 @@ def cat_to_num_supervised(
                 )
                 .drop(*["1", "0"])
             )
+
+            if run_type in list(platform_root_path.keys()):
+                root_path = platform_root_path[run_type]
+            else:
+                root_path = ""
+
+            if model_path == "NA":
+                model_path = root_path + "intermediate_data"
+
             df_tmp.coalesce(1).write.csv(
                 model_path + "/cat_to_num_supervised/" + i,
                 header=True,
