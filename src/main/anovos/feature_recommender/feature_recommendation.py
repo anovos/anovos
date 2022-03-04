@@ -85,7 +85,7 @@ def feature_recommendation(
     if top_n > len(list_train_fer):
         raise TypeError("top_n value is too large")
     if type(threshold) != float:
-        raise TypeError("Invalid input for building_corpus")
+        raise TypeError("Invalid input for threshold")
     if threshold < 0 or threshold > 1:
         raise TypeError(
             "Invalid input for threshold. Threshold value is between 0 and 1"
