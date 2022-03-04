@@ -20,6 +20,7 @@ from .validations import check_distance_method, check_list_of_columns
 
 platform_root_path = {"databricks": "dbfs:/"}
 
+
 @check_distance_method
 @check_list_of_columns
 def statistics(
@@ -36,7 +37,7 @@ def statistics(
     pre_existing_source: bool = False,
     source_path: str = "NA",
     model_directory: str = "drift_statistics",
-    run_type: str ="local",
+    run_type: str = "local",
     print_impact: bool = False,
 ):
     """
@@ -151,9 +152,9 @@ def statistics(
         root_path = platform_root_path[run_type]
     else:
         root_path = ""
-    
+
     if source_path == "NA":
-            source_path = root_path + "intermediate_data"
+        source_path = root_path + "intermediate_data"
 
     if not pre_existing_source:
         source_bin = attribute_binning(
