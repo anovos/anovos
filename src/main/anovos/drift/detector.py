@@ -18,6 +18,7 @@ from anovos.shared.utils import attributeType_segregation
 from .distances import hellinger, psi, js_divergence, ks
 from .validations import check_distance_method, check_list_of_columns
 
+platform_root_path = {"databricks": "dbfs:/"}
 
 @check_distance_method
 @check_list_of_columns
@@ -35,6 +36,7 @@ def statistics(
     pre_existing_source: bool = False,
     source_path: str = "NA",
     model_directory: str = "drift_statistics",
+    run_type: str ="local",
     print_impact: bool = False,
 ):
     """
@@ -123,12 +125,14 @@ def statistics(
         If pre_existing_source is False, this argument can be used for saving the drift_statistics folder.
         The drift_statistics folder will have attribute_binning (binning model) & frequency_counts sub-folders.
         If pre_existing_source is True, this argument is path for referring the drift_statistics folder.
-        Default "NA" for temporarily saving source dataset attribute_binning folder. (Default value = "NA")
+        Default "NA" for temporarily saving data in "intermediate_data/" folder. (Default value = "NA")
     model_directory
         If pre_existing_source is False, this argument can be used for saving the drift stats to folder.
         The default drift statics directory is drift_statistics folder will have attribute_binning
         If pre_existing_source is True, this argument is model_directory for referring the drift statistics dir.
         Default "drift_statistics" for temporarily saving source dataset attribute_binning folder. (Default value = "drift_statistics")
+    run_type
+        "local", "emr", "databricks" (Default value = "local")
     print_impact
         True, False. (Default value = False)
         This argument is to print out the drift statistics of all attributes and attributes meeting the threshold.
@@ -142,6 +146,14 @@ def statistics(
     """
     drop_cols = drop_cols or []
     num_cols = attributeType_segregation(idf_target.select(list_of_cols))[0]
+
+    if run_type in list(platform_root_path.keys()):
+        root_path = platform_root_path[run_type]
+    else:
+        root_path = ""
+    
+    if source_path == "NA":
+            source_path = root_path + "intermediate_data"
 
     if not pre_existing_source:
         source_bin = attribute_binning(
