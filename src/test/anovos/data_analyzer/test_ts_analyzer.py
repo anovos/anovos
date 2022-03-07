@@ -24,8 +24,8 @@ def test_ts_processed_feats(spark_session):
     assert (odf.select("YR_year").collect()[0][0] == 1970 )
     assert (odf.select("YR_quarter").collect()[0][0] == 1 )
     assert (odf.select("yyyymmdd_col").collect()[0][0] == datetime.date(1970, 1, 1))
-    assert (odf.select("daypart_cat").collect()[0][0] == "late_hours")
-    assert (odf.select("week_cat").collect()[0][0] == "weekday" )
+    # assert (odf.select("daypart_cat").collect()[0][0] == "late_hours")
+    # assert (odf.select("week_cat").collect()[0][0] == "weekday" )
 
 #ts_eligiblity_check
 def test_ts_eligiblity_check(spark_session):
