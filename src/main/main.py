@@ -1,15 +1,64 @@
+"""Anovos modules reflect the key components of the Machine Learning (ML) pipeline and are scalable using python API
+of Spark (PySpark) - the distributed computing framework.
+
+The key modules included in the alpha release are:
+
+1. **Data Ingest**: This module is an ETL (Extract, transform, load) component of Anovos and helps load dataset(s) as
+Spark Dataframe. It also allows performing some basic pre-processing, like selecting, deleting, renaming,
+and recasting columns to ensure cleaner data is used in downstream data analysis.
+
+2. **Data Analyzer**: This data analysis module gives a 360º view of the ingested data. It helps provide a better
+understanding of the data quality and the transformations required for the modeling purpose. There are three
+submodules of this module targeting specific needs of the data analysis process.
+
+    a. *Statistics Generator*: This submodule generates all descriptive statistics related to the ingested data. The
+    descriptive statistics are further broken down into different metric types such as Measures of Counts,
+    Measures of Central Tendency, Measures of Cardinality, Measures of Dispersion (aka Measures of Spread in
+    Statistics), Measures of Percentiles (aka Measures of Position), and Measures of Shape (aka Measures of Moments).
+
+    b. *Quality Checker*: This submodule focuses on assessing the data quality at both row and column levels. It
+    includes an option to fix identified issues with the correct treatment method. The row-level quality checks
+    include duplicate detection and null detection (% columns that are missing for a row). The column level quality
+    checks include outlier detection, null detection (% rows which are missing for a column), biasedness detection (
+    checking if a column is biased towards one specific value), cardinality detection (checking if a
+    categorical/discrete column have very high no. of unique values) and invalid entries detection which checks for
+    suspicious patterns in the column values.
+
+    c. *Association Evaluator*: This submodule focuses on understanding the interaction between different attributes
+    (correlation, variable clustering) and/or the relationship between an attribute & the binary target variable (
+    Information Gain, Information Value).
+
+3. **Data Drift & Data Stability Computation**: In an ML context, data drift is the change in the distribution of the
+baseline dataset that trained the model (source distribution) and the ingested data (target distribution) that makes
+the prediction. Data drift is one of the primary causes of poor performance of ML models over time. This module
+ensures the stability of the ingested dataset over time by analyzing it with the baseline dataset (via computing
+drift statistics) and/or with historically ingested datasets (via computing stability index for existing attributes or 
+estimating for newly composed features – currently supports only numerical features), if available. Identifying the 
+data drift at an early stage enables data scientists to be proactive and fix the root cause. 
+
+4. **Data Transformer**: In the alpha release, the data transformer module only includes some basic pre-processing
+functions like binning, encoding, to name a few. These functions were required to support computations of the above
+key modules.  A more exhaustive set of transformations can be expected in future releases.
+
+5. **Data Report**: This module is a visualization component of Anovos. All the analysis on the key modules is
+visualized via an HTML report to get a well-rounded understanding of the ingested dataset. The report contains an
+executive summary, wiki for data dictionary & metric dictionary, a tab corresponding to key modules demonstrating the
+output.
+
+Note: Upcoming Modules - Feature Wiki, Feature store, Auto ML, ML Flow Integration
+"""
 import copy
 import subprocess
 import sys
 import timeit
-
 import yaml
 from loguru import logger
-
+from anovos.data_ingest import data_ingest
+from anovos.data_ingest.ts_auto_detection import ts_preprocess
 from anovos.data_analyzer import association_evaluator
 from anovos.data_analyzer import quality_checker
 from anovos.data_analyzer import stats_generator
-from anovos.data_ingest import data_ingest
+from anovos.data_analyzer.ts_analyzer import ts_analyzer
 from anovos.data_transformer import transformers
 from anovos.data_report import report_preprocessing
 from anovos.data_report.basic_report_generation import anovos_basic_report
@@ -20,17 +69,6 @@ from anovos.shared.spark import spark
 
 
 def ETL(args):
-    """
-
-    Parameters
-    ----------
-    args :
-
-
-    Returns
-    -------
-
-    """
     f = getattr(data_ingest, "read_dataset")
     read_args = args.get("read_dataset", None)
     if read_args:
@@ -50,23 +88,6 @@ def ETL(args):
 
 
 def save(data, write_configs, folder_name, reread=False):
-    """
-
-    Parameters
-    ----------
-    data :
-
-    write_configs :
-
-    folder_name :
-
-    reread :
-         (Default value = False)
-
-    Returns
-    -------
-
-    """
     if write_configs:
         if "file_path" not in write_configs:
             raise TypeError("file path missing for writing data")
@@ -85,19 +106,6 @@ def save(data, write_configs, folder_name, reread=False):
 
 
 def stats_args(all_configs, func):
-    """
-
-    Parameters
-    ----------
-    all_configs :
-
-    func :
-
-
-    Returns
-    -------
-
-    """
     stats_configs = all_configs.get("stats_generator", None)
     write_configs = all_configs.get("write_stats", None)
     report_input_path = ""
@@ -159,17 +167,15 @@ def stats_args(all_configs, func):
 
 def main(all_configs, run_type):
     """
-
     Parameters
     ----------
-    all_configs :
-
-    run_type :
-
+    all_configs
+        configs read from yaml file
+    run_type
+        "local", "databricks", "emr"
 
     Returns
     -------
-
     """
     start_main = timeit.default_timer()
     df = ETL(all_configs.get("input_dataset"))
@@ -224,6 +230,48 @@ def main(all_configs, run_type):
             logger.info(f"{key}, execution time (in secs) = {round(end - start, 4)}")
             continue
 
+        if (key == "timeseries_analyzer") & (args is not None):
+
+            auto_detection_flag = args.get("auto_detection", False)
+            id_col = args.get("id_col", None)
+            tz_val = args.get("tz_offset", None)
+            inspection_flag = args.get("inspection", False)
+            analysis_level = args.get("analysis_level", None)
+            max_days_limit = args.get("max_days", None)
+
+            if auto_detection_flag:
+                start = timeit.default_timer()
+                df = ts_preprocess(
+                    spark,
+                    df,
+                    id_col,
+                    output_path=report_input_path,
+                    tz_offset=tz_val,
+                    run_type=run_type,
+                )
+                end = timeit.default_timer()
+                logger.info(
+                    f"{key} and subkey:auto_detection, execution time (in secs) ={round(end - start, 4)}"
+                )
+
+            if inspection_flag:
+                start = timeit.default_timer()
+                ts_analyzer(
+                    spark,
+                    df,
+                    id_col,
+                    max_days=max_days_limit,
+                    output_path=report_input_path,
+                    output_type=analysis_level,
+                    tz_offset=tz_val,
+                    run_type=run_type,
+                )
+                end = timeit.default_timer()
+                logger.info(
+                    f"{key} and subkey:inspection, execution time (in secs) ={round(end - start, 4)}"
+                )
+            continue
+
         if (
             (key == "anovos_basic_report")
             & (args is not None)
@@ -231,7 +279,10 @@ def main(all_configs, run_type):
         ):
             start = timeit.default_timer()
             anovos_basic_report(
-                spark, df, **args.get("report_args", {}), run_type=run_type
+                spark,
+                df,
+                **args.get("report_args", {}),
+                run_type=run_type,
             )
             end = timeit.default_timer()
             logger.info(
@@ -428,11 +479,11 @@ def main(all_configs, run_type):
                     f"execution time w/o report (in sec) ={round(end - start_main, 4)}"
                 )
 
-            if (key == "transformers") & (args != None):
+            if (key == "transformers") & (args is not None):
                 for subkey, value in args.items():
-                    if value != None:
+                    if value is not None:
                         for subkey2, value2 in value.items():
-                            if value2 != None:
+                            if value2 is not None:
                                 start = timeit.default_timer()
                                 print("\n" + subkey2 + ": \n")
                                 f = getattr(transformers, subkey2)
@@ -484,7 +535,15 @@ def main(all_configs, run_type):
                         )
 
             if (key == "report_generation") & (args is not None):
-                anovos_report(**args, run_type=run_type)
+                start = timeit.default_timer()
+                analysis_level = all_configs.get("timeseries_analyzer", None).get(
+                    "analysis_level", None
+                )
+                anovos_report(**args, run_type=run_type, output_type=analysis_level)
+                end = timeit.default_timer()
+                logger.info(
+                    f"{key} and subkey:full_report, execution time (in secs) ={round(end - start, 4)}"
+                )
 
     save(df, write_main, folder_name="final_dataset", reread=False)
 

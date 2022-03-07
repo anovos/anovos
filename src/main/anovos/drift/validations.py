@@ -12,69 +12,39 @@ def check_list_of_columns(
     target: str = "idf_target",
     drop="drop_cols",
 ):
-    """
-
-    Parameters
-    ----------
-    func :
-         (Default value = None)
-    columns :
-         (Default value = "list_of_cols")
-    target_idx: int :
-         (Default value = 1)
-    target: str :
-         (Default value = "idf_target")
-    drop :
-         (Default value = "drop_cols")
-
-    Returns
-    -------
-
-    """
     if func is None:
         return partial(check_list_of_columns, columns=columns, target=target, drop=drop)
 
     @wraps(func)
     def validate(*args, **kwargs):
-        """
-
-        Parameters
-        ----------
-        *args :
-
-        **kwargs :
-
-
-        Returns
-        -------
-
-        """
         logger.debug("check the list of columns")
 
         idf_target = kwargs.get(target, "") or args[target_idx]
 
-        if isinstance(kwargs[columns], str):
-            if kwargs[columns] == "all":
+        cols_raw = kwargs.get(columns, "all")
+        if isinstance(cols_raw, str):
+            if cols_raw == "all":
                 num_cols, cat_cols, other_cols = attributeType_segregation(idf_target)
                 cols = num_cols + cat_cols
             else:
-                cols = [x.strip() for x in kwargs[columns].split("|")]
-        elif isinstance(kwargs[columns], list):
-            cols = kwargs[columns]
+                cols = [x.strip() for x in cols_raw.split("|")]
+        elif isinstance(cols_raw, list):
+            cols = cols_raw
         else:
             raise TypeError(
                 f"'{columns}' must be either a string or a list of strings."
-                f" Received {type(kwargs[columns])}."
+                f" Received {type(cols_raw)}."
             )
 
-        if isinstance(kwargs[drop], str):
-            drops = [x.strip() for x in kwargs[drop].split("|")]
-        elif isinstance(kwargs[drop], list):
-            drops = kwargs[drop]
+        drops_raw = kwargs.get(drop, [])
+        if isinstance(drops_raw, str):
+            drops = [x.strip() for x in drops_raw.split("|")]
+        elif isinstance(drops_raw, list):
+            drops = drops_raw
         else:
             raise TypeError(
                 f"'{drop}' must be either a string or a list of strings. "
-                f"Received {type(kwargs[columns])}."
+                f"Received {type(drops_raw)}."
             )
 
         final_cols = list(set(e for e in cols if e not in drops))
@@ -99,38 +69,12 @@ def check_list_of_columns(
 
 
 def check_distance_method(func=None, param="method_type"):
-    """
-
-    Parameters
-    ----------
-    func :
-         (Default value = None)
-    param :
-         (Default value = "method_type")
-
-    Returns
-    -------
-
-    """
     if func is None:
         return partial(check_distance_method, param=param)
 
     @wraps(func)
     def validate(*args, **kwargs):
-        """
-
-        Parameters
-        ----------
-        *args :
-
-        **kwargs :
-
-
-        Returns
-        -------
-
-        """
-        dist_distance_methods = kwargs[param]
+        dist_distance_methods = kwargs.get(param, "PSI")
 
         if isinstance(dist_distance_methods, str):
             if dist_distance_methods == "all":

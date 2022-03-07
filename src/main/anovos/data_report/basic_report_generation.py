@@ -40,7 +40,7 @@ default_template = (
     dp.HTML(
         """
         <html>
-            <img src="https://mobilewalla-anovos.s3.amazonaws.com/anovos.png" 
+            <img src="https://mobilewalla-anovos.s3.amazonaws.com/anovos.png"
                  style="height:100px;display:flex;margin:auto;float:right"/>
         </html>
         """
@@ -54,13 +54,16 @@ def stats_args(path, func):
 
     Parameters
     ----------
-    path :
-
-    func :
+    path
+        Path to pre-saved statistics
+    func
+        Quality Checker function
 
 
     Returns
     -------
+    Dictionary
+        Each key/value is argument (related to pre-saved statistics) to be passed for the quality checker function.
 
     """
     output = {}
@@ -102,28 +105,25 @@ def anovos_basic_report(
 
     Parameters
     ----------
-    spark :
+    spark
         Spark Session
-    idf :
+    idf
         Input Dataframe
-    id_col :
+    id_col
         ID column (Default value = "")
-    label_col :
+    label_col
         Label/Target column (Default value = "")
-    event_label :
+    event_label
         Value of (positive) event (i.e label 1) (Default value = "")
-    output_path :
+    output_path
         File Path for saving metrics and basic report (Default value = ".")
-    run_type :
-        local" (default), "emr", "databricks"
+    run_type
+        "local", "emr", "databricks"
         "emr" if the files are read from or written in AWS s3
-        "databricks" if the files are read from or written in dbfs in azure databricks
-    print_impact :
+        "databricks" if the files are read from or written in dbfs in azure databricks (Default value = "local")
+    print_impact
         True, False.
-        :return None (Default value = True)
-
-    Returns
-    -------
+        This argument is to print out the data analyzer statistics.(Default value = False)
 
     """
     global num_cols
@@ -151,17 +151,6 @@ def anovos_basic_report(
     all_funcs = SG_funcs + QC_rows_funcs + QC_cols_funcs + AA_funcs + AT_funcs
 
     def output_to_local(output_path):
-        """
-
-        Parameters
-        ----------
-        output_path :
-
-
-        Returns
-        -------
-
-        """
         punctuations = ":"
         for x in output_path:
             if x in punctuations:
@@ -219,17 +208,6 @@ def anovos_basic_report(
             stats.show()
 
     def remove_u_score(col):
-        """
-
-        Parameters
-        ----------
-        col :
-
-
-        Returns
-        -------
-
-        """
         col_ = col.split("_")
         bl = []
 
@@ -524,7 +502,7 @@ def anovos_basic_report(
         dp.Text("# "),
         dp.Text(
             """
-            *This section analyzes the interaction between different attributes and/or the relationship 
+            *This section analyzes the interaction between different attributes and/or the relationship
             between an attribute & the binary target variable.*
             """
         ),
