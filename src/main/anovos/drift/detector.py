@@ -14,9 +14,10 @@ import sympy as sp
 
 from anovos.data_ingest.data_ingest import concatenate_dataset
 from anovos.data_transformer.transformers import attribute_binning
-from anovos.shared.utils import attributeType_segregation, platform_root_path
+from anovos.shared.utils import attributeType_segregation
 from .distances import hellinger, psi, js_divergence, ks
 from .validations import check_distance_method, check_list_of_columns
+from ..shared.utils import platform_root_path
 
 
 @check_distance_method

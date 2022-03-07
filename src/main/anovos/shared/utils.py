@@ -2,6 +2,8 @@ from itertools import chain
 
 from pyspark.sql import functions as F
 
+platform_root_path = {"databricks": "dbfs:/"}
+
 
 def flatten_dataframe(idf, fixed_cols):
     """

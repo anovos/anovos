@@ -17,7 +17,8 @@ from anovos.data_transformer.transformers import (
     imputation_MMM,
     attribute_binning,
 )
-from anovos.shared.utils import attributeType_segregation, ends_with, platform_root_path
+from anovos.shared.utils import attributeType_segregation, ends_with
+from ..shared.utils import platform_root_path
 import warnings
 
 warnings.filterwarnings("ignore")
