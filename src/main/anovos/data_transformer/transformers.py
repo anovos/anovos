@@ -64,7 +64,7 @@ from anovos.data_analyzer.stats_generator import (
     uniqueCount_computation,
 )
 from anovos.data_ingest.data_ingest import read_dataset, recast_column
-from anovos.shared.utils import attributeType_segregation, get_dtype
+from anovos.shared.utils import attributeType_segregation, get_dtype, platform_root_path
 
 # enable_iterative_imputer is prequisite for importing IterativeImputer
 # check the following issue for more details https://github.com/scikit-learn/scikit-learn/issues/16833
@@ -74,8 +74,6 @@ from sklearn.impute import KNNImputer, IterativeImputer
 import tensorflow
 from tensorflow.keras.models import load_model, Model
 from tensorflow.keras.layers import Dense, Input, BatchNormalization, LeakyReLU
-
-platform_root_path = {"databricks": "dbfs:/"}
 
 
 def attribute_binning(

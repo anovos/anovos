@@ -14,11 +14,9 @@ import sympy as sp
 
 from anovos.data_ingest.data_ingest import concatenate_dataset
 from anovos.data_transformer.transformers import attribute_binning
-from anovos.shared.utils import attributeType_segregation
+from anovos.shared.utils import attributeType_segregation, platform_root_path
 from .distances import hellinger, psi, js_divergence, ks
 from .validations import check_distance_method, check_list_of_columns
-
-platform_root_path = {"databricks": "dbfs:/"}
 
 
 @check_distance_method
