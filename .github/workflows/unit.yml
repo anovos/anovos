@@ -56,6 +56,10 @@ jobs:
           echo $SPARK_HOME
           ls $SPARK_HOME
 
-      - name: Run the unit tests
+      - name: Run the unit tests for data_ingest, analyzer, drift modules
         run: |
-          pytest -v --cov=src/main/anovos src/test/
+          pytest -v --cov=src/main/anovos src/test/anovos/data_ingest src/test/anovos/data_analyzer src/test/anovos/drift
+
+      - name: Run unit tests for transformers module
+        run: |
+          pytest -v --cov=src/main/anovos src/test/anovos/data_transformer
