@@ -118,7 +118,7 @@ def anovos_basic_report(
     output_path
         File Path for saving metrics and basic report (Default value = ".")
     run_type
-        "local", "emr", "databricks"
+        "local", "emr" or "databricks"
         "emr" if the files are read from or written in AWS s3
         "databricks" if the files are read from or written in dbfs in azure databricks (Default value = "local")
     print_impact
