@@ -67,7 +67,7 @@ jobs:
 
       - name: Run the unit tests for data_analyzer
         run: |
-          pytest -v --cov=src/main/anovos src/test/anovos/data_analyzer
+          pytest -v --cov=src/main/anovos src/test/anovos/data_analyzer/test_ts_analyzer.py src/test/anovos/data_analyzer/test_association_evaluator.py src/test/anovos/data_analyzer/test_quality_checker.py src/test/anovos/data_analyzer/test_stats_generator.py
 
       - name: Run the unit tests for drift
         run: |
