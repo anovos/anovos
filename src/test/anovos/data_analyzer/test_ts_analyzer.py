@@ -5,7 +5,7 @@ from pyspark.sql import functions as F
 import datetime
 from anovos.data_ingest.data_ingest import read_dataset
 from anovos.data_ingest.ts_auto_detection import regex_date_time_parser,ts_loop_cols_pre,ts_preprocess
-from anovos.data_analyzer.ts_analyzer import ts_processed_feats, ts_eligiblity_check, ts_viz_data, ts_analyzer, daypart_cat
+from anovos.data_analyzer.ts_analyzer import ts_processed_feats, ts_eligiblity_check, ts_viz_data, daypart_cat, ts_analyzer as tts_analyzer
 sample_csv = "examples/data/time_series_data/csv/productivity.csv"
 
 
@@ -77,7 +77,7 @@ def test_ts_analyzer(spark_session):
 	df = read_dataset(spark_session, sample_csv, "csv",file_configs = {"header": "True", "delimiter": "," ,"inferSchema": "True"})
 	ts_preprocess_odf = ts_preprocess(spark_session, idf=df, id_col='STATE', output_path="unit_testing/output/timeseries/ts_preprocess/", tz_offset="local", run_type="local")
 
-	ts_analyzer(spark_session,idf=ts_preprocess_odf,id_col="STATE",max_days="3600",output_path="unit_testing/output/timeseries/ts_analyzer/daily/",output_type="daily",tz_offset="local",run_type="local")
+	tts_analyzer(spark_session,idf=ts_preprocess_odf,id_col="STATE",max_days="3600",output_path="unit_testing/output/timeseries/ts_analyzer/daily/",output_type="daily",tz_offset="local",run_type="local")
 	assert (os.path.isfile("unit_testing/output/timeseries/ts_analyzer/daily/" + "YR_EMP_daily.csv"))
 	assert (os.path.isfile("unit_testing/output/timeseries/ts_analyzer/daily/" + "YR_HWY_daily.csv"))
 	assert (os.path.isfile("unit_testing/output/timeseries/ts_analyzer/daily/" + "YR_P_CAP_daily.csv"))
@@ -88,7 +88,7 @@ def test_ts_analyzer(spark_session):
 	assert (approx(odf_YR_P_CAP.select("mean").collect()[0][0])==approx(20859.230417))
 	assert (approx(odf_YR_P_CAP.select("median").collect()[0][0])==approx(14880.590))
 
-	ts_analyzer(spark_session,idf=ts_preprocess_odf,id_col="STATE",max_days="3600",output_path="unit_testing/output/timeseries/ts_analyzer/weekly/",output_type="weekly",tz_offset="local",run_type="local")
+	tts_analyzer(spark_session,idf=ts_preprocess_odf,id_col="STATE",max_days="3600",output_path="unit_testing/output/timeseries/ts_analyzer/weekly/",output_type="weekly",tz_offset="local",run_type="local")
 	assert (os.path.isfile("unit_testing/output/timeseries/ts_analyzer/weekly/" + "YR_EMP_weekly.csv"))
 	assert (os.path.isfile("unit_testing/output/timeseries/ts_analyzer/weekly/" + "YR_HWY_weekly.csv"))
 	assert (os.path.isfile("unit_testing/output/timeseries/ts_analyzer/weekly/" + "YR_P_CAP_weekly.csv"))
@@ -100,7 +100,7 @@ def test_ts_analyzer(spark_session):
 	assert (approx(odf_YR_HWY.select("mean").collect()[0][0])==approx(10509.723229))
 	assert (approx(odf_YR_HWY.select("median").collect()[0][0])==approx(8036.180))
 
-	ts_analyzer(spark_session,idf=ts_preprocess_odf,id_col="STATE",max_days="1200",output_path="unit_testing/output/timeseries/ts_analyzer/hourly/",output_type="hourly",tz_offset="local",run_type="local")
+	tts_analyzer(spark_session,idf=ts_preprocess_odf,id_col="STATE",max_days="1200",output_path="unit_testing/output/timeseries/ts_analyzer/hourly/",output_type="hourly",tz_offset="local",run_type="local")
 	assert (os.path.isfile("unit_testing/output/timeseries/ts_analyzer/hourly/" + "YR_EMP_hourly.csv"))
 	assert (os.path.isfile("unit_testing/output/timeseries/ts_analyzer/hourly/" + "YR_HWY_hourly.csv"))
 	assert (os.path.isfile("unit_testing/output/timeseries/ts_analyzer/hourly/" + "YR_P_CAP_hourly.csv"))
