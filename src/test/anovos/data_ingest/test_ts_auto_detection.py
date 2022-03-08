@@ -27,6 +27,7 @@ def test_regex_date_time_parser(spark_session):
     odf=regex_date_time_parser(spark_session,idf=df,id_col="STATE",col="YR",tz="local",val_unique_cat=4,trans_cat="int_c",save_output=None)
     odf_pd=odf.toPandas()
     assert len(odf.columns) == 10
+    assert df.select("YR").dtypes[0][1] == 'int'
     assert odf.select("YR").dtypes[0][1] == 'date'
     assert odf_pd['YR'][0] == datetime.date(1970, 1, 1)
 
@@ -47,6 +48,7 @@ def test_ts_preprocess(spark_session):
     assert odf.select("STATE").distinct().count() == 48
     odf_pd=odf.toPandas()
     assert len(odf.columns) == 10
+    assert df.select("YR").dtypes[0][1] == 'int'
     assert odf.select("YR").dtypes[0][1] == 'date'
     assert odf_pd['YR'][0] == datetime.date(1970, 1, 1)
 
