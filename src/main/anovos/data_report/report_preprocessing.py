@@ -18,6 +18,7 @@ from anovos.data_transformer.transformers import (
     attribute_binning,
 )
 from anovos.shared.utils import attributeType_segregation, ends_with
+from ..shared.utils import platform_root_path
 import warnings
 
 warnings.filterwarnings("ignore")
@@ -475,7 +476,7 @@ def charts_to_objects(
     drift_detector
         True or False as per the availability. Default value is kept as False
     source_path
-        Source data path. Default value is kept as "NA"
+        Source data path. Default value is kept as "NA" to save intermediate data in "intermediate_data/" folder.
     master_path
         Path where the output needs to be saved, ideally the same path where the analyzed data output is also saved (Default value = ".")
     stats_unique
@@ -533,6 +534,14 @@ def charts_to_objects(
         )
     else:
         idf_cleaned = idf
+
+    if run_type in list(platform_root_path.keys()):
+        root_path = platform_root_path[run_type]
+    else:
+        root_path = ""
+
+    if source_path == "NA":
+        source_path = root_path + "intermediate_data"
 
     if drift_detector:
         encoding_model_exists = True
