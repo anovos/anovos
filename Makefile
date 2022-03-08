@@ -35,6 +35,7 @@ clean-test:
 	rm -f .coverage
 	rm -rf htmlcov/
 	rm -rf ./data/tmp/output 
+	rm -rf ./unit_testing
 
 test:
 	-coverage run --source=. -m pytest src/test
