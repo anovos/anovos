@@ -72,9 +72,8 @@ jobs:
 
       - name: Set SENTENCE_TRANSFORMERS_HOME
         run: |
-          SENTENCE_TRANSFORMERS_HOME = '~/.cache'
-          echo "SENTENCE_TRANSFORMERS_HOME=${SENTENCE_TRANSFORMERS_HOME}" >> $GITHUB_ENV
-          echo "PATH=$PATH:${SENTENCE_TRANSFORMERS_HOME}" >> $GITHUB_ENV
+          echo "SENTENCE_TRANSFORMERS_HOME=${'~/.cache'}" >> $GITHUB_ENV
+          echo "PATH=$PATH:${'~/.cache'}" >> $GITHUB_ENV
 
       - name: Run the unit tests
         run: |
