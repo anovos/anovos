@@ -30,7 +30,14 @@ setup(
     url="https://github.com/anovos/anovos.git",
     author="Team Anovos",
     author_email="info@anovos.ai",
-    keywords=["machine learning", "open source", "feature engineering", "analytics", "apache spark", "feature recommendation"],
+    keywords=[
+        "machine learning",
+        "open source",
+        "feature engineering",
+        "analytics",
+        "apache spark",
+        "feature recommendation",
+    ],
     tests_require=["pytest", "coverage"],
     python_requires=">=3.7",
 )
