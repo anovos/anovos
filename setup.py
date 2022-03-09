@@ -26,7 +26,7 @@ setup(
     long_description=README,
     long_description_content_type="text/markdown",
     install_requires=INSTALL_PACKAGES,
-    version=0.2.1,
+    version='0.2.1',
     url="https://github.com/anovos/anovos.git",
     author="Team Anovos",
     author_email="info@anovos.ai",
