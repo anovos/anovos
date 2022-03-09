@@ -5,8 +5,10 @@ from anovos.feature_recommender.feature_recommendation import (
     find_attr_by_relevance,
     sankey_visualization,
 )
+from anovos.feature_recommender.featrec_init import model_download
 
 
+model_download()
 sample_data = "./data/feature_recommender/test_input_fr.csv"
 sample_data_2 = "./data/feature_recommender/test_input_fr_2.csv"
 

@@ -12,6 +12,10 @@ from anovos.feature_recommender.feature_exploration import (
     list_feature_by_usecase,
     list_feature_by_pair,
 )
+from anovos.feature_recommender.featrec_init import model_download
+
+
+model_download()
 
 
 def test_list_all_industry():
