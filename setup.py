@@ -8,6 +8,8 @@ INSTALL_PACKAGES = open(path.join(DIR, "requirements.txt")).read().splitlines()
 with open(path.join(DIR, "README.md")) as f:
     README = f.read()
 
+exec(open('src/main/anovos/version.py').read())
+
 setup(
     name="anovos",
     package_dir={"anovos": "src/main/anovos"},
@@ -26,7 +28,7 @@ setup(
     long_description=README,
     long_description_content_type="text/markdown",
     install_requires=INSTALL_PACKAGES,
-    version="0.2.0",
+    version=__version__,
     url="https://github.com/anovos/anovos.git",
     author="Team Anovos",
     author_email="info@anovos.ai",
