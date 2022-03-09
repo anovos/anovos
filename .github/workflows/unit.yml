@@ -75,6 +75,12 @@ jobs:
           echo "SENTENCE_TRANSFORMERS_HOME=${'~/.cache'}" >> $GITHUB_ENV
           echo "PATH=$PATH:${'~/.cache'}" >> $GITHUB_ENV
 
-      - name: Run the unit tests
+      - name: Run the unit tests for data_ingest, analyzer, drift modules
         run: |
-          pytest -v --cov=src/main/anovos src/test/
+          pytest -v --cov=src/main/anovos src/test/anovos/data_ingest src/test/anovos/data_analyzer src/test/anovos/drift
+      - name: Run unit tests for transformers module
+        run: |
+          pytest -v --cov=src/main/anovos src/test/anovos/data_transformer
+      - name: Run the unit tests for feature_recommender
+        run: |
+          pytest -v --cov=src/main/anovos src/test/anovos/feature_recommender
