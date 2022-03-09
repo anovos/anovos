@@ -3,31 +3,27 @@ Datetime module supports various transformations related to date and timestamp d
 All available functions in this release can be classified into the following 4 categories:
 
 Conversion:
-- Between Timestamp and Epoch (`timestamp_to_unix` and `unix_to_timestamp`)
-- Between Timestamp and String (`timestamp_to_string` and `string_to_timestamp`)
-- Between Date Formats (`dateformat_conversion`)
-- Between Time Zones (`timezone_conversion`)
+- Between Timestamp and Epoch (timestamp_to_unix and unix_to_timestamp)
+- Between Timestamp and String (timestamp_to_string and string_to_timestamp)
+- Between Date Formats (dateformat_conversion)
+- Between Time Zones (timezone_conversion)
 
 Calculation:
-- Time difference - [Timestamp 1 - Timestamp 2] (`time_diff`)
-- Time elapsed - [Current - Given Timestamp] (`time_elapsed`)
-- Adding/subtracting time units (`adding_timeUnits`)
-- Aggregate features at X granularity level (`aggregator`)
-- Aggregate features with window frame (`window_aggregator`)
-- Lagged features - lagged date and time diff from the lagged date (`lagged_ts`)
+- Time difference - [Timestamp 1 - Timestamp 2] (time_diff)
+- Time elapsed - [Current - Given Timestamp] (time_elapsed)
+- Adding/subtracting time units (adding_timeUnits)
+- Aggregate features at X granularity level (aggregator)
+- Aggregate features with window frame (window_aggregator)
+- Lagged features - lagged date and time diff from the lagged date (lagged_ts)
 
 Extraction:
-- Time component extraction (`timeUnits_extraction`)
-- Start/end of month/year/quarter (`start_of_month`, `end_of_month`, `start_of_year`, `end_of_year`, `start_of_quarter`
- and `end_of_quarter`)
+- Time component extraction (timeUnits_extraction)
+- Start/end of month/year/quarter (start_of_month, end_of_month, start_of_year, end_of_year, start_of_quarter and end_of_quarter)
 
 Binary features:
-- Timestamp comparison (`timestamp_comparison`)
-- Is start/end of month/year/quarter nor not (`is_monthStart`, `is_monthEnd`, `is_yearStart`, `is_yearEnd`,
-`is_quarterStart`, `is_quarterEnd`)
-- Is first half of the year/selected hours/leap year/weekend or not (`is_yearFirstHalf`, `is_selectedHour`,
-`is_leapYear` and `is_weekend`)
-
+- Timestamp comparison (timestamp_comparison)
+- Is start/end of month/year/quarter nor not (is_monthStart, is_monthEnd, is_yearStart, is_yearEnd, is_quarterStart, is_quarterEnd)
+- Is first half of the year/selected hours/leap year/weekend or not (is_yearFirstHalf, is_selectedHour, is_leapYear and is_weekend)
 
 """
 import calendar
