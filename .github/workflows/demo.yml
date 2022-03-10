@@ -33,7 +33,7 @@ jobs:
             java: '11'
             experimental: false
     steps:
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python }}
 
