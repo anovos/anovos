@@ -72,7 +72,7 @@ jobs:
 
       - name: Set SENTENCE_TRANSFORMERS_HOME
         run: |
-          export SENTENCE_TRANSFORMERS_HOME="~/.cache" 
+          export SENTENCE_TRANSFORMERS_HOME="~/.cache"
 
       - name: Run the unit tests for data_ingest, analyzer, drift modules
         run: |
