@@ -1,7 +1,7 @@
 pytest==7.0.1
 black==22.1.0
 pylint==2.12.2
-mypy==0.931
+mypy==0.940
 pytest-cov==3.0.0
 isort==5.10.1
 flake8==4.0.1
