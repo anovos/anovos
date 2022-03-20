@@ -2306,7 +2306,7 @@ def list_ts_remove_append(l, opt):
         return ll
 
 
-def ts_viz_1_1(base_path, x_col, y_col, output_type="daily"):
+def ts_viz_1_1(base_path, x_col, y_col, output_type):
 
     """
 
@@ -2331,7 +2331,7 @@ def ts_viz_1_1(base_path, x_col, y_col, output_type="daily"):
     return ts_fig
 
 
-def ts_viz_1_2(base_path, ts_col, col_list, output_type="daily"):
+def ts_viz_1_2(base_path, ts_col, col_list, output_type):
 
     """
 
@@ -2412,7 +2412,7 @@ def ts_viz_1_3(base_path, ts_col, num_cols, cat_cols, output_type):
                 )
                 ts_v.append(dp.Plot(blank_chart, label="_"))
 
-    elif len(num_cols) >= 1 & len(cat_cols) >= 1:
+    elif (len(num_cols) >= 1) & (len(cat_cols) >= 1):
 
         for i in ts_col:
             if len(ts_col) > 1:
@@ -2915,15 +2915,51 @@ def ts_viz_3_3(base_path, ts_col, num_cols):
     DatapaneObject
     """
 
-    ts_v = []
-    tt = ts_col
-    for i in tt:
-        # print(i)
-        if len(tt) > 1:
-            ts_v.append(dp.Group(ts_viz_3_2(base_path, i, num_cols), label=i))
-        else:
-            ts_v.append(dp.Group(ts_viz_3_2(base_path, i, num_cols), label=i))
-            ts_v.append(dp.Plot(blank_chart, label="_"))
+    #     f = list(pd.read_csv(ends_with(base_path) + "stats_" + i + "_2.csv").count_unique_dates.values)[0]
+
+    # if f >= 6:
+    if len(ts_col) > 1:
+
+        for i in ts_col:
+            ts_v = []
+            f = list(
+                pd.read_csv(
+                    ends_with(base_path) + "stats_" + i + "_2.csv"
+                ).count_unique_dates.values
+            )[0]
+            if f >= 6:
+                ts_v.append(dp.Group(ts_viz_3_2(base_path, i, num_cols), label=i))
+            else:
+                ts_v.append(
+                    dp.Group(
+                        dp.Text(
+                            "The data contains insufficient data points for the desired transformation analysis. Please ensure the number of unique dates is sufficient."
+                        ),
+                        label=i,
+                    )
+                )
+
+    else:
+        for i in ts_col:
+            ts_v = []
+            f = list(
+                pd.read_csv(
+                    ends_with(base_path) + "stats_" + i + "_2.csv"
+                ).count_unique_dates.values
+            )[0]
+            if f >= 6:
+                ts_v.append(dp.Group(ts_viz_3_2(base_path, i, num_cols), label=i))
+                ts_v.append(dp.Plot(blank_chart, label="_"))
+            else:
+                ts_v.append(
+                    dp.Group(
+                        dp.Text(
+                            "The data contains insufficient data points for the desired transformation analysis. Please ensure the number of unique dates is sufficient."
+                        ),
+                        label=i,
+                    )
+                )
+                ts_v.append(dp.Plot(blank_chart, label="_"))
 
     return dp.Select(blocks=ts_v, type=dp.SelectType.DROPDOWN)
 
@@ -2968,7 +3004,7 @@ def ts_stats(base_path):
     return c0, c1, c2, c3, c4, c5, c6
 
 
-def ts_viz_generate(master_path, id_col, print_report=False, output_type="daily"):
+def ts_viz_generate(master_path, id_col, print_report=False, output_type=None):
 
     """
 
@@ -2991,6 +3027,8 @@ def ts_viz_generate(master_path, id_col, print_report=False, output_type="daily"
     DatapaneObject / Output[HTML]
     """
 
+    master_path = ends_with(master_path)
+
     try:
         c0, c1, c2, c3, c4, c5, c6 = ts_stats(master_path)
 
@@ -3012,36 +3050,67 @@ def ts_viz_generate(master_path, id_col, print_report=False, output_type="daily"
 
     final_ts_cols = list(ts_stats(master_path)[4].attributes.values)
 
-    report = dp.Group(
-        dp.Text("# "),
-        dp.Text(
-            "*This section summarizes the information about timestamp features and how they are interactive with other attributes. An exhaustive diagnosis is done by looking at different time series components, how they could be useful in deriving insights for further downstream applications*"
-        ),
-        dp.Text("# "),
-        dp.Text("# "),
-        dp.Text("### Basic Landscaping"),
-        dp.Text(
-            "Out of **"
-            + str(len(list(ts_stats(master_path)[1].attributes.values)))
-            + "** potential attributes in the data, the module could locate **"
-            + str(len(final_ts_cols))
-            + "** attributes as Timestamp"
-        ),
-        dp.DataTable(stats_df),
-        ts_landscape(master_path, final_ts_cols, id_col),
-        dp.Text(
-            "*Lower the **CoV** (Coefficient Of Variation), Higher the Consistency between the consecutive dates. Similarly the Mean & Variance should be consistent over time*"
-        ),
-        dp.Text("### Visualization across the Shortlisted Timestamp Attributes"),
-        ts_viz_1_3(master_path, final_ts_cols, num_cols, cat_cols, output_type),
-        dp.Text("### Decomposed View"),
-        ts_viz_2_3(master_path, final_ts_cols, num_cols),
-        dp.Text("### Stationarity & Transformations"),
-        ts_viz_3_3(master_path, final_ts_cols, num_cols),
-        dp.Text("#"),
-        dp.Text("#"),
-        label="Time Series Analyzer",
-    )
+    if output_type == "daily":
+
+        report = dp.Group(
+            dp.Text("# "),
+            dp.Text(
+                "*This section summarizes the information about timestamp features and how they are interactive with other attributes. An exhaustive diagnosis is done by looking at different time series components, how they could be useful in deriving insights for further downstream applications*"
+            ),
+            dp.Text("# "),
+            dp.Text("# "),
+            dp.Text("### Basic Landscaping"),
+            dp.Text(
+                "Out of **"
+                + str(len(list(ts_stats(master_path)[1].attributes.values)))
+                + "** potential attributes in the data, the module could locate **"
+                + str(len(final_ts_cols))
+                + "** attributes as Timestamp"
+            ),
+            dp.DataTable(stats_df),
+            ts_landscape(master_path, final_ts_cols, id_col),
+            dp.Text(
+                "*Lower the **CoV** (Coefficient Of Variation), Higher the Consistency between the consecutive dates. Similarly the Mean & Variance should be consistent over time*"
+            ),
+            dp.Text("### Visualization across the Shortlisted Timestamp Attributes"),
+            ts_viz_1_3(master_path, final_ts_cols, num_cols, cat_cols, output_type),
+            dp.Text("### Decomposed View"),
+            ts_viz_2_3(master_path, final_ts_cols, num_cols),
+            dp.Text("### Stationarity & Transformations"),
+            ts_viz_3_3(master_path, final_ts_cols, num_cols),
+            dp.Text("#"),
+            dp.Text("#"),
+            label="Time Series Analyzer",
+        )
+
+    else:
+
+        report = dp.Group(
+            dp.Text("# "),
+            dp.Text(
+                "*This section summarizes the information about timestamp features and how they are interactive with other attributes. An exhaustive diagnosis is done by looking at different time series components, how they could be useful in deriving insights for further downstream applications*"
+            ),
+            dp.Text("# "),
+            dp.Text("# "),
+            dp.Text("### Basic Landscaping"),
+            dp.Text(
+                "Out of **"
+                + str(len(list(ts_stats(master_path)[1].attributes.values)))
+                + "** potential attributes in the data, the module could locate **"
+                + str(len(final_ts_cols))
+                + "** attributes as Timestamp"
+            ),
+            dp.DataTable(stats_df),
+            ts_landscape(master_path, final_ts_cols, id_col),
+            dp.Text(
+                "*Lower the **CoV** (Coefficient Of Variation), Higher the Consistency between the consecutive dates. Similarly the Mean & Variance should be consistent over time*"
+            ),
+            dp.Text("### Visualization across the Shortlisted Timestamp Attributes"),
+            ts_viz_1_3(master_path, final_ts_cols, num_cols, cat_cols, output_type),
+            dp.Text("#"),
+            dp.Text("#"),
+            label="Time Series Analyzer",
+        )
 
     if print_report:
         dp.Report(default_template[0], default_template[1], report).save(
@@ -3062,7 +3131,7 @@ def anovos_report(
     metricDict_path=".",
     run_type="local",
     final_report_path=".",
-    output_type="daily",
+    output_type=None,
 ):
     """
 
@@ -3392,7 +3461,8 @@ def anovos_report(
     tab6 = data_drift_stability(
         master_path, ds_ind, id_col, drift_threshold_model, all_drift_charts_
     )
-    tab7 = ts_viz_generate(ends_with(master_path), id_col, output_type)
+
+    tab7 = ts_viz_generate(master_path, id_col, False, output_type)
     final_tabs_list = []
     for i in [tab1, tab2, tab3, tab4, tab5, tab6, tab7]:
         if i == "null_report":
