@@ -55,15 +55,15 @@ def test_list_all_pair():
 def test_process_usecase():
     assert process_usecase("fraud", semantic=True) == "fraud detection"
     assert process_usecase("fraud", semantic=False) == "fraud"
-    assert not process_usecase("fraud") == "fraud"
-    assert not process_usecase("fraud", semantic=False) == "autogenerate_random"
+    assert not process_usecase("churn", semantic=True) == "churn"
+    assert not process_usecase("churn", semantic=False) == "autogenerate_random"
 
 
 def test_process_industry():
     assert process_industry("telco", semantic=True) == "telecommunication"
     assert process_industry("telco", semantic=False) == "telco"
-    assert not process_industry("telco") == "telco"
-    assert not process_industry("telco", semantic=False) == "autogenerate_random"
+    assert not process_industry("bank", semantic=True) == "bank"
+    assert not process_industry("bank", semantic=False) == "autogenerate_random"
 
 
 def test_list_usecase_by_industry():
