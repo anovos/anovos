@@ -2731,6 +2731,8 @@ def lambda_cat(val):
         return "No Transform"
     elif val >= 2:
         return "Square Transform"
+    else:
+        return "ValueOutOfRange"
 
 
 def ts_viz_3_1(base_path, x_col, y_col):
@@ -2765,103 +2767,147 @@ def ts_viz_3_1(base_path, x_col, y_col):
         kpss_test = round(kpss(df[metric_col], regression="ct")[0], 3), round(
             kpss(df[metric_col], regression="ct")[1], 3
         )
-        #         df[metric_col] = df[metric_col].apply(lambda x: boxcox1p(x,0.25))
-        #         lambda_box_cox = round(boxcox(df[metric_col])[1],5)
-        fit = PowerTransformer(method="yeo-johnson")
-        lambda_box_cox = round(
-            fit.fit(np.array(df[metric_col]).reshape(-1, 1)).lambdas_[0], 3
-        )
-        #         df[metric_col+"_transformed"] = boxcox(df[metric_col],lmbda=lambda_box_cox)
-        df[metric_col + "_transformed"] = fit.transform(
-            np.array(df[metric_col]).reshape(-1, 1)
-        )
-
-        fig = make_subplots(
-            rows=1, cols=2, subplot_titles=["Pre-Transformation", "Post-Transformation"]
-        )
-        fig.add_trace(
-            go.Scatter(
-                x=df.index,
-                y=df[metric_col],
-                mode="lines+markers",
-                name=metric_col,
-                line=dict(color=global_theme[1]),
-            ),
-            row=1,
-            col=1,
-        )
-        fig.add_trace(
-            go.Scatter(
-                x=df.index,
-                y=df[metric_col + "_transformed"],
-                mode="lines+markers",
-                name=metric_col + "_transformed",
-                line=dict(color=global_theme[7]),
-            ),
-            row=1,
-            col=2,
-        )
-        fig.layout.plot_bgcolor = global_plot_bg_color
-        fig.layout.paper_bgcolor = global_paper_bg_color
-        fig.update_xaxes(gridcolor=px.colors.sequential.Greys[1])
-        fig.update_yaxes(gridcolor=px.colors.sequential.Greys[1])
-        fig.update_layout(autosize=True, width=2000, height=400)
-        fig.update_layout(
-            legend=dict(orientation="h", x=0.5, yanchor="bottom", xanchor="center")
-        )
 
         if adf_test[1] < 0.05:
             adf_flag = True
         else:
             adf_flag = False
-
         if kpss_test[1] < 0.05:
             kpss_flag = True
         else:
             kpss_flag = False
+        #         df[metric_col] = df[metric_col].apply(lambda x: boxcox1p(x,0.25))
+        #         lambda_box_cox = round(boxcox(df[metric_col])[1],5)
+        fit = PowerTransformer(method="yeo-johnson")
 
-        ts_fig.append(
-            dp.Group(
-                dp.Group(
-                    dp.BigNumber(
-                        heading="ADF Test Statistic",
-                        value=adf_test[0],
-                        change=adf_test[1],
-                        is_upward_change=adf_flag,
-                    ),
-                    dp.BigNumber(
-                        heading="KPSS Test Statistic",
-                        value=kpss_test[0],
-                        change=kpss_test[1],
-                        is_upward_change=kpss_flag,
-                    ),
-                    dp.BigNumber(
-                        heading="Box-Cox Transformation",
-                        value=lambda_box_cox,
-                        change=str(lambda_cat(lambda_box_cox)),
-                        is_upward_change=True,
-                    ),
-                    columns=3,
-                ),
-                dp.Text("#### Transformation View"),
-                dp.Text(
-                    "Below Transformation is basis the inferencing from the Box Cox Transformation. The Lambda value of "
-                    + str(lambda_box_cox)
-                    + " indicates a "
-                    + str(lambda_cat(lambda_box_cox))
-                    + ". A Pre-Post Transformation Visualization is done for better clarity. "
-                ),
-                dp.Plot(fig),
-                dp.Text("**Guidelines :** "),
-                dp.Text(
-                    "**ADF** : *The more negative the statistic, the more likely we are to reject the null hypothesis. If the p-value is less than the significance level of 0.05, we can reject the null hypothesis and take that the series is stationary*"
-                ),
-                dp.Text(
-                    "**KPSS** : *If the p-value is high, we cannot reject the null hypothesis. So the series is stationary.*"
-                ),
-                label=metric_col.title(),
+        try:
+            lambda_box_cox = round(
+                fit.fit(np.array(df[metric_col]).reshape(-1, 1)).lambdas_[0], 3
             )
-        )
+            cnt = 0
+        except:
+            cnt = 1
+
+        if cnt == 0:
+
+            #         df[metric_col+"_transformed"] = boxcox(df[metric_col],lmbda=lambda_box_cox)
+            df[metric_col + "_transformed"] = fit.transform(
+                np.array(df[metric_col]).reshape(-1, 1)
+            )
+
+            fig = make_subplots(
+                rows=1,
+                cols=2,
+                subplot_titles=["Pre-Transformation", "Post-Transformation"],
+            )
+            fig.add_trace(
+                go.Scatter(
+                    x=df.index,
+                    y=df[metric_col],
+                    mode="lines+markers",
+                    name=metric_col,
+                    line=dict(color=global_theme[1]),
+                ),
+                row=1,
+                col=1,
+            )
+            fig.add_trace(
+                go.Scatter(
+                    x=df.index,
+                    y=df[metric_col + "_transformed"],
+                    mode="lines+markers",
+                    name=metric_col + "_transformed",
+                    line=dict(color=global_theme[7]),
+                ),
+                row=1,
+                col=2,
+            )
+            fig.layout.plot_bgcolor = global_plot_bg_color
+            fig.layout.paper_bgcolor = global_paper_bg_color
+            fig.update_xaxes(gridcolor=px.colors.sequential.Greys[1])
+            fig.update_yaxes(gridcolor=px.colors.sequential.Greys[1])
+            fig.update_layout(autosize=True, width=2000, height=400)
+            fig.update_layout(
+                legend=dict(orientation="h", x=0.5, yanchor="bottom", xanchor="center")
+            )
+
+            ts_fig.append(
+                dp.Group(
+                    dp.Group(
+                        dp.BigNumber(
+                            heading="ADF Test Statistic",
+                            value=adf_test[0],
+                            change=adf_test[1],
+                            is_upward_change=adf_flag,
+                        ),
+                        dp.BigNumber(
+                            heading="KPSS Test Statistic",
+                            value=kpss_test[0],
+                            change=kpss_test[1],
+                            is_upward_change=kpss_flag,
+                        ),
+                        dp.BigNumber(
+                            heading="Box-Cox Transformation",
+                            value=lambda_box_cox,
+                            change=str(lambda_cat(lambda_box_cox)),
+                            is_upward_change=True,
+                        ),
+                        columns=3,
+                    ),
+                    dp.Text("#### Transformation View"),
+                    dp.Text(
+                        "Below Transformation is basis the inferencing from the Box Cox Transformation. The Lambda value of "
+                        + str(lambda_box_cox)
+                        + " indicates a "
+                        + str(lambda_cat(lambda_box_cox))
+                        + ". A Pre-Post Transformation Visualization is done for better clarity. "
+                    ),
+                    dp.Plot(fig),
+                    dp.Text("**Guidelines :** "),
+                    dp.Text(
+                        "**ADF** : *The more negative the statistic, the more likely we are to reject the null hypothesis. If the p-value is less than the significance level of 0.05, we can reject the null hypothesis and take that the series is stationary*"
+                    ),
+                    dp.Text(
+                        "**KPSS** : *If the p-value is high, we cannot reject the null hypothesis. So the series is stationary.*"
+                    ),
+                    label=metric_col.title(),
+                )
+            )
+        else:
+
+            ts_fig.append(
+                dp.Group(
+                    dp.Group(
+                        dp.BigNumber(
+                            heading="ADF Test Statistic",
+                            value=adf_test[0],
+                            change=adf_test[1],
+                            is_upward_change=adf_flag,
+                        ),
+                        dp.BigNumber(
+                            heading="KPSS Test Statistic",
+                            value=kpss_test[0],
+                            change=kpss_test[1],
+                            is_upward_change=kpss_flag,
+                        ),
+                        dp.BigNumber(
+                            heading="Box-Cox Transformation",
+                            value="ValueOutOfRange",
+                            change="ValueOutOfRange",
+                            is_upward_change=True,
+                        ),
+                        columns=3,
+                    ),
+                    dp.Text("**Guidelines :** "),
+                    dp.Text(
+                        "**ADF** : *The more negative the statistic, the more likely we are to reject the null hypothesis. If the p-value is less than the significance level of 0.05, we can reject the null hypothesis and take that the series is stationary*"
+                    ),
+                    dp.Text(
+                        "**KPSS** : *If the p-value is high, we cannot reject the null hypothesis. So the series is stationary.*"
+                    ),
+                    label=metric_col.title(),
+                )
+            )
 
     return dp.Select(blocks=ts_fig, type=dp.SelectType.TABS)
 
@@ -2887,7 +2933,6 @@ def ts_viz_3_2(base_path, ts_col, col_list):
     bl = []
 
     for i in col_list:
-        # print(i)
         if len(num_cols) > 1:
             bl.append(dp.Group(ts_viz_3_1(base_path, ts_col, i), label=i))
         else:
