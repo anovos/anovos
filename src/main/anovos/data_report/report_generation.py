@@ -2919,9 +2919,8 @@ def ts_viz_3_3(base_path, ts_col, num_cols):
 
     # if f >= 6:
     if len(ts_col) > 1:
-
+        ts_v = []
         for i in ts_col:
-            ts_v = []
             f = list(
                 pd.read_csv(
                     ends_with(base_path) + "stats_" + i + "_2.csv"
@@ -2940,8 +2939,8 @@ def ts_viz_3_3(base_path, ts_col, num_cols):
                 )
 
     else:
+        ts_v = []
         for i in ts_col:
-            ts_v = []
             f = list(
                 pd.read_csv(
                     ends_with(base_path) + "stats_" + i + "_2.csv"
