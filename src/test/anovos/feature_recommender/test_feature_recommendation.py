@@ -9,18 +9,16 @@ from anovos.feature_recommender.featrec_init import model_download
 
 
 model_download()
-sample_data = "./data/feature_recommender/test_input_fr.csv"
-sample_data_2 = "./data/feature_recommender/test_input_fr_2.csv"
 
 
 @pytest.fixture
 def example_attr_1():
-    return pd.read_csv(sample_data)
+    return pd.read_csv("./data/feature_recommender/test_input_fr.csv")
 
 
 @pytest.fixture
 def example_attr_2():
-    return pd.read_csv(sample_data_2)
+    return pd.read_csv("./data/feature_recommender/test_input_fr_2.csv")
 
 
 def test_feature_recommendation(example_attr_1, example_attr_2):

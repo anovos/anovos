@@ -6,12 +6,10 @@ from anovos.feature_recommender.featrec_init import (
     recommendation_data_prep,
 )
 
-sample_data_2 = "./data/feature_recommender/test_input_fr_2.csv"
-
 
 @pytest.fixture
 def example_attr_2():
-    return pd.read_csv(sample_data_2)
+    return pd.read_csv("./data/feature_recommender/test_input_fr_2.csv")
 
 
 def test_get_column_name(example_attr_2):
@@ -30,6 +28,10 @@ def test_camel_case_split():
     test_input_2 = "account Weeks"
     test_output_2 = camel_case_split(test_input_2)
     assert test_output_2 == "account Weeks "
+
+    test_input_3 = "AccountWeeksLock"
+    test_output_3 = camel_case_split(test_input_3)
+    assert test_output_3 == "Account Weeks Lock "
 
 
 def test_recommendation_data_prep(example_attr_2):

@@ -25,6 +25,8 @@ def test_list_all_industry():
     assert test_df.iloc[:, 0].nunique() == len(test_df)
     for i in range(len(test_df)):
         assert "," not in test_df.iloc[i, 0]
+    assert 'telecommunication' in test_df.iloc[:,0].to_list()
+    assert 'healthcare' in test_df.iloc[:, 0].to_list()
 
 
 def test_list_all_usecase():
@@ -34,7 +36,8 @@ def test_list_all_usecase():
     assert test_df.iloc[:, 0].nunique() == len(test_df)
     for i in range(len(test_df)):
         assert "," not in test_df.iloc[i, 0]
-
+    assert 'customer churn prediction' in test_df.iloc[:,0].to_list()
+    assert 'fraud detection' in test_df.iloc[:, 0].to_list()
 
 def test_list_all_pair():
     test_df = list_all_pair()
@@ -42,16 +45,25 @@ def test_list_all_pair():
     assert "Industry" in test_df.columns
     assert "Usecase" in test_df.columns
     assert test_df.groupby(["Industry", "Usecase"]).ngroups == len(test_df)
+    for i in range(len(test_df)):
+        if 'telco-based credit scoring' in test_df.iloc[i, 1]:
+            assert 'telecommunication' in test_df.iloc[i, 0]
+        if 'stock price prediction' in test_df.iloc[i, 1]:
+            assert 'banking financial service and insurance' in test_df.iloc[i, 0]
 
 
 def test_process_usecase():
     assert process_usecase("fraud", semantic=True) == "fraud detection"
     assert process_usecase("fraud", semantic=False) == "fraud"
+    assert not process_usecase("fraud") == "fraud"
+    assert not process_usecase("fraud", semantic=False) == "autogenerate_random"
 
 
 def test_process_industry():
     assert process_industry("telco", semantic=True) == "telecommunication"
     assert process_industry("telco", semantic=False) == "telco"
+    assert not process_industry("telco") == "telco"
+    assert not process_industry("telco", semantic=False) == "autogenerate_random"
 
 
 def test_list_usecase_by_industry():
