@@ -1577,9 +1577,16 @@ def data_drift_stability(
         return "null_report"
     elif ds_ind[0] == 0 and ds_ind[1] > 0.5:
         for i in total_unstable_attr:
-            line_chart_list.append(
-                line_chart_gen_stability(df1=df_stability, df2=df_si_, col=i)
-            )
+            if len(total_unstable_attr) > 1:
+                line_chart_list.append(
+                    line_chart_gen_stability(df1=df_stability, df2=df_si_, col=i)
+                )
+            else:
+                line_chart_list.append(
+                    line_chart_gen_stability(df1=df_stability, df2=df_si_, col=i)
+                )
+                line_chart_list.append(dp.Plot(blank_chart, label=" "))
+
         report = dp.Group(
             dp.Text("# "),
             dp.Text(
@@ -1677,9 +1684,15 @@ def data_drift_stability(
             )
     elif ds_ind[0] == 1 and ds_ind[1] >= 0.5:
         for i in total_unstable_attr:
-            line_chart_list.append(
-                line_chart_gen_stability(df1=df_stability, df2=df_si_, col=i)
-            )
+            if len(total_unstable_attr) > 1:
+                line_chart_list.append(
+                    line_chart_gen_stability(df1=df_stability, df2=df_si_, col=i)
+                )
+            else:
+                line_chart_list.append(
+                    line_chart_gen_stability(df1=df_stability, df2=df_si_, col=i)
+                )
+                line_chart_list.append(dp.Plot(blank_chart, label=" "))
         if len(all_drift_charts_) > 0:
             report = dp.Group(
                 dp.Text("# "),
@@ -1775,9 +1788,15 @@ def data_drift_stability(
             )
     elif ds_ind[0] == 0 and ds_ind[1] >= 0.5:
         for i in total_unstable_attr:
-            line_chart_list.append(
-                line_chart_gen_stability(df1=df_stability, df2=df_si_, col=i)
-            )
+            if len(total_unstable_attr) > 1:
+                line_chart_list.append(
+                    line_chart_gen_stability(df1=df_stability, df2=df_si_, col=i)
+                )
+            else:
+                line_chart_list.append(
+                    line_chart_gen_stability(df1=df_stability, df2=df_si_, col=i)
+                )
+                line_chart_list.append(dp.Plot(blank_chart, label=" "))
         report = dp.Group(
             dp.Text("# "),
             dp.Text(
@@ -1800,9 +1819,15 @@ def data_drift_stability(
         )
     else:
         for i in total_unstable_attr:
-            line_chart_list.append(
-                line_chart_gen_stability(df1=df_stability, df2=df_si_, col=i)
-            )
+            if len(total_unstable_attr) > 1:
+                line_chart_list.append(
+                    line_chart_gen_stability(df1=df_stability, df2=df_si_, col=i)
+                )
+            else:
+                line_chart_list.append(
+                    line_chart_gen_stability(df1=df_stability, df2=df_si_, col=i)
+                )
+                line_chart_list.append(dp.Plot(blank_chart, label=" "))
         if len(all_drift_charts_) > 0:
             report = dp.Group(
                 dp.Text("# "),
