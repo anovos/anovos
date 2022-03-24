@@ -180,7 +180,9 @@ def join_dataset(*idfs, join_cols, join_type):
     list_of_cols = [x for sublist in list_of_df_cols for x in sublist]
     list_of_non_join_cols = [x for x in list_of_cols if x not in join_cols]
 
-    if len(list_of_non_join_cols) != (len(list_of_cols) - len(list_of_df_cols)):
+    if len(list_of_non_join_cols) != (
+        len(list_of_cols) - (len(list_of_df_cols) * len(join_cols))
+    ):
         raise ValueError("Specified join_cols do not match all the Input Dataframe(s)")
 
     if len(list_of_non_join_cols) != len(set(list_of_non_join_cols)):
