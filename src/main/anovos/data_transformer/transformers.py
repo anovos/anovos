@@ -629,10 +629,9 @@ def cat_to_num_unsupervised(
         f_vector_to_array = F.udf(vector_to_array, T.ArrayType(T.IntegerType()))
 
         skipped_cols = []
+        odf_sample = odf.take(1)
         for i in list_of_cols:
-            uniq_cats = (
-                odf.select(i + "_vec").rdd.flatMap(lambda x: x).collect()[0].size
-            )
+            uniq_cats = odf_sample[0].asDict()[i + "_vec"].size
             if uniq_cats > cardinality_threshold:
                 skipped_cols.append(i)
                 odf = odf.drop(i + "_vec", i + "_index")
@@ -662,6 +661,7 @@ def cat_to_num_unsupervised(
                 "Columns dropped from one-hot encoding due to high cardinality: "
                 + ",".join(skipped_cols)
             )
+
     else:
         odf = odf_indexed
         for i in list_of_cols:
