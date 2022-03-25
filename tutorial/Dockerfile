@@ -23,4 +23,4 @@ RUN mv data /anovos/use_case_demo/data
 # Ensure that the anovos folder is writeable
 RUN fix-permissions /anovos
 
-CMD start-notebook.sh --NotebookApp.notebook_dir=/anovos
+CMD start-notebook.sh --NotebookApp.notebook_dir=/anovos --NotebookApp.port=9999
