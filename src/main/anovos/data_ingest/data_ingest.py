@@ -175,6 +175,21 @@ def join_dataset(*idfs, join_cols, join_type):
     """
     if isinstance(join_cols, str):
         join_cols = [x.strip() for x in join_cols.split("|")]
+
+    list_of_df_cols = [x.columns for x in idfs]
+    list_of_all_cols = [x for sublist in list_of_df_cols for x in sublist]
+    list_of_nonjoin_cols = [x for x in list_of_all_cols if x not in join_cols]
+
+    if len(list_of_nonjoin_cols) != (
+        len(list_of_all_cols) - (len(list_of_df_cols) * len(join_cols))
+    ):
+        raise ValueError("Specified join_cols do not match all the Input Dataframe(s)")
+
+    if len(list_of_nonjoin_cols) != len(set(list_of_nonjoin_cols)):
+        raise ValueError(
+            "Duplicate column(s) present in non joining column(s) in Input Dataframe(s)"
+        )
+
     odf = pairwise_reduce(
         lambda idf1, idf2: idf1.join(idf2, join_cols, join_type), idfs
     )
