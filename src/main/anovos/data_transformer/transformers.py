@@ -65,6 +65,7 @@ from anovos.data_analyzer.stats_generator import (
 )
 from anovos.data_ingest.data_ingest import read_dataset, recast_column
 from anovos.shared.utils import attributeType_segregation, get_dtype
+from ..shared.utils import platform_root_path
 
 # enable_iterative_imputer is prequisite for importing IterativeImputer
 # check the following issue for more details https://github.com/scikit-learn/scikit-learn/issues/16833
@@ -449,6 +450,7 @@ def cat_to_num_unsupervised(
     cardinality_threshold=100,
     pre_existing_model=False,
     model_path="NA",
+    stats_unique={},
     output_mode="replace",
     print_impact=False,
 ):
@@ -500,6 +502,10 @@ def cat_to_num_unsupervised(
         If pre_existing_model is True, this argument is path for referring the pre-saved model.
         If pre_existing_model is False, this argument can be used for saving the model.
         Default "NA" means there is neither pre existing model nor there is a need to save one.
+    stats_unique
+        Takes arguments for read_dataset (data_ingest module) function in a dictionary format
+        to read pre-saved statistics on unique value count i.e. if measures_of_cardinality or
+        uniqueCount_computation (data_analyzer.stats_generator module) has been computed & saved before. (Default value = {})
     output_mode
         "replace", "append".
         “replace” option replaces original columns with transformed column. “append” option append transformed
@@ -525,14 +531,9 @@ def cat_to_num_unsupervised(
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split("|")]
 
-    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
-
     if any(x not in cat_cols for x in list_of_cols):
         raise TypeError("Invalid input for Column(s)")
 
-    if len(list_of_cols) == 0:
-        warnings.warn("No Encoding Computation - No categorical column(s) to transform")
-        return idf
     if method_type not in (0, 1):
         raise TypeError("Invalid input for method_type")
     if index_order not in (
@@ -544,6 +545,42 @@ def cat_to_num_unsupervised(
         raise TypeError("Invalid input for Encoding Index Order")
     if output_mode not in ("replace", "append"):
         raise TypeError("Invalid input for output_mode")
+
+    skip_cols = []
+    if method_type == 0:
+        if stats_unique == {}:
+            skip_cols = (
+                uniqueCount_computation(spark, idf, list_of_cols)
+                .where(F.col("unique_values") > cardinality_threshold)
+                .select("attribute")
+                .rdd.flatMap(lambda x: x)
+                .collect()
+            )
+        else:
+            skip_cols = (
+                read_dataset(spark, **stats_unique)
+                .where(F.col("unique_values") > cardinality_threshold)
+                .select("attribute")
+                .rdd.flatMap(lambda x: x)
+                .collect()
+            )
+        skip_cols = list(
+            set([e for e in skip_cols if e in list_of_cols and e not in drop_cols])
+        )
+
+        if skip_cols:
+            warnings.warn(
+                "Columns dropped from one-hot encoding due to high cardinality: "
+                + ",".join(skip_cols)
+            )
+
+    list_of_cols = list(
+        set([e for e in list_of_cols if e not in drop_cols + skip_cols])
+    )
+
+    if len(list_of_cols) == 0:
+        warnings.warn("No Encoding Computation - No categorical column(s) to transform")
+        return idf
 
     list_of_cols_vec = []
     list_of_cols_idx = []
@@ -627,15 +664,9 @@ def cat_to_num_unsupervised(
 
         f_vector_to_array = F.udf(vector_to_array, T.ArrayType(T.IntegerType()))
 
-        skipped_cols = []
+        odf_sample = odf.take(1)
         for i in list_of_cols:
-            uniq_cats = (
-                odf.select(i + "_vec").rdd.flatMap(lambda x: x).collect()[0].size
-            )
-            if uniq_cats > cardinality_threshold:
-                skipped_cols.append(i)
-                odf = odf.drop(i + "_vec", i + "_index")
-                continue
+            uniq_cats = odf_sample[0].asDict()[i + "_vec"].size
             odf_schema = odf.schema.add(
                 T.StructField("tmp", T.ArrayType(T.IntegerType()))
             )
@@ -656,11 +687,6 @@ def cat_to_num_unsupervised(
             else:
                 odf = odf.drop(i + "_vec", i + "_index", "tmp")
 
-        if skipped_cols:
-            warnings.warn(
-                "Columns dropped from one-hot encoding due to high cardinality: "
-                + ",".join(skipped_cols)
-            )
     else:
         odf = odf_indexed
         for i in list_of_cols:
@@ -703,6 +729,7 @@ def cat_to_num_supervised(
     pre_existing_model=False,
     model_path="NA",
     output_mode="replace",
+    run_type="local",
     print_impact=False,
 ):
     """
@@ -749,11 +776,13 @@ def cat_to_num_supervised(
     model_path
         If pre_existing_model is True, this argument is path for referring the pre-saved model.
         If pre_existing_model is False, this argument can be used for saving the model.
-        Default "NA" is used to save the model for optimization purpose.
+        Default "NA" is used to save the model in "intermediate_data/" folder for optimization purpose.
     output_mode
         "replace", "append".
         “replace” option replaces original columns with transformed column. “append” option append transformed
         column to the input dataset with a postfix "_encoded" e.g. column X is appended as X_encoded. (Default value = "replace")
+    run_type
+        "local", "emr", "databricks" (Default value = "local")
     print_impact
         True, False (Default value = False)
         This argument is to print out the descriptive statistics of encoded columns.
@@ -808,6 +837,15 @@ def cat_to_num_supervised(
                 )
                 .drop(*["1", "0"])
             )
+
+            if run_type in list(platform_root_path.keys()):
+                root_path = platform_root_path[run_type]
+            else:
+                root_path = ""
+
+            if model_path == "NA":
+                model_path = root_path + "intermediate_data"
+
             df_tmp.coalesce(1).write.csv(
                 model_path + "/cat_to_num_supervised/" + i,
                 header=True,
@@ -1637,7 +1675,7 @@ def imputation_sklearn(
         to read pre-saved statistics on missing count/pct i.e. if measures_of_counts or
         missingCount_computation (data_analyzer.stats_generator module) has been computed & saved before. (Default value = {})
     run_type
-        "local", "emr" (Default value = "local")
+        "local", "emr", "databricks" (Default value = "local")
     print_impact
         True, False (Default value = False)
         This argument is to print out before and after missing counts of imputed columns.
@@ -2063,6 +2101,7 @@ def auto_imputation(
     null_pct=0.1,
     stats_missing={},
     output_mode="replace",
+    run_type="local",
     print_impact=True,
 ):
     """
@@ -2117,6 +2156,8 @@ def auto_imputation(
         "replace", "append".
         “replace” option replaces original columns with transformed column. “append” option append transformed
         column to the input dataset with a postfix "_imputed" e.g. column X is appended as X_imputed. (Default value = "replace")
+    run_type
+        "local", "emr", "databricks" (Default value = "local")
     print_impact
         True, False (Default value = False)
         This argument is to print out before and after missing counts of imputed columns. It also print the name of best
@@ -2129,14 +2170,21 @@ def auto_imputation(
 
     """
 
+    if run_type in list(platform_root_path.keys()):
+        root_path = platform_root_path[run_type]
+    else:
+        root_path = ""
+
     if stats_missing == {}:
         missing_df = missingCount_computation(spark, idf)
         missing_df.write.parquet(
-            "intermediate_data/imputation_comparison/missingCount_computation",
+            root_path
+            + "intermediate_data/imputation_comparison/missingCount_computation",
             mode="overwrite",
         )
         stats_missing = {
-            "file_path": "intermediate_data/imputation_comparison/missingCount_computation",
+            "file_path": root_path
+            + "intermediate_data/imputation_comparison/missingCount_computation",
             "file_type": "parquet",
         }
     else:
@@ -2212,10 +2260,11 @@ def auto_imputation(
         )
 
     idf_null.write.parquet(
-        "intermediate_data/imputation_comparison/test_dataset", mode="overwrite"
+        root_path + "intermediate_data/imputation_comparison/test_dataset",
+        mode="overwrite",
     )
     idf_null = spark.read.parquet(
-        "intermediate_data/imputation_comparison/test_dataset"
+        root_path + "intermediate_data/imputation_comparison/test_dataset"
     )
 
     method1 = imputation_MMM(
@@ -2402,7 +2451,7 @@ def autoencoder_latentFeatures(
         “append” option append transformed columns with format latent_<col_index> to the input dataset,
         e.g. latent_0, latent_1 will be appended if reduction_params=2. (Default value = "replace")
     run_type
-        "local", "emr" (Default value = "local")
+        "local", "emr", "databricks" (Default value = "local")
     print_impact
         True, False
         This argument is to print descriptive statistics of the latest features (Default value = False)
@@ -2429,14 +2478,21 @@ def autoencoder_latentFeatures(
         warnings.warn("No Latent Features Generated - No Column(s) to Transform")
         return idf
 
+    if run_type in list(platform_root_path.keys()):
+        root_path = platform_root_path[run_type]
+    else:
+        root_path = ""
+
     if stats_missing == {}:
         missing_df = missingCount_computation(spark, idf, list_of_cols)
         missing_df.write.parquet(
-            "intermediate_data/autoencoder_latentFeatures/missingCount_computation",
+            root_path
+            + "intermediate_data/autoencoder_latentFeatures/missingCount_computation",
             mode="overwrite",
         )
         stats_missing = {
-            "file_path": "intermediate_data/autoencoder_latentFeatures/missingCount_computation",
+            "file_path": root_path
+            + "intermediate_data/autoencoder_latentFeatures/missingCount_computation",
             "file_type": "parquet",
         }
     else:
@@ -2490,11 +2546,13 @@ def autoencoder_latentFeatures(
             .withColumn("attribute", F.concat(F.col("attribute"), F.lit("_scaled")))
         )
         missing_df_scaled.write.parquet(
-            "intermediate_data/autoencoder_latentFeatures/missingCount_computation_scaled",
+            root_path
+            + "intermediate_data/autoencoder_latentFeatures/missingCount_computation_scaled",
             mode="overwrite",
         )
         stats_missing_scaled = {
-            "file_path": "intermediate_data/autoencoder_latentFeatures/missingCount_computation_scaled",
+            "file_path": root_path
+            + "intermediate_data/autoencoder_latentFeatures/missingCount_computation_scaled",
             "file_type": "parquet",
         }
         idf_imputed = f(
@@ -2653,6 +2711,7 @@ def PCA_latentFeatures(
     imputation_configs={"imputation_function": "imputation_MMM"},
     stats_missing={},
     output_mode="replace",
+    run_type="local",
     print_impact=False,
 ):
     """
@@ -2719,6 +2778,8 @@ def PCA_latentFeatures(
         “replace” option replaces original columns with transformed columns: latent_<col_index>.
         “append” option append transformed columns with format latent_<col_index> to the input dataset,
         e.g. latent_0, latent_1. (Default value = "replace")
+    run_type
+        "local", "emr", "databricks" (Default value = "local")
     print_impact
         True, False
         This argument is to print descriptive statistics of the latest features (Default value = False)
@@ -2745,14 +2806,20 @@ def PCA_latentFeatures(
         warnings.warn("No Latent Features Generated - No Column(s) to Transform")
         return idf
 
+    if run_type in list(platform_root_path.keys()):
+        root_path = platform_root_path[run_type]
+    else:
+        root_path = ""
+
     if stats_missing == {}:
         missing_df = missingCount_computation(spark, idf, list_of_cols)
         missing_df.write.parquet(
-            "intermediate_data/PCA_latentFeatures/missingCount_computation",
+            root_path + "intermediate_data/PCA_latentFeatures/missingCount_computation",
             mode="overwrite",
         )
         stats_missing = {
-            "file_path": "intermediate_data/PCA_latentFeatures/missingCount_computation",
+            "file_path": root_path
+            + "intermediate_data/PCA_latentFeatures/missingCount_computation",
             "file_type": "parquet",
         }
     else:
@@ -2806,11 +2873,13 @@ def PCA_latentFeatures(
             .withColumn("attribute", F.concat(F.col("attribute"), F.lit("_scaled")))
         )
         missing_df_scaled.write.parquet(
-            "intermediate_data/PCA_latentFeatures/missingCount_computation_scaled",
+            root_path
+            + "intermediate_data/PCA_latentFeatures/missingCount_computation_scaled",
             mode="overwrite",
         )
         stats_missing_scaled = {
-            "file_path": "intermediate_data/PCA_latentFeatures/missingCount_computation_scaled",
+            "file_path": root_path
+            + "intermediate_data/PCA_latentFeatures/missingCount_computation_scaled",
             "file_type": "parquet",
         }
         idf_imputed = f(

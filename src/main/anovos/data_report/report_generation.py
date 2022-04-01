@@ -1577,9 +1577,16 @@ def data_drift_stability(
         return "null_report"
     elif ds_ind[0] == 0 and ds_ind[1] > 0.5:
         for i in total_unstable_attr:
-            line_chart_list.append(
-                line_chart_gen_stability(df1=df_stability, df2=df_si_, col=i)
-            )
+            if len(total_unstable_attr) > 1:
+                line_chart_list.append(
+                    line_chart_gen_stability(df1=df_stability, df2=df_si_, col=i)
+                )
+            else:
+                line_chart_list.append(
+                    line_chart_gen_stability(df1=df_stability, df2=df_si_, col=i)
+                )
+                line_chart_list.append(dp.Plot(blank_chart, label=" "))
+
         report = dp.Group(
             dp.Text("# "),
             dp.Text(
@@ -1677,9 +1684,15 @@ def data_drift_stability(
             )
     elif ds_ind[0] == 1 and ds_ind[1] >= 0.5:
         for i in total_unstable_attr:
-            line_chart_list.append(
-                line_chart_gen_stability(df1=df_stability, df2=df_si_, col=i)
-            )
+            if len(total_unstable_attr) > 1:
+                line_chart_list.append(
+                    line_chart_gen_stability(df1=df_stability, df2=df_si_, col=i)
+                )
+            else:
+                line_chart_list.append(
+                    line_chart_gen_stability(df1=df_stability, df2=df_si_, col=i)
+                )
+                line_chart_list.append(dp.Plot(blank_chart, label=" "))
         if len(all_drift_charts_) > 0:
             report = dp.Group(
                 dp.Text("# "),
@@ -1775,9 +1788,15 @@ def data_drift_stability(
             )
     elif ds_ind[0] == 0 and ds_ind[1] >= 0.5:
         for i in total_unstable_attr:
-            line_chart_list.append(
-                line_chart_gen_stability(df1=df_stability, df2=df_si_, col=i)
-            )
+            if len(total_unstable_attr) > 1:
+                line_chart_list.append(
+                    line_chart_gen_stability(df1=df_stability, df2=df_si_, col=i)
+                )
+            else:
+                line_chart_list.append(
+                    line_chart_gen_stability(df1=df_stability, df2=df_si_, col=i)
+                )
+                line_chart_list.append(dp.Plot(blank_chart, label=" "))
         report = dp.Group(
             dp.Text("# "),
             dp.Text(
@@ -1800,9 +1819,15 @@ def data_drift_stability(
         )
     else:
         for i in total_unstable_attr:
-            line_chart_list.append(
-                line_chart_gen_stability(df1=df_stability, df2=df_si_, col=i)
-            )
+            if len(total_unstable_attr) > 1:
+                line_chart_list.append(
+                    line_chart_gen_stability(df1=df_stability, df2=df_si_, col=i)
+                )
+            else:
+                line_chart_list.append(
+                    line_chart_gen_stability(df1=df_stability, df2=df_si_, col=i)
+                )
+                line_chart_list.append(dp.Plot(blank_chart, label=" "))
         if len(all_drift_charts_) > 0:
             report = dp.Group(
                 dp.Text("# "),
@@ -2306,7 +2331,7 @@ def list_ts_remove_append(l, opt):
         return ll
 
 
-def ts_viz_1_1(base_path, x_col, y_col, output_type="daily"):
+def ts_viz_1_1(base_path, x_col, y_col, output_type):
 
     """
 
@@ -2331,7 +2356,7 @@ def ts_viz_1_1(base_path, x_col, y_col, output_type="daily"):
     return ts_fig
 
 
-def ts_viz_1_2(base_path, ts_col, col_list, output_type="daily"):
+def ts_viz_1_2(base_path, ts_col, col_list, output_type):
 
     """
 
@@ -2412,7 +2437,7 @@ def ts_viz_1_3(base_path, ts_col, num_cols, cat_cols, output_type):
                 )
                 ts_v.append(dp.Plot(blank_chart, label="_"))
 
-    elif len(num_cols) >= 1 & len(cat_cols) >= 1:
+    elif (len(num_cols) >= 1) & (len(cat_cols) >= 1):
 
         for i in ts_col:
             if len(ts_col) > 1:
@@ -2731,6 +2756,8 @@ def lambda_cat(val):
         return "No Transform"
     elif val >= 2:
         return "Square Transform"
+    else:
+        return "ValueOutOfRange"
 
 
 def ts_viz_3_1(base_path, x_col, y_col):
@@ -2765,103 +2792,147 @@ def ts_viz_3_1(base_path, x_col, y_col):
         kpss_test = round(kpss(df[metric_col], regression="ct")[0], 3), round(
             kpss(df[metric_col], regression="ct")[1], 3
         )
-        #         df[metric_col] = df[metric_col].apply(lambda x: boxcox1p(x,0.25))
-        #         lambda_box_cox = round(boxcox(df[metric_col])[1],5)
-        fit = PowerTransformer(method="yeo-johnson")
-        lambda_box_cox = round(
-            fit.fit(np.array(df[metric_col]).reshape(-1, 1)).lambdas_[0], 3
-        )
-        #         df[metric_col+"_transformed"] = boxcox(df[metric_col],lmbda=lambda_box_cox)
-        df[metric_col + "_transformed"] = fit.transform(
-            np.array(df[metric_col]).reshape(-1, 1)
-        )
-
-        fig = make_subplots(
-            rows=1, cols=2, subplot_titles=["Pre-Transformation", "Post-Transformation"]
-        )
-        fig.add_trace(
-            go.Scatter(
-                x=df.index,
-                y=df[metric_col],
-                mode="lines+markers",
-                name=metric_col,
-                line=dict(color=global_theme[1]),
-            ),
-            row=1,
-            col=1,
-        )
-        fig.add_trace(
-            go.Scatter(
-                x=df.index,
-                y=df[metric_col + "_transformed"],
-                mode="lines+markers",
-                name=metric_col + "_transformed",
-                line=dict(color=global_theme[7]),
-            ),
-            row=1,
-            col=2,
-        )
-        fig.layout.plot_bgcolor = global_plot_bg_color
-        fig.layout.paper_bgcolor = global_paper_bg_color
-        fig.update_xaxes(gridcolor=px.colors.sequential.Greys[1])
-        fig.update_yaxes(gridcolor=px.colors.sequential.Greys[1])
-        fig.update_layout(autosize=True, width=2000, height=400)
-        fig.update_layout(
-            legend=dict(orientation="h", x=0.5, yanchor="bottom", xanchor="center")
-        )
 
         if adf_test[1] < 0.05:
             adf_flag = True
         else:
             adf_flag = False
-
         if kpss_test[1] < 0.05:
             kpss_flag = True
         else:
             kpss_flag = False
+        #         df[metric_col] = df[metric_col].apply(lambda x: boxcox1p(x,0.25))
+        #         lambda_box_cox = round(boxcox(df[metric_col])[1],5)
+        fit = PowerTransformer(method="yeo-johnson")
 
-        ts_fig.append(
-            dp.Group(
-                dp.Group(
-                    dp.BigNumber(
-                        heading="ADF Test Statistic",
-                        value=adf_test[0],
-                        change=adf_test[1],
-                        is_upward_change=adf_flag,
-                    ),
-                    dp.BigNumber(
-                        heading="KPSS Test Statistic",
-                        value=kpss_test[0],
-                        change=kpss_test[1],
-                        is_upward_change=kpss_flag,
-                    ),
-                    dp.BigNumber(
-                        heading="Box-Cox Transformation",
-                        value=lambda_box_cox,
-                        change=str(lambda_cat(lambda_box_cox)),
-                        is_upward_change=True,
-                    ),
-                    columns=3,
-                ),
-                dp.Text("#### Transformation View"),
-                dp.Text(
-                    "Below Transformation is basis the inferencing from the Box Cox Transformation. The Lambda value of "
-                    + str(lambda_box_cox)
-                    + " indicates a "
-                    + str(lambda_cat(lambda_box_cox))
-                    + ". A Pre-Post Transformation Visualization is done for better clarity. "
-                ),
-                dp.Plot(fig),
-                dp.Text("**Guidelines :** "),
-                dp.Text(
-                    "**ADF** : *The more negative the statistic, the more likely we are to reject the null hypothesis. If the p-value is less than the significance level of 0.05, we can reject the null hypothesis and take that the series is stationary*"
-                ),
-                dp.Text(
-                    "**KPSS** : *If the p-value is high, we cannot reject the null hypothesis. So the series is stationary.*"
-                ),
-                label=metric_col.title(),
+        try:
+            lambda_box_cox = round(
+                fit.fit(np.array(df[metric_col]).reshape(-1, 1)).lambdas_[0], 3
             )
-        )
+            cnt = 0
+        except:
+            cnt = 1
+
+        if cnt == 0:
+
+            #         df[metric_col+"_transformed"] = boxcox(df[metric_col],lmbda=lambda_box_cox)
+            df[metric_col + "_transformed"] = fit.transform(
+                np.array(df[metric_col]).reshape(-1, 1)
+            )
+
+            fig = make_subplots(
+                rows=1,
+                cols=2,
+                subplot_titles=["Pre-Transformation", "Post-Transformation"],
+            )
+            fig.add_trace(
+                go.Scatter(
+                    x=df.index,
+                    y=df[metric_col],
+                    mode="lines+markers",
+                    name=metric_col,
+                    line=dict(color=global_theme[1]),
+                ),
+                row=1,
+                col=1,
+            )
+            fig.add_trace(
+                go.Scatter(
+                    x=df.index,
+                    y=df[metric_col + "_transformed"],
+                    mode="lines+markers",
+                    name=metric_col + "_transformed",
+                    line=dict(color=global_theme[7]),
+                ),
+                row=1,
+                col=2,
+            )
+            fig.layout.plot_bgcolor = global_plot_bg_color
+            fig.layout.paper_bgcolor = global_paper_bg_color
+            fig.update_xaxes(gridcolor=px.colors.sequential.Greys[1])
+            fig.update_yaxes(gridcolor=px.colors.sequential.Greys[1])
+            fig.update_layout(autosize=True, width=2000, height=400)
+            fig.update_layout(
+                legend=dict(orientation="h", x=0.5, yanchor="bottom", xanchor="center")
+            )
+
+            ts_fig.append(
+                dp.Group(
+                    dp.Group(
+                        dp.BigNumber(
+                            heading="ADF Test Statistic",
+                            value=adf_test[0],
+                            change=adf_test[1],
+                            is_upward_change=adf_flag,
+                        ),
+                        dp.BigNumber(
+                            heading="KPSS Test Statistic",
+                            value=kpss_test[0],
+                            change=kpss_test[1],
+                            is_upward_change=kpss_flag,
+                        ),
+                        dp.BigNumber(
+                            heading="Box-Cox Transformation",
+                            value=lambda_box_cox,
+                            change=str(lambda_cat(lambda_box_cox)),
+                            is_upward_change=True,
+                        ),
+                        columns=3,
+                    ),
+                    dp.Text("#### Transformation View"),
+                    dp.Text(
+                        "Below Transformation is basis the inferencing from the Box Cox Transformation. The Lambda value of "
+                        + str(lambda_box_cox)
+                        + " indicates a "
+                        + str(lambda_cat(lambda_box_cox))
+                        + ". A Pre-Post Transformation Visualization is done for better clarity. "
+                    ),
+                    dp.Plot(fig),
+                    dp.Text("**Guidelines :** "),
+                    dp.Text(
+                        "**ADF** : *The more negative the statistic, the more likely we are to reject the null hypothesis. If the p-value is less than the significance level of 0.05, we can reject the null hypothesis and take that the series is stationary*"
+                    ),
+                    dp.Text(
+                        "**KPSS** : *If the p-value is high, we cannot reject the null hypothesis. So the series is stationary.*"
+                    ),
+                    label=metric_col.title(),
+                )
+            )
+        else:
+
+            ts_fig.append(
+                dp.Group(
+                    dp.Group(
+                        dp.BigNumber(
+                            heading="ADF Test Statistic",
+                            value=adf_test[0],
+                            change=adf_test[1],
+                            is_upward_change=adf_flag,
+                        ),
+                        dp.BigNumber(
+                            heading="KPSS Test Statistic",
+                            value=kpss_test[0],
+                            change=kpss_test[1],
+                            is_upward_change=kpss_flag,
+                        ),
+                        dp.BigNumber(
+                            heading="Box-Cox Transformation",
+                            value="ValueOutOfRange",
+                            change="ValueOutOfRange",
+                            is_upward_change=True,
+                        ),
+                        columns=3,
+                    ),
+                    dp.Text("**Guidelines :** "),
+                    dp.Text(
+                        "**ADF** : *The more negative the statistic, the more likely we are to reject the null hypothesis. If the p-value is less than the significance level of 0.05, we can reject the null hypothesis and take that the series is stationary*"
+                    ),
+                    dp.Text(
+                        "**KPSS** : *If the p-value is high, we cannot reject the null hypothesis. So the series is stationary.*"
+                    ),
+                    label=metric_col.title(),
+                )
+            )
 
     return dp.Select(blocks=ts_fig, type=dp.SelectType.TABS)
 
@@ -2887,7 +2958,6 @@ def ts_viz_3_2(base_path, ts_col, col_list):
     bl = []
 
     for i in col_list:
-        # print(i)
         if len(num_cols) > 1:
             bl.append(dp.Group(ts_viz_3_1(base_path, ts_col, i), label=i))
         else:
@@ -2915,15 +2985,50 @@ def ts_viz_3_3(base_path, ts_col, num_cols):
     DatapaneObject
     """
 
-    ts_v = []
-    tt = ts_col
-    for i in tt:
-        # print(i)
-        if len(tt) > 1:
-            ts_v.append(dp.Group(ts_viz_3_2(base_path, i, num_cols), label=i))
-        else:
-            ts_v.append(dp.Group(ts_viz_3_2(base_path, i, num_cols), label=i))
-            ts_v.append(dp.Plot(blank_chart, label="_"))
+    #     f = list(pd.read_csv(ends_with(base_path) + "stats_" + i + "_2.csv").count_unique_dates.values)[0]
+
+    # if f >= 6:
+    if len(ts_col) > 1:
+        ts_v = []
+        for i in ts_col:
+            f = list(
+                pd.read_csv(
+                    ends_with(base_path) + "stats_" + i + "_2.csv"
+                ).count_unique_dates.values
+            )[0]
+            if f >= 6:
+                ts_v.append(dp.Group(ts_viz_3_2(base_path, i, num_cols), label=i))
+            else:
+                ts_v.append(
+                    dp.Group(
+                        dp.Text(
+                            "The data contains insufficient data points for the desired transformation analysis. Please ensure the number of unique dates is sufficient."
+                        ),
+                        label=i,
+                    )
+                )
+
+    else:
+        ts_v = []
+        for i in ts_col:
+            f = list(
+                pd.read_csv(
+                    ends_with(base_path) + "stats_" + i + "_2.csv"
+                ).count_unique_dates.values
+            )[0]
+            if f >= 6:
+                ts_v.append(dp.Group(ts_viz_3_2(base_path, i, num_cols), label=i))
+                ts_v.append(dp.Plot(blank_chart, label="_"))
+            else:
+                ts_v.append(
+                    dp.Group(
+                        dp.Text(
+                            "The data contains insufficient data points for the desired transformation analysis. Please ensure the number of unique dates is sufficient."
+                        ),
+                        label=i,
+                    )
+                )
+                ts_v.append(dp.Plot(blank_chart, label="_"))
 
     return dp.Select(blocks=ts_v, type=dp.SelectType.DROPDOWN)
 
@@ -2968,7 +3073,7 @@ def ts_stats(base_path):
     return c0, c1, c2, c3, c4, c5, c6
 
 
-def ts_viz_generate(master_path, id_col, print_report=False, output_type="daily"):
+def ts_viz_generate(master_path, id_col, print_report=False, output_type=None):
 
     """
 
@@ -2991,6 +3096,8 @@ def ts_viz_generate(master_path, id_col, print_report=False, output_type="daily"
     DatapaneObject / Output[HTML]
     """
 
+    master_path = ends_with(master_path)
+
     try:
         c0, c1, c2, c3, c4, c5, c6 = ts_stats(master_path)
 
@@ -3012,36 +3119,67 @@ def ts_viz_generate(master_path, id_col, print_report=False, output_type="daily"
 
     final_ts_cols = list(ts_stats(master_path)[4].attributes.values)
 
-    report = dp.Group(
-        dp.Text("# "),
-        dp.Text(
-            "*This section summarizes the information about timestamp features and how they are interactive with other attributes. An exhaustive diagnosis is done by looking at different time series components, how they could be useful in deriving insights for further downstream applications*"
-        ),
-        dp.Text("# "),
-        dp.Text("# "),
-        dp.Text("### Basic Landscaping"),
-        dp.Text(
-            "Out of **"
-            + str(len(list(ts_stats(master_path)[1].attributes.values)))
-            + "** potential attributes in the data, the module could locate **"
-            + str(len(final_ts_cols))
-            + "** attributes as Timestamp"
-        ),
-        dp.DataTable(stats_df),
-        ts_landscape(master_path, final_ts_cols, id_col),
-        dp.Text(
-            "*Lower the **CoV** (Coefficient Of Variation), Higher the Consistency between the consecutive dates. Similarly the Mean & Variance should be consistent over time*"
-        ),
-        dp.Text("### Visualization across the Shortlisted Timestamp Attributes"),
-        ts_viz_1_3(master_path, final_ts_cols, num_cols, cat_cols, output_type),
-        dp.Text("### Decomposed View"),
-        ts_viz_2_3(master_path, final_ts_cols, num_cols),
-        dp.Text("### Stationarity & Transformations"),
-        ts_viz_3_3(master_path, final_ts_cols, num_cols),
-        dp.Text("#"),
-        dp.Text("#"),
-        label="Time Series Analyzer",
-    )
+    if output_type == "daily":
+
+        report = dp.Group(
+            dp.Text("# "),
+            dp.Text(
+                "*This section summarizes the information about timestamp features and how they are interactive with other attributes. An exhaustive diagnosis is done by looking at different time series components, how they could be useful in deriving insights for further downstream applications*"
+            ),
+            dp.Text("# "),
+            dp.Text("# "),
+            dp.Text("### Basic Landscaping"),
+            dp.Text(
+                "Out of **"
+                + str(len(list(ts_stats(master_path)[1].attributes.values)))
+                + "** potential attributes in the data, the module could locate **"
+                + str(len(final_ts_cols))
+                + "** attributes as Timestamp"
+            ),
+            dp.DataTable(stats_df),
+            ts_landscape(master_path, final_ts_cols, id_col),
+            dp.Text(
+                "*Lower the **CoV** (Coefficient Of Variation), Higher the Consistency between the consecutive dates. Similarly the Mean & Variance should be consistent over time*"
+            ),
+            dp.Text("### Visualization across the Shortlisted Timestamp Attributes"),
+            ts_viz_1_3(master_path, final_ts_cols, num_cols, cat_cols, output_type),
+            dp.Text("### Decomposed View"),
+            ts_viz_2_3(master_path, final_ts_cols, num_cols),
+            dp.Text("### Stationarity & Transformations"),
+            ts_viz_3_3(master_path, final_ts_cols, num_cols),
+            dp.Text("#"),
+            dp.Text("#"),
+            label="Time Series Analyzer",
+        )
+
+    else:
+
+        report = dp.Group(
+            dp.Text("# "),
+            dp.Text(
+                "*This section summarizes the information about timestamp features and how they are interactive with other attributes. An exhaustive diagnosis is done by looking at different time series components, how they could be useful in deriving insights for further downstream applications*"
+            ),
+            dp.Text("# "),
+            dp.Text("# "),
+            dp.Text("### Basic Landscaping"),
+            dp.Text(
+                "Out of **"
+                + str(len(list(ts_stats(master_path)[1].attributes.values)))
+                + "** potential attributes in the data, the module could locate **"
+                + str(len(final_ts_cols))
+                + "** attributes as Timestamp"
+            ),
+            dp.DataTable(stats_df),
+            ts_landscape(master_path, final_ts_cols, id_col),
+            dp.Text(
+                "*Lower the **CoV** (Coefficient Of Variation), Higher the Consistency between the consecutive dates. Similarly the Mean & Variance should be consistent over time*"
+            ),
+            dp.Text("### Visualization across the Shortlisted Timestamp Attributes"),
+            ts_viz_1_3(master_path, final_ts_cols, num_cols, cat_cols, output_type),
+            dp.Text("#"),
+            dp.Text("#"),
+            label="Time Series Analyzer",
+        )
 
     if print_report:
         dp.Report(default_template[0], default_template[1], report).save(
@@ -3062,7 +3200,7 @@ def anovos_report(
     metricDict_path=".",
     run_type="local",
     final_report_path=".",
-    output_type="daily",
+    output_type=None,
 ):
     """
 
@@ -3392,7 +3530,8 @@ def anovos_report(
     tab6 = data_drift_stability(
         master_path, ds_ind, id_col, drift_threshold_model, all_drift_charts_
     )
-    tab7 = ts_viz_generate(ends_with(master_path), id_col, output_type)
+
+    tab7 = ts_viz_generate(master_path, id_col, False, output_type)
     final_tabs_list = []
     for i in [tab1, tab2, tab3, tab4, tab5, tab6, tab7]:
         if i == "null_report":
