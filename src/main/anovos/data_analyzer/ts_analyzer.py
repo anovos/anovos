@@ -465,7 +465,7 @@ def ts_analyzer(
         ts_processed_feat_df = ts_processed_feats(
             idf, i, id_col, tz_offset, cnt_row, cnt_unique_id
         )
-        ts_processed_feat_df.persist(pyspark.StorageLevel.DISK_ONLY)
+        ts_processed_feat_df.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
 
         # for j in range(1, 3):
         #     f = ts_eligiblity_check(
