@@ -29,7 +29,9 @@ from anovos.data_transformer.transformers import (
 from anovos.shared.utils import attributeType_segregation
 
 
-def correlation_matrix(spark, idf, list_of_cols="all", drop_cols=[], print_impact=False):
+def correlation_matrix(
+    spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
+):
     """
     This function calculates correlation coefficient statistical, which measures the strength of the relationship
     between the relative movements of two attributes. Pearson’s correlation coefficient is a standard approach of
@@ -75,26 +77,29 @@ def correlation_matrix(spark, idf, list_of_cols="all", drop_cols=[], print_impac
         list_of_cols = [x.strip() for x in list_of_cols.split("|")]
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split("|")]
-    
-    list_of_cols = list(
-        set([e for e in list_of_cols if e not in drop_cols]))
+
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in num_cols for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError("Invalid input for Column(s)")
 
-    
-    assembler = VectorAssembler(inputCols=list_of_cols, outputCol="features", handleInvalid = "keep")
+    assembler = VectorAssembler(
+        inputCols=list_of_cols, outputCol="features", handleInvalid="keep"
+    )
     idf_vector = assembler.transform(idf).select("features")
     matrix = Correlation.corr(idf_vector, "features", "spearman")
     result = matrix.collect()[0]["spearman(features)"].values
-    
-    odf_pd = pd.DataFrame(result.reshape(-1, len(list_of_cols)), columns=list_of_cols, index=list_of_cols)
+
+    odf_pd = pd.DataFrame(
+        result.reshape(-1, len(list_of_cols)), columns=list_of_cols, index=list_of_cols
+    )
     odf_pd["attribute"] = odf_pd.index
     list_of_cols.sort()
     odf = (
         spark.createDataFrame(odf_pd)
         .select(["attribute"] + list_of_cols)
-        .orderBy("attribute"))
+        .orderBy("attribute")
+    )
 
     if print_impact:
         odf.show(odf.count())
