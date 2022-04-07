@@ -49,7 +49,7 @@ Quality check,Row Level,Null Detection,row_count,Number of rows with null_cols_c
 Quality check,Row Level,Null Detection,row_pct,row_count divided by number of rows
 Quality check,Row Level,Null Detection,flagged,"1 if null_cols_count is more than (threshold  X Number of Columns) , else 0."
 Association & Interactions,,,,Analyzes the interaction between different attributes and/or the relationship between an attribute & the binary target variable.
-Association & Interactions,Association Matrix,Correlation Matrix,,Measures the strength of the relationship between the relative movements of two attributes by finding phik correlation coefficient.
+Association & Interactions,Association Matrix,Correlation Matrix,,Measures the strength of the relationship between the relative movements of two numerical attributes by finding spearman correlation coefficient.
 Association & Interactions,Association Matrix,IV Calculations,,Information Value measures how well an attribute is able to distinguish between a binary target variable i.e. label 0 from label 1. Greater the value of IV higher rthe attribute importance. IV less than 0.02 is not useful for prediction
 Association & Interactions,Association Matrix,IG Calculations,,Information Gain measures the reduction in entropy by splitting a dataset as peran attribute values
 Association & Interactions,Association Matrix,Varibale clustering,,Groups attributes that are as correlated as possible among themselves within a cluster and as uncorrelated as possible with attribute in other clusters. 
