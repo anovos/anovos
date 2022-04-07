@@ -314,7 +314,7 @@ def test_correlation_matrix(spark_session: SparkSession):
 
     result_df3 = correlation_matrix(spark_session, test_df, drop_cols=["ifa"])
 
-    assert result_df3.count() == 16
+    assert result_df3.count() == 8
     assert (
         result_df3.where(F.col("attribute") == "age")
         .toPandas()
@@ -324,38 +324,26 @@ def test_correlation_matrix(spark_session: SparkSession):
     assert (
         result_df3.where(F.col("attribute") == "age")
         .toPandas()
-        .to_dict("list")["native-country"][0]
-        <= 0.2
-    )
-    assert (
-        result_df3.where(F.col("attribute") == "age")
-        .toPandas()
         .to_dict("list")["capital-gain"][0]
-        <= 0.25
+        <= 0.13
     )
     assert (
         result_df3.where(F.col("attribute") == "age")
         .toPandas()
         .to_dict("list")["capital-loss"][0]
-        <= 0.25
-    )
-    assert (
-        result_df3.where(F.col("attribute") == "age")
-        .toPandas()
-        .to_dict("list")["education"][0]
-        <= 0.4
+        <= 0.07
     )
     assert (
         result_df3.where(F.col("attribute") == "age")
         .toPandas()
         .to_dict("list")["education-num"][0]
-        <= 0.4
+        <= 0.07
     )
     assert (
         result_df3.where(F.col("attribute") == "age")
         .toPandas()
         .to_dict("list")["fnlwgt"][0]
-        <= 0.1
+        <= 0
     )
     assert (
         result_df3.where(F.col("attribute") == "capital-gain")
@@ -366,80 +354,26 @@ def test_correlation_matrix(spark_session: SparkSession):
     assert (
         result_df3.where(F.col("attribute") == "capital-gain")
         .toPandas()
-        .to_dict("list")["native-country"][0]
-        <= 0.1
-    )
-    assert (
-        result_df3.where(F.col("attribute") == "capital-gain")
-        .toPandas()
         .to_dict("list")["age"][0]
-        <= 0.2
+        <= 0.13
     )
     assert (
         result_df3.where(F.col("attribute") == "capital-gain")
         .toPandas()
         .to_dict("list")["capital-loss"][0]
-        <= 0.1
-    )
-    assert (
-        result_df3.where(F.col("attribute") == "capital-gain")
-        .toPandas()
-        .to_dict("list")["education"][0]
-        <= 0.3
+        <= 0
     )
     assert (
         result_df3.where(F.col("attribute") == "capital-gain")
         .toPandas()
         .to_dict("list")["education-num"][0]
-        <= 0.4
+        <= 0.13
     )
     assert (
         result_df3.where(F.col("attribute") == "capital-gain")
         .toPandas()
         .to_dict("list")["fnlwgt"][0]
-        <= 0.1
-    )
-    assert (
-        result_df3.where(F.col("attribute") == "education")
-        .toPandas()
-        .to_dict("list")["education"][0]
-        == 1.0
-    )
-    assert (
-        result_df3.where(F.col("attribute") == "education")
-        .toPandas()
-        .to_dict("list")["native-country"][0]
-        <= 0.45
-    )
-    assert (
-        result_df3.where(F.col("attribute") == "education")
-        .toPandas()
-        .to_dict("list")["age"][0]
-        <= 0.4
-    )
-    assert (
-        result_df3.where(F.col("attribute") == "education")
-        .toPandas()
-        .to_dict("list")["capital-loss"][0]
-        <= 0.2
-    )
-    assert (
-        result_df3.where(F.col("attribute") == "education")
-        .toPandas()
-        .to_dict("list")["capital-gain"][0]
-        <= 0.3
-    )
-    assert (
-        result_df3.where(F.col("attribute") == "education")
-        .toPandas()
-        .to_dict("list")["education-num"][0]
-        <= 1.0
-    )
-    assert (
-        result_df3.where(F.col("attribute") == "education")
-        .toPandas()
-        .to_dict("list")["fnlwgt"][0]
-        <= 0.1
+        <= 0
     )
     assert (
         result_df3.where(F.col("attribute") == "label")
@@ -450,36 +384,24 @@ def test_correlation_matrix(spark_session: SparkSession):
     assert (
         result_df3.where(F.col("attribute") == "label")
         .toPandas()
-        .to_dict("list")["native-country"][0]
-        <= 0.2
-    )
-    assert (
-        result_df3.where(F.col("attribute") == "label")
-        .toPandas()
         .to_dict("list")["age"][0]
-        <= 0.4
-    )
-    assert (
-        result_df3.where(F.col("attribute") == "label")
-        .toPandas()
-        .to_dict("list")["capital-loss"][0]
         <= 0.3
     )
     assert (
         result_df3.where(F.col("attribute") == "label")
         .toPandas()
-        .to_dict("list")["capital-gain"][0]
-        <= 0.4
+        .to_dict("list")["capital-loss"][0]
+        <= 0.2
     )
     assert (
         result_df3.where(F.col("attribute") == "label")
         .toPandas()
-        .to_dict("list")["education"][0]
-        <= 4.0
+        .to_dict("list")["capital-gain"][0]
+        <= 0.3
     )
     assert (
         result_df3.where(F.col("attribute") == "label")
         .toPandas()
         .to_dict("list")["fnlwgt"][0]
-        <= 0.1
+        <= 0
     )
