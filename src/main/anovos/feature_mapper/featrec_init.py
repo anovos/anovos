@@ -1,5 +1,5 @@
-import os
 import copy
+import os
 from re import finditer
 
 import pandas as pd

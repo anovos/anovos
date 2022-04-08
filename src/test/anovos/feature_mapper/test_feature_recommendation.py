@@ -5,7 +5,7 @@ from anovos.feature_mapper.feature_recommendation import (
     find_attr_by_relevance,
     sankey_visualization,
 )
-from anovos.feature_recommender.featrec_init import model_download
+from anovos.feature_mapper.featrec_init import model_download
 
 
 model_download()
