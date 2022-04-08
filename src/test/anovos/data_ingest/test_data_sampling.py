@@ -21,16 +21,16 @@ def test_data_sampling(test_sample):
         list_of_cols="all",
         label_col="gender",
         method_type="stratified",
-        fraction=0.25,
+        fraction=0.75,
     )
     assert "gender" in output_1.columns
     assert "label_1" in output_1.columns
     assert "label_2" in output_1.columns
     assert "label_3" in output_1.columns
-    assert output_1.filter(output_1["gender"] == "F").count() < 10
-    assert output_1.filter(output_1["gender"] == "F").count() > 4
-    assert output_1.filter(output_1["gender"] == "M").count() < 5
-    assert output_1.filter(output_1["gender"] == "M").count() > 1
+    assert output_1.filter(output_1["gender"] == "F").count() < 30
+    assert output_1.filter(output_1["gender"] == "F").count() > 12
+    assert output_1.filter(output_1["gender"] == "M").count() < 15
+    assert output_1.filter(output_1["gender"] == "M").count() > 3
 
     output_2 = data_sample(
         test_sample,

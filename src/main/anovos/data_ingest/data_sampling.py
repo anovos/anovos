@@ -1,5 +1,5 @@
-from anovos.shared.utils import attributeType_segregation
 from pyspark.sql.functions import concat, lit
+from anovos.shared.utils import attributeType_segregation
 
 
 def data_sample(
