@@ -1,7 +1,7 @@
 import pytest
 import pandas as pd
-from anovos.feature_recommender.feature_recommendation import (
-    feature_recommendation,
+from anovos.feature_mapper.feature_recommendation import (
+    feature_mapper,
     find_attr_by_relevance,
     sankey_visualization,
 )
@@ -21,8 +21,8 @@ def example_attr_2():
     return pd.read_csv("./data/feature_recommender/test_input_fr_2.csv")
 
 
-def test_feature_recommendation(example_attr_1, example_attr_2):
-    test_df = feature_recommendation(
+def test_feature_mapper(example_attr_1, example_attr_2):
+    test_df = feature_mapper(
         example_attr_1,
         name_column="Attribute Name",
         desc_column="Attribute Description",
@@ -43,7 +43,7 @@ def test_feature_recommendation(example_attr_1, example_attr_2):
         assert "N/A" in test_df.iloc[i, 4] or float(test_df.iloc[i, 4]) >= 0.3
         assert float(test_df.iloc[i, 4]) <= 1
 
-    test_df_2 = feature_recommendation(
+    test_df_2 = feature_mapper(
         example_attr_2, desc_column="Desc", threshold=0.0
     )
     assert len(test_df_2) > 0
@@ -63,7 +63,7 @@ def test_feature_recommendation(example_attr_1, example_attr_2):
         assert float(test_df_2.iloc[i, 3]) >= 0
         assert float(test_df_2.iloc[i, 3]) <= 1
 
-    test_df_3 = feature_recommendation(
+    test_df_3 = feature_mapper(
         example_attr_1,
         name_column="Attribute Name",
         desc_column="Attribute Description",
@@ -90,7 +90,7 @@ def test_feature_recommendation(example_attr_1, example_attr_2):
             assert "telecommunication" in test_df_3.iloc[i, 5]
             assert "churn" in test_df_3.iloc[i, 6]
 
-    test_df_4 = feature_recommendation(
+    test_df_4 = feature_mapper(
         example_attr_2, name_column="Name", threshold=0.0
     )
     assert len(test_df_4) > 0
@@ -106,7 +106,7 @@ def test_feature_recommendation(example_attr_1, example_attr_2):
     assert "fare_amount" in test_df_4.iloc[2, 0]
     assert "pickup_datetime" in test_df_4.iloc[4, 0]
 
-    test_df_5 = feature_recommendation(
+    test_df_5 = feature_mapper(
         example_attr_1,
         name_column="Attribute Name",
         desc_column="Attribute Description",
@@ -183,12 +183,12 @@ def test_sankey_visualization(example_attr_1, example_attr_2):
         "number of customers using products",
         "number of call customer make daily",
     ]
-    test_df = feature_recommendation(
+    test_df = feature_mapper(
         example_attr_1,
         name_column="Attribute Name",
         desc_column="Attribute Description",
     )
-    test_df_2 = feature_recommendation(
+    test_df_2 = feature_mapper(
         example_attr_2,
         desc_column="Desc",
         suggested_industry="banking",

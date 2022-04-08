@@ -8,7 +8,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from sentence_transformers import util
 
-from anovos.feature_recommender.featrec_init import (
+from anovos.feature_mapper.featrec_init import (
     recommendation_data_prep,
     model_fer,
     camel_case_split,
@@ -16,7 +16,7 @@ from anovos.feature_recommender.featrec_init import (
     get_column_name,
     EmbeddingsTrainFer,
 )
-from anovos.feature_recommender.feature_exploration import (
+from anovos.feature_mapper.feature_exploration import (
     list_usecase_by_industry,
     process_industry,
     process_usecase,
@@ -32,7 +32,7 @@ list_embedding_train_fer = EmbeddingsTrainFer(list_train_fer)
 ) = get_column_name(df_rec_fer)
 
 
-def feature_recommendation(
+def feature_mapper(
     df,
     name_column=None,
     desc_column=None,
@@ -469,7 +469,7 @@ def sankey_visualization(df, industry_included=False, usecase_included=False):
     Parameters
     ----------
     df : DataFrame
-        Input DataFrame. This DataFrame needs to be output of feature_recommendation or find_attr_by_relevance, or in the same format.
+        Input DataFrame. This DataFrame needs to be output of feature_mapper or find_attr_by_relevance, or in the same format.
     industry_included : bool
         Whether the plot needs to include industry mapping or not. Default is False
     usecase_included : bool

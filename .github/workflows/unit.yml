@@ -74,9 +74,9 @@ jobs:
         run: |
           export SENTENCE_TRANSFORMERS_HOME="~/.cache"
 
-      - name: Run the unit tests for feature_recommender
+      - name: Run the unit tests for feature_mapper
         run: |
-          pytest -v --cov=src/main/anovos src/test/anovos/feature_recommender
+          pytest -v --cov=src/main/anovos src/test/anovos/feature_mapper
 
       - name: Run the unit tests for data_ingest module
         run: |

@@ -1,7 +1,7 @@
 """Feature explorer helps list down the potential features from our corpus based
 on user defined industry or/and use case.
 """
-from anovos.feature_recommender.featrec_init import (
+from anovos.feature_mapper.featrec_init import (
     feature_exploration_prep,
     get_column_name,
     model_fer,
