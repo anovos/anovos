@@ -8,7 +8,7 @@ def data_sample(
     label_col="",
     fraction=0.1,
     method_type="random",
-    seed_value=12,
+    seed_value=0,
     unique_threshold=0.5,
 ):
     if type(fraction) != float:
