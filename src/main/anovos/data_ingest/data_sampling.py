@@ -34,7 +34,10 @@ def data_sample(
         list_of_cols = [x.strip() for x in list_of_cols.split("|")]
     list_of_cols = list(set(list_of_cols))
     if list_of_cols == ["all"]:
-        list_of_cols = idf.columns
+        if label_col == "":
+            list_of_cols = idf.columns
+        else:
+            list_of_cols = [col for col in idf.columns if col != label_col]
     if method_type == "stratified":
         if len(list_of_cols) == 0:
             raise TypeError("Missing list_of_cols value for stratified method")
