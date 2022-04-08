@@ -13,12 +13,12 @@ model_download()
 
 @pytest.fixture
 def example_attr_1():
-    return pd.read_csv("./data/feature_recommender/test_input_fr.csv")
+    return pd.read_csv("./data/feature_mapper/test_input_fr.csv")
 
 
 @pytest.fixture
 def example_attr_2():
-    return pd.read_csv("./data/feature_recommender/test_input_fr_2.csv")
+    return pd.read_csv("./data/feature_mapper/test_input_fr_2.csv")
 
 
 def test_feature_mapper(example_attr_1, example_attr_2):
