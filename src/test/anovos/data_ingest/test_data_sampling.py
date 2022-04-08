@@ -27,5 +27,7 @@ def test_data_sampling(test_sample):
     assert "label_1" in output_1.columns
     assert "label_2" in output_1.columns
     assert "label_3" in output_1.columns
-    assert output_1.filter(output_1["gender"] == "F").count() == 6
-    assert output_1.filter(output_1["gender"] == "M").count() == 3
+    assert output_1.filter(output_1["gender"] == "F").count() < 10
+    assert output_1.filter(output_1["gender"] == "F").count() > 4
+    assert output_1.filter(output_1["gender"] == "M").count() < 6
+    assert output_1.filter(output_1["gender"] == "M").count() > 2
