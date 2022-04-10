@@ -25,8 +25,9 @@ from pyspark.mllib.stat import Statistics
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
 from anovos.shared.utils import transpose_dataframe, attributeType_segregation
+from .validations import refactor_arguments
 
-
+@refactor_arguments
 def global_summary(spark, idf, list_of_cols="all", drop_cols=[], print_impact=False):
     """
     The global summary function computes the universal statistics/metrics and returns a Spark DataFrame
@@ -63,18 +64,6 @@ def global_summary(spark, idf, list_of_cols="all", drop_cols=[], print_impact=Fa
         [metric, value]
 
     """
-    if list_of_cols == "all":
-        list_of_cols = idf.columns
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
-
-    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
-
-    if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
-        raise TypeError("Invalid input for Column(s)")
-
     row_count = idf.count()
     col_count = len(list_of_cols)
     num_cols, cat_cols, other_cols = attributeType_segregation(idf.select(list_of_cols))
@@ -109,12 +98,11 @@ def global_summary(spark, idf, list_of_cols="all", drop_cols=[], print_impact=Fa
     )
     return odf
 
-
+@refactor_arguments
 def missingCount_computation(
     spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
 ):
     """
-
     Parameters
     ----------
     spark
@@ -144,19 +132,7 @@ def missingCount_computation(
         [attribute, missing_count, missing_pct]
 
     """
-    if list_of_cols == "all":
-        num_cols, cat_cols, other_cols = attributeType_segregation(idf)
-        list_of_cols = num_cols + cat_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
-
-    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
-
-    if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
-        raise TypeError("Invalid input for Column(s)")
-
+    
     idf_stats = idf.select(list_of_cols).summary("count")
     odf = (
         transpose_dataframe(idf_stats, "summary")
@@ -172,7 +148,7 @@ def missingCount_computation(
         odf.show(len(list_of_cols))
     return odf
 
-
+@refactor_arguments
 def nonzeroCount_computation(
     spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
 ):
@@ -207,19 +183,6 @@ def nonzeroCount_computation(
         [attribute, nonzero_count, nonzero_pct]
 
     """
-    num_cols = attributeType_segregation(idf)[0]
-    if list_of_cols == "all":
-        list_of_cols = num_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
-
-    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
-
-    if any(x not in num_cols for x in list_of_cols):
-        raise TypeError("Invalid input for Column(s)")
-
     if len(list_of_cols) == 0:
         warnings.warn(
             "No Non-Zero Count Computation - No numerical column(s) to analyze"
@@ -244,7 +207,7 @@ def nonzeroCount_computation(
         odf.show(len(list_of_cols))
     return odf
 
-
+@refactor_arguments
 def measures_of_counts(
     spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
 ):
@@ -289,20 +252,27 @@ def measures_of_counts(
         [attribute, fill_count, fill_pct, missing_count, missing_pct, nonzero_count, nonzero_pct]
 
     """
-    if list_of_cols == "all":
-        num_cols, cat_cols, other_cols = attributeType_segregation(idf)
-        list_of_cols = num_cols + cat_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
 
-    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
+    if len(list_of_cols) == 0:
+        warnings.warn(
+            "No Count Computation - No column(s) to analyze"
+        )
+        schema = T.StructType(
+            [
+                T.StructField("attribute", T.StringType(), True),
+                T.StructField("fill_count", T.StringType(), True),
+                T.StructField("fill_pct", T.StringType(), True),
+                T.StructField("missing_count", T.StringType(), True),
+                T.StructField("missing_pct", T.StringType(), True),
+                T.StructField("nonzero_count", T.StringType(), True),
+                T.StructField("nonzero_pct", T.StringType(), True),
+            ]
+        )
+        odf = spark.sparkContext.emptyRDD().toDF(schema)
+        return odf    
+    
+    
     num_cols = attributeType_segregation(idf.select(list_of_cols))[0]
-
-    if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
-        raise TypeError("Invalid input for Column(s)")
-
     odf = (
         transpose_dataframe(idf.select(list_of_cols).summary("count"), "summary")
         .select(
@@ -321,7 +291,7 @@ def measures_of_counts(
         odf.show(len(list_of_cols))
     return odf
 
-
+@refactor_arguments
 def mode_computation(spark, idf, list_of_cols="all", drop_cols=[], print_impact=False):
     """
 
@@ -355,21 +325,6 @@ def mode_computation(spark, idf, list_of_cols="all", drop_cols=[], print_impact=
         In case there is tie between multiple values, one value is randomly picked as mode.
 
     """
-    if list_of_cols == "all":
-        num_cols, cat_cols, other_cols = attributeType_segregation(idf)
-        list_of_cols = num_cols + cat_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
-
-    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
-    for i in idf.select(list_of_cols).dtypes:
-        if i[1] not in ("string", "int", "bigint", "long"):
-            list_of_cols.remove(i[0])
-
-    if any(x not in idf.columns for x in list_of_cols):
-        raise TypeError("Invalid input for Column(s)")
 
     if len(list_of_cols) == 0:
         warnings.warn("No Mode Computation - No discrete column(s) to analyze")
@@ -409,7 +364,7 @@ def mode_computation(spark, idf, list_of_cols="all", drop_cols=[], print_impact=
         odf.show(len(list_of_cols))
     return odf
 
-
+@refactor_arguments
 def measures_of_centralTendency(
     spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
 ):
@@ -455,20 +410,32 @@ def measures_of_centralTendency(
         [attribute, mean, median, mode, mode_rows, mode_pct]
 
     """
-
-    num_cols, cat_cols, other_cols = attributeType_segregation(idf)
-    if list_of_cols == "all":
-        list_of_cols = num_cols + cat_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
-
-    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
-
-    if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
-        raise TypeError("Invalid input for Column(s)")
-
+    
+    if len(list_of_cols) == 0:
+        warnings.warn(
+            "No Measures of Central Tendency Computation - No column(s) to analyze"
+        )
+        schema = T.StructType(
+            [
+                T.StructField("attribute", T.StringType(), True),
+                T.StructField("mean", T.StringType(), True),
+                T.StructField("median", T.StringType(), True),
+                T.StructField("mode", T.StringType(), True),
+                T.StructField("mode_rows", T.StringType(), True),
+                T.StructField("mode_pct", T.StringType(), True),
+            ]
+        )
+        odf = spark.sparkContext.emptyRDD().toDF(schema)
+        return odf   
+    
+    
+    num_cols = attributeType_segregation(idf.select(list_of_cols))[0]
+    discrete_cols = []
+    for i in idf.select(list_of_cols).dtypes:
+        if i[1] in ("string", "int", "bigint", "long"):
+            discrete_cols.append(i[0])
+    
+    
     odf = (
         transpose_dataframe(
             idf.select(list_of_cols).summary("mean", "50%", "count"), "summary"
@@ -488,7 +455,7 @@ def measures_of_centralTendency(
             ).otherwise(None),
         )
         .withColumnRenamed("key", "attribute")
-        .join(mode_computation(spark, idf, list_of_cols), "attribute", "full_outer")
+        .join(mode_computation(spark, idf, discrete_cols), "attribute", "full_outer")
         .withColumn(
             "mode_pct",
             F.round(F.col("mode_rows") / F.col("count").cast(T.DoubleType()), 4),
@@ -500,7 +467,7 @@ def measures_of_centralTendency(
         odf.show(len(list_of_cols))
     return odf
 
-
+@refactor_arguments
 def uniqueCount_computation(
     spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
 ):
@@ -535,20 +502,6 @@ def uniqueCount_computation(
         [attribute, unique_values]
 
     """
-    if list_of_cols == "all":
-        list_of_cols = []
-        for i in idf.dtypes:
-            if i[1] in ("string", "int", "bigint", "long"):
-                list_of_cols.append(i[0])
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
-
-    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
-
-    if any(x not in idf.columns for x in list_of_cols):
-        raise TypeError("Invalid input for Column(s)")
 
     if len(list_of_cols) == 0:
         warnings.warn("No Unique Count Computation - No discrete column(s) to analyze")
@@ -572,7 +525,7 @@ def uniqueCount_computation(
         odf.show(len(list_of_cols))
     return odf
 
-
+@refactor_arguments
 def measures_of_cardinality(
     spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
 ):
@@ -616,20 +569,6 @@ def measures_of_cardinality(
         [attribute, unique_values, IDness]
 
     """
-    if list_of_cols == "all":
-        list_of_cols = []
-        for i in idf.dtypes:
-            if i[1] in ("string", "int", "bigint", "long"):
-                list_of_cols.append(i[0])
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
-
-    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
-
-    if any(x not in idf.columns for x in list_of_cols):
-        raise TypeError("Invalid input for Column(s)")
 
     if len(list_of_cols) == 0:
         warnings.warn("No Cardinality Computation - No discrete column(s) to analyze")
@@ -663,7 +602,7 @@ def measures_of_cardinality(
         odf.show(len(list_of_cols))
     return odf
 
-
+@refactor_arguments
 def measures_of_dispersion(
     spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
 ):
@@ -712,18 +651,7 @@ def measures_of_dispersion(
         [attribute, stddev, variance, cov, IQR, range]
 
     """
-    num_cols = attributeType_segregation(idf)[0]
-    if list_of_cols == "all":
-        list_of_cols = num_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
 
-    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
-
-    if any(x not in num_cols for x in list_of_cols):
-        raise TypeError("Invalid input for Column(s)")
     if len(list_of_cols) == 0:
         warnings.warn("No Dispersion Computation - No numerical column(s) to analyze")
         schema = T.StructType(
@@ -759,7 +687,7 @@ def measures_of_dispersion(
         odf.show(len(list_of_cols))
     return odf
 
-
+@refactor_arguments
 def measures_of_percentiles(
     spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
 ):
@@ -801,18 +729,7 @@ def measures_of_percentiles(
         [attribute, min, 1%, 5%, 10%, 25%, 50%, 75%, 90%, 95%, 99%, max]
 
     """
-    num_cols = attributeType_segregation(idf)[0]
-    if list_of_cols == "all":
-        list_of_cols = num_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
-
-    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
-
-    if any(x not in num_cols for x in list_of_cols):
-        raise TypeError("Invalid input for Column(s)")
+ 
     if len(list_of_cols) == 0:
         warnings.warn("No Percentiles Computation - No numerical column(s) to analyze")
         schema = T.StructType(
@@ -846,7 +763,7 @@ def measures_of_percentiles(
         odf.show(len(list_of_cols))
     return odf
 
-
+@refactor_arguments
 def measures_of_shape(spark, idf, list_of_cols="all", drop_cols=[], print_impact=False):
     """
     The Measures of Shapes function provides statistics related to the shape of an attribute's distribution.
@@ -895,18 +812,6 @@ def measures_of_shape(spark, idf, list_of_cols="all", drop_cols=[], print_impact
 
     """
 
-    num_cols = attributeType_segregation(idf)[0]
-    if list_of_cols == "all":
-        list_of_cols = num_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
-
-    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
-
-    if any(x not in num_cols for x in list_of_cols):
-        raise TypeError("Invalid input for Column(s)")
     if len(list_of_cols) == 0:
         warnings.warn(
             "No Skewness/Kurtosis Computation - No numerical column(s) to analyze"

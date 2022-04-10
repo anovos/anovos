@@ -14,8 +14,9 @@ and perform some basic ETL actions such as selecting, deleting, renaming and/or 
 import pyspark.sql.functions as F
 from pyspark.sql import DataFrame
 from anovos.shared.utils import pairwise_reduce
+from .validations import refactor_arguments
 
-
+@refactor_arguments
 def read_dataset(spark, file_path, file_type, file_configs={}):
     """
     This function reads the input data path and return a Spark DataFrame. Under the hood, this function is based
@@ -47,6 +48,7 @@ def read_dataset(spark, file_path, file_type, file_configs={}):
     return odf
 
 
+@refactor_arguments
 def write_dataset(idf, file_path, file_type, file_configs={}, column_order=[]):
     """
     This function saves the Spark DataFrame in the user-provided output path. Like read_dataset, this function is
@@ -76,23 +78,7 @@ def write_dataset(idf, file_path, file_type, file_configs={}, column_order=[]):
         list of columns in the order in which Dataframe is to be written. If None or [] is specified, then the default order is applied.
 
     """
-
-    if not column_order:
-        column_order = idf.columns
-    else:
-        if not isinstance(column_order, list):
-            raise TypeError("Invalid input type for column_order argument")
-        if len(column_order) != len(idf.columns):
-            raise ValueError(
-                "Count of column(s) specified in column_order argument do not match Dataframe"
-            )
-        diff_cols = [x for x in column_order if x not in set(idf.columns)]
-        if diff_cols:
-            raise ValueError(
-                "Column(s) specified in column_order argument not found in Dataframe: "
-                + str(diff_cols)
-            )
-
+    
     mode = file_configs["mode"] if "mode" in file_configs else "error"
     repartition = (
         int(file_configs["repartition"]) if "repartition" in file_configs else None
@@ -115,6 +101,7 @@ def write_dataset(idf, file_path, file_type, file_configs={}, column_order=[]):
             ).options(**file_configs).save(file_path, mode=mode)
 
 
+@refactor_arguments
 def concatenate_dataset(*idfs, method_type="name"):
     """
     This function combines multiple dataframes into a single dataframe. A pairwise concatenation is performed on
@@ -139,8 +126,6 @@ def concatenate_dataset(*idfs, method_type="name"):
         Concatenated dataframe
 
     """
-    if method_type not in ["index", "name"]:
-        raise TypeError("Invalid input for concatenate_dataset method")
     if method_type == "name":
         odf = pairwise_reduce(
             lambda idf1, idf2: idf1.union(idf2.select(idf1.columns)), idfs
@@ -149,7 +134,7 @@ def concatenate_dataset(*idfs, method_type="name"):
         odf = pairwise_reduce(DataFrame.union, idfs)
     return odf
 
-
+@refactor_arguments
 def join_dataset(*idfs, join_cols, join_type):
     """
     This function joins multiple dataframes into a single dataframe by joining key column(s). For optimization, Pairwise joining is
@@ -173,29 +158,13 @@ def join_dataset(*idfs, join_cols, join_type):
         Joined dataframe
 
     """
-    if isinstance(join_cols, str):
-        join_cols = [x.strip() for x in join_cols.split("|")]
-
-    list_of_df_cols = [x.columns for x in idfs]
-    list_of_all_cols = [x for sublist in list_of_df_cols for x in sublist]
-    list_of_nonjoin_cols = [x for x in list_of_all_cols if x not in join_cols]
-
-    if len(list_of_nonjoin_cols) != (
-        len(list_of_all_cols) - (len(list_of_df_cols) * len(join_cols))
-    ):
-        raise ValueError("Specified join_cols do not match all the Input Dataframe(s)")
-
-    if len(list_of_nonjoin_cols) != len(set(list_of_nonjoin_cols)):
-        raise ValueError(
-            "Duplicate column(s) present in non joining column(s) in Input Dataframe(s)"
-        )
-
+    
     odf = pairwise_reduce(
         lambda idf1, idf2: idf1.join(idf2, join_cols, join_type), idfs
     )
     return odf
 
-
+@refactor_arguments
 def delete_column(idf, list_of_cols, print_impact=False):
     """
     This function is used to delete specific columns from the input data. It is executed using drop functionality
@@ -220,10 +189,7 @@ def delete_column(idf, list_of_cols, print_impact=False):
         Dataframe after dropping columns
 
     """
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    list_of_cols = list(set(list_of_cols))
-
+    
     odf = idf.drop(*list_of_cols)
 
     if print_impact:
@@ -233,7 +199,7 @@ def delete_column(idf, list_of_cols, print_impact=False):
         print(odf.columns)
     return odf
 
-
+@refactor_arguments
 def select_column(idf, list_of_cols, print_impact=False):
     """
     This function is used to select specific columns from the input data. It is executed using select operation of
@@ -258,10 +224,6 @@ def select_column(idf, list_of_cols, print_impact=False):
         Dataframe with the selected columns
 
     """
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    list_of_cols = list(set(list_of_cols))
-
     odf = idf.select(list_of_cols)
 
     if print_impact:
@@ -271,7 +233,7 @@ def select_column(idf, list_of_cols, print_impact=False):
         print(odf.columns)
     return odf
 
-
+@refactor_arguments
 def rename_column(idf, list_of_cols, list_of_newcols, print_impact=False):
     """
     This function is used to rename the columns of the input data. Multiple columns can be renamed; however,
@@ -301,11 +263,6 @@ def rename_column(idf, list_of_cols, list_of_newcols, print_impact=False):
         Dataframe with revised column names
 
     """
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(list_of_newcols, str):
-        list_of_newcols = [x.strip() for x in list_of_newcols.split("|")]
-
     mapping = dict(zip(list_of_cols, list_of_newcols))
     odf = idf.select([F.col(i).alias(mapping.get(i, i)) for i in idf.columns])
 
@@ -316,7 +273,7 @@ def rename_column(idf, list_of_cols, list_of_newcols, print_impact=False):
         print(odf.columns)
     return odf
 
-
+@refactor_arguments
 def recast_column(idf, list_of_cols, list_of_dtypes, print_impact=False):
     """
     This function is used to modify the datatype of columns. Multiple columns can be cast; however,
@@ -348,11 +305,6 @@ def recast_column(idf, list_of_cols, list_of_dtypes, print_impact=False):
         Dataframe with revised datatypes
 
     """
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(list_of_dtypes, str):
-        list_of_dtypes = [x.strip() for x in list_of_dtypes.split("|")]
-
     odf = idf
     for i, j in zip(list_of_cols, list_of_dtypes):
         odf = odf.withColumn(i, F.col(i).cast(j))

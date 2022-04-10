@@ -41,6 +41,9 @@ from anovos.shared.utils import (
 )
 
 
+from .validations import refactor_arguments
+
+@refactor_arguments
 def duplicate_detection(
     spark, idf, list_of_cols="all", drop_cols=[], treatment=False, print_impact=False
 ):
@@ -87,24 +90,19 @@ def duplicate_detection(
         number of duplicate rows and percentage of duplicate rows in total.
 
     """
-    if list_of_cols == "all":
-        num_cols, cat_cols, other_cols = attributeType_segregation(idf)
-        list_of_cols = num_cols + cat_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
 
-    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
+    if len(list_of_cols) == 0:
+        warnings.warn("No Duplicate Detection - No column(s) to analyze")
+        odf = idf
+        schema = T.StructType(
+            [
+                T.StructField("metric", T.StringType(), True),
+                T.StructField("value", T.StringType(), True),
+            ]
+        )
+        odf_print = spark.sparkContext.emptyRDD().toDF(schema)
+        return odf, odf_print
 
-    if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
-        raise TypeError("Invalid input for Column(s)")
-    if str(treatment).lower() == "true":
-        treatment = True
-    elif str(treatment).lower() == "false":
-        treatment = False
-    else:
-        raise TypeError("Non-Boolean input for treatment")
 
     odf_tmp = idf.drop_duplicates(subset=list_of_cols)
     odf = odf_tmp if treatment else idf
@@ -129,7 +127,7 @@ def duplicate_detection(
 
     return odf, odf_print
 
-
+@refactor_arguments
 def nullRows_detection(
     spark,
     idf,
@@ -202,33 +200,8 @@ def nullRows_detection(
 
     """
 
-    if list_of_cols == "all":
-        num_cols, cat_cols, other_cols = attributeType_segregation(idf)
-        list_of_cols = num_cols + cat_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
-
-    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
-
-    if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
-        raise TypeError("Invalid input for Column(s)")
-
-    if str(treatment).lower() == "true":
-        treatment = True
-    elif str(treatment).lower() == "false":
-        treatment = False
-    else:
-        raise TypeError("Non-Boolean input for treatment")
-
-    treatment_threshold = float(treatment_threshold)
-    if (treatment_threshold < 0) | (treatment_threshold > 1):
-        raise TypeError("Invalid input for Treatment Threshold Value")
-
     def null_count(*cols):
         return cols.count(None)
-
     f_null_count = F.udf(null_count, T.LongType())
 
     odf_tmp = idf.withColumn("null_cols_count", f_null_count(*list_of_cols)).withColumn(
@@ -264,6 +237,7 @@ def nullRows_detection(
     return odf, odf_print
 
 
+@refactor_arguments
 def nullColumns_detection(
     spark,
     idf,
@@ -373,25 +347,13 @@ def nullColumns_detection(
             "attribute", "missing_count", "missing_pct"
         )
 
-    missing_cols = (
+    if list_of_cols == "missing":
+        missing_cols = (
         odf_print.where(F.col("missing_count") > 0)
         .select("attribute")
         .rdd.flatMap(lambda x: x)
-        .collect()
-    )
-
-    if list_of_cols == "all":
-        num_cols, cat_cols, other_cols = attributeType_segregation(idf)
-        list_of_cols = num_cols + cat_cols
-
-    if list_of_cols == "missing":
-        list_of_cols = missing_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
-
-    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
+        .collect())
+        list_of_cols = list(set([e for e in missing_cols if e not in drop_cols]))
 
     if len(list_of_cols) == 0:
         warnings.warn("No Null Detection - No column(s) to analyze")
@@ -406,36 +368,10 @@ def nullColumns_detection(
         odf_print = spark.sparkContext.emptyRDD().toDF(schema)
         return odf, odf_print
 
-    if any(x not in idf.columns for x in list_of_cols):
-        raise TypeError("Invalid input for Column(s)")
-
-    if str(treatment).lower() == "true":
-        treatment = True
-    elif str(treatment).lower() == "false":
-        treatment = False
-    else:
-        raise TypeError("Non-Boolean input for treatment")
-    if treatment_method not in (
-        "MMM",
-        "row_removal",
-        "column_removal",
-        "KNN",
-        "regression",
-        "MF",
-        "auto",
-    ):
-        raise TypeError("Invalid input for method_type")
-
-    treatment_threshold = treatment_configs.pop("treatment_threshold", None)
-    if treatment_threshold:
-        treatment_threshold = float(treatment_threshold)
-    else:
-        if treatment_method == "column_removal":
-            raise TypeError("Invalid input for column removal threshold")
-
     odf_print = odf_print.where(F.col("attribute").isin(list_of_cols))
 
     if treatment:
+        treatment_threshold = treatment_configs.pop("treatment_threshold", None)
         if treatment_threshold:
             threshold_cols = (
                 odf_print.where(F.col("attribute").isin(list_of_cols))
@@ -503,7 +439,7 @@ def nullColumns_detection(
 
             if treatment_threshold:
                 list_of_cols = threshold_cols
-            list_of_cols = [e for e in list_of_cols if e in num_cols]
+            list_of_cols = attributeType_segregation(idf.select(list_of_cols))[0]
             func_mapping = {
                 "KNN": imputation_sklearn,
                 "regression": imputation_sklearn,
@@ -528,6 +464,7 @@ def nullColumns_detection(
     return odf, odf_print
 
 
+@refactor_arguments
 def outlier_detection(
     spark,
     idf,
@@ -652,27 +589,7 @@ def outlier_detection(
         upper_outliers is outlier count in the upper spectrum.
 
     """
-
-    num_cols = attributeType_segregation(idf)[0]
-    if len(num_cols) == 0:
-        warnings.warn("No Outlier Check - No numerical column(s) to analyse")
-        odf = idf
-        schema = T.StructType(
-            [
-                T.StructField("attribute", T.StringType(), True),
-                T.StructField("lower_outliers", T.StringType(), True),
-                T.StructField("upper_outliers", T.StringType(), True),
-            ]
-        )
-        odf_print = spark.sparkContext.emptyRDD().toDF(schema)
-        return odf, odf_print
-    if list_of_cols == "all":
-        list_of_cols = num_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
-
+    
     if stats_unique == {}:
         remove_cols = (
             uniqueCount_computation(spark, idf, list_of_cols)
@@ -691,33 +608,22 @@ def outlier_detection(
         )
 
     list_of_cols = list(
-        set([e for e in list_of_cols if e not in (drop_cols + remove_cols)])
+        set([e for e in list_of_cols if e not in remove_cols])
     )
 
-    if any(x not in num_cols for x in list_of_cols):
-        raise TypeError("Invalid input for Column(s)")
-    if detection_side not in ("upper", "lower", "both"):
-        raise TypeError("Invalid input for detection_side")
-    if treatment_method not in ("null_replacement", "row_removal", "value_replacement"):
-        raise TypeError("Invalid input for treatment_method")
-    if output_mode not in ("replace", "append"):
-        raise TypeError("Invalid input for output_mode")
-    if str(treatment).lower() == "true":
-        treatment = True
-    elif str(treatment).lower() == "false":
-        treatment = False
-    else:
-        raise TypeError("Non-Boolean input for treatment")
-    if str(pre_existing_model).lower() == "true":
-        pre_existing_model = True
-    elif str(pre_existing_model).lower() == "false":
-        pre_existing_model = False
-    else:
-        raise TypeError("Non-Boolean input for pre_existing_model")
-    for arg in ["pctile_lower", "pctile_upper"]:
-        if arg in detection_configs:
-            if (detection_configs[arg] < 0) | (detection_configs[arg] > 1):
-                raise TypeError("Invalid input for " + arg)
+    if len(list_of_cols) == 0:
+        warnings.warn("No Outlier Check - No numerical column(s) to analyse")
+        odf = idf
+        schema = T.StructType(
+            [
+                T.StructField("attribute", T.StringType(), True),
+                T.StructField("lower_outliers", T.StringType(), True),
+                T.StructField("upper_outliers", T.StringType(), True),
+            ]
+        )
+        odf_print = spark.sparkContext.emptyRDD().toDF(schema)
+        return odf, odf_print
+
 
     recast_cols = []
     recast_type = []
@@ -901,7 +807,7 @@ def outlier_detection(
 
     return odf, odf_print
 
-
+@refactor_arguments
 def IDness_detection(
     spark,
     idf,
@@ -968,23 +874,6 @@ def IDness_detection(
         A column is flagged 1 if IDness is above the threshold, else 0.
     """
 
-    if list_of_cols == "all":
-        num_cols, cat_cols, other_cols = attributeType_segregation(idf)
-        list_of_cols = num_cols + cat_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
-
-    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
-
-    for i in idf.select(list_of_cols).dtypes:
-        if i[1] not in ("string", "int", "bigint", "long"):
-            list_of_cols.remove(i[0])
-
-    if any(x not in idf.columns for x in list_of_cols):
-        raise TypeError("Invalid input for Column(s)")
-
     if len(list_of_cols) == 0:
         warnings.warn("No IDness Check - No discrete column(s) to analyze")
         odf = idf
@@ -998,15 +887,7 @@ def IDness_detection(
         )
         odf_print = spark.sparkContext.emptyRDD().toDF(schema)
         return odf, odf_print
-    treatment_threshold = float(treatment_threshold)
-    if (treatment_threshold < 0) | (treatment_threshold > 1):
-        raise TypeError("Invalid input for Treatment Threshold Value")
-    if str(treatment).lower() == "true":
-        treatment = True
-    elif str(treatment).lower() == "false":
-        treatment = False
-    else:
-        raise TypeError("Non-Boolean input for treatment")
+    
 
     if stats_unique == {}:
         odf_print = measures_of_cardinality(spark, idf, list_of_cols)
@@ -1038,7 +919,7 @@ def IDness_detection(
 
     return odf, odf_print
 
-
+@refactor_arguments
 def biasedness_detection(
     spark,
     idf,
@@ -1106,23 +987,6 @@ def biasedness_detection(
         A column is flagged 1 if mode_pct is above the threshold else 0.
     """
 
-    if list_of_cols == "all":
-        num_cols, cat_cols, other_cols = attributeType_segregation(idf)
-        list_of_cols = num_cols + cat_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
-
-    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
-
-    for i in idf.select(list_of_cols).dtypes:
-        if i[1] not in ("string", "int", "bigint", "long"):
-            list_of_cols.remove(i[0])
-
-    if any(x not in idf.columns for x in list_of_cols):
-        raise TypeError("Invalid input for Column(s)")
-
     if len(list_of_cols) == 0:
         warnings.warn("No biasedness Check - No discrete column(s) to analyze")
         odf = idf
@@ -1137,15 +1001,7 @@ def biasedness_detection(
         )
         odf_print = spark.sparkContext.emptyRDD().toDF(schema)
         return odf, odf_print
-
-    if (treatment_threshold < 0) | (treatment_threshold > 1):
-        raise TypeError("Invalid input for Treatment Threshold Value")
-    if str(treatment).lower() == "true":
-        treatment = True
-    elif str(treatment).lower() == "false":
-        treatment = False
-    else:
-        raise TypeError("Non-Boolean input for treatment")
+    
 
     if stats_mode == {}:
         odf_print = (
@@ -1195,7 +1051,7 @@ def biasedness_detection(
 
     return odf, odf_print
 
-
+@refactor_arguments
 def invalidEntries_detection(
     spark,
     idf,
@@ -1310,21 +1166,6 @@ def invalidEntries_detection(
 
     """
 
-    if list_of_cols == "all":
-        list_of_cols = []
-        for i in idf.dtypes:
-            if i[1] in ("string", "int", "bigint", "long"):
-                list_of_cols.append(i[0])
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
-
-    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
-
-    if any(x not in idf.columns for x in list_of_cols):
-        raise TypeError("Invalid input for Column(s)")
-
     if len(list_of_cols) == 0:
         warnings.warn("No Invalid Entries Check - No discrete column(s) to analyze")
         odf = idf
@@ -1339,24 +1180,6 @@ def invalidEntries_detection(
         odf_print = spark.sparkContext.emptyRDD().toDF(schema)
         return odf, odf_print
 
-    if output_mode not in ("replace", "append"):
-        raise TypeError("Invalid input for output_mode")
-    if str(treatment).lower() == "true":
-        treatment = True
-    elif str(treatment).lower() == "false":
-        treatment = False
-    else:
-        raise TypeError("Non-Boolean input for treatment")
-
-    if treatment_method not in ("MMM", "null_replacement", "column_removal"):
-        raise TypeError("Invalid input for method_type")
-
-    treatment_threshold = treatment_configs.pop("treatment_threshold", None)
-    if treatment_threshold:
-        treatment_threshold = float(treatment_threshold)
-    else:
-        if treatment_method == "column_removal":
-            raise TypeError("Invalid input for column removal threshold")
 
     null_vocab = [
         "",
@@ -1491,6 +1314,7 @@ def invalidEntries_detection(
     )
 
     if treatment:
+        treatment_threshold = treatment_configs.pop("treatment_threshold", None)
         if treatment_threshold:
             threshold_cols = (
                 odf_print.where(F.col("attribute").isin(list_of_cols))
