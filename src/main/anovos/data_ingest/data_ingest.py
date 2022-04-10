@@ -16,6 +16,7 @@ from pyspark.sql import DataFrame
 from anovos.shared.utils import pairwise_reduce
 from .validations import refactor_arguments
 
+
 @refactor_arguments
 def read_dataset(spark, file_path, file_type, file_configs={}):
     """
@@ -78,7 +79,7 @@ def write_dataset(idf, file_path, file_type, file_configs={}, column_order=[]):
         list of columns in the order in which Dataframe is to be written. If None or [] is specified, then the default order is applied.
 
     """
-    
+
     mode = file_configs["mode"] if "mode" in file_configs else "error"
     repartition = (
         int(file_configs["repartition"]) if "repartition" in file_configs else None
@@ -134,6 +135,7 @@ def concatenate_dataset(*idfs, method_type="name"):
         odf = pairwise_reduce(DataFrame.union, idfs)
     return odf
 
+
 @refactor_arguments
 def join_dataset(*idfs, join_cols, join_type):
     """
@@ -158,11 +160,12 @@ def join_dataset(*idfs, join_cols, join_type):
         Joined dataframe
 
     """
-    
+
     odf = pairwise_reduce(
         lambda idf1, idf2: idf1.join(idf2, join_cols, join_type), idfs
     )
     return odf
+
 
 @refactor_arguments
 def delete_column(idf, list_of_cols, print_impact=False):
@@ -189,7 +192,7 @@ def delete_column(idf, list_of_cols, print_impact=False):
         Dataframe after dropping columns
 
     """
-    
+
     odf = idf.drop(*list_of_cols)
 
     if print_impact:
@@ -198,6 +201,7 @@ def delete_column(idf, list_of_cols, print_impact=False):
         print("After: \nNo. of Columns- ", len(odf.columns))
         print(odf.columns)
     return odf
+
 
 @refactor_arguments
 def select_column(idf, list_of_cols, print_impact=False):
@@ -232,6 +236,7 @@ def select_column(idf, list_of_cols, print_impact=False):
         print("\nAfter: \nNo. of Columns-", len(odf.columns))
         print(odf.columns)
     return odf
+
 
 @refactor_arguments
 def rename_column(idf, list_of_cols, list_of_newcols, print_impact=False):
@@ -272,6 +277,7 @@ def rename_column(idf, list_of_cols, list_of_newcols, print_impact=False):
         print("After: \nNo. of Columns- ", len(odf.columns))
         print(odf.columns)
     return odf
+
 
 @refactor_arguments
 def recast_column(idf, list_of_cols, list_of_dtypes, print_impact=False):

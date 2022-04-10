@@ -32,6 +32,7 @@ from anovos.shared.utils import attributeType_segregation
 
 from .validations import refactor_arguments
 
+
 @refactor_arguments
 def correlation_matrix(
     spark, idf, list_of_cols="all", drop_cols=[], stats_unique={}, print_impact=False
@@ -108,14 +109,10 @@ def correlation_matrix(
             .collect()
         )
 
-    list_of_cols = list(
-        set([e for e in list_of_cols if e not in remove_cols])
-    )
+    list_of_cols = list(set([e for e in list_of_cols if e not in remove_cols]))
 
     if len(list_of_cols) == 0:
-        warnings.warn(
-            "No Correlation Matrix - No column(s) to analyze"
-        )
+        warnings.warn("No Correlation Matrix - No column(s) to analyze")
         return None
 
     combis = [list(c) for c in itertools.combinations_with_replacement(list_of_cols, 2)]
@@ -226,9 +223,7 @@ def variable_clustering(
     list_of_cols = [e for e in list_of_cols if e not in remove_cols]
 
     if len(list_of_cols) == 0:
-        warnings.warn(
-            "No Variable Clustering - No column(s) to analyze"
-        )
+        warnings.warn("No Variable Clustering - No column(s) to analyze")
         schema = T.StructType(
             [
                 T.StructField("Cluster", T.StringType(), True),
@@ -238,7 +233,6 @@ def variable_clustering(
         )
         odf = spark.sparkContext.emptyRDD().toDF(schema)
         return odf
-
 
     idf_sample = idf_sample.select(list_of_cols)
     num_cols, cat_cols, other_cols = attributeType_segregation(idf_sample)
@@ -264,6 +258,7 @@ def variable_clustering(
     if print_impact:
         odf.show(odf.count())
     return odf
+
 
 @refactor_arguments
 def IV_calculation(
@@ -339,9 +334,7 @@ def IV_calculation(
     """
 
     if len(list_of_cols) == 0:
-        warnings.warn(
-            "No Information Value Calculation - No column(s) to analyze"
-        )
+        warnings.warn("No Information Value Calculation - No column(s) to analyze")
         schema = T.StructType(
             [
                 T.StructField("attribute", T.StringType(), True),
@@ -404,6 +397,7 @@ def IV_calculation(
         odf.show(odf.count())
 
     return odf
+
 
 @refactor_arguments
 def IG_calculation(
@@ -476,9 +470,7 @@ def IG_calculation(
     """
 
     if len(list_of_cols) == 0:
-        warnings.warn(
-            "No Information Gain Calculation - No column(s) to analyze"
-        )
+        warnings.warn("No Information Gain Calculation - No column(s) to analyze")
         schema = T.StructType(
             [
                 T.StructField("attribute", T.StringType(), True),

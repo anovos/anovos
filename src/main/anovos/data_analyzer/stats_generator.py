@@ -27,6 +27,7 @@ from pyspark.sql import types as T
 from anovos.shared.utils import transpose_dataframe, attributeType_segregation
 from .validations import refactor_arguments
 
+
 @refactor_arguments
 def global_summary(spark, idf, list_of_cols="all", drop_cols=[], print_impact=False):
     """
@@ -98,6 +99,7 @@ def global_summary(spark, idf, list_of_cols="all", drop_cols=[], print_impact=Fa
     )
     return odf
 
+
 @refactor_arguments
 def missingCount_computation(
     spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
@@ -132,7 +134,7 @@ def missingCount_computation(
         [attribute, missing_count, missing_pct]
 
     """
-    
+
     idf_stats = idf.select(list_of_cols).summary("count")
     odf = (
         transpose_dataframe(idf_stats, "summary")
@@ -147,6 +149,7 @@ def missingCount_computation(
     if print_impact:
         odf.show(len(list_of_cols))
     return odf
+
 
 @refactor_arguments
 def nonzeroCount_computation(
@@ -207,6 +210,7 @@ def nonzeroCount_computation(
         odf.show(len(list_of_cols))
     return odf
 
+
 @refactor_arguments
 def measures_of_counts(
     spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
@@ -254,9 +258,7 @@ def measures_of_counts(
     """
 
     if len(list_of_cols) == 0:
-        warnings.warn(
-            "No Count Computation - No column(s) to analyze"
-        )
+        warnings.warn("No Count Computation - No column(s) to analyze")
         schema = T.StructType(
             [
                 T.StructField("attribute", T.StringType(), True),
@@ -269,9 +271,8 @@ def measures_of_counts(
             ]
         )
         odf = spark.sparkContext.emptyRDD().toDF(schema)
-        return odf    
-    
-    
+        return odf
+
     num_cols = attributeType_segregation(idf.select(list_of_cols))[0]
     odf = (
         transpose_dataframe(idf.select(list_of_cols).summary("count"), "summary")
@@ -290,6 +291,7 @@ def measures_of_counts(
     if print_impact:
         odf.show(len(list_of_cols))
     return odf
+
 
 @refactor_arguments
 def mode_computation(spark, idf, list_of_cols="all", drop_cols=[], print_impact=False):
@@ -364,6 +366,7 @@ def mode_computation(spark, idf, list_of_cols="all", drop_cols=[], print_impact=
         odf.show(len(list_of_cols))
     return odf
 
+
 @refactor_arguments
 def measures_of_centralTendency(
     spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
@@ -410,7 +413,7 @@ def measures_of_centralTendency(
         [attribute, mean, median, mode, mode_rows, mode_pct]
 
     """
-    
+
     if len(list_of_cols) == 0:
         warnings.warn(
             "No Measures of Central Tendency Computation - No column(s) to analyze"
@@ -426,16 +429,14 @@ def measures_of_centralTendency(
             ]
         )
         odf = spark.sparkContext.emptyRDD().toDF(schema)
-        return odf   
-    
-    
+        return odf
+
     num_cols = attributeType_segregation(idf.select(list_of_cols))[0]
     discrete_cols = []
     for i in idf.select(list_of_cols).dtypes:
         if i[1] in ("string", "int", "bigint", "long"):
             discrete_cols.append(i[0])
-    
-    
+
     odf = (
         transpose_dataframe(
             idf.select(list_of_cols).summary("mean", "50%", "count"), "summary"
@@ -466,6 +467,7 @@ def measures_of_centralTendency(
     if print_impact:
         odf.show(len(list_of_cols))
     return odf
+
 
 @refactor_arguments
 def uniqueCount_computation(
@@ -524,6 +526,7 @@ def uniqueCount_computation(
     if print_impact:
         odf.show(len(list_of_cols))
     return odf
+
 
 @refactor_arguments
 def measures_of_cardinality(
@@ -601,6 +604,7 @@ def measures_of_cardinality(
     if print_impact:
         odf.show(len(list_of_cols))
     return odf
+
 
 @refactor_arguments
 def measures_of_dispersion(
@@ -687,6 +691,7 @@ def measures_of_dispersion(
         odf.show(len(list_of_cols))
     return odf
 
+
 @refactor_arguments
 def measures_of_percentiles(
     spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
@@ -729,7 +734,7 @@ def measures_of_percentiles(
         [attribute, min, 1%, 5%, 10%, 25%, 50%, 75%, 90%, 95%, 99%, max]
 
     """
- 
+
     if len(list_of_cols) == 0:
         warnings.warn("No Percentiles Computation - No numerical column(s) to analyze")
         schema = T.StructType(
@@ -762,6 +767,7 @@ def measures_of_percentiles(
     if print_impact:
         odf.show(len(list_of_cols))
     return odf
+
 
 @refactor_arguments
 def measures_of_shape(spark, idf, list_of_cols="all", drop_cols=[], print_impact=False):

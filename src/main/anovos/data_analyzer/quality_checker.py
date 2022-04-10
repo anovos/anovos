@@ -43,6 +43,7 @@ from anovos.shared.utils import (
 
 from .validations import refactor_arguments
 
+
 @refactor_arguments
 def duplicate_detection(
     spark, idf, list_of_cols="all", drop_cols=[], treatment=False, print_impact=False
@@ -103,7 +104,6 @@ def duplicate_detection(
         odf_print = spark.sparkContext.emptyRDD().toDF(schema)
         return odf, odf_print
 
-
     odf_tmp = idf.drop_duplicates(subset=list_of_cols)
     odf = odf_tmp if treatment else idf
 
@@ -126,6 +126,7 @@ def duplicate_detection(
         )
 
     return odf, odf_print
+
 
 @refactor_arguments
 def nullRows_detection(
@@ -202,6 +203,7 @@ def nullRows_detection(
 
     def null_count(*cols):
         return cols.count(None)
+
     f_null_count = F.udf(null_count, T.LongType())
 
     odf_tmp = idf.withColumn("null_cols_count", f_null_count(*list_of_cols)).withColumn(
@@ -349,10 +351,11 @@ def nullColumns_detection(
 
     if list_of_cols == "missing":
         missing_cols = (
-        odf_print.where(F.col("missing_count") > 0)
-        .select("attribute")
-        .rdd.flatMap(lambda x: x)
-        .collect())
+            odf_print.where(F.col("missing_count") > 0)
+            .select("attribute")
+            .rdd.flatMap(lambda x: x)
+            .collect()
+        )
         list_of_cols = list(set([e for e in missing_cols if e not in drop_cols]))
 
     if len(list_of_cols) == 0:
@@ -589,7 +592,7 @@ def outlier_detection(
         upper_outliers is outlier count in the upper spectrum.
 
     """
-    
+
     if stats_unique == {}:
         remove_cols = (
             uniqueCount_computation(spark, idf, list_of_cols)
@@ -607,9 +610,7 @@ def outlier_detection(
             .collect()
         )
 
-    list_of_cols = list(
-        set([e for e in list_of_cols if e not in remove_cols])
-    )
+    list_of_cols = list(set([e for e in list_of_cols if e not in remove_cols]))
 
     if len(list_of_cols) == 0:
         warnings.warn("No Outlier Check - No numerical column(s) to analyse")
@@ -623,7 +624,6 @@ def outlier_detection(
         )
         odf_print = spark.sparkContext.emptyRDD().toDF(schema)
         return odf, odf_print
-
 
     recast_cols = []
     recast_type = []
@@ -807,6 +807,7 @@ def outlier_detection(
 
     return odf, odf_print
 
+
 @refactor_arguments
 def IDness_detection(
     spark,
@@ -887,7 +888,6 @@ def IDness_detection(
         )
         odf_print = spark.sparkContext.emptyRDD().toDF(schema)
         return odf, odf_print
-    
 
     if stats_unique == {}:
         odf_print = measures_of_cardinality(spark, idf, list_of_cols)
@@ -918,6 +918,7 @@ def IDness_detection(
             print("Removed Columns: ", remove_cols)
 
     return odf, odf_print
+
 
 @refactor_arguments
 def biasedness_detection(
@@ -1001,7 +1002,6 @@ def biasedness_detection(
         )
         odf_print = spark.sparkContext.emptyRDD().toDF(schema)
         return odf, odf_print
-    
 
     if stats_mode == {}:
         odf_print = (
@@ -1050,6 +1050,7 @@ def biasedness_detection(
             print("Removed Columns: ", remove_cols)
 
     return odf, odf_print
+
 
 @refactor_arguments
 def invalidEntries_detection(
@@ -1179,7 +1180,6 @@ def invalidEntries_detection(
         )
         odf_print = spark.sparkContext.emptyRDD().toDF(schema)
         return odf, odf_print
-
 
     null_vocab = [
         "",
