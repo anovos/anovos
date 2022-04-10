@@ -188,7 +188,10 @@ def timestamp_to_unix(
         modify_col = {"replace": i, "append": i + "_unix"}
         odf = odf.withColumn(
             modify_col[output_mode],
-            (F.col(i + "_local").cast(T.TimestampType()).cast("double") * factor[precision]).cast("long"),
+            (
+                F.col(i + "_local").cast(T.TimestampType()).cast("double")
+                * factor[precision]
+            ).cast("long"),
         ).drop(i + "_local")
     return odf
 
@@ -666,7 +669,13 @@ def time_diff(idf, ts1, ts2, unit, output_mode="append"):
 
     odf = idf.withColumn(
         ts1 + "_" + ts2 + "_" + unit + "diff",
-        F.abs((F.col(ts1).cast(T.TimestampType()).cast("double") - F.col(ts2).cast(T.TimestampType()).cast("double"))) / factor,
+        F.abs(
+            (
+                F.col(ts1).cast(T.TimestampType()).cast("double")
+                - F.col(ts2).cast(T.TimestampType()).cast("double")
+            )
+        )
+        / factor,
     )
 
     if output_mode == "replace":
@@ -737,7 +746,10 @@ def time_elapsed(idf, list_of_cols, unit, output_mode="append"):
         odf = odf.withColumn(
             i + "_" + unit + "diff",
             F.abs(
-                (F.lit(F.current_timestamp()).cast("double") - F.col(i).cast(T.TimestampType()).cast("double"))
+                (
+                    F.lit(F.current_timestamp()).cast("double")
+                    - F.col(i).cast(T.TimestampType()).cast("double")
+                )
             )
             / factor,
         )
