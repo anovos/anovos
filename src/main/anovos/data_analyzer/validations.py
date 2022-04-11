@@ -66,7 +66,12 @@ def refactor_arguments(func):
             all_kwargs["list_of_cols"] = list_of_cols
             all_kwargs["drop_cols"] = []
 
-        for boolarg in ("treatment", "pre_existing_model", "print_impact"):
+        for boolarg in (
+            "treatment",
+            "pre_existing_model",
+            "print_impact",
+            "partial_match",
+        ):
             if boolarg in all_kwargs.keys():
                 boolarg_val = str(all_kwargs.get(boolarg))
                 if boolarg_val.lower() == "true":
@@ -104,8 +109,12 @@ def refactor_arguments(func):
                 "MF",
                 "auto",
             ):
+                valid_methods = {
+                    "nullColumns_detection": "MMM, row_removal, column_removal, KNN, regression, MF or auto",
+                    "invalidEntries_detection": "MMM, null_replacement or column_removal",
+                }
                 raise TypeError(
-                    f"Invalid input for method_type in the function {func.__name__}. method_type should be MMM, row_removal, column_removal, KNN, regression, MF or auto - Received '{all_kwargs.get('method_type')}'."
+                    f"Invalid input for method_type in the function {func.__name__}. method_type should be {valid_methods[func.__name__]} - Received '{all_kwargs.get('treatment_method')}'."
                 )
 
             treatment_threshold = all_kwargs.get("treatment_configs").get(
@@ -142,11 +151,21 @@ def refactor_arguments(func):
 
             detection_configs = all_kwargs.get("detection_configs")
             for arg in ["pctile_lower", "pctile_upper"]:
-                if arg in detection_configs:
-                    if (detection_configs[arg] < 0) | (detection_configs[arg] > 1):
-                        raise TypeError(
-                            f"Invalid input for {arg} in the function {func.__name__}. {arg} should be between 0 & 1 - Received '{detection_configs[arg]}'."
-                        )
+                if (detection_configs[arg] < 0) | (detection_configs[arg] > 1):
+                    raise TypeError(
+                        f"Invalid input for {arg} in the function {func.__name__}. {arg} should be between 0 & 1 - Received '{detection_configs[arg]}'."
+                    )
+
+            if detection_configs["min_validation"] not in (1, 2, 3):
+                raise TypeError(
+                    f"Invalid input for min_validation in the function {func.__name__}. min_validation should be either 1, 2 or 3 - Received '{detection_configs['min_validation']}'."
+                )
+
+        if func.__name__ == "invalidEntries_detection":
+            if all_kwargs.get("detection_type") not in ("auto", "manual", "both"):
+                raise TypeError(
+                    f"Invalid input for detection_type in the function {func.__name__}. detection_type should be auto, manual or both - Received '{all_kwargs.get('detection_type')}'."
+                )
 
         if func.__name__ in ("IV_calculation", "IG_calculation"):
             label_col = all_kwargs.get("label_col")
