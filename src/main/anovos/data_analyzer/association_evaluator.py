@@ -19,6 +19,7 @@ from phik.phik import spark_phik_matrix_from_hist2d_dict
 from popmon.analysis.hist_numpy import get_2dgrid
 from pyspark.sql import Window
 from pyspark.sql import functions as F
+from pyspark.sql import types as T
 from varclushi import VarClusHi
 from anovos.data_analyzer.stats_generator import uniqueCount_computation
 from anovos.data_ingest.data_ingest import read_dataset
@@ -28,9 +29,12 @@ from anovos.data_transformer.transformers import (
     cat_to_num_unsupervised,
     imputation_MMM,
 )
-from anovos.shared.utils import attributeType_segregation
+from anovos.shared.utils import attributeType_segregation, discrete_attributes
+import warnings
 
+from .validations import refactor_arguments
 
+@refactor_arguments
 def correlation_matrix(
     spark, idf, list_of_cols="all", drop_cols=[], stats_unique={}, print_impact=False
 ):
@@ -89,17 +93,10 @@ def correlation_matrix(
 
     """
 
-    if list_of_cols == "all":
-        num_cols, cat_cols, other_cols = attributeType_segregation(idf)
-        list_of_cols = num_cols + cat_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
-
     if stats_unique == {}:
+        discrete_cols = discrete_attributes(idf)
         remove_cols = (
-            uniqueCount_computation(spark, idf, list_of_cols)
+            uniqueCount_computation(spark, idf, [e for e in list_of_cols if e in discrete_cols])
             .where(F.col("unique_values") < 2)
             .select("attribute")
             .rdd.flatMap(lambda x: x)
@@ -115,11 +112,14 @@ def correlation_matrix(
         )
 
     list_of_cols = list(
-        set([e for e in list_of_cols if e not in (drop_cols + remove_cols)])
+        set([e for e in list_of_cols if e not in remove_cols])
     )
 
-    if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
-        raise TypeError("Invalid input for Column(s)")
+    if len(list_of_cols) == 0:
+        warnings.warn(
+            "No Correlation Matrix - No column(s) to analyze"
+        )
+        return None
 
     combis = [list(c) for c in itertools.combinations_with_replacement(list_of_cols, 2)]
     hists = idf.select(list_of_cols).pm_make_histograms(combis)
@@ -139,6 +139,7 @@ def correlation_matrix(
     return odf
 
 
+@refactor_arguments
 def variable_clustering(
     spark,
     idf,
@@ -206,24 +207,12 @@ def variable_clustering(
 
     """
 
-    if list_of_cols == "all":
-        num_cols, cat_cols, other_cols = attributeType_segregation(idf)
-        list_of_cols = num_cols + cat_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
-
-    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
-
-    if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
-        raise TypeError("Invalid input for Column(s)")
-
     idf_sample = idf.sample(False, min(1.0, float(sample_size) / idf.count()), 0)
     idf_sample.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
     if stats_unique == {}:
+        discrete_cols = discrete_attributes(idf)
         remove_cols = (
-            uniqueCount_computation(spark, idf_sample, list_of_cols)
+            uniqueCount_computation(spark, idf, [e for e in list_of_cols if e in discrete_cols])
             .where(F.col("unique_values") < 2)
             .select("attribute")
             .rdd.flatMap(lambda x: x)
@@ -239,6 +228,22 @@ def variable_clustering(
         )
 
     list_of_cols = [e for e in list_of_cols if e not in remove_cols]
+
+    if len(list_of_cols) == 0:
+        warnings.warn(
+            "No Variable Clustering - No column(s) to analyze"
+        )
+        schema = T.StructType(
+            [
+                T.StructField("Cluster", T.StringType(), True),
+                T.StructField("Attribute", T.StringType(), True),
+                T.StructField("RS_Ratio", T.StringType(), True),
+            ]
+        )
+        odf = spark.sparkContext.emptyRDD().toDF(schema)
+        return odf
+
+
     idf_sample = idf_sample.select(list_of_cols)
     num_cols, cat_cols, other_cols = attributeType_segregation(idf_sample)
 
@@ -264,7 +269,7 @@ def variable_clustering(
         odf.show(odf.count())
     return odf
 
-
+@refactor_arguments
 def IV_calculation(
     spark,
     idf,
@@ -337,28 +342,18 @@ def IV_calculation(
 
     """
 
-    if label_col not in idf.columns:
-        raise TypeError("Invalid input for Label Column")
-
-    if list_of_cols == "all":
-        num_cols, cat_cols, other_cols = attributeType_segregation(idf)
-        list_of_cols = num_cols + cat_cols
-
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
-
-    list_of_cols = list(
-        set([e for e in list_of_cols if e not in (drop_cols + [label_col])])
-    )
-
-    if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
-        raise TypeError("Invalid input for Column(s)")
-
-    if idf.where(F.col(label_col) == event_label).count() == 0:
-        raise TypeError("Invalid input for Event Label Value")
+    if len(list_of_cols) == 0:
+        warnings.warn(
+            "No Information Value Calculation - No column(s) to analyze"
+        )
+        schema = T.StructType(
+            [
+                T.StructField("attribute", T.StringType(), True),
+                T.StructField("iv", T.StringType(), True),
+            ]
+        )
+        odf = spark.sparkContext.emptyRDD().toDF(schema)
+        return odf
 
     num_cols, cat_cols, other_cols = attributeType_segregation(idf.select(list_of_cols))
 
@@ -383,14 +378,14 @@ def IV_calculation(
     for col in list_of_cols:
         df_iv = (
             idf_encoded.groupBy(col, label_col)
-            .count()
+            .count().withColumn("count", F.col("count").cast("double"))
             .withColumn(
                 label_col, F.when(F.col(label_col) == event_label, 1).otherwise(0)
             )
             .groupBy(col)
             .pivot(label_col)
             .sum("count")
-            .fillna(0.5)
+            .fillna(0.5, subset=["0","1"])
             .withColumn("event_pct", F.col("1") / F.sum("1").over(Window.partitionBy()))
             .withColumn(
                 "nonevent_pct", F.col("0") / F.sum("0").over(Window.partitionBy())
@@ -414,7 +409,7 @@ def IV_calculation(
 
     return odf
 
-
+@refactor_arguments
 def IG_calculation(
     spark,
     idf,
@@ -480,29 +475,22 @@ def IG_calculation(
     Returns
     -------
     DataFrame
-        [attribute, id]
+        [attribute, ig]
 
     """
 
-    if label_col not in idf.columns:
-        raise TypeError("Invalid input for Label Column")
-
-    if list_of_cols == "all":
-        num_cols, cat_cols, other_cols = attributeType_segregation(idf)
-        list_of_cols = num_cols + cat_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
-
-    list_of_cols = list(
-        set([e for e in list_of_cols if e not in (drop_cols + [label_col])])
-    )
-
-    if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
-        raise TypeError("Invalid input for Column(s)")
-    if idf.where(F.col(label_col) == event_label).count() == 0:
-        raise TypeError("Invalid input for Event Label Value")
+    if len(list_of_cols) == 0:
+        warnings.warn(
+            "No Information Gain Calculation - No column(s) to analyze"
+        )
+        schema = T.StructType(
+            [
+                T.StructField("attribute", T.StringType(), True),
+                T.StructField("ig", T.StringType(), True),
+            ]
+        )
+        odf = spark.sparkContext.emptyRDD().toDF(schema)
+        return odf
 
     num_cols, cat_cols, other_cols = attributeType_segregation(idf.select(list_of_cols))
 
