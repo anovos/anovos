@@ -46,7 +46,7 @@ jobs:
     environment: PYPI_ENV
     steps:
       - name: Download distribution
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: distribution
 
