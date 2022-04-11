@@ -92,6 +92,25 @@ def get_dtype(idf, col):
     return [dtype for name, dtype in idf.dtypes if name == col][0]
 
 
+def discrete_attributes(idf):
+    """
+
+    Parameters
+    ----------
+    idf
+        Input Dataframe
+
+    Returns
+    -------
+
+    """
+    discrete_cols = []
+    for i in idf.dtypes:
+        if i[1] in ("string", "int", "bigint", "long"):
+            discrete_cols.append(i[0])
+    return discrete_cols
+
+
 def ends_with(string, end_str="/"):
     """
 
