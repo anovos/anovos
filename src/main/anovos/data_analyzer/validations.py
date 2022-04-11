@@ -30,6 +30,7 @@ def refactor_arguments(func):
         elif func.__name__ in (
             "measures_of_dispersion",
             "measures_of_counts",
+            "nonzeroCount_computation",
             "measures_of_percentiles",
             "measures_of_shape",
             "outlier_detection",
@@ -61,7 +62,7 @@ def refactor_arguments(func):
             list_of_cols = [e for e in list_of_cols if e not in drop_cols]
             if any(x not in all_valid_cols for x in list_of_cols):
                 raise TypeError(
-                    f"Invalid input for column(s) in the function {func.__name__}. Column(s) not found in the dataframe: {set(list_of_cols) - set(all_valid_cols)}."
+                    f"Invalid input for column(s) in the function {func.__name__}. Invalid Column(s): {set(list_of_cols) - set(all_valid_cols)}."
                 )
             all_kwargs["list_of_cols"] = list_of_cols
             all_kwargs["drop_cols"] = []
