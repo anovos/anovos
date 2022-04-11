@@ -51,7 +51,7 @@ def test_IV_calculation(spark_session: SparkSession):
         result_df.where(F.col("attribute") == "relationship")
         .toPandas()
         .to_dict("list")["iv"][0]
-        == 1.6205
+        == 1.6206
     )
     assert (
         result_df.where(F.col("attribute") == "marital-status")
@@ -67,13 +67,13 @@ def test_IV_calculation(spark_session: SparkSession):
         result_df.where(F.col("attribute") == "occupation")
         .toPandas()
         .to_dict("list")["iv"][0]
-        == 0.7467
+        == 0.7678
     )
     assert (
         result_df.where(F.col("attribute") == "education")
         .toPandas()
         .to_dict("list")["iv"][0]
-        == 0.7459
+        == 0.752
     )
     assert (
         result_df.where(F.col("attribute") == "education-num")
@@ -91,17 +91,17 @@ def test_IV_calculation(spark_session: SparkSession):
         result_df.where(F.col("attribute") == "capital-gain")
         .toPandas()
         .to_dict("list")["iv"][0]
-        == 0.3179
+        == 0.3182
     )
     assert (
         result_df.where(F.col("attribute") == "sex").toPandas().to_dict("list")["iv"][0]
-        == 0.3106
+        == 0.3109
     )
     assert (
         result_df.where(F.col("attribute") == "workclass")
         .toPandas()
         .to_dict("list")["iv"][0]
-        == 0.1669
+        == 0.1681
     )
 
 
