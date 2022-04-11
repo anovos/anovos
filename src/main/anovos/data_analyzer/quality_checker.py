@@ -1321,6 +1321,7 @@ def invalidEntries_detection(
     )
 
     if treatment:
+        treatment_threshold = treatment_configs.pop("treatment_threshold", None)
         if treatment_threshold:
             threshold_cols = (
                 odf_print.where(F.col("attribute").isin(list_of_cols))
