@@ -75,8 +75,10 @@ from sklearn.impute import KNNImputer, IterativeImputer
 import tensorflow
 from tensorflow.keras.models import load_model, Model
 from tensorflow.keras.layers import Dense, Input, BatchNormalization, LeakyReLU
+from .validations import refactor_arguments
 
 
+@refactor_arguments
 def attribute_binning(
     spark,
     idf,
@@ -160,33 +162,9 @@ def attribute_binning(
         Binned Dataframe
     """
 
-    num_cols = attributeType_segregation(idf)[0]
-    if list_of_cols == "all":
-        list_of_cols = num_cols
-
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
-
-    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
-
-    if any(x not in num_cols for x in list_of_cols):
-        raise TypeError("Invalid input for Column(s)")
-
     if len(list_of_cols) == 0:
         warnings.warn("No Binning Performed - No numerical column(s) to transform")
         return idf
-
-    if method_type not in ("equal_frequency", "equal_range"):
-        raise TypeError("Invalid input for method_type")
-
-    if bin_size < 2:
-        raise TypeError("Invalid input for bin_size")
-
-    if output_mode not in ("replace", "append"):
-        raise TypeError("Invalid input for output_mode")
 
     if pre_existing_model:
         df_model = spark.read.parquet(model_path + "/attribute_binning")
@@ -293,6 +271,7 @@ def attribute_binning(
     return odf
 
 
+@refactor_arguments
 def monotonic_binning(
     spark,
     idf,
@@ -357,33 +336,10 @@ def monotonic_binning(
     DataFrame
         Binned Dataframe
     """
-    num_cols = attributeType_segregation(idf)[0]
-    if list_of_cols == "all":
-        list_of_cols = num_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
 
-    list_of_cols = list(
-        set([e for e in list_of_cols if e not in (drop_cols + [label_col])])
-    )
-
-    if any(x not in num_cols for x in list_of_cols):
-        raise TypeError("Invalid input for Column(s)")
-
-    attribute_binning(
-        spark,
-        idf,
-        list_of_cols="all",
-        drop_cols=[],
-        method_type="equal_range",
-        bin_size=10,
-        pre_existing_model=False,
-        model_path="NA",
-        output_mode="replace",
-        print_impact=False,
-    )
+    if len(list_of_cols) == 0:
+        warnings.warn("No Binning Performed - No numerical column(s) to transform")
+        return idf
 
     odf = idf
     for col in list_of_cols:
@@ -440,6 +396,7 @@ def monotonic_binning(
     return odf
 
 
+@refactor_arguments
 def cat_to_num_unsupervised(
     spark,
     idf,
@@ -523,29 +480,6 @@ def cat_to_num_unsupervised(
 
     """
 
-    cat_cols = attributeType_segregation(idf)[1]
-    if list_of_cols == "all":
-        list_of_cols = cat_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
-
-    if any(x not in cat_cols for x in list_of_cols):
-        raise TypeError("Invalid input for Column(s)")
-
-    if method_type not in (0, 1):
-        raise TypeError("Invalid input for method_type")
-    if index_order not in (
-        "frequencyDesc",
-        "frequencyAsc",
-        "alphabetDesc",
-        "alphabetAsc",
-    ):
-        raise TypeError("Invalid input for Encoding Index Order")
-    if output_mode not in ("replace", "append"):
-        raise TypeError("Invalid input for output_mode")
-
     skip_cols = []
     if method_type == 0:
         if stats_unique == {}:
@@ -574,9 +508,7 @@ def cat_to_num_unsupervised(
                 + ",".join(skip_cols)
             )
 
-    list_of_cols = list(
-        set([e for e in list_of_cols if e not in drop_cols + skip_cols])
-    )
+    list_of_cols = list(set([e for e in list_of_cols if e not in skip_cols]))
 
     if len(list_of_cols) == 0:
         warnings.warn("No Encoding Computation - No categorical column(s) to transform")
@@ -719,6 +651,7 @@ def cat_to_num_unsupervised(
     return odf
 
 
+@refactor_arguments
 def cat_to_num_supervised(
     spark,
     idf,
@@ -793,24 +726,9 @@ def cat_to_num_supervised(
         Encoded Dataframe
     """
 
-    cat_cols = attributeType_segregation(idf)[1]
-    if list_of_cols == "all":
-        list_of_cols = cat_cols
-    elif isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
-    list_of_cols = list(
-        set([e for e in list_of_cols if (e not in drop_cols) & (e != label_col)])
-    )
-
-    if any(x not in cat_cols for x in list_of_cols):
-        raise TypeError("Invalid input for Column(s)")
     if len(list_of_cols) == 0:
         warnings.warn("No Categorical Encoding - No categorical column(s) to transform")
         return idf
-    if label_col not in idf.columns:
-        raise TypeError("Invalid input for Label Column")
 
     idf_id = idf.withColumn("tempID", F.monotonically_increasing_id())
     odf_partial = idf_id.select(["tempID"] + list_of_cols)
@@ -888,6 +806,7 @@ def cat_to_num_supervised(
     return odf
 
 
+@refactor_arguments
 def z_standardization(
     spark,
     idf,
@@ -944,26 +863,12 @@ def z_standardization(
         Rescaled Dataframe
 
     """
-    num_cols = attributeType_segregation(idf)[0]
-    if list_of_cols == "all":
-        list_of_cols = num_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
 
-    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
-
-    if any(x not in num_cols for x in list_of_cols):
-        raise TypeError("Invalid input for Column(s)")
     if len(list_of_cols) == 0:
         warnings.warn(
             "No Standardization Performed - No numerical column(s) to transform"
         )
         return idf
-
-    if output_mode not in ("replace", "append"):
-        raise TypeError("Invalid input for output_mode")
 
     parameters = []
     excluded_cols = []
@@ -1025,6 +930,7 @@ def z_standardization(
     return odf
 
 
+@refactor_arguments
 def IQR_standardization(
     spark,
     idf,
@@ -1075,26 +981,12 @@ def IQR_standardization(
     DataFrame
         Rescaled Dataframe
     """
-    num_cols = attributeType_segregation(idf)[0]
-    if list_of_cols == "all":
-        list_of_cols = num_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
 
-    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
-
-    if any(x not in num_cols for x in list_of_cols):
-        raise TypeError("Invalid input for Column(s)")
     if len(list_of_cols) == 0:
         warnings.warn(
             "No Standardization Performed - No numerical column(s) to transform"
         )
         return idf
-
-    if output_mode not in ("replace", "append"):
-        raise TypeError("Invalid input for output_mode")
 
     if pre_existing_model:
         df_model = spark.read.parquet(model_path + "/IQR_standardization")
@@ -1156,6 +1048,7 @@ def IQR_standardization(
     return odf
 
 
+@refactor_arguments
 def normalization(
     idf,
     list_of_cols="all",
@@ -1204,26 +1097,12 @@ def normalization(
         Rescaled Dataframe
 
     """
-    num_cols = attributeType_segregation(idf)[0]
-    if list_of_cols == "all":
-        list_of_cols = num_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
 
-    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
-
-    if any(x not in num_cols for x in list_of_cols):
-        raise TypeError("Invalid input for Column(s)")
     if len(list_of_cols) == 0:
         warnings.warn(
             "No Normalization Performed - No numerical column(s) to transform"
         )
         return idf
-
-    if output_mode not in ("replace", "append"):
-        raise TypeError("Invalid input for output_mode")
 
     idf_id = idf.withColumn("tempID", F.monotonically_increasing_id())
     idf_partial = idf_id.select(["tempID"] + list_of_cols)
@@ -1292,6 +1171,7 @@ def normalization(
     return odf
 
 
+@refactor_arguments
 def imputation_MMM(
     spark,
     idf,
@@ -1383,37 +1263,12 @@ def imputation_MMM(
         .collect()
     )
 
-    if str(pre_existing_model).lower() == "true":
-        pre_existing_model = True
-    elif str(pre_existing_model).lower() == "false":
-        pre_existing_model = False
-    else:
-        raise TypeError("Non-Boolean input for pre_existing_model")
+    if list_of_cols == "missing":
+        list_of_cols = list(set([e for e in missing_cols if e not in drop_cols]))
 
     if (len(missing_cols) == 0) & (not pre_existing_model) & (model_path == "NA"):
-        return idf
-
-    num_cols, cat_cols, other_cols = attributeType_segregation(idf)
-    if list_of_cols == "all":
-        list_of_cols = num_cols + cat_cols
-    if list_of_cols == "missing":
-        list_of_cols = [x for x in missing_cols if x in num_cols + cat_cols]
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
-
-    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
-
-    if len(list_of_cols) == 0:
         warnings.warn("No Imputation performed- No column(s) to impute")
         return idf
-    if any(x not in num_cols + cat_cols for x in list_of_cols):
-        raise TypeError("Invalid input for Column(s)")
-    if method_type not in ("mode", "mean", "median"):
-        raise TypeError("Invalid input for method_type")
-    if output_mode not in ("replace", "append"):
-        raise TypeError("Invalid input for output_mode")
 
     num_cols, cat_cols, other_cols = attributeType_segregation(idf.select(list_of_cols))
 
@@ -1600,6 +1455,7 @@ def imputation_MMM(
     return odf
 
 
+@refactor_arguments
 def imputation_sklearn(
     spark,
     idf,
@@ -1696,17 +1552,6 @@ def imputation_sklearn(
             .select("attribute", "missing_count", "missing_pct")
             .where(F.col("attribute").isin(num_cols))
         )
-    empty_cols = (
-        missing_df.where(F.col("missing_pct") == 1.0)
-        .select("attribute")
-        .rdd.flatMap(lambda x: x)
-        .collect()
-    )
-    if len(empty_cols) > 0:
-        warnings.warn(
-            "Following columns dropped from the imputation as all values are null: "
-            + ",".join(empty_cols)
-        )
 
     missing_cols = (
         missing_df.where(F.col("missing_count") > 0)
@@ -1716,14 +1561,22 @@ def imputation_sklearn(
         .collect()
     )
 
-    if list_of_cols == "all":
-        list_of_cols = num_cols
     if list_of_cols == "missing":
         list_of_cols = missing_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
+
+    empty_cols = (
+        missing_df.where(F.col("missing_pct") == 1.0)
+        .select("attribute")
+        .rdd.flatMap(lambda x: x)
+        .collect()
+    )
+    empty_cols = [e for e in empty_cols if e in list_of_cols]
+
+    if len(empty_cols) > 0:
+        warnings.warn(
+            "Following columns dropped from the imputation as all values are null: "
+            + ",".join(empty_cols)
+        )
 
     list_of_cols = list(
         set([e for e in list_of_cols if (e not in drop_cols) & (e not in empty_cols)])
@@ -1735,12 +1588,6 @@ def imputation_sklearn(
         )
         return idf
 
-    if str(pre_existing_model).lower() == "true":
-        pre_existing_model = True
-    elif str(pre_existing_model).lower() == "false":
-        pre_existing_model = False
-    else:
-        raise TypeError("Non-Boolean input for pre_existing_model")
     if (
         (len([e for e in list_of_cols if e in missing_cols]) == 0)
         & (not pre_existing_model)
@@ -1750,13 +1597,6 @@ def imputation_sklearn(
             "No Imputation Performed - No Column(s) to Impute and No Imputation Model to be saved"
         )
         return idf
-
-    if any(x not in num_cols for x in list_of_cols):
-        raise TypeError("Invalid input for Column(s)")
-    if method_type not in ("KNN", "regression"):
-        raise TypeError("Invalid input for method_type")
-    if output_mode not in ("replace", "append"):
-        raise TypeError("Invalid input for output_mode")
 
     if pre_existing_model:
         if run_type == "emr":
@@ -1854,6 +1694,7 @@ def imputation_sklearn(
     return odf
 
 
+@refactor_arguments
 def imputation_matrixFactorization(
     spark,
     idf,
@@ -1949,14 +1790,8 @@ def imputation_matrixFactorization(
         .collect()
     )
 
-    if list_of_cols == "all":
-        list_of_cols = num_cols
     if list_of_cols == "missing":
         list_of_cols = missing_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
 
     list_of_cols = list(
         set(
@@ -1978,10 +1813,6 @@ def imputation_matrixFactorization(
             "No Imputation Performed - Needs more than 1 column for matrix factorization"
         )
         return idf
-    if any(x not in num_cols for x in list_of_cols):
-        raise TypeError("Invalid input for Column(s)")
-    if output_mode not in ("replace", "append"):
-        raise TypeError("Invalid input for output_mode")
 
     remove_id = False
     if id_col == "":
@@ -2092,6 +1923,7 @@ def imputation_matrixFactorization(
     return odf
 
 
+@refactor_arguments
 def auto_imputation(
     spark,
     idf,
@@ -2208,20 +2040,12 @@ def auto_imputation(
         .collect()
     )
 
-    if list_of_cols == "all":
-        list_of_cols = idf.columns
     if list_of_cols == "missing":
         list_of_cols = missing_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
 
     list_of_cols = list(
         set([e for e in list_of_cols if (e not in drop_cols) & (e != id_col)])
     )
-    if any(x not in idf.columns for x in list_of_cols):
-        raise TypeError("Invalid input for Column(s)")
 
     del_cols = [e for e in list_of_cols if e in empty_cols]
     odf_del = idf.drop(*del_cols)
@@ -2353,6 +2177,7 @@ def auto_imputation(
     return odf
 
 
+@refactor_arguments
 def autoencoder_latentFeatures(
     spark,
     idf,
@@ -2463,17 +2288,6 @@ def autoencoder_latentFeatures(
 
     """
 
-    num_cols = attributeType_segregation(idf)[0]
-    if list_of_cols == "all":
-        list_of_cols = num_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
-    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
-
-    if any(x not in num_cols for x in list_of_cols):
-        raise TypeError("Invalid input for Column(s)")
     if len(list_of_cols) == 0:
         warnings.warn("No Latent Features Generated - No Column(s) to Transform")
         return idf
@@ -2697,6 +2511,7 @@ def autoencoder_latentFeatures(
     return odf
 
 
+@refactor_arguments
 def PCA_latentFeatures(
     spark,
     idf,
@@ -2791,17 +2606,6 @@ def PCA_latentFeatures(
 
     """
 
-    num_cols = attributeType_segregation(idf)[0]
-    if list_of_cols == "all":
-        list_of_cols = num_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
-    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
-
-    if any(x not in num_cols for x in list_of_cols):
-        raise TypeError("Invalid input for Column(s)")
     if len(list_of_cols) == 0:
         warnings.warn("No Latent Features Generated - No Column(s) to Transform")
         return idf
@@ -2952,6 +2756,7 @@ def PCA_latentFeatures(
     return odf
 
 
+@refactor_arguments
 def feature_transformation(
     idf,
     list_of_cols="all",
@@ -3010,50 +2815,10 @@ def feature_transformation(
         Transformed Dataframe
 
     """
+    if len(list_of_cols) == 0:
+        warnings.warn("No Column(s) to Transform")
+        return idf
 
-    num_cols = attributeType_segregation(idf)[0]
-    if list_of_cols == "all":
-        list_of_cols = num_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
-    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
-
-    if (len(list_of_cols) == 0) | (any(x not in num_cols for x in list_of_cols)):
-        raise TypeError("Invalid input for Column(s)")
-
-    if method_type not in [
-        "ln",
-        "log10",
-        "log2",
-        "exp",
-        "powOf2",
-        "powOf10",
-        "powOfN",
-        "sqrt",
-        "cbrt",
-        "sq",
-        "cb",
-        "toPowerN",
-        "sin",
-        "cos",
-        "tan",
-        "asin",
-        "acos",
-        "atan",
-        "radians",
-        "remainderDivByN",
-        "factorial",
-        "mul_inv",
-        "floor",
-        "ceil",
-        "roundN",
-    ]:
-        raise TypeError("Invalid input method_type")
-
-    num_cols = attributeType_segregation(idf.select(list_of_cols))[0]
-    list_of_cols = num_cols
     odf = idf
 
     transformation_function = {
@@ -3066,9 +2831,9 @@ def feature_transformation(
         "powOfN": (lambda x: F.pow(N, x)),
         "sqrt": F.sqrt,
         "cbrt": F.cbrt,
-        "sq": (lambda x: x**2),
-        "cb": (lambda x: x**3),
-        "toPowerN": (lambda x: x**N),
+        "sq": (lambda x: x ** 2),
+        "cb": (lambda x: x ** 3),
+        "toPowerN": (lambda x: x ** N),
         "sin": F.sin,
         "cos": F.cos,
         "tan": F.tan,
@@ -3108,6 +2873,7 @@ def feature_transformation(
     return odf
 
 
+@refactor_arguments
 def boxcox_transformation(
     idf,
     list_of_cols="all",
@@ -3171,39 +2937,17 @@ def boxcox_transformation(
 
     """
 
-    num_cols = attributeType_segregation(idf)[0]
-    if list_of_cols == "all":
-        list_of_cols = num_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
-    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
+    if len(list_of_cols) == 0:
+        warnings.warn("No BoxCox Transformation - No Column(s) to Transform")
+        return idf
 
-    if (len(list_of_cols) == 0) | (any(x not in num_cols for x in list_of_cols)):
-        raise TypeError("Invalid input for Column(s)")
-
-    num_cols = attributeType_segregation(idf.select(list_of_cols))[0]
-    list_of_cols = num_cols
     odf = idf
-    col_mins = idf.select([F.min(i) for i in list_of_cols])
-    if any([i <= 0 for i in col_mins.rdd.flatMap(lambda x: x).collect()]):
-        col_mins.show(1, False)
-        raise ValueError("Data must be positive")
 
     if boxcox_lambda is not None:
         if isinstance(boxcox_lambda, (list, tuple)):
-            if len(boxcox_lambda) != len(list_of_cols):
-                raise TypeError("Invalid input for boxcox_lambda")
-            elif not all([isinstance(l, (float, int)) for l in boxcox_lambda]):
-                raise TypeError("Invalid input for boxcox_lambda")
-            else:
-                boxcox_lambda_list = list(boxcox_lambda)
-
-        elif isinstance(boxcox_lambda, (float, int)):
-            boxcox_lambda_list = [boxcox_lambda] * len(list_of_cols)
+            boxcox_lambda_list = list(boxcox_lambda)
         else:
-            raise TypeError("Invalid input for boxcox_lambda")
+            boxcox_lambda_list = [boxcox_lambda] * len(list_of_cols)
 
     else:
         boxcox_lambda_list = []
@@ -3270,6 +3014,7 @@ def boxcox_transformation(
     return odf
 
 
+@refactor_arguments
 def outlier_categories(
     spark,
     idf,
@@ -3341,30 +3086,11 @@ def outlier_categories(
 
     """
 
-    cat_cols = attributeType_segregation(idf)[1]
-    if list_of_cols == "all":
-        list_of_cols = cat_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
-
-    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
-
-    if any(x not in cat_cols for x in list_of_cols):
-        raise TypeError("Invalid input for Column(s)")
-
     if len(list_of_cols) == 0:
         warnings.warn(
             "No Outlier Categories Computation - No categorical column(s) to transform"
         )
         return idf
-    if (coverage <= 0) | (coverage > 1):
-        raise TypeError("Invalid input for Coverage Value")
-    if max_category < 2:
-        raise TypeError("Invalid input for Maximum No. of Categories Allowed")
-    if output_mode not in ("replace", "append"):
-        raise TypeError("Invalid input for output_mode")
 
     if pre_existing_model:
         df_model = spark.read.csv(
@@ -3442,6 +3168,7 @@ def outlier_categories(
     return odf
 
 
+@refactor_arguments
 def expression_parser(idf, list_of_expr, postfix="", print_impact=False):
     """
     expression_parser can be used to evaluate a list of SQL expressions and output the result as new features. It
