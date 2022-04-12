@@ -107,12 +107,7 @@ def ts_processed_feats(idf, col, id_col, tz, cnt_row, cnt_unique_id):
     if cnt_row == cnt_unique_id:
 
         odf = (
-            timeUnits_extraction(
-                idf,
-                col,
-                "all",
-                output_mode="append",
-            )
+            timeUnits_extraction(idf, col, "all", output_mode="append",)
             .withColumn("yyyymmdd_col", F.to_date(col))
             .orderBy("yyyymmdd_col")
             .withColumn("daypart_cat", f_daypart_cat(F.col(col + "_hour")))
@@ -130,12 +125,7 @@ def ts_processed_feats(idf, col, id_col, tz, cnt_row, cnt_unique_id):
     else:
 
         odf = (
-            timeUnits_extraction(
-                idf,
-                col,
-                "all",
-                output_mode="append",
-            )
+            timeUnits_extraction(idf, col, "all", output_mode="append",)
             .withColumn("yyyymmdd_col", F.to_date(col))
             .orderBy(id_col, "yyyymmdd_col")
             .withColumn("daypart_cat", f_daypart_cat(F.col(col + "_hour")))

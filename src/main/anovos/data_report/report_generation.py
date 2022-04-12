@@ -2786,11 +2786,13 @@ def ts_viz_3_1(base_path, x_col, y_col):
 
     for metric_col in ["mean", "median", "min", "max"]:
 
-        adf_test = round(adfuller(df[metric_col])[0], 3), round(
-            adfuller(df[metric_col])[1], 3
+        adf_test = (
+            round(adfuller(df[metric_col])[0], 3),
+            round(adfuller(df[metric_col])[1], 3),
         )
-        kpss_test = round(kpss(df[metric_col], regression="ct")[0], 3), round(
-            kpss(df[metric_col], regression="ct")[1], 3
+        kpss_test = (
+            round(kpss(df[metric_col], regression="ct")[0], 3),
+            round(kpss(df[metric_col], regression="ct")[1], 3),
         )
 
         if adf_test[1] < 0.05:
