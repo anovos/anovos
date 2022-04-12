@@ -538,7 +538,6 @@ def IG_calculation(
                 F.sum(F.col(label_col)).alias("event_count"),
                 F.count(F.col(label_col)).alias("total_count"),
             )
-            .dropna()
             .withColumn("event_pct", F.col("event_count") / F.col("total_count"))
             .withColumn(
                 "segment_pct",
