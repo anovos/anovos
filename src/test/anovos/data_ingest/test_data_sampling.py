@@ -19,7 +19,6 @@ def test_data_sampling(test_sample):
     output_1 = data_sample(
         test_sample,
         list_of_cols="all",
-        label_col="gender",
         method_type="stratified",
         fraction=0.75,
     )
@@ -35,7 +34,6 @@ def test_data_sampling(test_sample):
     output_2 = data_sample(
         test_sample,
         list_of_cols="all",
-        label_col="gender",
         method_type="stratified",
         fraction=0.5,
         seed_value=1,
