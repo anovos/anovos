@@ -14,7 +14,7 @@ from anovos.data_transformer.transformers import (
     imputation_MMM,
     imputation_sklearn,
     imputation_matrixFactorization,
-    autoencoder_latentFeatures,
+    auto_imputation,
     PCA_latentFeatures,
     feature_transformation,
     boxcox_transformation,
