@@ -72,9 +72,9 @@ from ..shared.utils import platform_root_path
 from sklearn.experimental import enable_iterative_imputer  # noqa
 from sklearn.impute import KNNImputer, IterativeImputer
 
-import tensorflow
-from tensorflow.keras.models import load_model, Model
-from tensorflow.keras.layers import Dense, Input, BatchNormalization, LeakyReLU
+# import tensorflow
+# from tensorflow.keras.models import load_model, Model
+# from tensorflow.keras.layers import Dense, Input, BatchNormalization, LeakyReLU
 
 
 def attribute_binning(
@@ -2353,6 +2353,8 @@ def auto_imputation(
     return odf
 
 
+'''
+# Commenting out autoencoder due to incompatibility between tensorflow and M1 chip MacBook
 def autoencoder_latentFeatures(
     spark,
     idf,
@@ -2695,6 +2697,8 @@ def autoencoder_latentFeatures(
         odf.select(output_cols).describe().show(5, False)
 
     return odf
+
+'''
 
 
 def PCA_latentFeatures(
