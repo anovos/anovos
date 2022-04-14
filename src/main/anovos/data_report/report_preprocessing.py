@@ -17,11 +17,17 @@ from anovos.data_transformer.transformers import (
     imputation_MMM,
     attribute_binning,
 )
-from anovos.shared.utils import attributeType_segregation, ends_with
+from anovos.shared.utils import (
+    attributeType_segregation,
+    ends_with,
+    discrete_attributes,
+)
 from ..shared.utils import platform_root_path
 import warnings
 
 warnings.filterwarnings("ignore")
+
+from .validations import refactor_arguments
 
 global_theme = px.colors.sequential.Plasma
 global_theme_r = px.colors.sequential.Plasma_r
@@ -434,6 +440,7 @@ def plot_comparative_drift(spark, idf, source, col, cutoffs_path):
     return fig
 
 
+@refactor_arguments
 def charts_to_objects(
     spark,
     idf,
@@ -494,17 +501,12 @@ def charts_to_objects(
     global num_cols
     global cat_cols
 
-    if list_of_cols == "all":
-        num_cols, cat_cols, other_cols = attributeType_segregation(idf)
-        list_of_cols = num_cols + cat_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
-
     if stats_unique == {}:
+        discrete_cols = discrete_attributes(idf)
         remove_cols = (
-            uniqueCount_computation(spark, idf, list_of_cols)
+            uniqueCount_computation(
+                spark, idf, [e for e in list_of_cols if e in discrete_cols]
+            )
             .where(F.col("unique_values") < 2)
             .select("attribute")
             .rdd.flatMap(lambda x: x)
@@ -519,12 +521,11 @@ def charts_to_objects(
             .collect()
         )
 
-    list_of_cols = list(
-        set([e for e in list_of_cols if e not in (drop_cols + remove_cols)])
-    )
+    list_of_cols = list(set([e for e in list_of_cols if e not in remove_cols]))
 
-    if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
-        raise TypeError("Invalid input for Column(s)")
+    if len(list_of_cols) == 0:
+        warnings.warn("No column(s) to generate the anovos report")
+        return None
 
     num_cols, cat_cols, other_cols = attributeType_segregation(idf.select(list_of_cols))
 

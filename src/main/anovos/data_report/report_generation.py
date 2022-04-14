@@ -49,6 +49,8 @@ import warnings
 
 warnings.filterwarnings("ignore")
 
+from .validations import refactor_arguments
+
 global_theme = px.colors.sequential.Plasma
 global_theme_r = px.colors.sequential.Plasma_r
 global_plot_bg_color = "rgba(0,0,0,0)"
@@ -2786,13 +2788,11 @@ def ts_viz_3_1(base_path, x_col, y_col):
 
     for metric_col in ["mean", "median", "min", "max"]:
 
-        adf_test = (
-            round(adfuller(df[metric_col])[0], 3),
-            round(adfuller(df[metric_col])[1], 3),
+        adf_test = round(adfuller(df[metric_col])[0], 3), round(
+            adfuller(df[metric_col])[1], 3
         )
-        kpss_test = (
-            round(kpss(df[metric_col], regression="ct")[0], 3),
-            round(kpss(df[metric_col], regression="ct")[1], 3),
+        kpss_test = round(kpss(df[metric_col], regression="ct")[0], 3), round(
+            kpss(df[metric_col], regression="ct")[1], 3
         )
 
         if adf_test[1] < 0.05:
@@ -3191,6 +3191,7 @@ def ts_viz_generate(master_path, id_col, print_report=False, output_type=None):
     return report
 
 
+@refactor_arguments
 def anovos_report(
     master_path,
     id_col="",

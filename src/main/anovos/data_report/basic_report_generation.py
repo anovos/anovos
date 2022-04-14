@@ -30,6 +30,7 @@ from anovos.data_analyzer.stats_generator import (
     measures_of_shape,
 )
 from anovos.shared.utils import ends_with
+from .validations import refactor_arguments
 
 global_theme = px.colors.sequential.Plasma
 global_theme_r = px.colors.sequential.Plasma_r
@@ -91,6 +92,7 @@ def stats_args(path, func):
     return output
 
 
+@refactor_arguments
 def anovos_basic_report(
     spark,
     idf,
@@ -162,10 +164,8 @@ def anovos_basic_report(
         local_path = output_path
     elif run_type == "databricks":
         local_path = output_to_local(output_path)
-    elif run_type == "emr":
-        local_path = "report_stats"
     else:
-        raise ValueError("Invalid run_type")
+        local_path = "report_stats"
 
     Path(local_path).mkdir(parents=True, exist_ok=True)
 
