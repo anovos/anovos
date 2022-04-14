@@ -202,16 +202,6 @@ licenses:
 Apache License Version 2.0, see
 [https://github.com/apache/spark/blob/master/LICENSE](https://github.com/apache/spark/blob/master/LICENSE)
 
-#### Histogrammar
-
-Apache License Version 2.0, see
-[https://github.com/histogrammar/histogrammar-scala/blob/master/LICENSE](https://github.com/histogrammar/histogrammar-scala/blob/master/LICENSE)
-
-#### Histogrammar-SparkSQL
-
-Apache License Version 2.0, see
-[https://github.com/histogrammar/histogrammar-scala/blob/master/LICENSE](https://github.com/histogrammar/histogrammar-scala/blob/master/LICENSE)
-
 ### Python packages
 
 #### boto3

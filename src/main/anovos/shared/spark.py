@@ -11,14 +11,10 @@ from pyspark.sql import SQLContext, SparkSession
 
 if version.parse(pyspark.__version__) < version.parse("3.0.0"):
     SPARK_JARS_PACKAGES = [
-        "io.github.histogrammar:histogrammar_2.11:1.0.20",
-        "io.github.histogrammar:histogrammar-sparksql_2.11:1.0.20",
         "org.apache.spark:spark-avro_2.11:" + str(pyspark.__version__),
     ]
 else:
     SPARK_JARS_PACKAGES = [
-        "io.github.histogrammar:histogrammar_2.12:1.0.20",
-        "io.github.histogrammar:histogrammar-sparksql_2.12:1.0.20",
         "org.apache.spark:spark-avro_2.12:" + str(pyspark.__version__),
     ]
 

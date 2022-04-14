@@ -11,12 +11,8 @@ function version_ge() { test "$(echo "$@" | tr " " "\n" | sort -rV | head -n 1)"
 
 if version_ge "${spark_version}" "${spark3_version}"; then
 	avro_package="org.apache.spark:spark-avro_2.12:${spark_version}"
-	histogrammar_jar="histogrammar_2.12-1.0.20.jar"
-	histogrammar_sql_jar="histogrammar-sparksql_2.12-1.0.20.jar"
 else
 	avro_package="org.apache.spark:spark-avro_2.11:${spark_version}"
-	histogrammar_jar="histogrammar_2.11-1.0.20.jar"
-	histogrammar_sql_jar="histogrammar-sparksql_2.11-1.0.20.jar"
 fi
 
 spark-submit \
@@ -39,7 +35,6 @@ spark-submit \
 --conf spark.port.maxRetries=200 \
 --packages "${avro_package}" \
 --conf spark.yarn.maxAppAttempts=1 \
---jars ../jars/${histogrammar_jar},../jars/${histogrammar_sql_jar} \
 --py-files anovos.zip \
 main.py \
 configs.yaml \

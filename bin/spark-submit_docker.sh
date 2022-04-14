@@ -20,7 +20,6 @@ spark-2.4.8-bin-hadoop2.7/bin/spark-submit \
 --conf spark.port.maxRetries=200 \
 --packages org.apache.spark:spark-avro_2.11:2.4.0 \
 --conf spark.yarn.maxAppAttempts=1 \
---jars histogrammar_2.11-1.0.20.jar,histogrammar-sparksql_2.11-1.0.20.jar \
 --py-files anovos.zip \
 main.py \
 configs.yaml \
