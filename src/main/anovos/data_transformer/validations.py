@@ -13,7 +13,7 @@ def refactor_arguments(func):
 
         if "list_of_cols" in all_kwargs.keys():
             list_of_cols = all_kwargs.get("list_of_cols")
-            drop_cols = all_kwargs.get("drop_cols")
+            drop_cols = all_kwargs.get("drop_cols", [])
 
             num_cols, cat_cols, other_cols = attributeType_segregation(idf)
             if func.__name__ in ("imputation_MMM", "auto_imputation"):
@@ -60,7 +60,8 @@ def refactor_arguments(func):
                         f"Invalid input for column(s) in the function {func.__name__}. Invalid Column(s): {set(list_of_cols) - set(all_valid_cols)}."
                     )
                 all_kwargs["list_of_cols"] = list_of_cols
-                all_kwargs["drop_cols"] = []
+                if "drop_cols" in all_kwargs.keys():
+                    all_kwargs["drop_cols"] = []
 
         for boolarg in (
             "pre_existing_model",
@@ -91,6 +92,17 @@ def refactor_arguments(func):
                 raise TypeError(
                     f"Invalid input for run_type in the function {func.__name__}. run_type should be local, emr or databricks - Received '{all_kwargs.get('run_type')}'."
                 )
+
+        if "unit" in all_kwargs.keys():
+            unit = all_kwargs.get("unit")
+            all_units = ["second", "minute", "hour", "day", "week", "month", "year"]
+            if (unit not in all_units) & (unit in [e + "s" for e in all_units]):
+                unit = unit[:-1]
+            if unit not in all_units:
+                raise TypeError(
+                    f"Invalid input for time unit in the function {func.__name__}. unit should be second, minute, hour, day, week, month or year - Received '{all_kwargs.get('unit')}'."
+                )
+            all_kwargs["unit"] = unit
 
         if func.__name__ in ("attribute_binning", "monotonic_binning"):
             method_mapping = {
@@ -316,6 +328,176 @@ def refactor_arguments(func):
                     f"Invalid input for Max Category Value in the function {func.__name__}. max_category should be greater than 2 - Received '{max_category}'."
                 )
             all_kwargs["max_category"] = max_category
+
+        if func.__name__ in ["timestamp_to_unix", "unix_to_timestamp"]:
+            if all_kwargs["precision"] not in ("ms", "s"):
+                raise TypeError(
+                    f"Invalid input for precision in the function {func.__name__}. precision should be ms or s - Received '{all_kwargs['precision']}'."
+                )
+
+            tz = all_kwargs["tz"].lower()
+            if tz not in ("local", "gmt", "utc"):
+                raise TypeError(
+                    f"Invalid input for timezone in the function {func.__name__}. tz should be local, gmt or utc - Received '{all_kwargs['tz']}'."
+                )
+            all_kwargs["tz"] = tz
+
+        if func.__name__ in ["string_to_timestamp"]:
+            if all_kwargs["output_type"] not in ("ts", "dt"):
+                raise TypeError(
+                    f"Invalid input for output_type in the function {func.__name__}. output_type should be ts or dt - Received '{all_kwargs['output_type']}'."
+                )
+
+        if func.__name__ in ["timeUnits_extraction"]:
+            all_units = [
+                "hour",
+                "minute",
+                "second",
+                "dayofmonth",
+                "dayofweek",
+                "dayofyear",
+                "weekofyear",
+                "month",
+                "quarter",
+                "year",
+            ]
+            units = all_kwargs["units"]
+            if units == "all":
+                units = all_units
+            if isinstance(units, str):
+                units = [x.strip() for x in units.split("|") if x.strip()]
+            if any(x not in all_units for x in units):
+                raise TypeError(
+                    f"Invalid input for Unit(s) in the function {func.__name__}. Invalid Unit(s): {set(units) - set(all_units)}."
+                )
+            all_kwargs["units"] = units
+
+        if func.__name__ in ["time_diff"]:
+            cols = [all_kwargs["ts1"], all_kwargs["ts2"]]
+            if any(x not in idf.columns for x in cols):
+                raise TypeError(
+                    f"Invalid input for column(s) in the function {func.__name__}. Invalid Column(s): {set(cols) - set(idf.columns)}."
+                )
+
+        if func.__name__ in ["timestamp_comparison"]:
+            if all_kwargs["comparison_type"] not in (
+                "greater_than",
+                "less_than",
+                "greaterThan_equalTo",
+                "lessThan_equalTo",
+            ):
+                raise TypeError(
+                    f"Invalid input for comparison_type in the function {func.__name__}. comparison_type should be greater_than, less_than, greaterThan_equalTo or lessThan_equalTo - Received '{all_kwargs['comparison_type']}'."
+                )
+
+        if func.__name__ in ["is_selectedHour"]:
+            hours = list(range(0, 24))
+            if all_kwargs["start_hour"] not in hours:
+                raise TypeError(
+                    f"Invalid input for start_hour in the function {func.__name__}. start_hour should be between 0 & 24 - Received '{all_kwargs['start_hour']}'."
+                )
+            if all_kwargs["end_hour"] not in hours:
+                raise TypeError(
+                    f"Invalid input for end_hour in the function {func.__name__}. end_hour should be between 0 & 24  - Received '{all_kwargs['end_hour']}'."
+                )
+
+        if func.__name__ in ["aggregator"]:
+
+            all_aggs = [
+                "count",
+                "min",
+                "max",
+                "sum",
+                "mean",
+                "median",
+                "stddev",
+                "countDistinct",
+                "sumDistinct",
+                "collect_list",
+                "collect_set",
+            ]
+
+            list_of_aggs = all_kwargs["list_of_aggs"]
+            if isinstance(list_of_aggs, str):
+                list_of_aggs = [x.strip() for x in list_of_aggs.split("|")]
+            if any(x not in all_aggs for x in list_of_aggs):
+                raise TypeError(
+                    f"Invalid input for Aggregate Function(s) in the function {func.__name__}. Invalid Aggregate Function(s): {set(list_of_aggs) - set(all_aggs)}."
+                )
+            if all_kwargs["time_col"] not in idf.columns:
+                raise TypeError(
+                    f"Invalid input for time_col in the function {func.__name__}. Received - {all_kwargs['time_col']}"
+                )
+            all_kwargs["list_of_aggs"] = list_of_aggs
+
+        if func.__name__ in ["window_aggregator"]:
+            all_aggs = [
+                "count",
+                "min",
+                "max",
+                "sum",
+                "mean",
+                "median",
+            ]
+
+            list_of_aggs = all_kwargs["list_of_aggs"]
+            if isinstance(list_of_aggs, str):
+                list_of_aggs = [x.strip() for x in list_of_aggs.split("|")]
+            if any(x not in all_aggs for x in list_of_aggs):
+                raise TypeError(
+                    f"Invalid input for Aggregate Function(s) in the function {func.__name__}. Invalid Aggregate Function(s): {set(list_of_aggs) - set(all_aggs)}."
+                )
+            if all_kwargs["order_col"] not in idf.columns:
+                raise TypeError(
+                    f"Invalid input for order_col in the function {func.__name__}. Received - {all_kwargs['order_col']}"
+                )
+
+            if all_kwargs["window_type"] not in ("expanding", "rolling"):
+                raise TypeError(
+                    f"Invalid input for Window Type in the function {func.__name__}. Window Type should be expanding or rolling  - Received '{all_kwargs['window_type']}'."
+                )
+            if (all_kwargs["window_type"] == "rolling") & (
+                not str(all_kwargs["window_size"]).isnumeric()
+            ):
+                raise TypeError(
+                    f"Invalid input for Window Size in the function {func.__name__}. Window Size should be numeric - Received '{all_kwargs['window_size']}'."
+                )
+
+            if all_kwargs["partition_col"]:
+                if all_kwargs["partition_col"] not in idf.columns:
+                    raise TypeError(
+                        f"Invalid input for partition_col in the function {func.__name__}. Received - {all_kwargs['partition_col']}"
+                    )
+
+            all_kwargs["list_of_aggs"] = list_of_aggs
+
+        if func.__name__ in ["lagged_ts"]:
+            if not str(all_kwargs["lag"]).isnumeric():
+                raise TypeError(
+                    f"Non-numeric input for Lag in the function {func.__name__}"
+                )
+            if all_kwargs["output_type"] not in ("ts", "ts_diff"):
+                raise TypeError(
+                    f"Invalid input for output_type in the function {func.__name__}. output_type should be ts or ts_diff  - Received '{all_kwargs['output_type']}'."
+                )
+
+            tsdiff_unit = all_kwargs.get("tsdiff_unit")
+            all_units = ["second", "minute", "hour", "day", "week", "month", "year"]
+            if (tsdiff_unit not in all_units) & (
+                tsdiff_unit in [e + "s" for e in all_units]
+            ):
+                tsdiff_unit = tsdiff_unit[:-1]
+            if tsdiff_unit not in all_units:
+                raise TypeError(
+                    f"Invalid input for tsdiff_unit in the function {func.__name__}. tsdiff_unit should be second, minute, hour, day, week, month or year - Received '{all_kwargs.get('tsdiff_unit')}'."
+                )
+            all_kwargs["tsdiff_unit"] = tsdiff_unit
+
+            if all_kwargs["partition_col"]:
+                if all_kwargs["partition_col"] not in idf.columns:
+                    raise TypeError(
+                        f"Invalid input for partition_col in the function {func.__name__}. Received - {all_kwargs['partition_col']}"
+                    )
 
         return func(**all_kwargs)
 

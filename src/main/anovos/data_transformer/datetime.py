@@ -33,95 +33,10 @@ from pyspark.sql import Window
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
 from datetime import datetime as dt
+from .validations import refactor_arguments
 
 
-def argument_checker(func_name, args):
-    """
-
-    Parameters
-    ----------
-    func_name
-        function name for which argument needs to be check
-
-    args
-        arguments to check in dictionary format
-
-    Returns
-    -------
-    List
-        list of columns to analyze
-
-    """
-    list_of_cols = args["list_of_cols"]
-    all_columns = args["all_columns"]
-
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if any(x not in all_columns for x in list_of_cols):
-        raise TypeError("Invalid input for Column(s)")
-    if len(list_of_cols) == 0:
-        warnings.warn("No timestamp conversion - No column(s) to convert")
-        return []
-    if func_name not in ["aggregator"]:
-        if args["output_mode"] not in ("replace", "append"):
-            raise TypeError("Invalid input for output_mode")
-
-    if func_name in ["timestamp_to_unix", "unix_to_timestamp"]:
-        if args["precision"] not in ("ms", "s"):
-            raise TypeError("Invalid input for precision")
-        if args["tz"] not in ("local", "gmt", "utc"):
-            raise TypeError("Invalid input for timezone")
-
-    if func_name in ["string_to_timestamp"]:
-        if args["output_type"] not in ("ts", "dt"):
-            raise TypeError("Invalid input for output_type")
-
-    if func_name in ["timeUnits_extraction"]:
-        if any(x not in args["all_units"] for x in args["units"]):
-            raise TypeError("Invalid input for Unit(s)")
-
-    if func_name in ["adding_timeUnits"]:
-        if args["unit"] not in (
-            args["all_units"] + [(e + "s") for e in args["all_units"]]
-        ):
-            raise TypeError("Invalid input for Unit")
-
-    if func_name in ["timestamp_comparison"]:
-        if args["comparison_type"] not in args["all_types"]:
-            raise TypeError("Invalid input for comparison_type")
-
-    if func_name in ["is_selectedHour"]:
-        hours = list(range(0, 24))
-        if args["start_hour"] not in hours:
-            raise TypeError("Invalid input for start_hour")
-        if args["end_hour"] not in hours:
-            raise TypeError("Invalid input for end_hour")
-
-    if func_name in ["window_aggregator"]:
-        if any(x not in args["all_aggs"] for x in args["list_of_aggs"]):
-            raise TypeError("Invalid input for Aggregate Function(s)")
-        if args["window_type"] not in ("expanding", "rolling"):
-            raise TypeError("Invalid input for Window Type")
-        if (args["window_type"] == "rolling") & (
-            not str(args["window_size"]).isnumeric()
-        ):
-            raise TypeError("Invalid input for Window Size")
-
-    if func_name in ["aggregator"]:
-        if any(x not in args["all_aggs"] for x in args["list_of_aggs"]):
-            raise TypeError("Invalid input for Aggregate Function(s)")
-        if args["time_col"] not in all_columns:
-            raise TypeError("Invalid input for time_col")
-
-    if func_name in ["lagged_ts"]:
-        if not str(args["lag"]).isnumeric():
-            raise TypeError("Invalid input for Lag")
-        if args["output_type"] not in ("ts", "ts_diff"):
-            raise TypeError("Invalid input for output_type")
-
-    return list_of_cols
-
-
+@refactor_arguments
 def timestamp_to_unix(
     spark, idf, list_of_cols, precision="s", tz="local", output_mode="replace"
 ):
@@ -155,18 +70,8 @@ def timestamp_to_unix(
     DataFrame
 
     """
-    tz = tz.lower()
-    list_of_cols = argument_checker(
-        "timestamp_to_unix",
-        {
-            "list_of_cols": list_of_cols,
-            "all_columns": idf.columns,
-            "output_mode": output_mode,
-            "precision": precision,
-            "tz": tz,
-        },
-    )
-    if not list_of_cols:
+
+    if len(list_of_cols) == 0:
         return idf
 
     localtz = (
@@ -188,11 +93,15 @@ def timestamp_to_unix(
         modify_col = {"replace": i, "append": i + "_unix"}
         odf = odf.withColumn(
             modify_col[output_mode],
-            (F.col(i + "_local").cast("double") * factor[precision]).cast("long"),
+            (
+                F.col(i + "_local").cast(T.TimestampType()).cast("double")
+                * factor[precision]
+            ).cast("long"),
         ).drop(i + "_local")
     return odf
 
 
+@refactor_arguments
 def unix_to_timestamp(
     spark, idf, list_of_cols, precision="s", tz="local", output_mode="replace"
 ):
@@ -227,18 +136,8 @@ def unix_to_timestamp(
     DataFrame
 
     """
-    tz = tz.lower()
-    list_of_cols = argument_checker(
-        "unix_to_timestamp",
-        {
-            "list_of_cols": list_of_cols,
-            "all_columns": idf.columns,
-            "output_mode": output_mode,
-            "precision": precision,
-            "tz": tz,
-        },
-    )
-    if not list_of_cols:
+
+    if len(list_of_cols) == 0:
         return idf
 
     localtz = (
@@ -265,6 +164,7 @@ def unix_to_timestamp(
     return odf
 
 
+@refactor_arguments
 def timezone_conversion(
     spark, idf, list_of_cols, given_tz, output_tz, output_mode="replace"
 ):
@@ -295,15 +195,7 @@ def timezone_conversion(
     DataFrame
 
     """
-    list_of_cols = argument_checker(
-        "timezone_conversion",
-        {
-            "list_of_cols": list_of_cols,
-            "all_columns": idf.columns,
-            "output_mode": output_mode,
-        },
-    )
-    if not list_of_cols:
+    if len(list_of_cols) == 0:
         return idf
 
     localtz = (
@@ -328,6 +220,7 @@ def timezone_conversion(
     return odf
 
 
+@refactor_arguments
 def string_to_timestamp(
     spark,
     idf,
@@ -366,16 +259,7 @@ def string_to_timestamp(
     DataFrame
 
     """
-    list_of_cols = argument_checker(
-        "string_to_timestamp",
-        {
-            "list_of_cols": list_of_cols,
-            "all_columns": idf.columns,
-            "output_mode": output_mode,
-            "output_type": output_type,
-        },
-    )
-    if not list_of_cols:
+    if len(list_of_cols) == 0:
         return idf
 
     localtz = (
@@ -402,6 +286,7 @@ def string_to_timestamp(
     return odf
 
 
+@refactor_arguments
 def timestamp_to_string(
     spark, idf, list_of_cols, output_format="%Y-%m-%d %H:%M:%S", output_mode="replace"
 ):
@@ -431,15 +316,7 @@ def timestamp_to_string(
     DataFrame
 
     """
-    list_of_cols = argument_checker(
-        "timestamp_to_string",
-        {
-            "list_of_cols": list_of_cols,
-            "all_columns": idf.columns,
-            "output_mode": output_mode,
-        },
-    )
-    if not list_of_cols:
+    if len(list_of_cols) == 0:
         return idf
 
     localtz = (
@@ -465,6 +342,7 @@ def timestamp_to_string(
     return odf
 
 
+@refactor_arguments
 def dateformat_conversion(
     spark,
     idf,
@@ -501,15 +379,7 @@ def dateformat_conversion(
     DataFrame
 
     """
-    list_of_cols = argument_checker(
-        "dateformat_conversion",
-        {
-            "list_of_cols": list_of_cols,
-            "all_columns": idf.columns,
-            "output_mode": output_mode,
-        },
-    )
-    if not list_of_cols:
+    if len(list_of_cols) == 0:
         return idf
 
     odf_tmp = string_to_timestamp(
@@ -535,6 +405,7 @@ def dateformat_conversion(
     return odf
 
 
+@refactor_arguments
 def timeUnits_extraction(idf, list_of_cols, units, output_mode="append"):
     """
     Extract the unit(s) of given timestamp columns as integer. Currently the following units are supported: hour,
@@ -567,34 +438,8 @@ def timeUnits_extraction(idf, list_of_cols, units, output_mode="append"):
     DataFrame
 
     """
-    all_units = [
-        "hour",
-        "minute",
-        "second",
-        "dayofmonth",
-        "dayofweek",
-        "dayofyear",
-        "weekofyear",
-        "month",
-        "quarter",
-        "year",
-    ]
-    if units == "all":
-        units = all_units
-    if isinstance(units, str):
-        units = [x.strip() for x in units.split("|")]
 
-    list_of_cols = argument_checker(
-        "timeUnits_extraction",
-        {
-            "list_of_cols": list_of_cols,
-            "all_columns": idf.columns,
-            "output_mode": output_mode,
-            "units": units,
-            "all_units": all_units,
-        },
-    )
-    if not list_of_cols:
+    if len(list_of_cols) == 0:
         return idf
 
     odf = idf
@@ -609,6 +454,7 @@ def timeUnits_extraction(idf, list_of_cols, units, output_mode="append"):
     return odf
 
 
+@refactor_arguments
 def time_diff(idf, ts1, ts2, unit, output_mode="append"):
     """
     Calculate the time difference between 2 timestamp columns (Timestamp 1 - Timestamp 2) in a given unit.
@@ -638,14 +484,6 @@ def time_diff(idf, ts1, ts2, unit, output_mode="append"):
     DataFrame
 
     """
-    argument_checker(
-        "time_diff",
-        {
-            "list_of_cols": [ts1, ts2],
-            "all_columns": idf.columns,
-            "output_mode": output_mode,
-        },
-    )
 
     factor_mapping = {
         "second": 1,
@@ -666,7 +504,13 @@ def time_diff(idf, ts1, ts2, unit, output_mode="append"):
 
     odf = idf.withColumn(
         ts1 + "_" + ts2 + "_" + unit + "diff",
-        F.abs((F.col(ts1).cast("double") - F.col(ts2).cast("double"))) / factor,
+        F.abs(
+            (
+                F.col(ts1).cast(T.TimestampType()).cast("double")
+                - F.col(ts2).cast(T.TimestampType()).cast("double")
+            )
+        )
+        / factor,
     )
 
     if output_mode == "replace":
@@ -675,6 +519,7 @@ def time_diff(idf, ts1, ts2, unit, output_mode="append"):
     return odf
 
 
+@refactor_arguments
 def time_elapsed(idf, list_of_cols, unit, output_mode="append"):
     """
     Calculate time difference between the current and the given timestamp (Current - Given Timestamp) in a given
@@ -704,15 +549,8 @@ def time_elapsed(idf, list_of_cols, unit, output_mode="append"):
     DataFrame
 
     """
-    list_of_cols = argument_checker(
-        "time_elapsed",
-        {
-            "list_of_cols": list_of_cols,
-            "all_columns": idf.columns,
-            "output_mode": output_mode,
-        },
-    )
-    if not list_of_cols:
+
+    if len(list_of_cols) == 0:
         return idf
 
     factor_mapping = {
@@ -724,20 +562,18 @@ def time_elapsed(idf, list_of_cols, unit, output_mode="append"):
         "month": 2628000,
         "year": 31536000,
     }
-    if unit in factor_mapping.keys():
-        factor = factor_mapping[unit]
-    elif unit in [(e + "s") for e in factor_mapping.keys()]:
-        unit = unit[:-1]
-        factor = factor_mapping[unit]
-    else:
-        raise TypeError("Invalid input of unit")
+
+    factor = factor_mapping[unit]
 
     odf = idf
     for i in list_of_cols:
         odf = odf.withColumn(
             i + "_" + unit + "diff",
             F.abs(
-                (F.lit(F.current_timestamp()).cast("double") - F.col(i).cast("double"))
+                (
+                    F.lit(F.current_timestamp()).cast("double")
+                    - F.col(i).cast(T.TimestampType()).cast("double")
+                )
             )
             / factor,
         )
@@ -747,6 +583,7 @@ def time_elapsed(idf, list_of_cols, unit, output_mode="append"):
     return odf
 
 
+@refactor_arguments
 def adding_timeUnits(idf, list_of_cols, unit, unit_value, output_mode="append"):
     """
     Add or subtract given time units to/from timestamp columns. Currently the following units are supported:
@@ -778,25 +615,16 @@ def adding_timeUnits(idf, list_of_cols, unit, unit_value, output_mode="append"):
     DataFrame
 
     """
-    all_units = ["hour", "minute", "second", "day", "week", "month", "year"]
-    list_of_cols = argument_checker(
-        "adding_timeUnits",
-        {
-            "list_of_cols": list_of_cols,
-            "all_columns": idf.columns,
-            "output_mode": output_mode,
-            "unit": unit,
-            "all_units": all_units,
-        },
-    )
-    if not list_of_cols:
+
+    if len(list_of_cols) == 0:
         return idf
 
     odf = idf
     for i in list_of_cols:
         odf = odf.withColumn(
             i + "_adjusted",
-            F.col(i) + F.expr("Interval " + str(unit_value) + " " + unit),
+            F.col(i).cast(T.TimestampType())
+            + F.expr("Interval " + str(unit_value) + " " + unit),
         )
 
         if output_mode == "replace":
@@ -804,6 +632,7 @@ def adding_timeUnits(idf, list_of_cols, unit, unit_value, output_mode="append"):
     return odf
 
 
+@refactor_arguments
 def timestamp_comparison(
     spark,
     idf,
@@ -830,7 +659,7 @@ def timestamp_comparison(
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
     comparison_type
-        greater_than", "less_than", "greaterThan_equalTo", "lessThan_equalTo"
+        "greater_than", "less_than", "greaterThan_equalTo", "lessThan_equalTo"
         The comparison type of the transformation.
     comparison_value
         The timestamp / date value to compare with in string.
@@ -848,18 +677,8 @@ def timestamp_comparison(
     DataFrame
 
     """
-    all_types = ["greater_than", "less_than", "greaterThan_equalTo", "lessThan_equalTo"]
-    list_of_cols = argument_checker(
-        "timestamp_comparison",
-        {
-            "list_of_cols": list_of_cols,
-            "all_columns": idf.columns,
-            "output_mode": output_mode,
-            "comparison_type": comparison_type,
-            "all_types": all_types,
-        },
-    )
-    if not list_of_cols:
+
+    if len(list_of_cols) == 0:
         return idf
 
     localtz = (
@@ -898,6 +717,7 @@ def timestamp_comparison(
     return odf
 
 
+@refactor_arguments
 def start_of_month(idf, list_of_cols, output_mode="append"):
     """
     Extract the first day of the month of given timestamp/date columns.
@@ -922,15 +742,8 @@ def start_of_month(idf, list_of_cols, output_mode="append"):
     DataFrame
 
     """
-    list_of_cols = argument_checker(
-        "start_of_month",
-        {
-            "list_of_cols": list_of_cols,
-            "all_columns": idf.columns,
-            "output_mode": output_mode,
-        },
-    )
-    if not list_of_cols:
+
+    if len(list_of_cols) == 0:
         return idf
 
     odf = idf
@@ -942,6 +755,7 @@ def start_of_month(idf, list_of_cols, output_mode="append"):
     return odf
 
 
+@refactor_arguments
 def is_monthStart(idf, list_of_cols, output_mode="append"):
     """
     Check if values in given timestamp/date columns are the first day of a month. The derived values are 1 if True
@@ -967,15 +781,8 @@ def is_monthStart(idf, list_of_cols, output_mode="append"):
     DataFrame
 
     """
-    list_of_cols = argument_checker(
-        "is_monthStart",
-        {
-            "list_of_cols": list_of_cols,
-            "all_columns": idf.columns,
-            "output_mode": output_mode,
-        },
-    )
-    if not list_of_cols:
+
+    if len(list_of_cols) == 0:
         return idf
 
     odf = start_of_month(idf, list_of_cols, output_mode="append")
@@ -991,6 +798,7 @@ def is_monthStart(idf, list_of_cols, output_mode="append"):
     return odf
 
 
+@refactor_arguments
 def end_of_month(idf, list_of_cols, output_mode="append"):
     """
     Extract the last day of the month of given timestamp/date columns.
@@ -1015,15 +823,8 @@ def end_of_month(idf, list_of_cols, output_mode="append"):
     DataFrame
 
     """
-    list_of_cols = argument_checker(
-        "end_of_month",
-        {
-            "list_of_cols": list_of_cols,
-            "all_columns": idf.columns,
-            "output_mode": output_mode,
-        },
-    )
-    if not list_of_cols:
+
+    if len(list_of_cols) == 0:
         return idf
 
     odf = idf
@@ -1035,6 +836,7 @@ def end_of_month(idf, list_of_cols, output_mode="append"):
     return odf
 
 
+@refactor_arguments
 def is_monthEnd(idf, list_of_cols, output_mode="append"):
     """
     Check if values in given timestamp/date columns are the last day of a month. The derived values are 1 if True
@@ -1060,15 +862,8 @@ def is_monthEnd(idf, list_of_cols, output_mode="append"):
     DataFrame
 
     """
-    list_of_cols = argument_checker(
-        "is_monthEnd",
-        {
-            "list_of_cols": list_of_cols,
-            "all_columns": idf.columns,
-            "output_mode": output_mode,
-        },
-    )
-    if not list_of_cols:
+
+    if len(list_of_cols) == 0:
         return idf
 
     odf = end_of_month(idf, list_of_cols, output_mode="append")
@@ -1084,6 +879,7 @@ def is_monthEnd(idf, list_of_cols, output_mode="append"):
     return odf
 
 
+@refactor_arguments
 def start_of_year(idf, list_of_cols, output_mode="append"):
     """
     Extract the first day of the year of given timestamp/date columns.
@@ -1108,15 +904,8 @@ def start_of_year(idf, list_of_cols, output_mode="append"):
     DataFrame
 
     """
-    list_of_cols = argument_checker(
-        "start_of_year",
-        {
-            "list_of_cols": list_of_cols,
-            "all_columns": idf.columns,
-            "output_mode": output_mode,
-        },
-    )
-    if not list_of_cols:
+
+    if len(list_of_cols) == 0:
         return idf
 
     odf = idf
@@ -1128,6 +917,7 @@ def start_of_year(idf, list_of_cols, output_mode="append"):
     return odf
 
 
+@refactor_arguments
 def is_yearStart(idf, list_of_cols, output_mode="append"):
     """
     Check if values in given timestamp/date columns are the first day of a year.
@@ -1153,15 +943,8 @@ def is_yearStart(idf, list_of_cols, output_mode="append"):
     DataFrame
 
     """
-    list_of_cols = argument_checker(
-        "is_yearStart",
-        {
-            "list_of_cols": list_of_cols,
-            "all_columns": idf.columns,
-            "output_mode": output_mode,
-        },
-    )
-    if not list_of_cols:
+
+    if len(list_of_cols) == 0:
         return idf
 
     odf = start_of_year(idf, list_of_cols, output_mode="append")
@@ -1177,6 +960,7 @@ def is_yearStart(idf, list_of_cols, output_mode="append"):
     return odf
 
 
+@refactor_arguments
 def end_of_year(idf, list_of_cols, output_mode="append"):
     """
     Extract the last day of the year of given timestamp/date columns.
@@ -1201,15 +985,8 @@ def end_of_year(idf, list_of_cols, output_mode="append"):
     DataFrame
 
     """
-    list_of_cols = argument_checker(
-        "end_of_year",
-        {
-            "list_of_cols": list_of_cols,
-            "all_columns": idf.columns,
-            "output_mode": output_mode,
-        },
-    )
-    if not list_of_cols:
+
+    if len(list_of_cols) == 0:
         return idf
 
     odf = idf
@@ -1224,6 +1001,7 @@ def end_of_year(idf, list_of_cols, output_mode="append"):
     return odf
 
 
+@refactor_arguments
 def is_yearEnd(idf, list_of_cols, output_mode="append"):
     """
     Check if values in given timestamp/date columns are the last day of a year.
@@ -1248,15 +1026,8 @@ def is_yearEnd(idf, list_of_cols, output_mode="append"):
     DataFrame
 
     """
-    list_of_cols = argument_checker(
-        "is_yearEnd",
-        {
-            "list_of_cols": list_of_cols,
-            "all_columns": idf.columns,
-            "output_mode": output_mode,
-        },
-    )
-    if not list_of_cols:
+
+    if len(list_of_cols) == 0:
         return idf
 
     odf = end_of_year(idf, list_of_cols, output_mode="append")
@@ -1272,6 +1043,7 @@ def is_yearEnd(idf, list_of_cols, output_mode="append"):
     return odf
 
 
+@refactor_arguments
 def start_of_quarter(idf, list_of_cols, output_mode="append"):
     """
     Extract the first day of the quarter of given timestamp/date columns.
@@ -1295,15 +1067,8 @@ def start_of_quarter(idf, list_of_cols, output_mode="append"):
     DataFrame
 
     """
-    list_of_cols = argument_checker(
-        "start_of_quarter",
-        {
-            "list_of_cols": list_of_cols,
-            "all_columns": idf.columns,
-            "output_mode": output_mode,
-        },
-    )
-    if not list_of_cols:
+
+    if len(list_of_cols) == 0:
         return idf
 
     odf = idf
@@ -1315,6 +1080,7 @@ def start_of_quarter(idf, list_of_cols, output_mode="append"):
     return odf
 
 
+@refactor_arguments
 def is_quarterStart(idf, list_of_cols, output_mode="append"):
     """
     Check if values in given timestamp/date columns are the first day of a quarter.
@@ -1340,15 +1106,8 @@ def is_quarterStart(idf, list_of_cols, output_mode="append"):
     DataFrame
 
     """
-    list_of_cols = argument_checker(
-        "is_quarterStart",
-        {
-            "list_of_cols": list_of_cols,
-            "all_columns": idf.columns,
-            "output_mode": output_mode,
-        },
-    )
-    if not list_of_cols:
+
+    if len(list_of_cols) == 0:
         return idf
 
     odf = start_of_quarter(idf, list_of_cols, output_mode="append")
@@ -1364,6 +1123,7 @@ def is_quarterStart(idf, list_of_cols, output_mode="append"):
     return odf
 
 
+@refactor_arguments
 def end_of_quarter(idf, list_of_cols, output_mode="append"):
     """
     Extract the last day of the quarter of given timestamp/date columns.
@@ -1387,15 +1147,8 @@ def end_of_quarter(idf, list_of_cols, output_mode="append"):
     DataFrame
 
     """
-    list_of_cols = argument_checker(
-        "end_of_quarter",
-        {
-            "list_of_cols": list_of_cols,
-            "all_columns": idf.columns,
-            "output_mode": output_mode,
-        },
-    )
-    if not list_of_cols:
+
+    if len(list_of_cols) == 0:
         return idf
 
     odf = idf
@@ -1412,6 +1165,7 @@ def end_of_quarter(idf, list_of_cols, output_mode="append"):
     return odf
 
 
+@refactor_arguments
 def is_quarterEnd(idf, list_of_cols, output_mode="append"):
     """
     Check if values in given timestamp/date columns are the last day of a quarter.
@@ -1437,15 +1191,8 @@ def is_quarterEnd(idf, list_of_cols, output_mode="append"):
     DataFrame
 
     """
-    list_of_cols = argument_checker(
-        "is_quarterEnd",
-        {
-            "list_of_cols": list_of_cols,
-            "all_columns": idf.columns,
-            "output_mode": output_mode,
-        },
-    )
-    if not list_of_cols:
+
+    if len(list_of_cols) == 0:
         return idf
 
     odf = end_of_quarter(idf, list_of_cols, output_mode="append")
@@ -1461,6 +1208,7 @@ def is_quarterEnd(idf, list_of_cols, output_mode="append"):
     return odf
 
 
+@refactor_arguments
 def is_yearFirstHalf(idf, list_of_cols, output_mode="append"):
     """
     Check if values in given timestamp/date columns are in the first half of a year.
@@ -1486,15 +1234,8 @@ def is_yearFirstHalf(idf, list_of_cols, output_mode="append"):
     DataFrame
 
     """
-    list_of_cols = argument_checker(
-        "is_yearFirstHalf",
-        {
-            "list_of_cols": list_of_cols,
-            "all_columns": idf.columns,
-            "output_mode": output_mode,
-        },
-    )
-    if not list_of_cols:
+
+    if len(list_of_cols) == 0:
         return idf
 
     odf = idf
@@ -1510,6 +1251,7 @@ def is_yearFirstHalf(idf, list_of_cols, output_mode="append"):
     return odf
 
 
+@refactor_arguments
 def is_selectedHour(idf, list_of_cols, start_hour, end_hour, output_mode="append"):
     """
     Check if the hour component of given timestamp columns are between start hour (inclusive) and end hour (
@@ -1540,17 +1282,8 @@ def is_selectedHour(idf, list_of_cols, start_hour, end_hour, output_mode="append
     DataFrame
 
     """
-    list_of_cols = argument_checker(
-        "is_selectedHour",
-        {
-            "list_of_cols": list_of_cols,
-            "all_columns": idf.columns,
-            "start_hour": start_hour,
-            "end_hour": end_hour,
-            "output_mode": output_mode,
-        },
-    )
-    if not list_of_cols:
+
+    if len(list_of_cols) == 0:
         return idf
 
     odf = idf
@@ -1572,6 +1305,7 @@ def is_selectedHour(idf, list_of_cols, start_hour, end_hour, output_mode="append
     return odf
 
 
+@refactor_arguments
 def is_leapYear(idf, list_of_cols, output_mode="append"):
     """
     Check if values in given timestamp/date columns are in a leap year.
@@ -1597,15 +1331,8 @@ def is_leapYear(idf, list_of_cols, output_mode="append"):
     DataFrame
 
     """
-    list_of_cols = argument_checker(
-        "is_leapYear",
-        {
-            "list_of_cols": list_of_cols,
-            "all_columns": idf.columns,
-            "output_mode": output_mode,
-        },
-    )
-    if not list_of_cols:
+
+    if len(list_of_cols) == 0:
         return idf
 
     def check(year):
@@ -1625,6 +1352,7 @@ def is_leapYear(idf, list_of_cols, output_mode="append"):
     return odf
 
 
+@refactor_arguments
 def is_weekend(idf, list_of_cols, output_mode="append"):
     """
     Check if values in given timestamp/date columns are on weekends. The derived values are 1 if True and 0 if False.
@@ -1649,15 +1377,8 @@ def is_weekend(idf, list_of_cols, output_mode="append"):
     DataFrame
 
     """
-    list_of_cols = argument_checker(
-        "is_weekend",
-        {
-            "list_of_cols": list_of_cols,
-            "all_columns": idf.columns,
-            "output_mode": output_mode,
-        },
-    )
-    if not list_of_cols:
+
+    if len(list_of_cols) == 0:
         return idf
 
     odf = idf
@@ -1671,6 +1392,7 @@ def is_weekend(idf, list_of_cols, output_mode="append"):
     return odf
 
 
+@refactor_arguments
 def aggregator(
     spark, idf, list_of_cols, list_of_aggs, time_col, granularity_format="%Y-%m-%d"
 ):
@@ -1710,32 +1432,8 @@ def aggregator(
     DataFrame
 
     """
-    all_aggs = [
-        "count",
-        "min",
-        "max",
-        "sum",
-        "mean",
-        "median",
-        "stddev",
-        "countDistinct",
-        "sumDistinct",
-        "collect_list",
-        "collect_set",
-    ]
-    if isinstance(list_of_aggs, str):
-        list_of_aggs = [x.strip() for x in list_of_aggs.split("|")]
-    list_of_cols = argument_checker(
-        "aggregator",
-        {
-            "list_of_cols": list_of_cols,
-            "all_columns": idf.columns,
-            "list_of_aggs": list_of_aggs,
-            "all_aggs": all_aggs,
-            "time_col": time_col,
-        },
-    )
-    if not list_of_cols:
+
+    if len(list_of_cols) == 0:
         return idf
 
     if granularity_format != "":
@@ -1774,6 +1472,7 @@ def aggregator(
     return odf
 
 
+@refactor_arguments
 def window_aggregator(
     idf,
     list_of_cols,
@@ -1827,22 +1526,7 @@ def window_aggregator(
 
     """
 
-    if isinstance(list_of_aggs, str):
-        list_of_aggs = [x.strip() for x in list_of_aggs.split("|")]
-    all_aggs = ["count", "min", "max", "sum", "mean", "median"]
-    list_of_cols = argument_checker(
-        "window_aggregator",
-        {
-            "list_of_cols": list_of_cols,
-            "all_columns": idf.columns,
-            "list_of_aggs": list_of_aggs,
-            "all_aggs": all_aggs,
-            "output_mode": output_mode,
-            "window_type": window_type,
-            "window_size": window_size,
-        },
-    )
-    if not list_of_cols:
+    if len(list_of_cols) == 0:
         return idf
 
     odf = idf
@@ -1883,6 +1567,7 @@ def window_aggregator(
     return odf
 
 
+@refactor_arguments
 def lagged_ts(
     idf,
     list_of_cols,
@@ -1933,17 +1618,7 @@ def lagged_ts(
     DataFrame
 
     """
-    list_of_cols = argument_checker(
-        "lagged_ts",
-        {
-            "list_of_cols": list_of_cols,
-            "all_columns": idf.columns,
-            "lag": lag,
-            "output_type": output_type,
-            "output_mode": output_mode,
-        },
-    )
-    if not list_of_cols:
+    if len(list_of_cols) == 0:
         return idf
 
     odf = idf
