@@ -12,16 +12,15 @@ from pyspark.sql import types as T
 from scipy.stats import variation
 import sympy as sp
 
-from anovos.data_ingest.data_ingest import concatenate_dataset
+from anovos.data_ingest.data_ingest import concatenate_dataset, join_dataset, read_dataset
 from anovos.data_transformer.transformers import attribute_binning
 from anovos.shared.utils import attributeType_segregation
 from .distances import hellinger, psi, js_divergence, ks
-from .validations import check_distance_method, check_list_of_columns
+from .validations import refactor_arguments
 from ..shared.utils import platform_root_path
 
 
-@check_distance_method
-@check_list_of_columns
+@refactor_arguments
 def statistics(
     spark: SparkSession,
     idf_target: DataFrame,
@@ -144,8 +143,6 @@ def statistics(
         Number of columns will be dependent on method argument. There will be one column for each drift method/metric.
 
     """
-    drop_cols = drop_cols or []
-    num_cols = attributeType_segregation(idf_target.select(list_of_cols))[0]
 
     if run_type in list(platform_root_path.keys()):
         root_path = platform_root_path[run_type]
@@ -159,7 +156,7 @@ def statistics(
         source_bin = attribute_binning(
             spark,
             idf_source,
-            list_of_cols=num_cols,
+            list_of_cols=list_of_cols,
             method_type=bin_method,
             bin_size=bin_size,
             pre_existing_model=False,
@@ -170,7 +167,7 @@ def statistics(
     target_bin = attribute_binning(
         spark,
         idf_target,
-        list_of_cols=num_cols,
+        list_of_cols=list_of_cols,
         method_type=bin_method,
         bin_size=bin_size,
         pre_existing_model=True,
@@ -254,12 +251,16 @@ def statistics(
     return odf
 
 
+@refactor_arguments
 def stability_index_computation(
     spark,
-    *idfs,
+    idfs=[],
     list_of_cols="all",
     drop_cols=[],
     metric_weightages={"mean": 0.5, "stddev": 0.3, "kurtosis": 0.2},
+    pre_computed_raw_stats=False,
+    raw_stats_path_list=[],
+    raw_stats_type="csv",
     existing_metric_path="",
     appended_metric_path="",
     threshold=1,
@@ -375,7 +376,7 @@ def stability_index_computation(
         List of numerical columns to check stability e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-        "all" can be passed to include all numerical columns for analysis.
+        "all" can be passed to include all numerical columns of the first input dataframe for analysis.
         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
         drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
     drop_cols
@@ -410,32 +411,6 @@ def stability_index_computation(
 
     """
 
-    num_cols = attributeType_segregation(idfs[0])[0]
-    if list_of_cols == "all":
-        list_of_cols = num_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
-
-    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
-
-    if any(x not in num_cols for x in list_of_cols) | (len(list_of_cols) == 0):
-        raise TypeError("Invalid input for Column(s)")
-
-    if (
-        round(
-            metric_weightages.get("mean", 0)
-            + metric_weightages.get("stddev", 0)
-            + metric_weightages.get("kurtosis", 0),
-            3,
-        )
-        != 1
-    ):
-        raise ValueError(
-            "Invalid input for metric weightages. Either metric name is incorrect or sum of metric weightages is not 1.0"
-        )
-
     if existing_metric_path:
         existing_metric_df = spark.read.csv(
             existing_metric_path, header=True, inferSchema=True
@@ -454,20 +429,47 @@ def stability_index_computation(
         existing_metric_df = spark.sparkContext.emptyRDD().toDF(schema)
         dfs_count = 0
 
-    metric_ls = []
-    for idf in idfs:
-        for i in list_of_cols:
-            mean, stddev, kurtosis = idf.select(
-                F.mean(i), F.stddev(i), F.kurtosis(i)
-            ).first()
-            metric_ls.append(
-                [dfs_count + 1, i, mean, stddev, kurtosis + 3.0 if kurtosis else None]
-            )
-        dfs_count += 1
+    if pre_computed_raw_stats:
+        if raw_stats_type == "csv":
+            read_raw = lambda data_path: read_dataset(spark, data_path, "csv", {"header":True, "inferSchema":True})
+        else:
+            read_raw = lambda data_path: read_dataset(spark, data_path, raw_stats_type)
+        
+        for i, path in enumerate(raw_stats_path_list):
+            df_central_tendency = read_raw(path + "measures_of_centralTendency/").select("attribute", "mean").dropna()
+            df_dispersion = read_raw(path + "measures_of_dispersion/").select("attribute", "stddev")
+            df_shape = read_raw(path + "measures_of_shape/").select("attribute", "kurtosis")\
+                .withColumn("kurtosis", F.col("kurtosis")+F.lit(3)) # convert excess kurtosis to kurtosis
+            df_temp = join_dataset(df_central_tendency, df_dispersion, df_shape, join_cols="attribute",join_type="inner")\
+                .withColumn("idx", F.lit(dfs_count + i))\
+                .select("idx", "attribute", "mean", "stddev", "kurtosis")
+    
+            if i == 0:
+                new_metric_df = df_temp
+            else:
+                new_metric_df = concatenate_dataset(new_metric_df, df_temp)
+        
+        if list_of_cols != ['all']:
+            new_metric_df = new_metric_df.where(F.col("attribute").isin(list_of_cols))
+        if drop_cols != []:
+            new_metric_df = new_metric_df.where(F.col("attribute").isin(drop_cols))
 
-    new_metric_df = spark.createDataFrame(
-        metric_ls, schema=("idx", "attribute", "mean", "stddev", "kurtosis")
-    )
+    else:
+        metric_ls = []
+        for idf in idfs:
+            for i in list_of_cols:
+                mean, stddev, kurtosis = idf.select(
+                    F.mean(i), F.stddev(i), F.kurtosis(i)
+                ).first()
+                metric_ls.append(
+                    [dfs_count + 1, i, mean, stddev, kurtosis + 3.0 if kurtosis else None]
+                )
+            dfs_count += 1
+
+        new_metric_df = spark.createDataFrame(
+            metric_ls, schema=("idx", "attribute", "mean", "stddev", "kurtosis")
+        )
+
     appended_metric_df = concatenate_dataset(existing_metric_df, new_metric_df)
 
     if appended_metric_path:
@@ -551,6 +553,7 @@ def stability_index_computation(
     return odf
 
 
+@refactor_arguments
 def feature_stability_estimation(
     spark,
     attribute_stats,

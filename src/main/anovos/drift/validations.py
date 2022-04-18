@@ -1,94 +1,142 @@
 from functools import wraps, partial
-
 from loguru import logger
-
 from anovos.shared.utils import attributeType_segregation
+from inspect import getcallargs
 
-
-def check_list_of_columns(
-    func=None,
-    columns="list_of_cols",
-    target_idx: int = 1,
-    target: str = "idf_target",
-    drop="drop_cols",
-):
-    if func is None:
-        return partial(check_list_of_columns, columns=columns, target=target, drop=drop)
-
+def refactor_arguments(func):
     @wraps(func)
-    def validate(*args, **kwargs):
-        logger.debug("check the list of columns")
+    def wrapper(*args, **kwargs):
+        all_kwargs = getcallargs(func, *args, **kwargs)
 
-        idf_target = kwargs.get(target, "") or args[target_idx]
+        for boolarg in (
+            "pre_existing_source",
+            "pre_computed_raw_stats",
+            "print_impact",
+        ):
+            if boolarg in all_kwargs.keys():
+                boolarg_val = str(all_kwargs.get(boolarg))
+                if boolarg_val.lower() == "true":
+                    boolarg_val = True
+                elif boolarg_val.lower() == "false":
+                    boolarg_val = False
+                else:
+                    raise TypeError(
+                        f"Non-Boolean input for {boolarg} in the function {func.__name__}."
+                    )
+                all_kwargs[boolarg] = boolarg_val
 
-        cols_raw = kwargs.get(columns, "all")
-        if isinstance(cols_raw, str):
-            if cols_raw == "all":
-                num_cols, cat_cols, other_cols = attributeType_segregation(idf_target)
-                cols = num_cols + cat_cols
-            else:
-                cols = [x.strip() for x in cols_raw.split("|")]
-        elif isinstance(cols_raw, list):
-            cols = cols_raw
-        else:
-            raise TypeError(
-                f"'{columns}' must be either a string or a list of strings."
-                f" Received {type(cols_raw)}."
-            )
+        if func.__name__ == "statistics":
+            idf_target = all_kwargs.get("idf_target")
+            idf_source = all_kwargs.get("idf_source")
+            num_cols = attributeType_segregation(idf_target)[0]
+            list_of_cols = all_kwargs.get("list_of_cols")
+            drop_cols = all_kwargs.get("drop_cols", [])
+            all_valid_cols = num_cols
 
-        drops_raw = kwargs.get(drop, [])
-        if isinstance(drops_raw, str):
-            drops = [x.strip() for x in drops_raw.split("|")]
-        elif isinstance(drops_raw, list):
-            drops = drops_raw
-        else:
-            raise TypeError(
-                f"'{drop}' must be either a string or a list of strings. "
-                f"Received {type(drops_raw)}."
-            )
-
-        final_cols = list(set(e for e in cols if e not in drops))
-
-        if not final_cols:
-            raise ValueError(
-                f"Empty set of columns is given. Columns to select: {cols}, columns to drop: {drops}."
-            )
-
-        if any(x not in idf_target.columns for x in final_cols):
-            raise ValueError(
-                f"Not all columns are in the input dataframe. "
-                f"Missing columns: {set(final_cols) - set(idf_target.columns)}"
-            )
-
-        kwargs[columns] = final_cols
-        kwargs[drop] = []
-
-        return func(*args, **kwargs)
-
-    return validate
-
-
-def check_distance_method(func=None, param="method_type"):
-    if func is None:
-        return partial(check_distance_method, param=param)
-
-    @wraps(func)
-    def validate(*args, **kwargs):
-        dist_distance_methods = kwargs.get(param, "PSI")
-
-        if isinstance(dist_distance_methods, str):
-            if dist_distance_methods == "all":
-                dist_distance_methods = ["PSI", "JSD", "HD", "KS"]
-            else:
-                dist_distance_methods = [
-                    x.strip() for x in dist_distance_methods.split("|")
+            if list_of_cols == "all":
+                list_of_cols = all_valid_cols
+            if isinstance(list_of_cols, str):
+                list_of_cols = [
+                    x.strip() for x in list_of_cols.split("|") if x.strip()
                 ]
+            if isinstance(drop_cols, str):
+                drop_cols = [x.strip() for x in drop_cols.split("|")]
+            
+            list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+            
+            if len(list_of_cols) == 0:
+                raise TypeError(
+                    f"Invalid input for column(s) in the function {func.__name__}.")
+            if any(x not in all_valid_cols for x in list_of_cols):
+                raise TypeError(
+                    f"Invalid input for column(s) in the function {func.__name__}. Invalid Column(s): {set(list_of_cols) - set(all_valid_cols)} not found in idf_target."
+                )
+            if any(x not in idf_source.columns for x in list_of_cols):
+                raise TypeError(
+                    f"Invalid input for column(s) in the function {func.__name__}. Invalid Column(s): {set(list_of_cols) - set(idf_source.columns)} not found in idf_source."
+                )
 
-        if any(x not in ("PSI", "JSD", "HD", "KS") for x in dist_distance_methods):
-            raise TypeError(f"Invalid input for {param}")
+            method_type = all_kwargs.get("method_type")
+            if isinstance(method_type, str):
+                if method_type == "all":
+                    method_type = ["PSI", "JSD", "HD", "KS"]
+                else:
+                    method_type = [
+                        x.strip() for x in method_type.split("|")
+                    ]
+            if any(x not in ("PSI", "JSD", "HD", "KS") for x in method_type):
+                raise TypeError(f"Invalid input for method_type")
+            
+            bin_method = all_kwargs.get("bin_method")
+            if bin_method not in ("equal_frequency", "equal_range"):
+                raise TypeError(f"Invalid input for bin_method")
 
-        kwargs[param] = dist_distance_methods
+            all_kwargs["list_of_cols"] = list_of_cols
+            if "drop_cols" in all_kwargs.keys():
+                all_kwargs["drop_cols"] = []
 
-        return func(*args, **kwargs)
+        elif func.__name__ == "stability_index_computation":
+            idfs = all_kwargs.get("idfs")
+            list_of_cols = all_kwargs.get("list_of_cols")
+            drop_cols = all_kwargs.get("drop_cols", [])
 
-    return validate
+            if isinstance(list_of_cols, str):
+                list_of_cols = [
+                    x.strip() for x in list_of_cols.split("|") if x.strip()
+                ]
+            if isinstance(drop_cols, str):
+                drop_cols = [x.strip() for x in drop_cols.split("|")]
+
+            if all_kwargs.get("pre_computed_raw_stats") is False:
+                num_cols = attributeType_segregation(idf_target)[0]
+                all_valid_cols = num_cols
+
+                if list_of_cols == ["all"]:
+                    list_of_cols = all_valid_cols
+
+                list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+
+                if len(list_of_cols) == 0:
+                    raise TypeError(
+                        f"Invalid input for column(s) in the function {func.__name__}.")
+
+                for idf in idfs:
+                    if any(x not in idf.columns for x in list_of_cols):
+                        raise TypeError(
+                            f"Invalid input for column(s) in the function {func.__name__}. One or more columns are not present in all input dataframes."
+                        )
+
+                all_kwargs["list_of_cols"] = list_of_cols
+                if "drop_cols" in all_kwargs.keys(): # Todo: remove this?
+                    all_kwargs["drop_cols"] = []
+            else:
+                if len(idfs) > 0:
+                    logger.warning("When pre_computed_raw_stats is True, argument idfs will be ignored and raw_stats_path_list will be used instead.")
+                all_kwargs["list_of_cols"] = list_of_cols
+                if "drop_cols" in all_kwargs.keys():
+                    all_kwargs["drop_cols"] = drop_cols
+
+            metric_weightages = all_kwargs.get("metric_weightages")
+            if (round(metric_weightages.get("mean", 0) + metric_weightages.get("stddev", 0) + metric_weightages.get("kurtosis", 0),3,)!= 1):
+                raise TypeError(
+                    "Invalid input for metric weightages. Either metric name is incorrect or sum of metric weightages is not 1.0."
+                )
+            threshold = all_kwargs.get("threshold")
+            if (threshold < 0) or (threshold > 4):
+                raise TypeError(
+                    "Invalid input for metric threshold. It must be a number between 0 and 4."
+                )      
+        elif func.__name__ == "feature_stability_estimation":
+            metric_weightages = all_kwargs.get("metric_weightages")
+            if (round(metric_weightages.get("mean", 0) + metric_weightages.get("stddev", 0) + metric_weightages.get("kurtosis", 0),3,)!= 1):
+                raise TypeError(
+                    "Invalid input for metric weightages. Either metric name is incorrect or sum of metric weightages is not 1.0."
+                )
+
+        if "run_type" in all_kwargs.keys():
+            if all_kwargs.get("run_type") not in ("local", "emr", "databricks"):
+                raise TypeError(
+                    f"Invalid input for run_type in the function {func.__name__}. run_type should be local, emr or databricks - Received '{all_kwargs.get('run_type')}'."
+                )
+        return func(**all_kwargs)
+    return wrapper
