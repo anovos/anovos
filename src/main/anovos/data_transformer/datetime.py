@@ -469,7 +469,8 @@ def timestamp_to_string(
     for i in list_of_cols:
         modify_col = {"replace": i, "append": i + "_str"}
         odf = odf.withColumn(
-            modify_col[output_mode], f_conversion(F.col(i).cast(T.TimestampType()), F.lit(output_format))
+            modify_col[output_mode],
+            f_conversion(F.col(i).cast(T.TimestampType()), F.lit(output_format)),
         )
 
     return odf
@@ -815,7 +816,8 @@ def adding_timeUnits(idf, list_of_cols, unit, unit_value, output_mode="append"):
     for i in list_of_cols:
         odf = odf.withColumn(
             i + "_adjusted",
-            F.col(i).cast(T.TimestampType()) + F.expr("Interval " + str(unit_value) + " " + unit),
+            F.col(i).cast(T.TimestampType())
+            + F.expr("Interval " + str(unit_value) + " " + unit),
         )
 
         if output_mode == "replace":
@@ -1003,7 +1005,10 @@ def is_monthStart(idf, list_of_cols, output_mode="append"):
         odf = odf.withColumn(
             i + "_ismonthStart",
             F.when(F.col(i).isNull(), None).otherwise(
-            F.when(F.to_date(F.col(i)) == F.col(i + "_monthStart"), 1).otherwise(F.when(F.col(i).isNull(), None).otherwise(0))),
+                F.when(F.to_date(F.col(i)) == F.col(i + "_monthStart"), 1).otherwise(
+                    F.when(F.col(i).isNull(), None).otherwise(0)
+                )
+            ),
         ).drop(i + "_monthStart")
 
         if output_mode == "replace":
@@ -1097,7 +1102,8 @@ def is_monthEnd(idf, list_of_cols, output_mode="append"):
         odf = odf.withColumn(
             i + "_ismonthEnd",
             F.when(F.col(i).isNull(), None).otherwise(
-            F.when(F.to_date(F.col(i)) == F.col(i + "_monthEnd"), 1).otherwise(0)),
+                F.when(F.to_date(F.col(i)) == F.col(i + "_monthEnd"), 1).otherwise(0)
+            ),
         ).drop(i + "_monthEnd")
 
         if output_mode == "replace":
@@ -1191,7 +1197,8 @@ def is_yearStart(idf, list_of_cols, output_mode="append"):
         odf = odf.withColumn(
             i + "_isyearStart",
             F.when(F.col(i).isNull(), None).otherwise(
-            F.when(F.to_date(F.col(i)) == F.col(i + "_yearStart"), 1).otherwise(0)),
+                F.when(F.to_date(F.col(i)) == F.col(i + "_yearStart"), 1).otherwise(0)
+            ),
         ).drop(i + "_yearStart")
 
         if output_mode == "replace":
@@ -1287,7 +1294,8 @@ def is_yearEnd(idf, list_of_cols, output_mode="append"):
         odf = odf.withColumn(
             i + "_isyearEnd",
             F.when(F.col(i).isNull(), None).otherwise(
-            F.when(F.to_date(F.col(i)) == F.col(i + "_yearEnd"), 1).otherwise(0)),
+                F.when(F.to_date(F.col(i)) == F.col(i + "_yearEnd"), 1).otherwise(0)
+            ),
         ).drop(i + "_yearEnd")
 
         if output_mode == "replace":
@@ -1380,7 +1388,10 @@ def is_quarterStart(idf, list_of_cols, output_mode="append"):
         odf = odf.withColumn(
             i + "_isquarterStart",
             F.when(F.col(i).isNull(), None).otherwise(
-            F.when(F.to_date(F.col(i)) == F.col(i + "_quarterStart"), 1).otherwise(0)),
+                F.when(F.to_date(F.col(i)) == F.col(i + "_quarterStart"), 1).otherwise(
+                    0
+                )
+            ),
         ).drop(i + "_quarterStart")
 
         if output_mode == "replace":
@@ -1478,7 +1489,8 @@ def is_quarterEnd(idf, list_of_cols, output_mode="append"):
         odf = odf.withColumn(
             i + "_isquarterEnd",
             F.when(F.col(i).isNull(), None).otherwise(
-            F.when(F.to_date(F.col(i)) == F.col(i + "_quarterEnd"), 1).otherwise(0)),
+                F.when(F.to_date(F.col(i)) == F.col(i + "_quarterEnd"), 1).otherwise(0)
+            ),
         ).drop(i + "_quarterEnd")
 
         if output_mode == "replace":
@@ -1528,7 +1540,8 @@ def is_yearFirstHalf(idf, list_of_cols, output_mode="append"):
         odf = odf.withColumn(
             i + "_isFirstHalf",
             F.when(F.col(i).isNull(), None).otherwise(
-            F.when(F.month(F.col(i)).isin(*range(1, 7)), 1).otherwise(0)),
+                F.when(F.month(F.col(i)).isin(*range(1, 7)), 1).otherwise(0)
+            ),
         )
 
         if output_mode == "replace":
@@ -1591,7 +1604,8 @@ def is_selectedHour(idf, list_of_cols, start_hour, end_hour, output_mode="append
         odf = odf.withColumn(
             i + "_isselectedHour",
             F.when(F.col(i).isNull(), None).otherwise(
-            F.when(F.hour(F.col(i)).isin(*list_of_hrs), 1).otherwise(0)),
+                F.when(F.hour(F.col(i)).isin(*list_of_hrs), 1).otherwise(0)
+            ),
         )
 
         if output_mode == "replace":
@@ -1692,9 +1706,10 @@ def is_weekend(idf, list_of_cols, output_mode="append"):
     odf = idf
     for i in list_of_cols:
         odf = odf.withColumn(
-            i + "_isweekend", 
+            i + "_isweekend",
             F.when(F.col(i).isNull(), None).otherwise(
-                F.when(F.dayofweek(F.col(i)).isin([1, 7]), 1).otherwise(0))
+                F.when(F.dayofweek(F.col(i)).isin([1, 7]), 1).otherwise(0)
+            ),
         )
 
         if output_mode == "replace":
