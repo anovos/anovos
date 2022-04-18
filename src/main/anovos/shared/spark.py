@@ -86,7 +86,6 @@ configs = {
     "jars_packages": SPARK_JARS_PACKAGES,
     "py_files": [],
     "spark_config": {
-        "spark.sql.session.timeZone": "GMT",
         "spark.python.profile": "false",
         "spark.yarn.appMasterEnv.ARROW_PRE_0_15_IPC_FORMAT": "1",
         "spark.executorEnv.ARROW_PRE_0_15_IPC_FORMAT": "1",
