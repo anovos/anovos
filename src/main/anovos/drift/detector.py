@@ -12,7 +12,11 @@ from pyspark.sql import types as T
 from scipy.stats import variation
 import sympy as sp
 
-from anovos.data_ingest.data_ingest import concatenate_dataset, join_dataset, read_dataset
+from anovos.data_ingest.data_ingest import (
+    concatenate_dataset,
+    join_dataset,
+    read_dataset,
+)
 from anovos.data_transformer.transformers import attribute_binning
 from anovos.shared.utils import attributeType_segregation
 from .distances import hellinger, psi, js_divergence, ks
@@ -431,25 +435,44 @@ def stability_index_computation(
 
     if pre_computed_raw_stats:
         if raw_stats_type == "csv":
-            read_raw = lambda data_path: read_dataset(spark, data_path, "csv", {"header":True, "inferSchema":True})
+            read_raw = lambda data_path: read_dataset(
+                spark, data_path, "csv", {"header": True, "inferSchema": True}
+            )
         else:
             read_raw = lambda data_path: read_dataset(spark, data_path, raw_stats_type)
-        
+
         for i, path in enumerate(raw_stats_path_list):
-            df_central_tendency = read_raw(path + "measures_of_centralTendency/").select("attribute", "mean").dropna()
-            df_dispersion = read_raw(path + "measures_of_dispersion/").select("attribute", "stddev")
-            df_shape = read_raw(path + "measures_of_shape/").select("attribute", "kurtosis")\
-                .withColumn("kurtosis", F.col("kurtosis")+F.lit(3)) # convert excess kurtosis to kurtosis
-            df_temp = join_dataset(df_central_tendency, df_dispersion, df_shape, join_cols="attribute",join_type="inner")\
-                .withColumn("idx", F.lit(dfs_count + i))\
+            df_central_tendency = (
+                read_raw(path + "measures_of_centralTendency/")
+                .select("attribute", "mean")
+                .dropna()
+            )
+            df_dispersion = read_raw(path + "measures_of_dispersion/").select(
+                "attribute", "stddev"
+            )
+            df_shape = (
+                read_raw(path + "measures_of_shape/")
+                .select("attribute", "kurtosis")
+                .withColumn("kurtosis", F.col("kurtosis") + F.lit(3))
+            )  # convert excess kurtosis to kurtosis
+            df_temp = (
+                join_dataset(
+                    df_central_tendency,
+                    df_dispersion,
+                    df_shape,
+                    join_cols="attribute",
+                    join_type="inner",
+                )
+                .withColumn("idx", F.lit(dfs_count + i))
                 .select("idx", "attribute", "mean", "stddev", "kurtosis")
-    
+            )
+
             if i == 0:
                 new_metric_df = df_temp
             else:
                 new_metric_df = concatenate_dataset(new_metric_df, df_temp)
-        
-        if list_of_cols != ['all']:
+
+        if list_of_cols != ["all"]:
             new_metric_df = new_metric_df.where(F.col("attribute").isin(list_of_cols))
         if drop_cols != []:
             new_metric_df = new_metric_df.where(F.col("attribute").isin(drop_cols))
@@ -462,7 +485,13 @@ def stability_index_computation(
                     F.mean(i), F.stddev(i), F.kurtosis(i)
                 ).first()
                 metric_ls.append(
-                    [dfs_count + 1, i, mean, stddev, kurtosis + 3.0 if kurtosis else None]
+                    [
+                        dfs_count + 1,
+                        i,
+                        mean,
+                        stddev,
+                        kurtosis + 3.0 if kurtosis else None,
+                    ]
                 )
             dfs_count += 1
 

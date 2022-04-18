@@ -3,6 +3,7 @@ from loguru import logger
 from anovos.shared.utils import attributeType_segregation
 from inspect import getcallargs
 
+
 def refactor_arguments(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -36,17 +37,16 @@ def refactor_arguments(func):
             if list_of_cols == "all":
                 list_of_cols = all_valid_cols
             if isinstance(list_of_cols, str):
-                list_of_cols = [
-                    x.strip() for x in list_of_cols.split("|") if x.strip()
-                ]
+                list_of_cols = [x.strip() for x in list_of_cols.split("|") if x.strip()]
             if isinstance(drop_cols, str):
                 drop_cols = [x.strip() for x in drop_cols.split("|")]
-            
+
             list_of_cols = [e for e in list_of_cols if e not in drop_cols]
-            
+
             if len(list_of_cols) == 0:
                 raise TypeError(
-                    f"Invalid input for column(s) in the function {func.__name__}.")
+                    f"Invalid input for column(s) in the function {func.__name__}."
+                )
             if any(x not in all_valid_cols for x in list_of_cols):
                 raise TypeError(
                     f"Invalid input for column(s) in the function {func.__name__}. Invalid Column(s): {set(list_of_cols) - set(all_valid_cols)} not found in idf_target."
@@ -61,12 +61,10 @@ def refactor_arguments(func):
                 if method_type == "all":
                     method_type = ["PSI", "JSD", "HD", "KS"]
                 else:
-                    method_type = [
-                        x.strip() for x in method_type.split("|")
-                    ]
+                    method_type = [x.strip() for x in method_type.split("|")]
             if any(x not in ("PSI", "JSD", "HD", "KS") for x in method_type):
                 raise TypeError(f"Invalid input for method_type")
-            
+
             bin_method = all_kwargs.get("bin_method")
             if bin_method not in ("equal_frequency", "equal_range"):
                 raise TypeError(f"Invalid input for bin_method")
@@ -81,9 +79,7 @@ def refactor_arguments(func):
             drop_cols = all_kwargs.get("drop_cols", [])
 
             if isinstance(list_of_cols, str):
-                list_of_cols = [
-                    x.strip() for x in list_of_cols.split("|") if x.strip()
-                ]
+                list_of_cols = [x.strip() for x in list_of_cols.split("|") if x.strip()]
             if isinstance(drop_cols, str):
                 drop_cols = [x.strip() for x in drop_cols.split("|")]
 
@@ -98,7 +94,8 @@ def refactor_arguments(func):
 
                 if len(list_of_cols) == 0:
                     raise TypeError(
-                        f"Invalid input for column(s) in the function {func.__name__}.")
+                        f"Invalid input for column(s) in the function {func.__name__}."
+                    )
 
                 for idf in idfs:
                     if any(x not in idf.columns for x in list_of_cols):
@@ -107,17 +104,27 @@ def refactor_arguments(func):
                         )
 
                 all_kwargs["list_of_cols"] = list_of_cols
-                if "drop_cols" in all_kwargs.keys(): # Todo: remove this?
+                if "drop_cols" in all_kwargs.keys():  # Todo: remove this?
                     all_kwargs["drop_cols"] = []
             else:
                 if len(idfs) > 0:
-                    logger.warning("When pre_computed_raw_stats is True, argument idfs will be ignored and raw_stats_path_list will be used instead.")
+                    logger.warning(
+                        "When pre_computed_raw_stats is True, argument idfs will be ignored and raw_stats_path_list will be used instead."
+                    )
                 all_kwargs["list_of_cols"] = list_of_cols
                 if "drop_cols" in all_kwargs.keys():
                     all_kwargs["drop_cols"] = drop_cols
 
             metric_weightages = all_kwargs.get("metric_weightages")
-            if (round(metric_weightages.get("mean", 0) + metric_weightages.get("stddev", 0) + metric_weightages.get("kurtosis", 0),3,)!= 1):
+            if (
+                round(
+                    metric_weightages.get("mean", 0)
+                    + metric_weightages.get("stddev", 0)
+                    + metric_weightages.get("kurtosis", 0),
+                    3,
+                )
+                != 1
+            ):
                 raise TypeError(
                     "Invalid input for metric weightages. Either metric name is incorrect or sum of metric weightages is not 1.0."
                 )
@@ -125,10 +132,18 @@ def refactor_arguments(func):
             if (threshold < 0) or (threshold > 4):
                 raise TypeError(
                     "Invalid input for metric threshold. It must be a number between 0 and 4."
-                )      
+                )
         elif func.__name__ == "feature_stability_estimation":
             metric_weightages = all_kwargs.get("metric_weightages")
-            if (round(metric_weightages.get("mean", 0) + metric_weightages.get("stddev", 0) + metric_weightages.get("kurtosis", 0),3,)!= 1):
+            if (
+                round(
+                    metric_weightages.get("mean", 0)
+                    + metric_weightages.get("stddev", 0)
+                    + metric_weightages.get("kurtosis", 0),
+                    3,
+                )
+                != 1
+            ):
                 raise TypeError(
                     "Invalid input for metric weightages. Either metric name is incorrect or sum of metric weightages is not 1.0."
                 )
@@ -139,4 +154,5 @@ def refactor_arguments(func):
                     f"Invalid input for run_type in the function {func.__name__}. run_type should be local, emr or databricks - Received '{all_kwargs.get('run_type')}'."
                 )
         return func(**all_kwargs)
+
     return wrapper
