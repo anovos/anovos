@@ -472,11 +472,16 @@ def stability_index_computation(
                 new_metric_df = concatenate_dataset(new_metric_df, df_temp)
 
         if list_of_cols == ["all"]:
-            list_of_cols = new_metric_df.select("attribute").distinct().rdd.flatMap(lambda x: x).collect()
+            list_of_cols = (
+                new_metric_df.select("attribute")
+                .distinct()
+                .rdd.flatMap(lambda x: x)
+                .collect()
+            )
         list_of_cols = [e for e in list_of_cols if e not in drop_cols]
 
         new_metric_df = new_metric_df.where(F.col("attribute").isin(list_of_cols))
-        
+
     else:
         metric_ls = []
         for idf in idfs:

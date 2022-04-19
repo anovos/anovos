@@ -49,11 +49,11 @@ def refactor_arguments(func):
                 )
             if any(x not in all_valid_cols for x in list_of_cols):
                 raise TypeError(
-                    f"Invalid input for column(s) in the function {func.__name__}. Invalid Column(s): {set(list_of_cols) - set(all_valid_cols)} not found in idf_target."
+                    f"Invalid input for column(s) in the function {func.__name__}. Invalid Column(s): {set(list_of_cols) - set(all_valid_cols)} not found in target dataframe."
                 )
             if any(x not in idf_source.columns for x in list_of_cols):
                 raise TypeError(
-                    f"Invalid input for column(s) in the function {func.__name__}. Invalid Column(s): {set(list_of_cols) - set(idf_source.columns)} not found in idf_source."
+                    f"Invalid input for column(s) in the function {func.__name__}. Invalid Column(s): {set(list_of_cols) - set(idf_source.columns)} not found in source dataframe."
                 )
 
             method_type = all_kwargs.get("method_type")
@@ -70,8 +70,8 @@ def refactor_arguments(func):
                 raise TypeError(f"Invalid input for bin_method")
 
             all_kwargs["list_of_cols"] = list_of_cols
-            if "drop_cols" in all_kwargs.keys():
-                all_kwargs["drop_cols"] = []
+            all_kwargs["method_type"] = method_type
+            all_kwargs["drop_cols"] = []
 
         elif func.__name__ == "stability_index_computation":
             idfs = all_kwargs.get("idfs")
@@ -84,7 +84,7 @@ def refactor_arguments(func):
                 drop_cols = [x.strip() for x in drop_cols.split("|")]
 
             if all_kwargs.get("pre_computed_raw_stats") is False:
-                num_cols = attributeType_segregation(idf_target)[0]
+                num_cols = attributeType_segregation(idfs[0])[0]
                 all_valid_cols = num_cols
 
                 if list_of_cols == ["all"]:
@@ -104,16 +104,14 @@ def refactor_arguments(func):
                         )
 
                 all_kwargs["list_of_cols"] = list_of_cols
-                if "drop_cols" in all_kwargs.keys():  # Todo: remove this?
-                    all_kwargs["drop_cols"] = []
+                all_kwargs["drop_cols"] = []
             else:
                 if len(idfs) > 0:
                     logger.warning(
                         "When pre_computed_raw_stats is True, argument idfs will be ignored and raw_stats_path_list will be used instead."
                     )
                 all_kwargs["list_of_cols"] = list_of_cols
-                if "drop_cols" in all_kwargs.keys():
-                    all_kwargs["drop_cols"] = drop_cols
+                all_kwargs["drop_cols"] = drop_cols
 
             metric_weightages = all_kwargs.get("metric_weightages")
             if (
