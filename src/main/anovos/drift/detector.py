@@ -26,21 +26,20 @@ from ..shared.utils import platform_root_path
 
 @refactor_arguments
 def statistics(
-    spark: SparkSession,
-    idf_target: DataFrame,
-    idf_source: DataFrame,
-    *,
-    list_of_cols: list = "all",
-    drop_cols: list = None,
-    method_type: str = "PSI",
-    bin_method: str = "equal_range",
-    bin_size: int = 10,
-    threshold: float = 0.1,
-    pre_existing_source: bool = False,
-    source_path: str = "NA",
-    model_directory: str = "drift_statistics",
-    run_type: str = "local",
-    print_impact: bool = False,
+    spark,
+    idf_target,
+    idf_source,
+    list_of_cols="all",
+    drop_cols=[],
+    method_type="PSI",
+    bin_method="equal_range",
+    bin_size=10,
+    threshold=0.1,
+    pre_existing_source=False,
+    source_path="NA",
+    model_directory="drift_statistics",
+    run_type="local",
+    print_impact=False,
 ):
     """
     When the performance of a deployed machine learning model degrades in production, one potential reason is that
@@ -472,11 +471,12 @@ def stability_index_computation(
             else:
                 new_metric_df = concatenate_dataset(new_metric_df, df_temp)
 
-        if list_of_cols != ["all"]:
-            new_metric_df = new_metric_df.where(F.col("attribute").isin(list_of_cols))
-        if drop_cols != []:
-            new_metric_df = new_metric_df.where(F.col("attribute").isin(drop_cols))
+        if list_of_cols == ["all"]:
+            list_of_cols = new_metric_df.select("attribute").distinct().rdd.flatMap(lambda x: x).collect()
+        list_of_cols = [e for e in list_of_cols if e not in drop_cols]
 
+        new_metric_df = new_metric_df.where(F.col("attribute").isin(list_of_cols))
+        
     else:
         metric_ls = []
         for idf in idfs:
