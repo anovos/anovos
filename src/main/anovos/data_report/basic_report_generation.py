@@ -270,9 +270,7 @@ def anovos_basic_report(
                 " Number of Categorical Attributes : **" + str(catcols_count) + "**"
             ),
             dp.Text(" Categorical Attributes Name : **" + str(catcols_name) + "**"),
-            rows=6,
         ),
-        rows=8,
     )
 
     l2 = dp.Text("### Statistics by Metric Type")
@@ -371,7 +369,6 @@ def anovos_basic_report(
                         dp.Text(unique_rows_count),
                         dp.Text(duplicate_rows_count),
                         dp.Text(duplicate_rows_pct),
-                        rows=4,
                     ),
                     dp.Text("#"),
                     dp.Text("#"),
@@ -403,14 +400,9 @@ def anovos_basic_report(
         dp.Select(
             blocks=[
                 dp.Group(
-                    dp.Text("# "),
-                    dp.Group(*QCcol_content),
-                    rows=2,
-                    label="Column Level",
+                    dp.Text("# "), dp.Group(*QCcol_content), label="Column Level",
                 ),
-                dp.Group(
-                    dp.Text("# "), dp.Group(*QCrow_content), rows=2, label="Row Level"
-                ),
+                dp.Group(dp.Text("# "), dp.Group(*QCrow_content), label="Row Level"),
             ],
             type=dp.SelectType.TABS,
         ),
@@ -440,7 +432,6 @@ def anovos_basic_report(
                     dp.Text("##"),
                     dp.DataTable(stats[["attribute"] + feats_order]),
                     dp.Plot(fig),
-                    rows=3,
                     label=remove_u_score(i.__name__),
                 )
             )
@@ -465,7 +456,6 @@ def anovos_basic_report(
                     dp.Text("##"),
                     dp.DataTable(stats),
                     dp.Plot(fig),
-                    rows=3,
                     label=remove_u_score(i.__name__),
                 )
             )
@@ -493,7 +483,6 @@ def anovos_basic_report(
                         dp.DataTable(stats),
                         dp.Plot(fig),
                         label=remove_u_score(i.__name__),
-                        rows=3,
                     )
                 )
 
