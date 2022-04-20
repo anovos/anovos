@@ -11,7 +11,7 @@ def refactor_arguments(func):
 
         for boolarg in (
             "pre_existing_source",
-            "pre_computed_raw_stats",
+            "pre_computed_stats",
             "print_impact",
         ):
             if boolarg in all_kwargs.keys():
@@ -83,7 +83,7 @@ def refactor_arguments(func):
             if isinstance(drop_cols, str):
                 drop_cols = [x.strip() for x in drop_cols.split("|")]
 
-            if all_kwargs.get("pre_computed_raw_stats") is False:
+            if all_kwargs.get("pre_computed_stats") is False:
                 num_cols = attributeType_segregation(idfs[0])[0]
                 all_valid_cols = num_cols
 
@@ -108,7 +108,7 @@ def refactor_arguments(func):
             else:
                 if len(idfs) > 0:
                     logger.warning(
-                        "When pre_computed_raw_stats is True, argument idfs will be ignored and raw_stats_path_list will be used instead."
+                        "When pre_computed_stats is True, idfs will be ignored and stats will be used instead."
                     )
                 all_kwargs["list_of_cols"] = list_of_cols
                 all_kwargs["drop_cols"] = drop_cols

@@ -257,13 +257,13 @@ def statistics(
 @refactor_arguments
 def stability_index_computation(
     spark,
-    idfs=[],
+    *idfs,
     list_of_cols="all",
     drop_cols=[],
     metric_weightages={"mean": 0.5, "stddev": 0.3, "kurtosis": 0.2},
-    pre_computed_raw_stats=False,
-    raw_stats_path_list=[],
-    raw_stats_type="csv",
+    pre_computed_stats=False,
+    stats={},
+    stats_file_type="csv",
     existing_metric_path="",
     appended_metric_path="",
     threshold=1,
@@ -432,28 +432,40 @@ def stability_index_computation(
         existing_metric_df = spark.sparkContext.emptyRDD().toDF(schema)
         dfs_count = 0
 
-    if pre_computed_raw_stats:
-        if raw_stats_type == "csv":
-            read_raw = lambda data_path: read_dataset(
-                spark, data_path, "csv", {"header": True, "inferSchema": True}
+    if pre_computed_stats:
+        stats_processed = {}
+        for metric in ["mean", "stddev", "kurtosis"]:
+            stats_processed[metric] = []
+            for path in stats[metric]:
+                if isinstance(path, str):
+                    path_dict = {"file_path": path, "file_type": stats_file_type}
+                    if stats_file_type == "csv":
+                        path_dict["file_configs"] = {
+                            "header": True,
+                            "inferSchema": True,
+                        }
+                    stats_processed[metric].append(path_dict)
+                else:
+                    stats_processed[metric].append(path)
+        for i, (mean_dict, stddev_dict, kurtosis_dict) in enumerate(
+            zip(
+                stats_processed["mean"],
+                stats_processed["stddev"],
+                stats_processed["kurtosis"],
             )
-        else:
-            read_raw = lambda data_path: read_dataset(spark, data_path, raw_stats_type)
-
-        for i, path in enumerate(raw_stats_path_list):
-            df_central_tendency = (
-                read_raw(path + "measures_of_centralTendency/")
-                .select("attribute", "mean")
+        ):
+            df_central_tendency = read_dataset(spark, **mean_dict).dropna()
+            df_dispersion = (
+                read_dataset(spark, **stddev_dict)
                 .dropna()
-            )
-            df_dispersion = read_raw(path + "measures_of_dispersion/").select(
-                "attribute", "stddev"
+                .select("attribute", "stddev")
             )
             df_shape = (
-                read_raw(path + "measures_of_shape/")
+                read_dataset(spark, **kurtosis_dict)
+                .dropna()
                 .select("attribute", "kurtosis")
                 .withColumn("kurtosis", F.col("kurtosis") + F.lit(3))
-            )  # convert excess kurtosis to kurtosis
+            )
             df_temp = (
                 join_dataset(
                     df_central_tendency,
