@@ -399,9 +399,7 @@ def anovos_basic_report(
         dp.Text("# "),
         dp.Select(
             blocks=[
-                dp.Group(
-                    dp.Text("# "), dp.Group(*QCcol_content), label="Column Level",
-                ),
+                dp.Group(dp.Text("# "), dp.Group(*QCcol_content), label="Column Level"),
                 dp.Group(dp.Text("# "), dp.Group(*QCrow_content), label="Row Level"),
             ],
             type=dp.SelectType.TABS,
