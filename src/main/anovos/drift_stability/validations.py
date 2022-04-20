@@ -26,7 +26,7 @@ def refactor_arguments(func):
                     )
                 all_kwargs[boolarg] = boolarg_val
 
-        if func.__name__ == "statistics":
+        if func.__name__ == "drift_statistics":
             idf_target = all_kwargs.get("idf_target")
             idf_source = all_kwargs.get("idf_source")
             num_cols = attributeType_segregation(idf_target)[0]

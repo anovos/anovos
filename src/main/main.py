@@ -64,7 +64,8 @@ from anovos.data_report import report_preprocessing
 from anovos.data_report.basic_report_generation import anovos_basic_report
 from anovos.data_report.report_generation import anovos_report
 from anovos.data_report.report_preprocessing import save_stats
-from anovos.drift import detector as ddetector
+from anovos.drift_stability import drift_detector as ddetector
+from anovos.drift_stability import stability
 from anovos.shared.spark import spark
 
 
@@ -407,7 +408,7 @@ def main(all_configs, run_type):
                         logger.info(
                             f"running drift statistics detector using {value['configs']}"
                         )
-                        df_stats = ddetector.statistics(
+                        df_stats = ddetector.drift_statistics(
                             spark,
                             df,
                             source,
@@ -442,7 +443,7 @@ def main(all_configs, run_type):
                         for k in [e for e in value.keys() if e not in ("configs")]:
                             tmp = ETL(value.get(k))
                             idfs.append(tmp)
-                        df_stats = ddetector.stability_index_computation(
+                        df_stats = stability.stability_index_computation(
                             spark, *idfs, **value["configs"], print_impact=False
                         )
                         if report_input_path:
