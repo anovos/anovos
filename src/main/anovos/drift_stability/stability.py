@@ -26,8 +26,7 @@ def stability_index_computation(
     drop_cols=[],
     metric_weightages={"mean": 0.5, "stddev": 0.3, "kurtosis": 0.2},
     pre_computed_stats=False,
-    stats={},
-    stats_file_type="csv",
+    stats={"mean": [], "stddev": [], "kurtosis": []},
     existing_metric_path="",
     appended_metric_path="",
     threshold=1,
@@ -153,7 +152,24 @@ def stability_index_computation(
     metric_weightages
         Takes input in dictionary format with keys being the metric name - "mean","stdev","kurtosis"
         and value being the weightage of the metric (between 0 and 1). Sum of all weightages must be 1.
-         (Default value = {"mean": 0.5, "stddev": 0.3, "kurtosis": 0.2})
+        (Default value = {"mean": 0.5, "stddev": 0.3, "kurtosis": 0.2})
+    pre_computed_stats
+        True, False (Default value = False)
+        This argument is to indicate whether pre-computed stats is available.
+        If it is True, idfs will be ignored and argument stats will be used. Else, stats will be ignored.
+    stats
+        This argument should be a dictionary with 3 keys: "mean", "stddev" and "kurtosis".
+        Each value of the dictionary is a list. Each list further contains dictionaries which are the configs 
+        to read the corresponding pre-saved stats using read_dataset (data_ingest module) function.
+        For example, stats can be {"mean": [df1_mean_config, df2_mean_config, ...], "stddev": [df1_stddev_config, df2_stddev_config, ...], 
+        "kurtosis": [df1_kurtosis_config, df2_kurtosis_config, ...]}.
+        If the stats is saved as csv with header and seperated by comma, df1_mean_config can be 
+        {'file_path': <data_path>, 'file_type': 'csv', 'file_configs': {'header': True, 'inferSchema': True}}
+        If the stats is saved as parquet , df1_mean_config can be {'file_path': <data_path>, 'file_type': 'parquet'}.
+        Please make sure the saved stats follow correct schemas: 
+        The saved stats for "mean" should be the output of function measures_of_centralTendency;
+        The saved stats for "stddev" should be the output of function measures_of_dispersion;
+        The saved stats for "kurtosis" should be the output of function measures_of_shape.
     existing_metric_path
         This argument is path for referring pre-existing metrics of historical datasets and is
         of schema [idx, attribute, mean, stdev, kurtosis].
@@ -175,7 +191,6 @@ def stability_index_computation(
         [attribute, mean_si, stddev_si, kurtosis_si, mean_cv, stddev_cv, kurtosis_cv, stability_index].
         *_cv is coefficient of variation for each metric. *_si is stability index for each metric.
         stability_index is net weighted stability index based on the individual metrics' stability index.
-
     """
 
     if existing_metric_path:
@@ -197,26 +212,8 @@ def stability_index_computation(
         dfs_count = 0
 
     if pre_computed_stats:
-        stats_processed = {}
-        for metric in ["mean", "stddev", "kurtosis"]:
-            stats_processed[metric] = []
-            for path in stats[metric]:
-                if isinstance(path, str):
-                    path_dict = {"file_path": path, "file_type": stats_file_type}
-                    if stats_file_type == "csv":
-                        path_dict["file_configs"] = {
-                            "header": True,
-                            "inferSchema": True,
-                        }
-                    stats_processed[metric].append(path_dict)
-                else:
-                    stats_processed[metric].append(path)
         for i, (mean_dict, stddev_dict, kurtosis_dict) in enumerate(
-            zip(
-                stats_processed["mean"],
-                stats_processed["stddev"],
-                stats_processed["kurtosis"],
-            )
+            zip(stats["mean"], stats["stddev"], stats["kurtosis"])
         ):
             df_central_tendency = read_dataset(spark, **mean_dict).dropna()
             df_dispersion = (
