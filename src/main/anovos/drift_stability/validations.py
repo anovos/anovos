@@ -76,7 +76,7 @@ def refactor_arguments(func):
         elif func.__name__ == "stability_index_computation":
             idfs = all_kwargs.get("idfs")
             list_of_cols = all_kwargs.get("list_of_cols")
-            drop_cols = all_kwargs.get("drop_cols", [])
+            drop_cols = all_kwargs.get("drop_cols")
 
             if isinstance(list_of_cols, str):
                 list_of_cols = [x.strip() for x in list_of_cols.split("|") if x.strip()]
@@ -102,10 +102,42 @@ def refactor_arguments(func):
                         raise TypeError(
                             f"Invalid input for column(s) in the function {func.__name__}. One or more columns are not present in all input dataframes."
                         )
-
                 all_kwargs["list_of_cols"] = list_of_cols
                 all_kwargs["drop_cols"] = []
             else:
+                stats = all_kwargs.get("stats")
+                if isinstance(stats, dict):
+                    if any(
+                        [
+                            x not in list(stats.keys())
+                            for x in ["mean", "stddev", "kurtosis"]
+                        ]
+                    ):
+                        raise TypeError(
+                            f"Invalid input for stats in the function {func.__name__}. Keys of stats must contain 'mean', 'stddev', 'kurtosis'."
+                        )
+                value_len = -1
+                for value in list(stats.values()):
+                    if value_len > 0:
+                        if len(value) != value_len:
+                            raise TypeError(
+                                f"Invalid input for stats in the function {func.__name__}. Length of all values of stats should be the same."
+                            )
+                    else:
+                        value_len = len(value)
+
+                    for config in value:
+                        if any(
+                            [
+                                x not in list(config.keys())
+                                for x in ["file_path", "file_type"]
+                            ]
+                        ):
+                            raise TypeError(
+                                f"Invalid input for values of stats in the function {func.__name__}. The config for each pre-computed statistics result \
+                                              should be a dictionary with two compulsory keys 'file_path' and 'file_type' and one optional key 'file_configs', \
+                                              which will be used as the arguments for read_dataset (data_ingest module) function."
+                            )
                 if len(idfs) > 0:
                     warnings.warn(
                         "When pre_computed_stats is True, idfs will be ignored and stats will be used instead."

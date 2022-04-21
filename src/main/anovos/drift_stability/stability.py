@@ -159,14 +159,14 @@ def stability_index_computation(
         If it is True, idfs will be ignored and argument stats will be used. Else, stats will be ignored.
     stats
         This argument should be a dictionary with 3 keys: "mean", "stddev" and "kurtosis".
-        Each value of the dictionary is a list. Each list further contains dictionaries which are the configs 
+        Each value of the dictionary is a list. Each list further contains dictionaries which are the configs
         to read the corresponding pre-saved stats using read_dataset (data_ingest module) function.
-        For example, stats can be {"mean": [df1_mean_config, df2_mean_config, ...], "stddev": [df1_stddev_config, df2_stddev_config, ...], 
+        For example, stats can be {"mean": [df1_mean_config, df2_mean_config, ...], "stddev": [df1_stddev_config, df2_stddev_config, ...],
         "kurtosis": [df1_kurtosis_config, df2_kurtosis_config, ...]}.
-        If the stats is saved as csv with header and seperated by comma, df1_mean_config can be 
+        If the stats is saved as csv with header and seperated by comma, df1_mean_config can be
         {'file_path': <data_path>, 'file_type': 'csv', 'file_configs': {'header': True, 'inferSchema': True}}
         If the stats is saved as parquet , df1_mean_config can be {'file_path': <data_path>, 'file_type': 'parquet'}.
-        Please make sure the saved stats follow correct schemas: 
+        Please make sure the saved stats follow correct schemas:
         The saved stats for "mean" should be the output of function measures_of_centralTendency;
         The saved stats for "stddev" should be the output of function measures_of_dispersion;
         The saved stats for "kurtosis" should be the output of function measures_of_shape.
