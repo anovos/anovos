@@ -1,5 +1,5 @@
 from functools import wraps, partial
-from loguru import logger
+import warnings
 from anovos.shared.utils import attributeType_segregation
 from inspect import getcallargs
 
@@ -107,7 +107,7 @@ def refactor_arguments(func):
                 all_kwargs["drop_cols"] = []
             else:
                 if len(idfs) > 0:
-                    logger.warning(
+                    warnings.warn(
                         "When pre_computed_stats is True, idfs will be ignored and stats will be used instead."
                     )
                 all_kwargs["list_of_cols"] = list_of_cols
