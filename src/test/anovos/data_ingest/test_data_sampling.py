@@ -18,7 +18,7 @@ def test_sample():
 def test_data_sampling(test_sample):
     output_1 = data_sample(
         test_sample,
-        list_of_cols="all",
+        strata_cols="all",
         method_type="stratified",
         fraction=0.75,
     )
@@ -33,7 +33,7 @@ def test_data_sampling(test_sample):
 
     output_2 = data_sample(
         test_sample,
-        list_of_cols="all",
+        strata_cols="all",
         method_type="stratified",
         fraction=0.5,
         seed_value=1,
@@ -46,3 +46,20 @@ def test_data_sampling(test_sample):
     assert output_2.filter(output_2["gender"] == "F").count() > 8
     assert output_2.filter(output_2["gender"] == "M").count() < 10
     assert output_2.filter(output_2["gender"] == "M").count() > 2
+
+    output_3 = data_sample(
+        test_sample,
+        strata_cols="all",
+        method_type="random",
+        fraction=0.5,
+        seed_value=1,
+    )
+    assert "gender" in output_3.columns
+    assert "label_1" in output_3.columns
+    assert "label_2" in output_3.columns
+    assert "label_3" in output_3.columns
+    assert output_3.count() < 24
+    assert output_3.count() < 12
+
+
+
