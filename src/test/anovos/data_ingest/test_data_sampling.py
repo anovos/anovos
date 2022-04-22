@@ -59,7 +59,7 @@ def test_data_sampling(test_sample):
     assert "label_2" in output_3.columns
     assert "label_3" in output_3.columns
     assert output_3.count() < 24
-    assert output_3.count() < 12
+    assert output_3.count() > 12
 
 
 
