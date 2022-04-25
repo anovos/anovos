@@ -61,5 +61,21 @@ def test_data_sampling(test_sample):
     assert output_3.count() < 24
     assert output_3.count() > 12
 
+    output_4 = data_sample(
+        test_sample,
+        strata_cols="all",
+        method_type="stratified",
+        stratified_type="balanced",
+        fraction=0.75,
+    )
+    assert "gender" in output_4.columns
+    assert "label_1" in output_4.columns
+    assert "label_2" in output_4.columns
+    assert "label_3" in output_4.columns
+    assert output_4.filter(output_4["gender"] == "F").count() < 13
+    assert output_4.filter(output_4["gender"] == "F").count() > 6
+    assert output_4.filter(output_4["gender"] == "M").count() < 13
+    assert output_4.filter(output_4["gender"] == "M").count() > 6
+
 
 

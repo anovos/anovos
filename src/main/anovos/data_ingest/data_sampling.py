@@ -1,5 +1,6 @@
-from pyspark.sql.functions import concat, lit
+from pyspark.sql import functions as F
 from anovos.shared.utils import attributeType_segregation
+import warnings
 
 
 def data_sample(
@@ -73,6 +74,10 @@ def data_sample(
         raise TypeError("Invalid input for seed_value")
     if type(unique_threshold) != float and type(unique_threshold) != int:
         raise TypeError("Invalid input for unique_threshold")
+    if unique_threshold > 1 and type(unique_threshold) != int:
+        raise TypeError(
+            "Invalid input for unique_threshold: unique_threshold can only be integer if larger than 1"
+        )
     if unique_threshold <= 0:
         raise TypeError(
             "Invalid input for unique_threshold: unique_threshold value is either between 0 and 1, or an integer > 1"
@@ -91,33 +96,36 @@ def data_sample(
     strata_cols = list(set([e for e in strata_cols if e not in drop_cols]))
     if len(strata_cols) == 0:
         raise TypeError("Missing strata_cols value")
+    skip_cols = []
     for col in strata_cols:
         if col not in idf.columns:
             raise TypeError("Invalid input for strata_cols: " + col + " does not exist")
-        if col not in attributeType_segregation(idf)[1]:
-            if method_type == "stratified":
-                if unique_threshold <= 1:
-                    if float(
-                        idf.select(col).distinct().count()
-                    ) > unique_threshold * float(idf.select(col).count()):
-                        raise TypeError(
-                            "Invalid input for strata_cols: "
-                            + col
-                            + " can only be a categorical column"
-                        )
-                else:
-                    if float(idf.select(col).distinct().count()) > unique_threshold:
-                        raise TypeError(
-                            "Invalid input for strata_cols: "
-                            + col
-                            + " can only be a categorical column"
-                        )
+        if method_type == "stratified":
+            if unique_threshold <= 1:
+                if float(idf.select(col).distinct().count()) > unique_threshold * float(
+                    idf.select(col).count()
+                ):
+                    skip_cols.append(col)
+            else:
+                if float(idf.select(col).distinct().count()) > unique_threshold:
+                    skip_cols.append(col)
+    if skip_cols:
+        warnings.warn(
+            "Columns dropped from strata due to high cardinality: "
+            + ",".join(skip_cols)
+        )
+    strata_cols = list(set([e for e in strata_cols if e not in skip_cols]))
+    if len(strata_cols) == 0:
+        warnings.warn(
+            "No Stratified Sampling Computation - No strata column(s) to sample"
+        )
+        return idf
     if method_type == "stratified":
-        sample_df = idf.withColumn("merge", concat(*strata_cols))
+        sample_df = idf.withColumn("merge", F.concat(*strata_cols))
         fractions = (
             sample_df.select("merge")
             .distinct()
-            .withColumn("fraction", lit(fraction))
+            .withColumn("fraction", F.lit(fraction))
             .rdd.collectAsMap()
         )
         if stratified_type == "population":
