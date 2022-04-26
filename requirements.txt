@@ -4,6 +4,7 @@ scipy<=1.8.0
 scikit-learn==1.0.2
 sympy>=1.6,<=1.9
 matplotlib>=3.4.3,<=3.5.1
+plotly==5.7.0
 datapane==0.14.0
 pyarrow<=7.0.0
 findspark==2.0.1
