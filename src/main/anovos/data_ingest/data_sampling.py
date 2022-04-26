@@ -72,54 +72,56 @@ def data_sample(
         raise TypeError("Invalid input for fraction: fraction value is between 0 and 1")
     if type(seed_value) != int:
         raise TypeError("Invalid input for seed_value")
-    if type(unique_threshold) != float and type(unique_threshold) != int:
-        raise TypeError("Invalid input for unique_threshold")
-    if unique_threshold > 1 and type(unique_threshold) != int:
-        raise TypeError(
-            "Invalid input for unique_threshold: unique_threshold can only be integer if larger than 1"
-        )
-    if unique_threshold <= 0:
-        raise TypeError(
-            "Invalid input for unique_threshold: unique_threshold value is either between 0 and 1, or an integer > 1"
-        )
     if method_type not in ["stratified", "random"]:
         raise TypeError("Invalid input for data_sample method_type")
     if method_type == "stratified":
+        if type(unique_threshold) != float and type(unique_threshold) != int:
+            raise TypeError("Invalid input for unique_threshold")
+        if unique_threshold > 1 and type(unique_threshold) != int:
+            raise TypeError(
+                "Invalid input for unique_threshold: unique_threshold can only be integer if larger than 1"
+            )
+        if unique_threshold <= 0:
+            raise TypeError(
+                "Invalid input for unique_threshold: unique_threshold value is either between 0 and 1, or an integer > 1"
+            )
         if stratified_type not in ["population", "balanced"]:
             raise TypeError("Invalid input for stratified_type")
-    if strata_cols == "all":
-        strata_cols = idf.columns
-    if isinstance(strata_cols, str):
-        strata_cols = [x.strip() for x in strata_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
-    strata_cols = list(set([e for e in strata_cols if e not in drop_cols]))
-    if len(strata_cols) == 0:
-        raise TypeError("Missing strata_cols value")
-    skip_cols = []
-    for col in strata_cols:
-        if col not in idf.columns:
-            raise TypeError("Invalid input for strata_cols: " + col + " does not exist")
-        if method_type == "stratified":
-            if unique_threshold <= 1:
-                if float(idf.select(col).distinct().count()) > unique_threshold * float(
-                    idf.select(col).count()
-                ):
-                    skip_cols.append(col)
-            else:
-                if float(idf.select(col).distinct().count()) > unique_threshold:
-                    skip_cols.append(col)
-    if skip_cols:
-        warnings.warn(
-            "Columns dropped from strata due to high cardinality: "
-            + ",".join(skip_cols)
-        )
-    strata_cols = list(set([e for e in strata_cols if e not in skip_cols]))
-    if len(strata_cols) == 0:
-        warnings.warn(
-            "No Stratified Sampling Computation - No strata column(s) to sample"
-        )
-        return idf
+        if strata_cols == "all":
+            strata_cols = idf.columns
+        if isinstance(strata_cols, str):
+            strata_cols = [x.strip() for x in strata_cols.split("|")]
+        if isinstance(drop_cols, str):
+            drop_cols = [x.strip() for x in drop_cols.split("|")]
+        strata_cols = list(set([e for e in strata_cols if e not in drop_cols]))
+        if len(strata_cols) == 0:
+            raise TypeError("Missing strata_cols value")
+        skip_cols = []
+        for col in strata_cols:
+            if col not in idf.columns:
+                raise TypeError(
+                    "Invalid input for strata_cols: " + col + " does not exist"
+                )
+            if method_type == "stratified":
+                if unique_threshold <= 1:
+                    if float(
+                        idf.select(col).distinct().count()
+                    ) > unique_threshold * float(idf.select(col).count()):
+                        skip_cols.append(col)
+                else:
+                    if float(idf.select(col).distinct().count()) > unique_threshold:
+                        skip_cols.append(col)
+        if skip_cols:
+            warnings.warn(
+                "Columns dropped from strata due to high cardinality: "
+                + ",".join(skip_cols)
+            )
+        strata_cols = list(set([e for e in strata_cols if e not in skip_cols]))
+        if len(strata_cols) == 0:
+            warnings.warn(
+                "No Stratified Sampling Computation - No strata column(s) to sample"
+            )
+            return idf
     if method_type == "stratified":
         sample_df = idf.withColumn("merge", F.concat(*strata_cols))
         fractions = (
