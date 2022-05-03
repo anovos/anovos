@@ -1,6 +1,6 @@
 import pytest
 import pandas as pd
-from anovos.feature_mapper.featrec_init import (
+from anovos.feature_recommender.featrec_init import (
     get_column_name,
     camel_case_split,
     recommendation_data_prep,
@@ -9,7 +9,7 @@ from anovos.feature_mapper.featrec_init import (
 
 @pytest.fixture
 def example_attr_2():
-    return pd.read_csv("./data/feature_mapper/test_input_fr_2.csv")
+    return pd.read_csv("./data/feature_recommender/test_input_fr_2.csv")
 
 
 def test_get_column_name(example_attr_2):

@@ -1,4 +1,4 @@
-"""Feature recommender recommends features based on ingested data dictionary by the user."""
+"""Feature mapper maps attributes to features based on ingested data dictionary by the user."""
 import copy
 import random
 import re
@@ -8,7 +8,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from sentence_transformers import util
 
-from anovos.feature_mapper.featrec_init import (
+from anovos.feature_recommender.featrec_init import (
     recommendation_data_prep,
     model_fer,
     camel_case_split,
@@ -16,7 +16,7 @@ from anovos.feature_mapper.featrec_init import (
     get_column_name,
     EmbeddingsTrainFer,
 )
-from anovos.feature_mapper.feature_exploration import (
+from anovos.feature_recommender.feature_explorer_recommender import (
     list_usecase_by_industry,
     process_industry,
     process_usecase,
@@ -653,6 +653,6 @@ def sankey_visualization(df, industry_included=False, usecase_included=False):
         ]
     )
     fig.update_layout(
-        title_text="Feature Recommendation Sankey Visualization", font_size=10
+        title_text="Feature Mapper Sankey Visualization", font_size=10
     )
     return fig

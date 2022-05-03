@@ -1,6 +1,6 @@
 import pandas as pd
 import pytest
-from anovos.feature_mapper.feature_exploration import (
+from anovos.feature_recommender.feature_explorer_recommender import (
     list_all_industry,
     list_all_usecase,
     list_all_pair,
@@ -12,7 +12,7 @@ from anovos.feature_mapper.feature_exploration import (
     list_feature_by_usecase,
     list_feature_by_pair,
 )
-from anovos.feature_mapper.featrec_init import model_download
+from anovos.feature_recommender.featrec_init import model_download
 
 
 model_download()

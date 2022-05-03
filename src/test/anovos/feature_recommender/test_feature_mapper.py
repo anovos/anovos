@@ -1,11 +1,11 @@
 import pytest
 import pandas as pd
-from anovos.feature_mapper.feature_recommendation import (
+from anovos.feature_recommender.feature_mapper import (
     feature_mapper,
     find_attr_by_relevance,
     sankey_visualization,
 )
-from anovos.feature_mapper.featrec_init import model_download
+from anovos.feature_recommender.featrec_init import model_download
 
 
 model_download()
@@ -13,12 +13,12 @@ model_download()
 
 @pytest.fixture
 def example_attr_1():
-    return pd.read_csv("./data/feature_mapper/test_input_fr.csv")
+    return pd.read_csv("./data/feature_recommender/test_input_fr.csv")
 
 
 @pytest.fixture
 def example_attr_2():
-    return pd.read_csv("./data/feature_mapper/test_input_fr_2.csv")
+    return pd.read_csv("./data/feature_recommender/test_input_fr_2.csv")
 
 
 def test_feature_mapper(example_attr_1, example_attr_2):
