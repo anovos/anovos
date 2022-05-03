@@ -4,7 +4,7 @@
 
 # Anovos
 
-[![Release Latest](https://img.shields.io/badge/release-%20v0.2.1-yellowgreen?style=plastic)](https://github.com/anovos/anovos/releases/)
+[![Release Latest](https://img.shields.io/badge/release-%20v0.2.2-yellowgreen?style=plastic)](https://github.com/anovos/anovos/releases/)
 [![Docs Latest](https://img.shields.io/badge/docs-latest-blue.svg?style=plastic)](https://docs.anovos.ai/)
 [![License](https://img.shields.io/badge/License-Apache_2.0-red.svg?style=plastic)](https://opensource.org/licenses/Apache-2.0)
 [![twitter](https://img.shields.io/badge/Follow--lightgrey?logo=twitter&style=social)](https://twitter.com/ml_anovos)

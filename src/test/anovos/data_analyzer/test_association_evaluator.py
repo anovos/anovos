@@ -142,43 +142,45 @@ def test_IG_calculation(spark_session: SparkSession):
         result_df1.where(F.col("attribute") == "marital-status")
         .toPandas()
         .to_dict("list")["ig"][0]
-        == 0.1583
+        == 0.1608
     )
+
+
     assert (
         result_df1.where(F.col("attribute") == "age")
         .toPandas()
         .to_dict("list")["ig"][0]
-        == 0.0943
+        == 0.0944
     )
     assert (
         result_df1.where(F.col("attribute") == "occupation")
         .toPandas()
         .to_dict("list")["ig"][0]
-        == 0.0917
+        == 0.0916
     )
     assert (
         result_df1.where(F.col("attribute") == "education")
         .toPandas()
         .to_dict("list")["ig"][0]
-        == 0.0873
+        == 0.0938
     )
     assert (
         result_df1.where(F.col("attribute") == "education-num")
         .toPandas()
         .to_dict("list")["ig"][0]
-        == 0.0888
+        == 0.0887
     )
     assert (
         result_df1.where(F.col("attribute") == "hours-per-week")
         .toPandas()
         .to_dict("list")["ig"][0]
-        == 0.0552
+        == 0.0549
     )
     assert (
         result_df1.where(F.col("attribute") == "capital-gain")
         .toPandas()
         .to_dict("list")["ig"][0]
-        == 0.0431
+        == 0.0434
     )
     assert (
         result_df1.where(F.col("attribute") == "sex")
