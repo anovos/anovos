@@ -5,3 +5,4 @@ pytest-cov==3.0.0
 isort==5.10.1
 flake8==4.0.1
 pre-commit==2.19.0
+pyspark==3.2.1
