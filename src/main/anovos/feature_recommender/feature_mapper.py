@@ -652,7 +652,5 @@ def sankey_visualization(df, industry_included=False, usecase_included=False):
             )
         ]
     )
-    fig.update_layout(
-        title_text="Feature Mapper Sankey Visualization", font_size=10
-    )
+    fig.update_layout(title_text="Feature Mapper Sankey Visualization", font_size=10)
     return fig

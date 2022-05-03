@@ -43,9 +43,7 @@ def test_feature_mapper(example_attr_1, example_attr_2):
         assert "N/A" in test_df.iloc[i, 4] or float(test_df.iloc[i, 4]) >= 0.3
         assert float(test_df.iloc[i, 4]) <= 1
 
-    test_df_2 = feature_mapper(
-        example_attr_2, desc_column="Desc", threshold=0.0
-    )
+    test_df_2 = feature_mapper(example_attr_2, desc_column="Desc", threshold=0.0)
     assert len(test_df_2) > 0
     assert "Usecase" in test_df_2.columns
     assert "Industry" in test_df_2.columns
@@ -90,9 +88,7 @@ def test_feature_mapper(example_attr_1, example_attr_2):
             assert "telecommunication" in test_df_3.iloc[i, 5]
             assert "churn" in test_df_3.iloc[i, 6]
 
-    test_df_4 = feature_mapper(
-        example_attr_2, name_column="Name", threshold=0.0
-    )
+    test_df_4 = feature_mapper(example_attr_2, name_column="Name", threshold=0.0)
     assert len(test_df_4) > 0
     assert "Usecase" in test_df_4.columns
     assert "Industry" in test_df_4.columns
