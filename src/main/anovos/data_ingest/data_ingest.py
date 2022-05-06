@@ -369,7 +369,12 @@ def recast_column(idf, list_of_cols, list_of_dtypes, print_impact=False):
 
 
 def recommend_type(
-    idf, list_of_cols="all", drop_cols=[], dynamic_threshold=0.01, static_threshold=100
+    spark,
+    idf,
+    list_of_cols="all",
+    drop_cols=[],
+    dynamic_threshold=0.01,
+    static_threshold=100,
 ):
     """
     This function is to recommend the form and datatype of columns. Cardinality of each column will be measured,
@@ -378,6 +383,8 @@ def recommend_type(
 
     Parameters
     ----------
+    spark
+        Spark Session
     idf
         Input Dataframe
     list_of_cols
