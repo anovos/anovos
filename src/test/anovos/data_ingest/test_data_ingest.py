@@ -393,7 +393,7 @@ def test_recast_column(spark_session: SparkSession):
 
 def test_recommend_type(spark_session: SparkSession):
     df = read_dataset(spark_session, sample_parquet, "parquet")
-    test_odf_1 = recommend_type(df, static_threshold=100)
+    test_odf_1 = recommend_type(spark_session, df, static_threshold=100)
     assert "age" in test_odf_1.select("attribute").toPandas().iloc[:, 0].to_list()
     assert (
         "education-num"
@@ -428,10 +428,12 @@ def test_recommend_type(spark_session: SparkSession):
         == "categorical"
     )
 
-    test_odf_2 = recommend_type(df, dynamic_threshold=0.001, static_threshold=100000)
+    test_odf_2 = recommend_type(
+        spark_session, df, dynamic_threshold=0.001, static_threshold=100000
+    )
     assert test_odf_2.select("attribute").toPandas().iloc[:, 0].to_list() == [
         "education-num"
     ]
 
-    test_odf_3 = recommend_type(df, list_of_cols="age", drop_cols="age")
+    test_odf_3 = recommend_type(spark_session, df, list_of_cols="age", drop_cols="age")
     assert test_odf_3.count() == 0
