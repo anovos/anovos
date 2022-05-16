@@ -30,7 +30,7 @@ on your local machine.
 
 ```bash
 # Launch an anovos-examples Docker container
-sudo docker run -p 8888:8888 anovos/anovos-examples-3.2.0:latest
+sudo docker run -p 8888:8888 anovos/anovos-examples-3.2.1:latest
 ```
 
 To reach the Jupyter environment, open the link to `http://127.0.0.1:8888/?token...`
@@ -103,3 +103,14 @@ at [docs.anovos.ai](https://docs.anovos.ai).
 
 We're always happy to discuss and accept improvements to _Anovos_. To get started, please refer to
 our [Contributing to Anovos](https://docs.anovos.ai/community/contributing.html) page in the documentation.
+
+To start coding, clone this repository, install both the regular and development requirements,
+and set up the pre-commit hooks:
+
+```bash
+git clone https://github.com/anovos/anovos.git
+cd anovos/
+pip install -r requirements.txt
+pip install -r dev_requirements.txt
+pre-commit install
+```
