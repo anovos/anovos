@@ -4,9 +4,9 @@ repos:
     hooks:
     -   id: check-yaml
     -   id: end-of-file-fixer
-        exclude: ^(data/|examples/data/)
+        exclude: ^(data/|examples/data/|bin/)
     -   id: trailing-whitespace
-        exclude: ^(data/|examples/data/)
+        exclude: ^(data/|examples/data/|bin/)
 -   repo: https://github.com/psf/black
     rev: 22.3.0
     hooks:
