@@ -16,7 +16,7 @@ def test_that_csv_file_can_be_read(spark_session, tmp_path):
     # WHEN
     df = read_dataset(
         spark=spark_session,
-        file_path=file_path,
+        file_path=str(file_path),
         file_type="csv",
         file_configs={"header": True, "inferSchema": True, "delimiter": ","},
     )
