@@ -10,16 +10,16 @@
 [![twitter](https://img.shields.io/badge/Follow--lightgrey?logo=twitter&style=social)](https://twitter.com/ml_anovos)
 [![Slack](https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&style=social)](https://go.mlops.community/slack)
 
-_Anovos_ is an open source library for feature engineering at scale. 
+_Anovos_ is an open source library for feature engineering at scale.
 Built by data scientists & ML Engineers for the data science community,
 it provides all the capabilities required for data ingestion, data analysis,
 data drift & data stability analysis, feature recommendation and feature composition.
-In addition, it automatically produces easily interpretable professional data reports 
-that help users understand the nature of data at first sight and further enable data 
+In addition, it automatically produces easily interpretable professional data reports
+that help users understand the nature of data at first sight and further enable data
 scientists to identify and engineer features.
 
-Leveraging the power of [Apache Spark](https://spark.apache.org/) behind the scenes, 
-_Anovos_ improves data scientists' productivity and helps them build more resilient 
+Leveraging the power of [Apache Spark](https://spark.apache.org/) behind the scenes,
+_Anovos_ improves data scientists' productivity and helps them build more resilient
 and better performing models.
 
 # Quick Start
@@ -56,7 +56,7 @@ Currently, we officially support the following combinations:
 - Apache Spark 3.1.x on Java 11 with Python 3.9.x
 - Apache Spark 3.2.x on Java 11 with Python 3.9.x
 
-To see what we're currently testing, see 
+To see what we're currently testing, see
 [this configuration](https://github.com/anovos/anovos/blob/main/.github/workflows/full-demo.yml#L21).
 
 ## Installation
