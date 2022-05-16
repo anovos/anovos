@@ -145,7 +145,6 @@ def test_IG_calculation(spark_session: SparkSession):
         == 0.1608
     )
 
-
     assert (
         result_df1.where(F.col("attribute") == "age")
         .toPandas()

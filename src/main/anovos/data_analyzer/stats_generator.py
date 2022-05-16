@@ -3,12 +3,12 @@
 This module generates all the descriptive statistics related to the ingested data. Descriptive statistics are
 split into different metric types, and each function below corresponds to one metric type:
 
-- global_summary 
-- measures_of_counts 
-- measures_of_centralTendency 
-- measures_of_cardinality 
-- measures_of_dispersion 
-- measures_of_percentiles 
+- global_summary
+- measures_of_counts
+- measures_of_centralTendency
+- measures_of_cardinality
+- measures_of_dispersion
+- measures_of_percentiles
 - measures_of_shape
 
 Above primary functions are supported by below functions, which can be used independently as well:
@@ -17,7 +17,7 @@ Above primary functions are supported by below functions, which can be used inde
 - nonzeroCount_computation
 - mode_computation
 - uniqueCount_computation
- 
+
 """
 import warnings
 from pyspark.mllib.linalg import Vectors

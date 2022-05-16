@@ -32,9 +32,9 @@ submodules of this module targeting specific needs of the data analysis process.
 baseline dataset that trained the model (source distribution) and the ingested data (target distribution) that makes
 the prediction. Data drift is one of the primary causes of poor performance of ML models over time. This module
 ensures the stability of the ingested dataset over time by analyzing it with the baseline dataset (via computing
-drift statistics) and/or with historically ingested datasets (via computing stability index for existing attributes or 
-estimating for newly composed features – currently supports only numerical features), if available. Identifying the 
-data drift at an early stage enables data scientists to be proactive and fix the root cause. 
+drift statistics) and/or with historically ingested datasets (via computing stability index for existing attributes or
+estimating for newly composed features – currently supports only numerical features), if available. Identifying the
+data drift at an early stage enables data scientists to be proactive and fix the root cause.
 
 4. **Data Transformer**: In the alpha release, the data transformer module only includes some basic pre-processing
 functions like binning, encoding, to name a few. These functions were required to support computations of the above

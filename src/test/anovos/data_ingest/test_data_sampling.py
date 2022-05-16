@@ -76,6 +76,3 @@ def test_data_sampling(test_sample):
     assert output_4.filter(output_4["gender"] == "F").count() > 6
     assert output_4.filter(output_4["gender"] == "M").count() < 13
     assert output_4.filter(output_4["gender"] == "M").count() > 6
-
-
-

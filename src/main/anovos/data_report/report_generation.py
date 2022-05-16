@@ -1575,7 +1575,7 @@ def data_drift_stability(
             dp.Text("# "),
             dp.Text(
                 """
-                *This section examines the dataset stability wrt the baseline dataset (via computing drift 
+                *This section examines the dataset stability wrt the baseline dataset (via computing drift
                 statistics) and/or wrt the historical datasets (via computing stability index).*
                 """
             ),

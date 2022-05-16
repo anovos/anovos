@@ -1,15 +1,15 @@
 # coding=utf-8
 """
-This module consists of functions to read the dataset as Spark DataFrame, concatenate/join with other functions (if required), 
-and perform some basic ETL actions such as selecting, deleting, renaming and/or recasting columns. List of functions included in this module are: 
-- read_dataset 
-- write_dataset 
-- concatenate_dataset 
-- join_dataset 
-- delete_column 
-- select_column 
-- rename_column 
-- recast_column 
+This module consists of functions to read the dataset as Spark DataFrame, concatenate/join with other functions (if required),
+and perform some basic ETL actions such as selecting, deleting, renaming and/or recasting columns. List of functions included in this module are:
+- read_dataset
+- write_dataset
+- concatenate_dataset
+- join_dataset
+- delete_column
+- select_column
+- rename_column
+- recast_column
 """
 import warnings
 import pyspark.sql.functions as F

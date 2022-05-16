@@ -1,8 +1,8 @@
 # coding=utf-8
 
-"""This module generates the intermediate output specific to the inspection of Time series analysis. 
+"""This module generates the intermediate output specific to the inspection of Time series analysis.
 
-As a part of generation of final output, there are various functions created such as - 
+As a part of generation of final output, there are various functions created such as -
 
 - ts_processed_feats
 - ts_eligiblity_check

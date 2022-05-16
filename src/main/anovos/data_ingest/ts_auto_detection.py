@@ -2,7 +2,7 @@
 
 """This module help produce the output containing a transformation through auto timestamp / date detection by reading the ingested dataframe from source.
 
-As a part of generation of the auto detection output, there are various functions created such as - 
+As a part of generation of the auto detection output, there are various functions created such as -
 
 - regex_date_time_parser
 - ts_loop_cols_pre
