@@ -442,6 +442,7 @@ def recommend_type(
                 T.StructField("original_dataType", T.StringType(), True),
                 T.StructField("recommended_form", T.StringType(), True),
                 T.StructField("recommended_dataType", T.StringType(), True),
+                T.StructField("distinct_value_count", T.StringType(), True),
             ]
         )
         odf = spark.sparkContext.emptyRDD().toDF(schema)
@@ -458,22 +459,30 @@ def recommend_type(
     if type(static_threshold) != int:
         raise TypeError("Invalid input for static_threshold: int type only")
 
+    def min_val(val1, val2):
+        if val1 > val2:
+            return val2
+        else:
+            return val1
+
     num_cols, cat_cols, other_cols = attributeType_segregation(idf)
     rec_num_cols = []
     rec_cat_cols = []
     for col in num_cols:
-        if idf.select(col).distinct().na.drop().count() < min(
+        if idf.select(col).distinct().na.drop().count() < min_val(
             (dynamic_threshold * idf.select(col).na.drop().count()), static_threshold
         ):
             rec_cat_cols.append(col)
 
     for col in cat_cols:
-        idf_inter = idf.withColumn(col, idf[col].cast("double")).select(col)
+        idf_inter = (
+            idf.na.drop(subset=col).withColumn(col, idf[col].cast("double")).select(col)
+        )
         if (
             idf_inter.distinct().na.drop().count() == idf_inter.distinct().count()
             and idf_inter.distinct().na.drop().count() != 0
         ):
-            if idf.select(col).distinct().na.drop().count() >= min(
+            if idf.select(col).distinct().na.drop().count() >= min_val(
                 (dynamic_threshold * idf.select(col).na.drop().count()),
                 static_threshold,
             ):
@@ -484,25 +493,44 @@ def recommend_type(
     ori_type = []
     rec_form = []
     rec_type = []
-    for col in rec_num_cols + rec_cat_cols:
-        if col in rec_num_cols:
-            ori_form.append("categorical")
-            ori_type.append(idf.select(col).dtypes[0][1])
-            rec_form.append("numerical")
-            rec_type.append("double")
-        else:
-            ori_form.append("numerical")
-            ori_type.append(idf.select(col).dtypes[0][1])
-            rec_form.append("categorical")
-            rec_type.append("string")
-    odf_rec = spark.createDataFrame(
-        zip(rec_cols, ori_form, ori_type, rec_form, rec_type),
-        schema=(
-            "attribute",
-            "original_form",
-            "original_dataType",
-            "recommended_form",
-            "recommended_dataType",
-        ),
-    )
-    return odf_rec
+    num_dist_val = []
+    if len(rec_cols) > 0:
+        for col in rec_cols:
+            if col in rec_num_cols:
+                ori_form.append("categorical")
+                ori_type.append(idf.select(col).dtypes[0][1])
+                rec_form.append("numerical")
+                rec_type.append("double")
+                num_dist_val.append(idf.select(col).distinct().count())
+            else:
+                ori_form.append("numerical")
+                ori_type.append(idf.select(col).dtypes[0][1])
+                rec_form.append("categorical")
+                rec_type.append("string")
+                num_dist_val.append(idf.select(col).distinct().count())
+        odf_rec = spark.createDataFrame(
+            zip(rec_cols, ori_form, ori_type, rec_form, rec_type, num_dist_val),
+            schema=(
+                "attribute",
+                "original_form",
+                "original_dataType",
+                "recommended_form",
+                "recommended_dataType",
+                "distinct_value_count",
+            ),
+        )
+        return odf_rec
+    else:
+        warnings.warn("No column type change recommendation is made")
+        schema = T.StructType(
+            [
+                T.StructField("attribute", T.StringType(), True),
+                T.StructField("original_form", T.StringType(), True),
+                T.StructField("original_dataType", T.StringType(), True),
+                T.StructField("recommended_form", T.StringType(), True),
+                T.StructField("recommended_dataType", T.StringType(), True),
+                T.StructField("distinct_value_count", T.StringType(), True),
+            ]
+        )
+        odf = spark.sparkContext.emptyRDD().toDF(schema)
+        return odf
