@@ -25,11 +25,8 @@ def test_generate_feature_view(mocker):
         'view_owner': 'pytest@case'
     }
 
-    df = Mock()
-    mocker.patch.object(df, "dtypes", [('field1', 'type1')])
-
     from anovos.feature_store.feast_exporter import generate_feature_view
-    result = generate_feature_view(df, config)
+    result = generate_feature_view([('field1', 'type1')], config)
     assert 'name="test_view"' in result
     assert 'entities=["test_entity"]' in result
     assert 'Field(name="field1", dtype=type1)' in result
@@ -49,18 +46,35 @@ def test_generate_field():
 
 def test_generate_file_source():
     config = {
-        'filename': 'testfile',
         'owner': 'test@owner.com',
         'source_description': 'testcase description',
-        'ts_column': 'eventtime',
-        'create_ts_column': 'test_create_column'
+        'timestamp_col': 'eventtime',
+        'create_timestamp_col': 'test_create_column'
     }
 
     from anovos.feature_store.feast_exporter import generate_file_source
-    result = generate_file_source(config)
+    result = generate_file_source(config, 'testfile')
 
     assert 'path="testfile"' in result
     assert 'timestamp_field="eventtime"' in result
     assert 'created_timestamp_column="test_create_column"' in result
     assert 'description="testcase description"' in result
     assert 'owner="test@owner.com"' in result
+
+
+def test_integration():
+    config = {
+        'owner': 'test@owner.com',
+        'source_description': 'testcase description',
+        'timestamp_col': 'eventtime',
+        'create_timestamp_col': 'test_create_column',
+        'entity': 'test_entity',
+        'view_name': 'test_view',
+        'view_ttl_in_seconds': 1,
+        'view_owner': 'pytest@case',
+        'id_col': 'id column',
+        'entity_description': 'test_description',
+        'file_path': '/Users/matzep/Workspaces/inlinity/mobilewalla/feast-demo/anovos_repo/'
+    }
+    from anovos.feature_store.feast_exporter import generate_feature_description
+    generate_feature_description([('field1', 'string')], config, file_name="/output/result.csv")
