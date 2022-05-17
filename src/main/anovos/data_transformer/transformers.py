@@ -72,9 +72,10 @@ from ..shared.utils import platform_root_path
 from sklearn.experimental import enable_iterative_imputer  # noqa
 from sklearn.impute import KNNImputer, IterativeImputer
 
-import tensorflow
-from tensorflow.keras.models import load_model, Model
-from tensorflow.keras.layers import Dense, Input, BatchNormalization, LeakyReLU
+if "ARM64" not in platform.version():
+    import tensorflow
+    from tensorflow.keras.models import load_model, Model
+    from tensorflow.keras.layers import Dense, Input, BatchNormalization, LeakyReLU
 
 
 def attribute_binning(
@@ -2462,6 +2463,11 @@ def autoencoder_latentFeatures(
         Dataframe with Latent Features
 
     """
+    if "ARM64" in platform.version():
+        warnings.warn(
+            "This function is currently not supported for ARM64 - Mac M1 Machine"
+        )
+        return idf
 
     num_cols = attributeType_segregation(idf)[0]
     if list_of_cols == "all":
@@ -3066,9 +3072,9 @@ def feature_transformation(
         "powOfN": (lambda x: F.pow(N, x)),
         "sqrt": F.sqrt,
         "cbrt": F.cbrt,
-        "sq": (lambda x: x**2),
-        "cb": (lambda x: x**3),
-        "toPowerN": (lambda x: x**N),
+        "sq": (lambda x: x ** 2),
+        "cb": (lambda x: x ** 3),
+        "toPowerN": (lambda x: x ** N),
         "sin": F.sin,
         "cos": F.cos,
         "tan": F.tan,

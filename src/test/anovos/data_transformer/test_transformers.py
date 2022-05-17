@@ -374,40 +374,43 @@ def test_autoencoder_latentFeatures(spark_session):
         reduction_params=0.5,
         model_path="unit_testing/models/",
     )
-    assert len(odf.columns) > len(df.columns)
-    assert len(odf.columns) == 19
+    if "ARM64" not in platform.version():
+        assert len(odf.columns) > len(df.columns)
+        assert len(odf.columns) == 19
 
-    try:
+        try:
+            odf = autoencoder_latentFeatures(
+                spark_session,
+                df,
+                list_of_cols=["education-num"],
+                epochs=20,
+                reduction_params=0.5,
+                pre_existing_model=True,
+                model_path="unit_testing/models/",
+            )
+        except Exception as error:
+            assert str(error) == "list index out of range"
+
+        odf = autoencoder_latentFeatures(
+            spark_session, df, list_of_cols=[], epochs=20, reduction_params=0.5
+        )
+        assert len(odf.columns) == len(df.columns)
+        assert len(odf.columns) == 17
+
         odf = autoencoder_latentFeatures(
             spark_session,
             df,
-            list_of_cols=["education-num"],
+            list_of_cols=["age", "fnlwgt", "logfnl", "education-num", "hours-per-week"],
             epochs=20,
             reduction_params=0.5,
-            pre_existing_model=True,
-            model_path="unit_testing/models/",
+            output_mode="append",
         )
-    except Exception as error:
-        assert str(error) == "list index out of range"
-
-    odf = autoencoder_latentFeatures(
-        spark_session, df, list_of_cols=[], epochs=20, reduction_params=0.5
-    )
-    assert len(odf.columns) == len(df.columns)
-    assert len(odf.columns) == 17
-
-    odf = autoencoder_latentFeatures(
-        spark_session,
-        df,
-        list_of_cols=["age", "fnlwgt", "logfnl", "education-num", "hours-per-week"],
-        epochs=20,
-        reduction_params=0.5,
-        output_mode="append",
-    )
-    assert len(odf.columns) > len(df.columns)
-    assert len(odf.columns) == 24
-    assert odf.where(F.col("latent_0").isNull()).count() == 0
-    assert odf.where(F.col("latent_1").isNull()).count() == 0
+        assert len(odf.columns) > len(df.columns)
+        assert len(odf.columns) == 24
+        assert odf.where(F.col("latent_0").isNull()).count() == 0
+        assert odf.where(F.col("latent_1").isNull()).count() == 0
+    else:
+        assert odf == df
 
 
 # feature_transformation
