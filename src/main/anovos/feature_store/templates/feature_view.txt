@@ -1,0 +1,12 @@
+FeatureView(
+    name="{{view_name}}",
+    entities=["{{entity}}"],
+    ttl=timedelta(seconds={{ttl_in_seconds}}),
+    schema=[
+        {{fields}}
+    ],
+    online=True,
+    source={{source}},
+    tags={"production": "True"},
+    owner="{{owner}}",
+)

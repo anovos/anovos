@@ -1,0 +1,6 @@
+Entity(
+    name="{{entity_name}}",
+    join_keys=["{{join_keys}}"],
+    value_type=ValueType.{{value_type}},
+    description="{{description}}",
+)
