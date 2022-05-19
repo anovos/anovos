@@ -6,7 +6,7 @@ from setuptools import setup
 
 DIR = path.dirname(path.abspath(__file__))
 
-if 'ARM64' not in platform.version():
+if 'arm64' not in platform.version().lower():
     INSTALL_PACKAGES = open(path.join(DIR, "requirements.txt")).read().splitlines()
 else:
     INSTALL_PACKAGES = open(path.join(DIR, "requirements_m1.txt")).read().splitlines()

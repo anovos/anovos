@@ -375,7 +375,7 @@ def test_autoencoder_latentFeatures(spark_session):
         reduction_params=0.5,
         model_path="unit_testing/models/",
     )
-    if "ARM64" not in platform.version():
+    if 'arm64' not in platform.version().lower():
         assert len(odf.columns) > len(df.columns)
         assert len(odf.columns) == 19
 
