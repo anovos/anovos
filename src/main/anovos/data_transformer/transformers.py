@@ -730,6 +730,7 @@ def cat_to_num_supervised(
     model_path="NA",
     output_mode="replace",
     run_type="local",
+    az_key="NA",
     print_impact=False,
 ):
     """
@@ -1612,6 +1613,7 @@ def imputation_sklearn(
     output_mode="replace",
     stats_missing={},
     run_type="local",
+    az_key="NA",
     print_impact=False,
 ):
     """
@@ -1763,6 +1765,16 @@ def imputation_sklearn(
             bash_cmd = "aws s3 cp " + model_path + "/imputation_sklearn.sav ."
             output = subprocess.check_output(["bash", "-c", bash_cmd])
             imputer = pickle.load(open("imputation_sklearn.sav", "rb"))
+        elif run_type == "ak8s":
+            bash_cmd = (
+                'azcopy cp "'
+                + model_path
+                + "/imputation_sklearn.sav"
+                + str(az_key)
+                + '" .'
+            )
+            output = subprocess.check_output(["bash", "-c", bash_cmd])
+            imputer = pickle.load(open("imputation_sklearn.sav", "rb"))
         else:
             imputer = pickle.load(open(model_path + "/imputation_sklearn.sav", "rb"))
         idf_rest = idf
@@ -1786,6 +1798,17 @@ def imputation_sklearn(
                     "aws s3 cp imputation_sklearn.sav "
                     + model_path
                     + "/imputation_sklearn.sav"
+                )
+                output = subprocess.check_output(["bash", "-c", bash_cmd])
+                imputer = pickle.load(open("imputation_sklearn.sav", "rb"))
+            elif run_type == "ak8s":
+                pickle.dump(imputer, open("imputation_sklearn.sav", "wb"))
+                bash_cmd = (
+                    'azcopy cp "imputation_sklearn.sav" "'
+                    + ends_with(model_path)
+                    + "imputation_sklearn.sav"
+                    + str(az_key)
+                    + '"'
                 )
                 output = subprocess.check_output(["bash", "-c", bash_cmd])
                 imputer = pickle.load(open("imputation_sklearn.sav", "rb"))
@@ -2102,6 +2125,7 @@ def auto_imputation(
     stats_missing={},
     output_mode="replace",
     run_type="local",
+    az_key="NA",
     print_impact=True,
 ):
     """
@@ -2292,6 +2316,7 @@ def auto_imputation(
             method_type="KNN",
             stats_missing=stats_missing,
             output_mode=output_mode,
+            az_key=az_key,
         )
         method4 = imputation_sklearn(
             spark,
@@ -2300,6 +2325,7 @@ def auto_imputation(
             method_type="regression",
             stats_missing=stats_missing,
             output_mode=output_mode,
+            az_key=az_key,
         )
         method5 = imputation_matrixFactorization(
             spark,
@@ -2371,6 +2397,7 @@ def autoencoder_latentFeatures(
     stats_missing={},
     output_mode="replace",
     run_type="local",
+    az_key="NA",
     print_impact=False,
 ):
     """
@@ -2583,6 +2610,25 @@ def autoencoder_latentFeatures(
             output = subprocess.check_output(["bash", "-c", bash_cmd])
             encoder = load_model("encoder.h5")
             model = load_model("model.h5")
+        elif run_type == "ak8s":
+            bash_cmd = (
+                'azcopy cp "'
+                + model_path
+                + "/autoencoders_latentFeatures/encoder.h5"
+                + str(az_key)
+                + '" .'
+            )
+            output = subprocess.check_output(["bash", "-c", bash_cmd])
+            bash_cmd = (
+                'azcopy cp "'
+                + model_path
+                + "/autoencoders_latentFeatures/model.h5"
+                + str(az_key)
+                + '" .'
+            )
+            output = subprocess.check_output(["bash", "-c", bash_cmd])
+            encoder = load_model("encoder.h5")
+            model = load_model("model.h5")
         else:
             encoder = load_model(model_path + "/autoencoders_latentFeatures/encoder.h5")
             model = load_model(model_path + "/autoencoders_latentFeatures/model.h5")
@@ -2639,6 +2685,25 @@ def autoencoder_latentFeatures(
                     "aws s3 cp model.h5 "
                     + model_path
                     + "/autoencoders_latentFeatures/model.h5"
+                )
+                output = subprocess.check_output(["bash", "-c", bash_cmd])
+            elif run_type == "ak8s":
+                encoder.save("encoder.h5")
+                model.save("model.h5")
+                bash_cmd = (
+                    'azcopy cp "encoder.h5" "'
+                    + model_path
+                    + "/autoencoders_latentFeatures/encoder.h5"
+                    + str(az_key)
+                    + '" '
+                )
+                output = subprocess.check_output(["bash", "-c", bash_cmd])
+                bash_cmd = (
+                    'azcopy cp "model.h5" "'
+                    + model_path
+                    + "/autoencoders_latentFeatures/model.h5"
+                    + str(az_key)
+                    + '" '
                 )
                 output = subprocess.check_output(["bash", "-c", bash_cmd])
             else:
@@ -2712,6 +2777,7 @@ def PCA_latentFeatures(
     stats_missing={},
     output_mode="replace",
     run_type="local",
+    az_key="NA",
     print_impact=False,
 ):
     """

@@ -17,7 +17,12 @@ from anovos.data_transformer.transformers import (
     imputation_MMM,
     attribute_binning,
 )
-from anovos.shared.utils import attributeType_segregation, ends_with
+from anovos.shared.utils import (
+    attributeType_segregation,
+    ends_with,
+    output_to_local,
+    path_ak8s_modify,
+)
 from ..shared.utils import platform_root_path
 import warnings
 
@@ -31,16 +36,9 @@ num_cols = []
 cat_cols = []
 
 
-def master_to_local(master_path):
-    punctuations = ":"
-    for x in master_path:
-        if x in punctuations:
-            local_path = master_path.replace(x, "")
-            local_path = "/" + local_path
-    return local_path
-
-
-def save_stats(spark, idf, master_path, function_name, reread=False, run_type="local"):
+def save_stats(
+    spark, idf, master_path, function_name, reread=False, run_type="local", az_key="NA"
+):
     """
 
     Parameters
@@ -65,8 +63,8 @@ def save_stats(spark, idf, master_path, function_name, reread=False, run_type="l
     if run_type == "local":
         local_path = master_path
     elif run_type == "databricks":
-        local_path = master_to_local(master_path)
-    elif run_type == "emr":
+        local_path = output_to_local(master_path)
+    elif run_type in ("emr", "ak8s"):
         local_path = "report_stats"
     else:
         raise ValueError("Invalid run_type")
@@ -84,6 +82,19 @@ def save_stats(spark, idf, master_path, function_name, reread=False, run_type="l
             + ends_with(master_path)
         )
 
+        subprocess.check_output(["bash", "-c", bash_cmd])
+
+    if run_type == "ak8s":
+        output_path_mod = path_ak8s_modify(master_path)
+        bash_cmd = (
+            'azcopy cp "'
+            + ends_with(local_path)
+            + function_name
+            + '.csv" "'
+            + ends_with(output_path_mod)
+            + str(az_key)
+            + '"'
+        )
         subprocess.check_output(["bash", "-c", bash_cmd])
 
     if reread:
@@ -450,6 +461,7 @@ def charts_to_objects(
     master_path=".",
     stats_unique={},
     run_type="local",
+    az_key="NA",
 ):
     """
 
@@ -593,8 +605,8 @@ def charts_to_objects(
     if run_type == "local":
         local_path = master_path
     elif run_type == "databricks":
-        local_path = master_to_local(master_path)
-    elif run_type == "emr":
+        local_path = output_to_local(master_path)
+    elif run_type in ("emr", "ak8s"):
         local_path = "report_stats"
     else:
         raise ValueError("Invalid run_type")
@@ -690,5 +702,16 @@ def charts_to_objects(
             + " "
             + ends_with(master_path)
         )
+        subprocess.check_output(["bash", "-c", bash_cmd])
 
+    if run_type == "ak8s":
+        output_path_mod = path_ak8s_modify(master_path)
+        bash_cmd = (
+            'azcopy cp "'
+            + ends_with(local_path)
+            + '" "'
+            + ends_with(output_path_mod)
+            + str(az_key)
+            + '" --recursive=true'
+        )
         subprocess.check_output(["bash", "-c", bash_cmd])

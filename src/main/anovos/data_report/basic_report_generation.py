@@ -29,7 +29,7 @@ from anovos.data_analyzer.stats_generator import (
     measures_of_percentiles,
     measures_of_shape,
 )
-from anovos.shared.utils import ends_with
+from anovos.shared.utils import ends_with, output_to_local, path_ak8s_modify
 
 global_theme = px.colors.sequential.Plasma
 global_theme_r = px.colors.sequential.Plasma_r
@@ -99,6 +99,7 @@ def anovos_basic_report(
     event_label="",
     output_path=".",
     run_type="local",
+    az_key="NA",
     print_impact=True,
 ):
     """
@@ -150,19 +151,11 @@ def anovos_basic_report(
     AT_funcs = [IV_calculation, IG_calculation]
     all_funcs = SG_funcs + QC_rows_funcs + QC_cols_funcs + AA_funcs + AT_funcs
 
-    def output_to_local(output_path):
-        punctuations = ":"
-        for x in output_path:
-            if x in punctuations:
-                local_path = output_path.replace(x, "")
-                local_path = "/" + local_path
-        return local_path
-
     if run_type == "local":
         local_path = output_path
     elif run_type == "databricks":
         local_path = output_to_local(output_path)
-    elif run_type == "emr":
+    elif run_type in ("emr", "ak8s"):
         local_path = "report_stats"
     else:
         raise ValueError("Invalid run_type")
@@ -516,5 +509,17 @@ def anovos_basic_report(
             + ends_with(local_path)
             + "basic_report.html "
             + ends_with(output_path)
+        )
+        subprocess.check_output(["bash", "-c", bash_cmd])
+
+    if run_type == "ak8s":
+        output_path_mod = path_ak8s_modify(output_path)
+        bash_cmd = (
+            'azcopy cp "'
+            + ends_with(local_path)
+            + 'basic_report.html" "'
+            + ends_with(output_path_mod)
+            + str(az_key)
+            + '"'
         )
         subprocess.check_output(["bash", "-c", bash_cmd])

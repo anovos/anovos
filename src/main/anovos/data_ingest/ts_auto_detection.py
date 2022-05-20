@@ -25,7 +25,12 @@ from pyspark.sql import types as T
 from pyspark.sql import Window
 from loguru import logger
 import calendar
-from anovos.shared.utils import attributeType_segregation, ends_with, output_to_local
+from anovos.shared.utils import (
+    attributeType_segregation,
+    ends_with,
+    output_to_local,
+    path_ak8s_modify,
+)
 from anovos.data_analyzer.stats_generator import measures_of_percentiles
 from anovos.data_transformer.datetime import (
     timeUnits_extraction,
@@ -611,7 +616,9 @@ def ts_loop_cols_pre(idf, id_col):
     return lc1, lc2, lc3
 
 
-def ts_preprocess(spark, idf, id_col, output_path, tz_offset="local", run_type="local"):
+def ts_preprocess(
+    spark, idf, id_col, output_path, tz_offset="local", run_type="local", az_key="NA"
+):
 
     """
 
@@ -642,7 +649,7 @@ def ts_preprocess(spark, idf, id_col, output_path, tz_offset="local", run_type="
         local_path = output_path
     elif run_type == "databricks":
         local_path = output_to_local(output_path)
-    elif run_type == "emr":
+    elif run_type in ("emr", "ak8s"):
         local_path = "report_stats"
     else:
         raise ValueError("Invalid run_type")
@@ -718,6 +725,18 @@ def ts_preprocess(spark, idf, id_col, output_path, tz_offset="local", run_type="
             + ends_with(local_path)
             + " "
             + ends_with(output_path)
+        )
+        output = subprocess.check_output(["bash", "-c", bash_cmd])
+
+    if run_type == "ak8s":
+        output_path_mod = path_ak8s_modify(output_path)
+        bash_cmd = (
+            'azcopy cp "'
+            + ends_with(local_path)
+            + '" "'
+            + ends_with(output_path_mod)
+            + str(az_key)
+            + '" --recursive=true '
         )
         output = subprocess.check_output(["bash", "-c", bash_cmd])
 

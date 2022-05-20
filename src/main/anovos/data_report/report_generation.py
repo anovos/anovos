@@ -44,7 +44,7 @@ import plotly.tools as tls
 from plotly.subplots import make_subplots
 from statsmodels.tsa.stattools import adfuller, kpss
 from sklearn.preprocessing import PowerTransformer
-from anovos.shared.utils import ends_with
+from anovos.shared.utils import ends_with, path_ak8s_modify
 import warnings
 
 warnings.filterwarnings("ignore")
@@ -3174,6 +3174,7 @@ def anovos_report(
     run_type="local",
     final_report_path=".",
     output_type=None,
+    az_key="NA",
 ):
     """
 
@@ -3215,6 +3216,19 @@ def anovos_report(
             + ends_with(master_path)
             + " "
             + ends_with("report_stats")
+        )
+        master_path = "report_stats"
+        subprocess.check_output(["bash", "-c", bash_cmd])
+
+    if run_type == "ak8s":
+        output_path_mod = path_ak8s_modify(master_path)
+        bash_cmd = (
+            'azcopy cp "'
+            + ends_with(output_path_mod)
+            + str(az_key)
+            + '" "'
+            + ends_with("report_stats")
+            + '" --recursive=true'
         )
         master_path = "report_stats"
         subprocess.check_output(["bash", "-c", bash_cmd])
@@ -3524,6 +3538,18 @@ def anovos_report(
             dp.Select(blocks=final_tabs_list, type=dp.SelectType.TABS),
         ).save("ml_anovos_report.html", open=True)
         bash_cmd = "aws s3 cp ml_anovos_report.html " + ends_with(final_report_path)
+        subprocess.check_output(["bash", "-c", bash_cmd])
+    elif run_type == "ak8s":
+        dp.Report(
+            default_template[0],
+            default_template[1],
+            dp.Select(blocks=final_tabs_list, type=dp.SelectType.TABS),
+        ).save("ml_anovos_report.html", open=True)
+        bash_cmd = (
+            'azcopy cp "ml_anovos_report.html" '
+            + ends_with(path_ak8s_modify(final_report_path))
+            + str(az_key)
+        )
         subprocess.check_output(["bash", "-c", bash_cmd])
     else:
         raise ValueError("Invalid run_type")
