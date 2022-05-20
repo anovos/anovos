@@ -64,7 +64,7 @@ from anovos.data_analyzer.stats_generator import (
     uniqueCount_computation,
 )
 from anovos.data_ingest.data_ingest import read_dataset, recast_column
-from anovos.shared.utils import attributeType_segregation, get_dtype
+from anovos.shared.utils import ends_with, attributeType_segregation, get_dtype
 from ..shared.utils import platform_root_path
 
 # enable_iterative_imputer is prequisite for importing IterativeImputer
