@@ -3,6 +3,7 @@ from jinja2 import Template
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import lit
 from datetime import datetime
+from black import format_str, FileMode
 
 ANOVOS_SOURCE = 'anovos_source'
 
@@ -11,7 +12,7 @@ dataframe_to_feast_type_mapping = {
     'int': 'Int64',
     'float': 'Float32',
     'timestamp': 'String'
-    # TODO: type conversion
+    # TODO: default type
 }
 
 
@@ -41,10 +42,12 @@ def generate_feature_view(types: list[(str, str)], config: dict) -> str:
     with open(source_template_path, 'r') as f:
         template_string = f.read()
 
+        # TODO: remove id_columns and dedicated timestamp columns from columns list
         fields = generate_fields(types)
 
         feature_view_template = Template(template_string)
         data = {
+            'feature_view_name': config['view_name'],
             'source': ANOVOS_SOURCE,
             'view_name': config['view_name'],
             'entity': config['entity'],
@@ -105,22 +108,32 @@ def generate_prefix():
 def generate_feature_description(types: list[(str, str)], feast_config: dict, file_name: str):
     print("Building feature definitions for feature_store:")
     prefix = generate_prefix()
-    print(prefix)
     file_source_definition = generate_file_source(feast_config, file_name)
-    print(file_source_definition)
     entity_definition = generate_entity_definition(feast_config)
-    print(entity_definition)
     feature_view = generate_feature_view(types, feast_config)
-    print(feature_view)
 
-    import os
+    complete_file_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "templates", "complete_file.txt"
+    )
 
-    feature_file = os.path.join(feast_config['file_path'], "feature_demo.py")
-    with open(feature_file, 'w') as f:
-        f.write(prefix + "\n")
-        f.write(file_source_definition + "\n")
-        f.write(entity_definition + "\n")
-        f.write(feature_view + "\n")
+    with open(complete_file_path, 'r') as f:
+        template_string = f.read()
+
+        complete_file_template = Template(template_string)
+        data = {
+            'prefix': prefix,
+            'file_source': file_source_definition,
+            'entity': entity_definition,
+            'feature_view': feature_view
+        }
+
+        file_content = complete_file_template.render(data)
+        # TODO: make black optimize imports
+        file_content = format_str(file_content, mode=FileMode())
+
+        feature_file = os.path.join(feast_config['file_path'], "feature_demo.py")
+        with open(feature_file, 'w') as of:
+            of.write(file_content)
 
 
 def add_timestamp_columns(idf: DataFrame, feast_config: dict):
