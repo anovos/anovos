@@ -222,22 +222,36 @@ def test_imputation_matrixFactorization(spark_session):
     assert odf.where(F.col("hours-per-week").isNull()).count() == 0
     assert odf.where(F.col("education-num").isNull()).count() == 0
 
+    assert (
+        odf.where(F.col("education").isNull()).count()
+        == df.where(F.col("education").isNull()).count()
+    )
+    assert (
+        odf.where(F.col("race").isNull()).count()
+        == df.where(F.col("race").isNull()).count()
+    )
+    assert (
+        odf.where(F.col("relationship").isNull()).count()
+        == df.where(F.col("relationship").isNull()).count()
+    )
 
-#    assert odf.where(F.col("education").isNull()).count() == 258
-#    assert odf.where(F.col("race").isNull()).count() == 162
-#    assert odf.where(F.col("relationship").isNull()).count() == 4
 
-
-def test_imputation_matrixFactorization_A(spark_session):
+def test_imputation_matrixFactorization_with_empty_list_of_cols(spark_session):
     df = read_dataset(spark_session, sample_parquet, "parquet")
     odf = imputation_matrixFactorization(
         spark_session, df, list_of_cols=[], id_col="ifa"
     )
-    assert odf.where(F.col("hours-per-week").isNull()).count() == 59
-    assert odf.where(F.col("education-num").isNull()).count() == 14
+    assert (
+        odf.where(F.col("hours-per-week").isNull()).count()
+        == df.where(F.col("hours-per-week").isNull()).count()
+    )
+    assert (
+        odf.where(F.col("education-num").isNull()).count()
+        == df.where(F.col("education-num").isNull()).count()
+    )
 
 
-def test_imputation_matrixFactorization_B(spark_session):
+def test_imputation_matrixFactorization_with_appended_output(spark_session):
     df = read_dataset(spark_session, sample_parquet, "parquet")
     odf = imputation_matrixFactorization(
         spark_session,
@@ -246,7 +260,23 @@ def test_imputation_matrixFactorization_B(spark_session):
         id_col="ifa",
         output_mode="append",
     )
+
     assert len(odf.columns) == 20
+    assert (
+        odf.where(F.col("age").isNull()).count()
+        == df.where(F.col("age").isNull()).count()
+    )
+    assert (
+        odf.where(F.col("fnlwgt").isNull()).count()
+        == df.where(F.col("fnlwgt").isNull()).count()
+    )
+    assert (
+        odf.where(F.col("hours-per-week").isNull()).count()
+        == df.where(F.col("hours-per-week").isNull()).count()
+    )
+    assert odf.where(F.col("age_imputed").isNull()).count() == 0
+    assert odf.where(F.col("fnlwgt_imputed").isNull()).count() == 0
+    assert odf.where(F.col("hours-per-week_imputed").isNull()).count() == 0
 
 
 def test_imputation_MMM(spark_session):
@@ -312,7 +342,7 @@ def test_auto_imputation(spark_session):
     assert odf.where(F.col("education").isNull()).count() == 254
 
 
-def test_auto_imputation_A(spark_session):
+def test_auto_imputation_with_empty_list_of_cols(spark_session):
     df = read_dataset(spark_session, sample_parquet, "parquet")
     odf = auto_imputation(spark_session, df, list_of_cols=[], id_col="ifa")
     assert odf.where(F.col("age").isNull()).count() == 30
@@ -321,7 +351,7 @@ def test_auto_imputation_A(spark_session):
     assert odf.where(F.col("relationship").isNull()).count() == 4
 
 
-def test_auto_imputation_B(spark_session):
+def test_auto_imputation_with_appended_output(spark_session):
     df = read_dataset(spark_session, sample_parquet, "parquet")
     odf = auto_imputation(
         spark_session,
