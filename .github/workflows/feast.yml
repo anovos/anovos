@@ -87,7 +87,8 @@ jobs:
           cd dist/
           pwd
           ./spark-submit.sh
-      - name: Set up Feast
+      - name: Reapply Feast to import generated features
         run: |
           cd anovos_repo
           feast apply
+          feast materialize `date "+%Y-%m-%dT"` `date "+%Y-%m-%dT%H:%M:%S"`
