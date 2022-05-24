@@ -2,7 +2,12 @@ name: Code Quality
 
 on:
   push:
-
+    paths:
+      - 'requirements.txt'
+      - 'src/**'
+      - '!**.md'
+      - '!.github/**'
+      - '.github/workflows/lint.yml'
 
 jobs:
   lint:

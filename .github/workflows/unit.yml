@@ -1,12 +1,14 @@
 name: Unit Test
 
 on:
+  workflow_run:
+    workflows:
+      - "Code Quality"
+    types:
+      - completed
   push:
     paths:
-      - 'requirements.txt'
-      - 'src/**'
-      - '!**.md'
-      - '!.github/**'
+      - '.github/workflows/unit.yml'
 
 jobs:
   test:
@@ -91,7 +93,7 @@ jobs:
         run: |
           pytest -v --cov=src/main/anovos src/test/anovos/data_ingest
 
-      - name: Run the unit tests for data_analyzer module 
+      - name: Run the unit tests for data_analyzer module
         run: |
           pytest -v --cov=src/main/anovos src/test/anovos/data_analyzer/test_ts_analyzer.py src/test/anovos/data_analyzer/test_association_evaluator.py src/test/anovos/data_analyzer/test_quality_checker.py src/test/anovos/data_analyzer/test_stats_generator.py
 
