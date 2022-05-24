@@ -77,8 +77,6 @@ def write_dataset(idf, file_path, file_type, file_configs={}, column_order=[]):
 
     """
 
-    if not isinstance(column_order, list):
-        raise TypeError("Invalid input type for column_order argument")
     if not column_order:
         column_order = idf.columns
     else:
