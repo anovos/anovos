@@ -6,9 +6,8 @@ on:
     paths:
       - 'src/main/anovos/feature_store/**'
       - 'src/main/main.py'
+      - 'src/main/anovos/workflow.py'
       - 'config/configs_feast.yaml'
-      - '!**.md'
-      - '!.github/**'
       - '.github/workflows/feast.yml'
 
 jobs:
@@ -16,8 +15,8 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: ${{ matrix.experimental }}
     strategy:
-      fail-fast: false
-      max-parallel: 4
+      fail-fast: true
+      max-parallel: 1
       matrix:
         include:
           - python: '3.7'
@@ -30,7 +29,7 @@ jobs:
             hadoop: '3.2'
             java: '11'
             experimental: false
-          - python: '3.9'
+          - python: '3.10'
             spark: '3.2.1'
             hadoop: '3.2'
             java: '11'
@@ -66,14 +65,17 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-${{ matrix.python}}-
             ${{ runner.os }}-pip-
+
       - name: Ensure clean environment
         run: |
           make clean build
+
       - name: Install Python requirements
         run: |
           python -m pip install --upgrade pip
           pip install pytest pytest-cov wheel
           pip install -r requirements.txt
+
       - name: Set up Feast
         run: |
           pip install feast
@@ -81,12 +83,14 @@ jobs:
           cd anovos_repo
           feast apply
           pwd
+
       - name: Run the demo
         run: |
           cp config/configs_feast.yaml dist/configs.yaml
           cd dist/
           pwd
           ./spark-submit.sh
+
       - name: Reapply Feast to import generated features
         run: |
           cd anovos_repo
