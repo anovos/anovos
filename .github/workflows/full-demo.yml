@@ -2,6 +2,9 @@ name: Full Demo
 on:
   pull_request:
     types: [opened, ready_for_review, review_requested]
+    paths-ignore:
+      - '**.md'
+      - '.github/**'
   push:
     branches:
       - main
