@@ -23,7 +23,6 @@ from anovos.shared.utils import (
     output_to_local,
     path_ak8s_modify,
 )
-from ..shared.utils import platform_root_path
 import warnings
 
 warnings.filterwarnings("ignore")
@@ -37,7 +36,7 @@ cat_cols = []
 
 
 def save_stats(
-    spark, idf, master_path, function_name, reread=False, run_type="local", az_key="NA"
+    spark, idf, master_path, function_name, reread=False, run_type="local", auth_key="NA"
 ):
     """
 
@@ -54,7 +53,9 @@ def save_stats(
     reread
         option to reread. Default value is kept as False
     run_type
-        local or emr or databricks based on the mode of execution. Default value is kept as local
+        local or emr or databricks or ak8s based on the mode of execution. Default value is kept as local
+    auth_key
+        Option to pass an authorization key to write to filesystems. Currently applicable only for ak8s run_type. Default value is kept as "NA"
 
     Returns
     -------
@@ -92,7 +93,7 @@ def save_stats(
             + function_name
             + '.csv" "'
             + ends_with(output_path_mod)
-            + str(az_key)
+            + str(auth_key)
             + '"'
         )
         subprocess.check_output(["bash", "-c", bash_cmd])
@@ -461,7 +462,7 @@ def charts_to_objects(
     master_path=".",
     stats_unique={},
     run_type="local",
-    az_key="NA",
+    auth_key="NA",
 ):
     """
 
@@ -496,7 +497,9 @@ def charts_to_objects(
         to read pre-saved statistics on unique value count i.e. if measures_of_cardinality or
         uniqueCount_computation (data_analyzer.stats_generator module) has been computed & saved before. (Default value = {})
     run_type
-        local or emr or databricks run type. Default value is kept as local
+        local or emr or databricks or ak8s run type. Default value is kept as local
+    auth_key
+        Option to pass an authorization key to write to filesystems. Currently applicable only for ak8s run_type. Default value is kept as "NA"
 
     Returns
     -------
@@ -547,13 +550,8 @@ def charts_to_objects(
     else:
         idf_cleaned = idf
 
-    if run_type in list(platform_root_path.keys()):
-        root_path = platform_root_path[run_type]
-    else:
-        root_path = ""
-
     if source_path == "NA":
-        source_path = root_path + "intermediate_data"
+        source_path = "intermediate_data"
 
     if drift_detector:
         encoding_model_exists = True
@@ -711,7 +709,7 @@ def charts_to_objects(
             + ends_with(local_path)
             + '" "'
             + ends_with(output_path_mod)
-            + str(az_key)
+            + str(auth_key)
             + '" --recursive=true'
         )
         subprocess.check_output(["bash", "-c", bash_cmd])

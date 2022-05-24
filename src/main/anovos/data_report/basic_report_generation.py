@@ -99,7 +99,7 @@ def anovos_basic_report(
     event_label="",
     output_path=".",
     run_type="local",
-    az_key="NA",
+    auth_key="NA",
     print_impact=True,
 ):
     """
@@ -119,9 +119,12 @@ def anovos_basic_report(
     output_path
         File Path for saving metrics and basic report (Default value = ".")
     run_type
-        "local", "emr" or "databricks"
+        "local", "emr" or "databricks" or "ak8s"
         "emr" if the files are read from or written in AWS s3
-        "databricks" if the files are read from or written in dbfs in azure databricks (Default value = "local")
+        "databricks" if the files are read from or written in dbfs in azure databricks
+        "ak8s" if the files are read from or written to in wasbs:// container in azure environment (Default value = "local")
+    auth_key
+        Option to pass an authorization key to write to filesystems. Currently applicable only for ak8s run_type.
     print_impact
         True, False.
         This argument is to print out the data analyzer statistics.(Default value = False)
@@ -519,7 +522,7 @@ def anovos_basic_report(
             + ends_with(local_path)
             + 'basic_report.html" "'
             + ends_with(output_path_mod)
-            + str(az_key)
+            + str(auth_key)
             + '"'
         )
         subprocess.check_output(["bash", "-c", bash_cmd])

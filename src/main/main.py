@@ -67,9 +67,6 @@ from anovos.data_report.report_preprocessing import save_stats
 from anovos.drift import detector as ddetector
 from anovos.shared.spark import spark
 
-azure_key = "NA"
-
-
 def ETL(args):
     f = getattr(data_ingest, "read_dataset")
     read_args = args.get("read_dataset", None)
@@ -167,7 +164,16 @@ def stats_args(all_configs, func):
     return result
 
 
-def main(all_configs, run_type):
+def main(all_configs, run_type, auth_key):
+    if run_type == "ak8s":
+        conf = spark.sparkContext._jsc.hadoopConfiguration()
+        conf.set("fs.wasbs.impl", "org.apache.hadoop.fs.azure.NativeAzureFileSystem")
+
+        # credentials using sas token
+        spark.conf.set(
+            'fs.azure.sas.anovos.anovosasktest.blob.core.windows.net',
+            auth_key
+        )
     start_main = timeit.default_timer()
     df = ETL(all_configs.get("input_dataset"))
 
@@ -239,7 +245,7 @@ def main(all_configs, run_type):
                     output_path=report_input_path,
                     tz_offset=tz_val,
                     run_type=run_type,
-                    az_key=azure_key,
+                    auth_key=auth_key,
                 )
                 end = timeit.default_timer()
                 logger.info(
@@ -257,7 +263,7 @@ def main(all_configs, run_type):
                     output_type=analysis_level,
                     tz_offset=tz_val,
                     run_type=run_type,
-                    az_key=azure_key,
+                    auth_key=auth_key,
                 )
                 end = timeit.default_timer()
                 logger.info(
@@ -276,7 +282,7 @@ def main(all_configs, run_type):
                 df,
                 **args.get("report_args", {}),
                 run_type=run_type,
-                az_key=azure_key,
+                auth_key=auth_key,
             )
             end = timeit.default_timer()
             logger.info(
@@ -299,7 +305,7 @@ def main(all_configs, run_type):
                             m,
                             reread=True,
                             run_type=run_type,
-                            az_key=azure_key,
+                            auth_key=auth_key,
                         ).show(100)
                     else:
                         save(
@@ -355,7 +361,7 @@ def main(all_configs, run_type):
                                 subkey,
                                 reread=True,
                                 run_type=run_type,
-                                az_key=azure_key,
+                                auth_key=auth_key,
                             ).show(100)
                         else:
                             save(
@@ -387,7 +393,7 @@ def main(all_configs, run_type):
                                 subkey,
                                 reread=True,
                                 run_type=run_type,
-                                az_key=azure_key,
+                                auth_key=auth_key,
                             ).show(100)
                         else:
                             save(
@@ -431,7 +437,7 @@ def main(all_configs, run_type):
                                 subkey,
                                 reread=True,
                                 run_type=run_type,
-                                az_key=azure_key,
+                                auth_key=auth_key,
                             ).show(100)
                         else:
                             save(
@@ -462,7 +468,7 @@ def main(all_configs, run_type):
                                 subkey,
                                 reread=True,
                                 run_type=run_type,
-                                az_key=azure_key,
+                                auth_key=auth_key,
                             ).show(100)
                             appended_metric_path = value["configs"].get(
                                 "appended_metric_path", ""
@@ -481,7 +487,7 @@ def main(all_configs, run_type):
                                     "stabilityIndex_metrics",
                                     reread=True,
                                     run_type=run_type,
-                                    az_key=azure_key,
+                                    auth_key=auth_key,
                                 ).show(100)
                         else:
                             save(
@@ -516,7 +522,7 @@ def main(all_configs, run_type):
                                     "PCA_latentFeatures",
                                 ):
                                     extra_args["run_type"] = run_type
-                                    extra_args["az_key"] = azure_key
+                                    extra_args["auth_key"] = auth_key
                                 if subkey2 in (
                                     "normalization",
                                     "feature_transformation",
@@ -559,7 +565,7 @@ def main(all_configs, run_type):
                             **extra_args,
                             master_path=report_input_path,
                             run_type=run_type,
-                            az_key=azure_key,
+                            auth_key=auth_key,
                         )
                         end = timeit.default_timer()
                         logger.info(
@@ -577,7 +583,7 @@ def main(all_configs, run_type):
                     **args,
                     run_type=run_type,
                     output_type=analysis_level,
-                    az_key=azure_key,
+                    auth_key=auth_key,
                 )
                 end = timeit.default_timer()
                 logger.info(
@@ -590,6 +596,10 @@ def main(all_configs, run_type):
 if __name__ == "__main__":
     config_path = sys.argv[1]
     run_type = sys.argv[2]
+    if len(sys.argv) == 4:
+        auth_key = sys.argv[3]
+    else:
+        auth_key = "NA"
 
     if run_type in ("local", "databricks", "ak8s"):
         config_file = open(config_path, "r")
@@ -600,5 +610,8 @@ if __name__ == "__main__":
     else:
         raise ValueError("Invalid run_type")
 
+    if run_type == "ak8s" and auth_key == "NA":
+        raise ValueError("Invalid auth key for run_type")
+
     all_configs = yaml.load(config_file, yaml.SafeLoader)
-    main(all_configs, run_type)
+    main(all_configs, run_type, auth_key)

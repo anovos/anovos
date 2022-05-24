@@ -617,7 +617,7 @@ def ts_loop_cols_pre(idf, id_col):
 
 
 def ts_preprocess(
-    spark, idf, id_col, output_path, tz_offset="local", run_type="local", az_key="NA"
+    spark, idf, id_col, output_path, tz_offset="local", run_type="local", auth_key="NA"
 ):
 
     """
@@ -638,7 +638,10 @@ def ts_preprocess(
     tz_offset
         Timezone offset (Option to chose between options like Local, GMT, UTC, etc.). Default option is set as "Local".
     run_type
-        Option to choose between run type "Local" or "EMR" or "Azure" basis the user flexibility. Default option is set as "Local".
+        Option to choose between run type "local" or "emr" or "databricks" or "ak8s" basis the user flexibility. Default option is set as "local".
+    auth_key
+        Option to pass an authorization key to write to filesystems. Currently applicable only for "ak8s" run_type.
+
 
     Returns
     -------
@@ -735,7 +738,7 @@ def ts_preprocess(
             + ends_with(local_path)
             + '" "'
             + ends_with(output_path_mod)
-            + str(az_key)
+            + str(auth_key)
             + '" --recursive=true '
         )
         output = subprocess.check_output(["bash", "-c", bash_cmd])

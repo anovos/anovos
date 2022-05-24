@@ -65,7 +65,6 @@ from anovos.data_analyzer.stats_generator import (
 )
 from anovos.data_ingest.data_ingest import read_dataset, recast_column
 from anovos.shared.utils import ends_with, attributeType_segregation, get_dtype
-from ..shared.utils import platform_root_path
 
 # enable_iterative_imputer is prequisite for importing IterativeImputer
 # check the following issue for more details https://github.com/scikit-learn/scikit-learn/issues/16833
@@ -730,7 +729,7 @@ def cat_to_num_supervised(
     model_path="NA",
     output_mode="replace",
     run_type="local",
-    az_key="NA",
+    auth_key="NA",
     print_impact=False,
 ):
     """
@@ -783,7 +782,9 @@ def cat_to_num_supervised(
         “replace” option replaces original columns with transformed column. “append” option append transformed
         column to the input dataset with a postfix "_encoded" e.g. column X is appended as X_encoded. (Default value = "replace")
     run_type
-        "local", "emr", "databricks" (Default value = "local")
+        "local", "emr", "databricks", "ak8s" (Default value = "local")
+    auth_key
+        Option to pass an authorization key to write to filesystems. Currently applicable only for ak8s run_type. Default value is kept as "NA"
     print_impact
         True, False (Default value = False)
         This argument is to print out the descriptive statistics of encoded columns.
@@ -839,13 +840,8 @@ def cat_to_num_supervised(
                 .drop(*["1", "0"])
             )
 
-            if run_type in list(platform_root_path.keys()):
-                root_path = platform_root_path[run_type]
-            else:
-                root_path = ""
-
             if model_path == "NA":
-                model_path = root_path + "intermediate_data"
+                model_path = "intermediate_data"
 
             df_tmp.coalesce(1).write.csv(
                 model_path + "/cat_to_num_supervised/" + i,
@@ -1613,7 +1609,7 @@ def imputation_sklearn(
     output_mode="replace",
     stats_missing={},
     run_type="local",
-    az_key="NA",
+    auth_key="NA",
     print_impact=False,
 ):
     """
@@ -1677,7 +1673,9 @@ def imputation_sklearn(
         to read pre-saved statistics on missing count/pct i.e. if measures_of_counts or
         missingCount_computation (data_analyzer.stats_generator module) has been computed & saved before. (Default value = {})
     run_type
-        "local", "emr", "databricks" (Default value = "local")
+        "local", "emr", "databricks", "ak8s" (Default value = "local")
+    auth_key
+        Option to pass an authorization key to write to filesystems. Currently applicable only for ak8s run_type. Default value is kept as "NA"
     print_impact
         True, False (Default value = False)
         This argument is to print out before and after missing counts of imputed columns.
@@ -1770,7 +1768,7 @@ def imputation_sklearn(
                 'azcopy cp "'
                 + model_path
                 + "/imputation_sklearn.sav"
-                + str(az_key)
+                + str(auth_key)
                 + '" .'
             )
             output = subprocess.check_output(["bash", "-c", bash_cmd])
@@ -1807,7 +1805,7 @@ def imputation_sklearn(
                     'azcopy cp "imputation_sklearn.sav" "'
                     + ends_with(model_path)
                     + "imputation_sklearn.sav"
-                    + str(az_key)
+                    + str(auth_key)
                     + '"'
                 )
                 output = subprocess.check_output(["bash", "-c", bash_cmd])
@@ -2125,7 +2123,8 @@ def auto_imputation(
     stats_missing={},
     output_mode="replace",
     run_type="local",
-    az_key="NA",
+    root_path="",
+    auth_key="NA",
     print_impact=True,
 ):
     """
@@ -2181,7 +2180,11 @@ def auto_imputation(
         “replace” option replaces original columns with transformed column. “append” option append transformed
         column to the input dataset with a postfix "_imputed" e.g. column X is appended as X_imputed. (Default value = "replace")
     run_type
-        "local", "emr", "databricks" (Default value = "local")
+        "local", "emr", "databricks", "ak8s" (Default value = "local")
+    root_path
+        This argument takes in a base folder path for writing out intermediate_data/ folder to. Default value is ""
+    auth_key
+        Option to pass an authorization key to write to filesystems. Currently applicable only for ak8s run_type. Default value is kept as "NA"
     print_impact
         True, False (Default value = False)
         This argument is to print out before and after missing counts of imputed columns. It also print the name of best
@@ -2193,11 +2196,6 @@ def auto_imputation(
         Imputed Dataframe
 
     """
-
-    if run_type in list(platform_root_path.keys()):
-        root_path = platform_root_path[run_type]
-    else:
-        root_path = ""
 
     if stats_missing == {}:
         missing_df = missingCount_computation(spark, idf)
@@ -2316,7 +2314,7 @@ def auto_imputation(
             method_type="KNN",
             stats_missing=stats_missing,
             output_mode=output_mode,
-            az_key=az_key,
+            auth_key=auth_key,
         )
         method4 = imputation_sklearn(
             spark,
@@ -2325,7 +2323,7 @@ def auto_imputation(
             method_type="regression",
             stats_missing=stats_missing,
             output_mode=output_mode,
-            az_key=az_key,
+            auth_key=auth_key,
         )
         method5 = imputation_matrixFactorization(
             spark,
@@ -2397,7 +2395,8 @@ def autoencoder_latentFeatures(
     stats_missing={},
     output_mode="replace",
     run_type="local",
-    az_key="NA",
+    root_path="",
+    auth_key="NA",
     print_impact=False,
 ):
     """
@@ -2478,7 +2477,11 @@ def autoencoder_latentFeatures(
         “append” option append transformed columns with format latent_<col_index> to the input dataset,
         e.g. latent_0, latent_1 will be appended if reduction_params=2. (Default value = "replace")
     run_type
-        "local", "emr", "databricks" (Default value = "local")
+        "local", "emr", "databricks", "ak8s" (Default value = "local")
+    root_path
+        This argument takes in a base folder path for writing out intermediate_data/ folder to. Default value is ""
+    auth_key
+        Option to pass an authorization key to write to filesystems. Currently applicable only for ak8s run_type. Default value is kept as "NA"
     print_impact
         True, False
         This argument is to print descriptive statistics of the latest features (Default value = False)
@@ -2504,11 +2507,6 @@ def autoencoder_latentFeatures(
     if len(list_of_cols) == 0:
         warnings.warn("No Latent Features Generated - No Column(s) to Transform")
         return idf
-
-    if run_type in list(platform_root_path.keys()):
-        root_path = platform_root_path[run_type]
-    else:
-        root_path = ""
 
     if stats_missing == {}:
         missing_df = missingCount_computation(spark, idf, list_of_cols)
@@ -2615,7 +2613,7 @@ def autoencoder_latentFeatures(
                 'azcopy cp "'
                 + model_path
                 + "/autoencoders_latentFeatures/encoder.h5"
-                + str(az_key)
+                + str(auth_key)
                 + '" .'
             )
             output = subprocess.check_output(["bash", "-c", bash_cmd])
@@ -2623,7 +2621,7 @@ def autoencoder_latentFeatures(
                 'azcopy cp "'
                 + model_path
                 + "/autoencoders_latentFeatures/model.h5"
-                + str(az_key)
+                + str(auth_key)
                 + '" .'
             )
             output = subprocess.check_output(["bash", "-c", bash_cmd])
@@ -2694,7 +2692,7 @@ def autoencoder_latentFeatures(
                     'azcopy cp "encoder.h5" "'
                     + model_path
                     + "/autoencoders_latentFeatures/encoder.h5"
-                    + str(az_key)
+                    + str(auth_key)
                     + '" '
                 )
                 output = subprocess.check_output(["bash", "-c", bash_cmd])
@@ -2702,7 +2700,7 @@ def autoencoder_latentFeatures(
                     'azcopy cp "model.h5" "'
                     + model_path
                     + "/autoencoders_latentFeatures/model.h5"
-                    + str(az_key)
+                    + str(auth_key)
                     + '" '
                 )
                 output = subprocess.check_output(["bash", "-c", bash_cmd])
@@ -2777,7 +2775,8 @@ def PCA_latentFeatures(
     stats_missing={},
     output_mode="replace",
     run_type="local",
-    az_key="NA",
+    root_path="",
+    auth_key="NA",
     print_impact=False,
 ):
     """
@@ -2845,7 +2844,11 @@ def PCA_latentFeatures(
         “append” option append transformed columns with format latent_<col_index> to the input dataset,
         e.g. latent_0, latent_1. (Default value = "replace")
     run_type
-        "local", "emr", "databricks" (Default value = "local")
+        "local", "emr", "databricks", "ak8s" (Default value = "local")
+    root_path
+        This argument takes in a base folder path for writing out intermediate_data/ folder to. Default value is ""
+    auth_key
+        Option to pass an authorization key to write to filesystems. Currently applicable only for ak8s run_type. Default value is kept as "NA"
     print_impact
         True, False
         This argument is to print descriptive statistics of the latest features (Default value = False)
@@ -2871,11 +2874,6 @@ def PCA_latentFeatures(
     if len(list_of_cols) == 0:
         warnings.warn("No Latent Features Generated - No Column(s) to Transform")
         return idf
-
-    if run_type in list(platform_root_path.keys()):
-        root_path = platform_root_path[run_type]
-    else:
-        root_path = ""
 
     if stats_missing == {}:
         missing_df = missingCount_computation(spark, idf, list_of_cols)
