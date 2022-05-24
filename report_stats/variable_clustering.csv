@@ -1,0 +1,16 @@
+Cluster,Attribute,RS_Ratio
+0,sex,0.3369
+0,marital_status,0.4999
+0,relationship,0.3526
+0,hours-per-week,0.8264
+1,income,0.5764
+1,education_num,0.4163
+1,occupation,0.5893
+1,capital-loss,0.8975
+2,native-country,0.3735
+2,race,0.3778
+3,age,0.474
+3,workclass,0.5254
+3,education,0.8361
+4,capital-gain,0.0
+5,fnlwgt,0.0
