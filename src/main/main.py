@@ -50,6 +50,7 @@ Note: Upcoming Modules - Feature Wiki, Feature store, Auto ML, ML Flow Integrati
 import copy
 import subprocess
 import sys
+import json
 import timeit
 import yaml
 from loguru import logger
@@ -600,7 +601,7 @@ if __name__ == "__main__":
     config_path = sys.argv[1]
     run_type = sys.argv[2]
     if len(sys.argv) == 4:
-        auth_key_val = sys.argv[3]
+        auth_key_val = json.loads(sys.argv[3])
     else:
         auth_key_val = {}
 
