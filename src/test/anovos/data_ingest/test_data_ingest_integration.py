@@ -13,6 +13,7 @@ from anovos.data_ingest.data_ingest import (
     select_column,
     rename_column,
     recast_column,
+    recommend_type,
 )
 
 sample_parquet = "./data/test_dataset/part-00001-3eb0f7bb-05c2-46ec-8913-23ba231d2734-c000.snappy.parquet"
@@ -388,3 +389,51 @@ def test_recast_column(spark_session: SparkSession):
         .to_dict("list")["education"][0]
         == "HS-grad"
     )
+
+
+def test_recommend_type(spark_session: SparkSession):
+    df = read_dataset(spark_session, sample_parquet, "parquet")
+    test_odf_1 = recommend_type(spark_session, df, static_threshold=100)
+    assert "age" in test_odf_1.select("attribute").toPandas().iloc[:, 0].to_list()
+    assert (
+        "education-num"
+        in test_odf_1.select("attribute").toPandas().iloc[:, 0].to_list()
+    )
+    assert (
+        test_odf_1.where(F.col("attribute") == "age")
+        .select(F.col("original_form"))
+        .toPandas()
+        .iloc[0, 0]
+        == "numerical"
+    )
+    assert (
+        test_odf_1.where(F.col("attribute") == "age")
+        .select(F.col("recommended_form"))
+        .toPandas()
+        .iloc[0, 0]
+        == "categorical"
+    )
+    assert (
+        test_odf_1.where(F.col("attribute") == "education-num")
+        .select(F.col("original_form"))
+        .toPandas()
+        .iloc[0, 0]
+        == "numerical"
+    )
+    assert (
+        test_odf_1.where(F.col("attribute") == "education-num")
+        .select(F.col("recommended_form"))
+        .toPandas()
+        .iloc[0, 0]
+        == "categorical"
+    )
+
+    test_odf_2 = recommend_type(
+        spark_session, df, dynamic_threshold=0.001, static_threshold=100000
+    )
+    assert test_odf_2.select("attribute").toPandas().iloc[:, 0].to_list() == [
+        "education-num"
+    ]
+
+    test_odf_3 = recommend_type(spark_session, df, list_of_cols="age", drop_cols="age")
+    assert test_odf_3.count() == 0
