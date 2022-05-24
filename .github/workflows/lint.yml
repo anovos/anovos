@@ -1,12 +1,10 @@
 name: Code Quality
 
 on:
+  workflow_dispatch:
+  workflow_call:
   push:
     paths:
-      - 'requirements.txt'
-      - 'src/**'
-      - '!**.md'
-      - '!.github/**'
       - '.github/workflows/lint.yml'
 
 jobs:
