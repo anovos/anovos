@@ -69,14 +69,14 @@ transformers:
       imputation: True
 
 write_main:
-  file_path: "/anovos_repo/data/output/"
+  file_path: "../anovos_repo/data/output/"
   file_type: parquet
   file_configs:
     mode: overwrite
     repartition: 1
 
 write_intermediate:
-  file_path: "/anovos_repo/data/intermediate_data"
+  file_path: "../anovos_repo/data/intermediate_data"
   file_type: parquet
   file_configs:
     mode: overwrite
@@ -85,7 +85,7 @@ write_intermediate:
     inferSchema: True
 
 write_feast_features:
-  file_path: "/anovos_repo/"
+  file_path: "../anovos_repo/"
   entity: "income"
   id_col: 'ifa'
   timestamp_col: 'event_time'
