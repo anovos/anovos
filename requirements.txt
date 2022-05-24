@@ -11,6 +11,7 @@ pyarrow<=7.0.0
 findspark==2.0.1
 loguru==0.6.0
 pyaml==21.10.1
+isort==5.10.1
 boto3
 cython
 s3path

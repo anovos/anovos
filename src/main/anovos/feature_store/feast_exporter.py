@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
 
+import isort
 from black import FileMode, format_str
 from jinja2 import Template
 from pyspark.sql import DataFrame
@@ -108,9 +109,7 @@ def generate_prefix():
         return prefix
 
 
-def generate_feature_description(
-    types: list, feast_config: dict, file_name: str
-):
+def generate_feature_description(types: list, feast_config: dict, file_name: str):
     print("Building feature definitions for feature_store")
     prefix = generate_prefix()
     file_source_definition = generate_file_source(feast_config, file_name)
@@ -133,8 +132,8 @@ def generate_feature_description(
         }
 
         file_content = complete_file_template.render(data)
-        # TODO: make black optimize imports
         file_content = format_str(file_content, mode=FileMode())
+        file_content = isort.code(file_content)
 
         feature_file = os.path.join(feast_config["file_path"], "feature_demo.py")
         with open(feature_file, "w") as of:
