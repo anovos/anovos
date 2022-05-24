@@ -85,6 +85,10 @@ jobs:
         run: |
           export SENTENCE_TRANSFORMERS_HOME="~/.cache"
 
+      - name: Run the unit tests for transformers module
+        run: |
+          pytest -v --cov=src/main/anovos src/test/anovos/data_transformer
+
       - name: Run the unit tests for feature_recommender
         run: |
           pytest -v --cov=src/main/anovos src/test/anovos/feature_recommender
@@ -100,7 +104,3 @@ jobs:
       - name: Run the unit tests for drift module
         run: |
           pytest -v --cov=src/main/anovos src/test/anovos/drift
-
-      - name: Run the unit tests for transformers module
-        run: |
-          pytest -v --cov=src/main/anovos src/test/anovos/data_transformer
