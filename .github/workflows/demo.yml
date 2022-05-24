@@ -1,13 +1,19 @@
 name: Demo
+
 on:
+  workflow_run:
+    workflows:
+      - "Unit Test"
+    types:
+      - completed
   push:
-    paths-ignore:
-      - '.github/**'
-      - '**.md'
+    paths:
+      - '.github/workflows/demo.yml'
+      - 'config/configs_basic.yaml'
 
 jobs:
   run-demo:
-    runs-on: ${{ matrix.os }} 
+    runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       fail-fast: false
