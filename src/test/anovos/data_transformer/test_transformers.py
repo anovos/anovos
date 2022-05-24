@@ -1,25 +1,27 @@
 import os
+
 import pytest
-from pytest import approx
 from pyspark.sql import functions as F
+from pytest import approx
+
 from anovos.data_ingest.data_ingest import read_dataset
 from anovos.data_transformer.transformers import (
-    attribute_binning,
-    monotonic_binning,
-    cat_to_num_unsupervised,
-    cat_to_num_supervised,
-    z_standardization,
     IQR_standardization,
-    normalization,
-    imputation_MMM,
-    imputation_sklearn,
-    imputation_matrixFactorization,
+    PCA_latentFeatures,
+    attribute_binning,
     auto_imputation,
     autoencoder_latentFeatures,
-    PCA_latentFeatures,
-    feature_transformation,
     boxcox_transformation,
+    cat_to_num_supervised,
+    cat_to_num_unsupervised,
+    feature_transformation,
+    imputation_matrixFactorization,
+    imputation_MMM,
+    imputation_sklearn,
+    monotonic_binning,
+    normalization,
     outlier_categories,
+    z_standardization,
 )
 
 sample_parquet = "./data/test_dataset/part-00001-3eb0f7bb-05c2-46ec-8913-23ba231d2734-c000.snappy.parquet"
@@ -225,12 +227,18 @@ def test_imputation_matrixFactorization(spark_session):
     assert odf.where(F.col("race").isNull()).count() == 162
     assert odf.where(F.col("relationship").isNull()).count() == 4
 
+
+def test_imputation_matrixFactorization_A(spark_session):
+    df = read_dataset(spark_session, sample_parquet, "parquet")
     odf = imputation_matrixFactorization(
         spark_session, df, list_of_cols=[], id_col="ifa"
     )
     assert odf.where(F.col("hours-per-week").isNull()).count() == 59
     assert odf.where(F.col("education-num").isNull()).count() == 14
 
+
+def test_imputation_matrixFactorization_B(spark_session):
+    df = read_dataset(spark_session, sample_parquet, "parquet")
     odf = imputation_matrixFactorization(
         spark_session,
         df,
@@ -303,12 +311,18 @@ def test_auto_imputation(spark_session):
     assert odf.where(F.col("logfnl").isNull()).count() == 10207
     assert odf.where(F.col("education").isNull()).count() == 254
 
+
+def test_auto_imputation_A(spark_session):
+    df = read_dataset(spark_session, sample_parquet, "parquet")
     odf = auto_imputation(spark_session, df, list_of_cols=[], id_col="ifa")
     assert odf.where(F.col("age").isNull()).count() == 30
     assert odf.where(F.col("fnlwgt").isNull()).count() == 8
     assert odf.where(F.col("race").isNull()).count() == 162
     assert odf.where(F.col("relationship").isNull()).count() == 4
 
+
+def test_auto_imputation_B(spark_session):
+    df = read_dataset(spark_session, sample_parquet, "parquet")
     odf = auto_imputation(
         spark_session,
         df,
