@@ -1,5 +1,5 @@
 from pyspark.sql import functions as F
-from pytest import approx, raises
+from pytest import approx
 
 from anovos.data_ingest.data_ingest import read_dataset
 from anovos.data_transformer.transformers import (
@@ -183,8 +183,8 @@ def test_imputation_sklearn(spark_session):
     assert odf.where(F.col("race").isNull()).count() == 162
     assert odf.where(F.col("relationship").isNull()).count() == 4
 
-    with raises(Exception) as error:
-        _ = imputation_sklearn(
+    try:
+        odf = imputation_sklearn(
             spark_session,
             df,
             list_of_cols=["education-num"],
@@ -192,8 +192,8 @@ def test_imputation_sklearn(spark_session):
             pre_existing_model=True,
             model_path="unit_testing/models/",
         )
-
-    assert str(error) == "list index out of range"
+    except Exception as error:
+        assert str(error) == "list index out of range"
 
     odf = imputation_sklearn(spark_session, df, list_of_cols=[], method_type="KNN")
     assert odf.where(F.col("age").isNull()).count() == 30
@@ -297,8 +297,8 @@ def test_imputation_MMM(spark_session):
     assert odf.where(F.col("logfnl").isNull()).count() == 10214
     assert odf.where(F.col("education").isNull()).count() == 258
 
-    with raises(Exception) as error:
-        _ = imputation_MMM(
+    try:
+        odf = imputation_MMM(
             spark_session,
             df,
             list_of_cols=["education-num"],
@@ -306,7 +306,8 @@ def test_imputation_MMM(spark_session):
             pre_existing_model=True,
             model_path="unit_testing/models/",
         )
-    assert str(error) == "list index out of range"
+    except Exception as error:
+        assert str(error) == "list index out of range"
 
     odf = imputation_MMM(spark_session, df, list_of_cols=[], method_type="mode")
     assert odf.where(F.col("age").isNull()).count() == 30
