@@ -79,6 +79,7 @@ jobs:
           feast init anovos_repo
           cd anovos_repo
           feast apply
+          pwd
       - name: Run the demo
         run: |
           cp config/configs_feast.yaml dist/configs.yaml
