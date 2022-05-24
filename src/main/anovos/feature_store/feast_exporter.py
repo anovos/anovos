@@ -111,7 +111,7 @@ def generate_prefix():
 def generate_feature_description(
     types: list[(str, str)], feast_config: dict, file_name: str
 ):
-    print("Building feature definitions for feature_store:")
+    print("Building feature definitions for feature_store")
     prefix = generate_prefix()
     file_source_definition = generate_file_source(feast_config, file_name)
     entity_definition = generate_entity_definition(feast_config)

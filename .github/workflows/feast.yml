@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - 'src/main/anovos/feast/**'
+      - 'src/main/anovos/feature_store/**'
       - 'config/configs_feast.yaml'
       - '!**.md'
       - '!.github/**'
