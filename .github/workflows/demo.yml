@@ -7,6 +7,8 @@ on:
     paths:
       - '.github/workflows/demo.yml'
       - 'config/configs_basic.yaml'
+    branches-ignore:
+      - main
 
 jobs:
   run-demo:

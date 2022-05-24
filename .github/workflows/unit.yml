@@ -6,6 +6,8 @@ on:
   push:
     paths:
       - '.github/workflows/unit.yml'
+    branches-ignore:
+      - main
 
 jobs:
   test:
