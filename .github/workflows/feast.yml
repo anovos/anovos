@@ -79,8 +79,8 @@ jobs:
           feast apply
       - name: Run the demo
         run: |
-          cp config/configs_feast.yaml dist/configs.yaml
-          cd dist/
+          cp config/configs_feast.yaml bin/configs.yaml
+          cd bin/
           ./spark-submit.sh
       - name: Set up Feast
         run: |
