@@ -84,6 +84,7 @@ jobs:
         run: |
           cp config/configs_feast.yaml dist/configs.yaml
           cd dist/
+          pwd
           ./spark-submit.sh
       - name: Set up Feast
         run: |
