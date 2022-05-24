@@ -1,0 +1,15 @@
+attribute,missing_count,missing_pct
+age,61,0.0019
+capital-gain,13,0.0004
+capital-loss,12,0.0004
+education,521,0.016
+education_num,31,0.001
+empty,32561,1.0
+fnlwgt,15,0.0005
+hours-per-week,109,0.0033
+marital_status,426,0.0131
+occupation,12,0.0004
+race,314,0.0096
+relationship,4,0.0001
+sex,4,0.0001
+workclass,3,0.0001
