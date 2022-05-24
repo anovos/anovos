@@ -2,6 +2,7 @@ from itertools import chain
 
 from pyspark.sql import functions as F
 
+
 def flatten_dataframe(idf, fixed_cols):
     """
 

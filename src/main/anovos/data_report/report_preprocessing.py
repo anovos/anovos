@@ -36,7 +36,13 @@ cat_cols = []
 
 
 def save_stats(
-    spark, idf, master_path, function_name, reread=False, run_type="local", auth_key="NA"
+    spark,
+    idf,
+    master_path,
+    function_name,
+    reread=False,
+    run_type="local",
+    auth_key="NA",
 ):
     """
 

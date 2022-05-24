@@ -67,6 +67,7 @@ from anovos.data_report.report_preprocessing import save_stats
 from anovos.drift import detector as ddetector
 from anovos.shared.spark import spark
 
+
 def ETL(args):
     f = getattr(data_ingest, "read_dataset")
     read_args = args.get("read_dataset", None)
@@ -171,8 +172,7 @@ def main(all_configs, run_type, auth_key):
 
         # credentials using sas token
         spark.conf.set(
-            'fs.azure.sas.anovos.anovosasktest.blob.core.windows.net',
-            auth_key
+            "fs.azure.sas.anovos.anovosasktest.blob.core.windows.net", auth_key
         )
     start_main = timeit.default_timer()
     df = ETL(all_configs.get("input_dataset"))

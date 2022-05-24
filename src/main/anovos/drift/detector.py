@@ -18,6 +18,7 @@ from anovos.shared.utils import attributeType_segregation
 from .distances import hellinger, psi, js_divergence, ks
 from .validations import check_distance_method, check_list_of_columns
 
+
 @check_distance_method
 @check_list_of_columns
 def statistics(
