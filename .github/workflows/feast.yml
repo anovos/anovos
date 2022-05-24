@@ -1,9 +1,11 @@
 name: Feast Integration
 
 on:
+  workflow_dispatch:
   push:
     paths:
       - 'src/main/anovos/feast/**'
+      - 'config/configs_feast.yaml'
       - '!**.md'
       - '!.github/**'
       - '.github/workflows/feast.yml'
