@@ -1,0 +1,16 @@
+attribute,mode,mode_rows,mode_pct,flagged
+capital-gain,0,29838.0,0.9167,1
+capital-loss,0,31030.0,0.9533,1
+education,HS-grad,10490.0,0.3274,0
+empty,None,,,1
+fnlwgt,123011,13.0,0.0004,0
+hours-per-week,40,15215.0,0.4688,0
+ifa,10112a,1.0,0.0,0
+income,<=50K,24720.0,0.7592,0
+marital_status,Married-civ-spouse,14957.0,0.4654,0
+native-country,United-States,29166.0,0.8957,1
+occupation,Prof-specialty,4136.0,0.1271,0
+race,White,27791.0,0.8618,1
+relationship,Husband,13185.0,0.405,0
+sex,Male,21783.0,0.6691,0
+workclass,Private,22685.0,0.6968,0

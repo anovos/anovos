@@ -1,0 +1,16 @@
+attribute,unique_values,IDness
+capital-gain,119,0.0037
+capital-loss,92,0.0028
+education,16,0.0005
+empty,0,
+fnlwgt,21640,0.6649
+hours-per-week,89,0.0027
+ifa,32561,1.0
+income,2,0.0001
+marital_status,7,0.0002
+native-country,44,0.0014
+occupation,15,0.0005
+race,9,0.0003
+relationship,8,0.0002
+sex,3,0.0001
+workclass,11,0.0003
