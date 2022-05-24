@@ -211,7 +211,7 @@ def test_imputation_sklearn(spark_session):
 
 
 def test_imputation_matrixFactorization(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+    df = read_dataset(spark_session, sample_parquet, "parquet").limit(100)
     odf = imputation_matrixFactorization(
         spark_session,
         df,
