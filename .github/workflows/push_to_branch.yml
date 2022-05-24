@@ -1,0 +1,23 @@
+name: Push to Branch
+
+on:
+  push:
+    branches-ignore:
+      - main
+    paths:
+      - 'src/**'
+      - 'requirements.txt'
+
+jobs:
+  lint:
+    uses: anovos/anovos/.github/workflows/lint.yml@main
+
+  unit:
+    needs:
+      - lint
+    uses: anovos/anovos/.github/workflows/unit.yml@main
+
+  demo:
+    needs:
+      - unit
+    uses: anovos/anovos/.github/workflows/demo.yml@main
