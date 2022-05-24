@@ -11,16 +11,16 @@ on:
 jobs:
   lint:
     name: "Code Quality"
-    uses: anovos/anovos/.github/workflows/lint.yml
+    uses: anovos/anovos/.github/workflows/lint.yml@main
 
   unit:
     name: "Unit Test"
     needs:
       - lint
-    uses: anovos/anovos/.github/workflows/unit.yml
+    uses: anovos/anovos/.github/workflows/unit.yml@main
 
   full_demo:
     name: "Full Demo"
     needs:
       - unit
-    uses: anovos/anovos/.github/workflows/full-demo.yml
+    uses: anovos/anovos/.github/workflows/full-demo.yml@main
