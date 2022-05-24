@@ -35,7 +35,7 @@ def generate_entity_definition(config: dict) -> str:
         return entity_template.render(data)
 
 
-def generate_feature_view(types: list[(str, str)], config: dict) -> str:
+def generate_feature_view(types: list, config: dict) -> str:
     source_template_path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "templates", "feature_view.txt"
     )
@@ -60,7 +60,7 @@ def generate_feature_view(types: list[(str, str)], config: dict) -> str:
         return feature_view_template.render(data)
 
 
-def generate_fields(types: list[(str, str)]) -> str:
+def generate_fields(types: list) -> str:
     fields = ""
     for (field_name, field_type) in types:
         fields += generate_field(
@@ -109,7 +109,7 @@ def generate_prefix():
 
 
 def generate_feature_description(
-    types: list[(str, str)], feast_config: dict, file_name: str
+    types: list, feast_config: dict, file_name: str
 ):
     print("Building feature definitions for feature_store")
     prefix = generate_prefix()
