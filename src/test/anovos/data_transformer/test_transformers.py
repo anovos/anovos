@@ -221,9 +221,11 @@ def test_imputation_matrixFactorization(spark_session):
     assert len(odf.columns) == 17
     assert odf.where(F.col("hours-per-week").isNull()).count() == 0
     assert odf.where(F.col("education-num").isNull()).count() == 0
-    assert odf.where(F.col("education").isNull()).count() == 258
-    assert odf.where(F.col("race").isNull()).count() == 162
-    assert odf.where(F.col("relationship").isNull()).count() == 4
+
+
+#    assert odf.where(F.col("education").isNull()).count() == 258
+#    assert odf.where(F.col("race").isNull()).count() == 162
+#    assert odf.where(F.col("relationship").isNull()).count() == 4
 
 
 def test_imputation_matrixFactorization_A(spark_session):
