@@ -1,7 +1,6 @@
 import pytest
 from unittest.mock import Mock
 
-
 # TODO: add edge case tests
 def test_generate_entity_definition():
     config = {
@@ -17,7 +16,7 @@ def test_generate_entity_definition():
     assert 'join_keys=["id column"]' in result
 
 
-def test_generate_feature_view(mocker):
+def test_generate_feature_view():
     config = {
         'entity': 'test_entity',
         'view_name': 'test_view',
@@ -26,10 +25,10 @@ def test_generate_feature_view(mocker):
     }
 
     from anovos.feature_store.feast_exporter import generate_feature_view
-    result = generate_feature_view([('field1', 'type1')], config)
+    result = generate_feature_view([('field1', 'string')], config)
     assert 'name="test_view"' in result
     assert 'entities=["test_entity"]' in result
-    assert 'Field(name="field1", dtype=type1)' in result
+    assert 'Field(name="field1", dtype=String)' in result
     assert 'ttl=timedelta(seconds=1)' in result
     assert 'owner="pytest@case"'
 

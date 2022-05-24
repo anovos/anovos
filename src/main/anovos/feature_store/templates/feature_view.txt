@@ -1,4 +1,4 @@
-FeatureView(
+{{feature_view_name}} = FeatureView(
     name="{{view_name}}",
     entities=["{{entity}}"],
     ttl=timedelta(seconds={{ttl_in_seconds}}),
