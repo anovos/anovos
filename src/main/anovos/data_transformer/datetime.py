@@ -188,7 +188,10 @@ def timestamp_to_unix(
         modify_col = {"replace": i, "append": i + "_unix"}
         odf = odf.withColumn(
             modify_col[output_mode],
-            (F.col(i + "_local").cast("double") * factor[precision]).cast("long"),
+            (
+                F.col(i + "_local").cast(T.TimestampType()).cast("double")
+                * factor[precision]
+            ).cast("long"),
         ).drop(i + "_local")
     return odf
 
@@ -306,15 +309,18 @@ def timezone_conversion(
     if not list_of_cols:
         return idf
 
+    given_tz = given_tz.upper()
+    output_tz = output_tz.upper()
+
     localtz = (
         spark.sql("SET spark.sql.session.timeZone")
         .select("value")
         .rdd.flatMap(lambda x: x)
         .collect()[0]
     )
-    if given_tz == "local":
+    if given_tz == "LOCAL":
         given_tz = localtz
-    if output_tz == "local":
+    if output_tz == "LOCAL":
         output_tz = localtz
 
     odf = idf
@@ -386,6 +392,8 @@ def string_to_timestamp(
     )
 
     def conversion(col, form):
+        if col is None:
+            return None
         output = pytz.timezone(localtz).localize(dt.strptime(str(col), form))
         return output
 
@@ -450,6 +458,8 @@ def timestamp_to_string(
     )
 
     def conversion(col, form):
+        if col is None:
+            return None
         output = col.astimezone(pytz.timezone(localtz)).strftime(form)
         return output
 
@@ -459,7 +469,8 @@ def timestamp_to_string(
     for i in list_of_cols:
         modify_col = {"replace": i, "append": i + "_str"}
         odf = odf.withColumn(
-            modify_col[output_mode], f_conversion(F.col(i), F.lit(output_format))
+            modify_col[output_mode],
+            f_conversion(F.col(i).cast(T.TimestampType()), F.lit(output_format)),
         )
 
     return odf
@@ -666,7 +677,13 @@ def time_diff(idf, ts1, ts2, unit, output_mode="append"):
 
     odf = idf.withColumn(
         ts1 + "_" + ts2 + "_" + unit + "diff",
-        F.abs((F.col(ts1).cast("double") - F.col(ts2).cast("double"))) / factor,
+        F.abs(
+            (
+                F.col(ts1).cast(T.TimestampType()).cast("double")
+                - F.col(ts2).cast(T.TimestampType()).cast("double")
+            )
+        )
+        / factor,
     )
 
     if output_mode == "replace":
@@ -737,7 +754,10 @@ def time_elapsed(idf, list_of_cols, unit, output_mode="append"):
         odf = odf.withColumn(
             i + "_" + unit + "diff",
             F.abs(
-                (F.lit(F.current_timestamp()).cast("double") - F.col(i).cast("double"))
+                (
+                    F.lit(F.current_timestamp()).cast("double")
+                    - F.col(i).cast(T.TimestampType()).cast("double")
+                )
             )
             / factor,
         )
@@ -796,7 +816,8 @@ def adding_timeUnits(idf, list_of_cols, unit, unit_value, output_mode="append"):
     for i in list_of_cols:
         odf = odf.withColumn(
             i + "_adjusted",
-            F.col(i) + F.expr("Interval " + str(unit_value) + " " + unit),
+            F.col(i).cast(T.TimestampType())
+            + F.expr("Interval " + str(unit_value) + " " + unit),
         )
 
         if output_mode == "replace":
@@ -983,7 +1004,11 @@ def is_monthStart(idf, list_of_cols, output_mode="append"):
     for i in list_of_cols:
         odf = odf.withColumn(
             i + "_ismonthStart",
-            F.when(F.to_date(F.col(i)) == F.col(i + "_monthStart"), 1).otherwise(0),
+            F.when(F.col(i).isNull(), None).otherwise(
+                F.when(F.to_date(F.col(i)) == F.col(i + "_monthStart"), 1).otherwise(
+                    F.when(F.col(i).isNull(), None).otherwise(0)
+                )
+            ),
         ).drop(i + "_monthStart")
 
         if output_mode == "replace":
@@ -1076,7 +1101,9 @@ def is_monthEnd(idf, list_of_cols, output_mode="append"):
     for i in list_of_cols:
         odf = odf.withColumn(
             i + "_ismonthEnd",
-            F.when(F.to_date(F.col(i)) == F.col(i + "_monthEnd"), 1).otherwise(0),
+            F.when(F.col(i).isNull(), None).otherwise(
+                F.when(F.to_date(F.col(i)) == F.col(i + "_monthEnd"), 1).otherwise(0)
+            ),
         ).drop(i + "_monthEnd")
 
         if output_mode == "replace":
@@ -1169,7 +1196,9 @@ def is_yearStart(idf, list_of_cols, output_mode="append"):
     for i in list_of_cols:
         odf = odf.withColumn(
             i + "_isyearStart",
-            F.when(F.to_date(F.col(i)) == F.col(i + "_yearStart"), 1).otherwise(0),
+            F.when(F.col(i).isNull(), None).otherwise(
+                F.when(F.to_date(F.col(i)) == F.col(i + "_yearStart"), 1).otherwise(0)
+            ),
         ).drop(i + "_yearStart")
 
         if output_mode == "replace":
@@ -1264,7 +1293,9 @@ def is_yearEnd(idf, list_of_cols, output_mode="append"):
     for i in list_of_cols:
         odf = odf.withColumn(
             i + "_isyearEnd",
-            F.when(F.to_date(F.col(i)) == F.col(i + "_yearEnd"), 1).otherwise(0),
+            F.when(F.col(i).isNull(), None).otherwise(
+                F.when(F.to_date(F.col(i)) == F.col(i + "_yearEnd"), 1).otherwise(0)
+            ),
         ).drop(i + "_yearEnd")
 
         if output_mode == "replace":
@@ -1356,7 +1387,11 @@ def is_quarterStart(idf, list_of_cols, output_mode="append"):
     for i in list_of_cols:
         odf = odf.withColumn(
             i + "_isquarterStart",
-            F.when(F.to_date(F.col(i)) == F.col(i + "_quarterStart"), 1).otherwise(0),
+            F.when(F.col(i).isNull(), None).otherwise(
+                F.when(F.to_date(F.col(i)) == F.col(i + "_quarterStart"), 1).otherwise(
+                    0
+                )
+            ),
         ).drop(i + "_quarterStart")
 
         if output_mode == "replace":
@@ -1453,7 +1488,9 @@ def is_quarterEnd(idf, list_of_cols, output_mode="append"):
     for i in list_of_cols:
         odf = odf.withColumn(
             i + "_isquarterEnd",
-            F.when(F.to_date(F.col(i)) == F.col(i + "_quarterEnd"), 1).otherwise(0),
+            F.when(F.col(i).isNull(), None).otherwise(
+                F.when(F.to_date(F.col(i)) == F.col(i + "_quarterEnd"), 1).otherwise(0)
+            ),
         ).drop(i + "_quarterEnd")
 
         if output_mode == "replace":
@@ -1502,7 +1539,9 @@ def is_yearFirstHalf(idf, list_of_cols, output_mode="append"):
     for i in list_of_cols:
         odf = odf.withColumn(
             i + "_isFirstHalf",
-            F.when(F.month(F.col(i)).isin(*range(1, 7)), 1).otherwise(0),
+            F.when(F.col(i).isNull(), None).otherwise(
+                F.when(F.month(F.col(i)).isin(*range(1, 7)), 1).otherwise(0)
+            ),
         )
 
         if output_mode == "replace":
@@ -1564,7 +1603,9 @@ def is_selectedHour(idf, list_of_cols, start_hour, end_hour, output_mode="append
     for i in list_of_cols:
         odf = odf.withColumn(
             i + "_isselectedHour",
-            F.when(F.hour(F.col(i)).isin(*list_of_hrs), 1).otherwise(0),
+            F.when(F.col(i).isNull(), None).otherwise(
+                F.when(F.hour(F.col(i)).isin(*list_of_hrs), 1).otherwise(0)
+            ),
         )
 
         if output_mode == "replace":
@@ -1609,6 +1650,8 @@ def is_leapYear(idf, list_of_cols, output_mode="append"):
         return idf
 
     def check(year):
+        if year is None:
+            return None
         if calendar.isleap(year):
             return 1
         else:
@@ -1663,7 +1706,10 @@ def is_weekend(idf, list_of_cols, output_mode="append"):
     odf = idf
     for i in list_of_cols:
         odf = odf.withColumn(
-            i + "_isweekend", F.when(F.dayofweek(F.col(i)).isin([1, 7]), 1).otherwise(0)
+            i + "_isweekend",
+            F.when(F.col(i).isNull(), None).otherwise(
+                F.when(F.dayofweek(F.col(i)).isin([1, 7]), 1).otherwise(0)
+            ),
         )
 
         if output_mode == "replace":
@@ -1924,9 +1970,9 @@ def lagged_ts(
     output_mode
         "replace", "append".
         “replace” option replaces original columns with derived column: <col>_lag<lag> for "ts" output_type,
-        <col>_lag<lag> and  <col>_<col>_lag<lag>_<tsdiff_unit>diff for "ts_diff" output_type.
+        <col>_<col>_lag<lag>_<tsdiff_unit>diff for "ts_diff" output_type.
         “append” option appends derived column to the input dataset, e.g. given output_type="ts_diff",
-        lag=5, tsdiff_unit="days", column X is appended as X_lag5 and X_X_lag5_daydiff. (Default value = "append")
+        lag=5, tsdiff_unit="days", column X is appended as X_X_lag5_daydiff. (Default value = "append")
 
     Returns
     -------
@@ -1958,7 +2004,7 @@ def lagged_ts(
         if output_type == "ts_diff":
             odf = time_diff(
                 odf, i, i + "_lag" + str(lag), unit=tsdiff_unit, output_mode="append"
-            )
+            ).drop(i + "_lag" + str(lag))
 
         if output_mode == "replace":
             odf = odf.drop(i)
