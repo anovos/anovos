@@ -123,7 +123,9 @@ def data_sample(
             )
             return idf
     if method_type == "stratified":
-        sample_df = idf.withColumn("merge", F.concat(*strata_cols))
+        sample_df = idf.na.drop(subset=strata_cols).withColumn(
+            "merge", F.concat(*strata_cols)
+        )
         fractions = (
             sample_df.select("merge")
             .distinct()

@@ -85,8 +85,6 @@ def write_dataset(idf, file_path, file_type, file_configs={}, column_order=[]):
     if not column_order:
         column_order = idf.columns
     else:
-        if not isinstance(column_order, list):
-            raise TypeError("Invalid input type for column_order argument")
         if len(column_order) != len(idf.columns):
             raise ValueError(
                 "Count of column(s) specified in column_order argument do not match Dataframe"
