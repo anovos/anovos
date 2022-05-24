@@ -165,15 +165,18 @@ def stats_args(all_configs, func):
     return result
 
 
-def main(all_configs, run_type, auth_key):
+def main(all_configs, run_type, auth_key_val):
     if run_type == "ak8s":
         conf = spark.sparkContext._jsc.hadoopConfiguration()
         conf.set("fs.wasbs.impl", "org.apache.hadoop.fs.azure.NativeAzureFileSystem")
 
-        # credentials using sas token
-        spark.conf.set(
-            "fs.azure.sas.anovos.anovosasktest.blob.core.windows.net", auth_key
-        )
+        # Set credentials using auth_key_val
+        for key, value in auth_key_val.items():
+            spark.conf.set(key, value)
+            auth_key = value
+    else:
+        auth_key = "NA"
+
     start_main = timeit.default_timer()
     df = ETL(all_configs.get("input_dataset"))
 
@@ -597,9 +600,9 @@ if __name__ == "__main__":
     config_path = sys.argv[1]
     run_type = sys.argv[2]
     if len(sys.argv) == 4:
-        auth_key = sys.argv[3]
+        auth_key_val = sys.argv[3]
     else:
-        auth_key = "NA"
+        auth_key_val = {}
 
     if run_type in ("local", "databricks", "ak8s"):
         config_file = open(config_path, "r")
@@ -610,8 +613,8 @@ if __name__ == "__main__":
     else:
         raise ValueError("Invalid run_type")
 
-    if run_type == "ak8s" and auth_key == "NA":
+    if run_type == "ak8s" and auth_key_val == {}:
         raise ValueError("Invalid auth key for run_type")
 
     all_configs = yaml.load(config_file, yaml.SafeLoader)
-    main(all_configs, run_type, auth_key)
+    main(all_configs, run_type, auth_key_val)
