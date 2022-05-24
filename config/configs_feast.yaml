@@ -75,6 +75,15 @@ write_main:
     mode: overwrite
     repartition: 1
 
+write_intermediate:
+  file_path: "/anovos_repo/data/intermediate_data"
+  file_type: parquet
+  file_configs:
+    mode: overwrite
+    header: True
+    delimiter: ","
+    inferSchema: True
+
 write_feast_features:
   file_path: "/anovos_repo/"
   entity: "income"
