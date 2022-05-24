@@ -69,10 +69,18 @@ jobs:
           python -m pip install --upgrade pip
           pip install pytest pytest-cov wheel
           pip install -r requirements.txt
-
       - name: Set up Feast
         run: |
           pip install feast
-          feast init my_feature_repo
-          cd my_feature_repo
-          feast apply       
+          feast init anovos_repo
+          cd anovos_repo
+          feast apply
+      - name: Run the demo
+        run: |
+          cp config/configs_feast.yaml dist/configs.yaml
+          cd dist/
+          ./spark-submit.sh
+      - name: Set up Feast
+        run: |
+          cd anovos_repo
+          feast apply
