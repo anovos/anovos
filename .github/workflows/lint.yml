@@ -6,6 +6,8 @@ on:
   push:
     paths:
       - '.github/workflows/lint.yml'
+    branches-ignore:
+      - main
 
 jobs:
   lint:
