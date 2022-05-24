@@ -1,6 +1,10 @@
 from pandas import util
 from anovos.data_ingest.data_ingest import read_dataset, write_dataset
 from pytest import raises
+import numpy
+from pandas import Index
+
+from pyspark.sql.utils import IllegalArgumentException
 
 
 def test_that_csv_file_can_be_read(spark_session, tmp_path):
@@ -78,13 +82,13 @@ def test_that_parquet_file_can_be_written(spark_session, tmp_path):
     assert df.columns == df_written.columns
 
 
-def test_that_negative_repartition_raises_exception(spark_session, tmp_path):
+def test_that_negative_repartition_raises_exception_in_write_dataset(spark_session, tmp_path):
 
     df = spark_session.createDataFrame(util.testing.makeMixedDataFrame())
 
     file_path = tmp_path / "my_file.csv"
 
-    with raises(Exception):
+    with raises(IllegalArgumentException):
 
         write_dataset(idf=df,
                       file_path=str(file_path),
@@ -92,3 +96,40 @@ def test_that_negative_repartition_raises_exception(spark_session, tmp_path):
                       file_configs={"header": True,
                                     "delimiter": ",",
                                     "repartition": -2})
+
+
+def test_that_column_order_works_in_write_dataset(spark_session, tmp_path):
+
+    df = spark_session.createDataFrame(util.testing.makeMixedDataFrame())
+    file_path = tmp_path / "my_file.csv"
+
+    column_order = ['B', 'C', 'D', 'A']
+
+    write_dataset(idf=df,
+                  file_path=str(file_path),
+                  file_type="csv",
+                  file_configs={"header": True,
+                                "delimiter": ","},
+                  column_order=column_order)
+
+    df_written = spark_session.read.options(delimiter=",", header=True).csv(str(file_path))
+
+    assert df_written.columns == column_order
+
+def test_that_wrong_column_length_raises_exception_in_write_dataset(spark_session, tmp_path):
+
+    df = spark_session.createDataFrame(util.testing.makeMixedDataFrame())
+    file_path = tmp_path / "my_file.csv"
+
+    column_order = ['A', 'B', 'C', 'D', 'E']
+
+    with raises(ValueError) as e:
+
+        write_dataset(idf=df,
+                      file_path=str(file_path),
+                      file_type="csv",
+                      file_configs={"header": True,
+                                    "delimiter": ","},
+                      column_order=column_order)
+
+        print(type(e))
