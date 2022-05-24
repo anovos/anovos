@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - 'src/main/anovos/feature_store/**'
+      - 'src/main/main.py'
       - 'config/configs_feast.yaml'
       - '!**.md'
       - '!.github/**'
