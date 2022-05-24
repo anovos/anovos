@@ -183,6 +183,9 @@ def refactor_arguments(func):
                 raise TypeError(
                     f"Invalid input for run_type in the function {func.__name__}. run_type should be local, emr or databricks - Received '{all_kwargs.get('run_type')}'."
                 )
-        return func(**all_kwargs)
+        if func.__name__ == "stability_index_computation":
+            return func(all_kwargs.pop("spark"), *all_kwargs.pop("idfs"), **all_kwargs)
+        else:
+            return func(**all_kwargs)
 
     return wrapper
