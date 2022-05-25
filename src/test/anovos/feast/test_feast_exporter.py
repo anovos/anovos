@@ -4,9 +4,9 @@ from unittest.mock import Mock
 # TODO: add edge case tests
 def test_generate_entity_definition():
     config = {
-        'entity': 'entity',
+        'name': 'entity',
         'id_col': 'id column',
-        'entity_description': 'test_description'
+        'description': 'test_description'
     }
 
     from anovos.feature_store.feast_exporter import generate_entity_definition
@@ -18,14 +18,13 @@ def test_generate_entity_definition():
 
 def test_generate_feature_view():
     config = {
-        'entity': 'test_entity',
-        'view_name': 'test_view',
-        'view_ttl_in_seconds': 1,
-        'view_owner': 'pytest@case'
+        'name': 'test_view',
+        'ttl_in_seconds': 1,
+        'owner': 'pytest@case'
     }
 
     from anovos.feature_store.feast_exporter import generate_feature_view
-    result = generate_feature_view([('field1', 'string')], config)
+    result = generate_feature_view(types=[('field1', 'string')], config=config, entity_name='test_entity')
     assert 'name="test_view"' in result
     assert 'entities=["test_entity"]' in result
     assert 'Field(name="field1", dtype=String)' in result
@@ -46,7 +45,7 @@ def test_generate_field():
 def test_generate_file_source():
     config = {
         'owner': 'test@owner.com',
-        'source_description': 'testcase description',
+        'description': 'testcase description',
         'timestamp_col': 'eventtime',
         'create_timestamp_col': 'test_create_column'
     }
@@ -62,17 +61,29 @@ def test_generate_file_source():
 
 
 def test_integration():
-    config = {
+    entity_config = {
+       'name': 'test_entity',
+       'id_col': 'id column',
+       'description': 'test_description',
+    }
+
+    file_source_config = {
         'owner': 'test@owner.com',
-        'source_description': 'testcase description',
+        'description': 'testcase description',
         'timestamp_col': 'eventtime',
         'create_timestamp_col': 'test_create_column',
-        'entity': 'test_entity',
-        'view_name': 'test_view',
-        'view_ttl_in_seconds': 1,
-        'view_owner': 'pytest@case',
-        'id_col': 'id column',
-        'entity_description': 'test_description',
+    }
+
+    feature_view_config = {
+        'name': 'test_view',
+        'ttl_in_seconds': 1,
+        'owner': 'pytest@case',
+    }
+
+    config = {
+        'entity': entity_config,
+        'file_source': file_source_config,
+        'feature_view': feature_view_config,
         'file_path': '/Users/matzep/Workspaces/inlinity/mobilewalla/feast-demo/anovos_repo/'
     }
     from anovos.feature_store.feast_exporter import generate_feature_description

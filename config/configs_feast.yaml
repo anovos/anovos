@@ -86,16 +86,19 @@ write_intermediate:
 
 write_feast_features:
   file_path: "../anovos_repo/"
-  entity: "income"
-  id_col: 'ifa'
-  timestamp_col: 'event_time'
-  create_timestamp_col: 'create_time_col'
-  source_description: 'data source description'
-  entity_description: "first attempt to generate an entity"
-  view_name: 'income_view'
-  view_owner: 'view@owner.com'
-  view_ttl_in_seconds: 3600
-  owner: "me@business.com"
-  create_timestamps: True
+  entity:
+    name: "income"
+    description: "first attempt to generate an entity"
+    id_col: 'ifa'
+  file_source:
+    description: 'data source description'
+    owner: "me@business.com"
+    timestamp_col: 'event_time'
+    create_timestamp_col: 'create_time_col'
+  feature_view:
+    name: 'income_view'
+    owner: 'view@owner.com'
+    ttl_in_seconds: 3600
+    create_timestamps: True
   file_configs:
     mode: overwrite

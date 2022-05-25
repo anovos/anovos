@@ -6,6 +6,7 @@ from black import FileMode, format_str
 from jinja2 import Template
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import lit
+from typing import List, Tuple
 
 ANOVOS_SOURCE = "anovos_source"
 
@@ -27,16 +28,16 @@ def generate_entity_definition(config: dict) -> str:
         template_string = f.read()
         entity_template = Template(template_string)
         data = {
-            "entity_name": config["entity"],
+            "entity_name": config["name"],
             "join_keys": config["id_col"],
             "value_type": "STRING",
-            "description": config["entity_description"],
+            "description": config[  "description"],
         }
 
         return entity_template.render(data)
 
 
-def generate_feature_view(types: list, config: dict) -> str:
+def generate_feature_view(types: list, config: dict, entity_name: str) -> str:
     source_template_path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "templates", "feature_view.txt"
     )
@@ -49,13 +50,13 @@ def generate_feature_view(types: list, config: dict) -> str:
 
         feature_view_template = Template(template_string)
         data = {
-            "feature_view_name": config["view_name"],
+            "feature_view_name": config["name"],
             "source": ANOVOS_SOURCE,
-            "view_name": config["view_name"],
-            "entity": config["entity"],
+            "view_name": config["name"],
+            "entity": entity_name,
             "fields": fields,
-            "ttl_in_seconds": config["view_ttl_in_seconds"],
-            "owner": config["view_owner"],
+            "ttl_in_seconds": config["ttl_in_seconds"],
+            "owner": config["owner"],
         }
 
         return feature_view_template.render(data)
@@ -92,7 +93,7 @@ def generate_file_source(config: dict, file_name="Test") -> str:
             "filename": file_name,
             "ts_column": config["timestamp_col"],
             "create_ts_column": config["create_timestamp_col"],
-            "source_description": config["source_description"],
+            "source_description": config["description"],
             "owner": config["owner"],
         }
 
@@ -112,9 +113,15 @@ def generate_prefix():
 def generate_feature_description(types: list, feast_config: dict, file_name: str):
     print("Building feature definitions for feature_store")
     prefix = generate_prefix()
-    file_source_definition = generate_file_source(feast_config, file_name)
-    entity_definition = generate_entity_definition(feast_config)
-    feature_view = generate_feature_view(types, feast_config)
+
+    file_source_config = feast_config['file_source']
+    file_source_definition = generate_file_source(file_source_config, file_name)
+
+    entity_config = feast_config['entity']
+    entity_definition = generate_entity_definition(entity_config)
+
+    feature_view_config = feast_config['feature_view']
+    feature_view = generate_feature_view(types, feature_view_config, entity_config['name'])
 
     complete_file_path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "templates", "complete_file.txt"
