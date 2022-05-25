@@ -1,8 +1,9 @@
-import pytest
 import pandas as pd
+import pytest
+
 from anovos.feature_recommender.featrec_init import (
-    get_column_name,
     camel_case_split,
+    get_column_name,
     recommendation_data_prep,
 )
 

@@ -31,6 +31,7 @@ import subprocess
 import tempfile
 import warnings
 from itertools import chain
+
 import numpy as np
 import pandas as pd
 import pyspark
@@ -42,22 +43,33 @@ if version.parse(pyspark.__version__) < version.parse("3.0.0"):
 else:
     from pyspark.ml.feature import OneHotEncoder
 
+import tensorflow
+from pyspark.ml.evaluation import RegressionEvaluator
+from pyspark.ml.feature import (
+    PCA,
+    Imputer,
+    ImputerModel,
+    IndexToString,
+    MinMaxScaler,
+    MinMaxScalerModel,
+    PCAModel,
+    StringIndexer,
+    StringIndexerModel,
+    VectorAssembler,
+)
+from pyspark.ml.linalg import DenseVector
+from pyspark.ml.recommendation import ALS
+from pyspark.mllib.stat import Statistics
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
 from pyspark.sql.window import Window
-from pyspark.mllib.stat import Statistics
-from pyspark.ml.feature import StringIndexerModel
-from pyspark.ml.recommendation import ALS
-from pyspark.ml.evaluation import RegressionEvaluator
-from pyspark.ml.feature import Imputer, ImputerModel, StringIndexer, IndexToString
-from pyspark.ml.feature import (
-    VectorAssembler,
-    MinMaxScaler,
-    MinMaxScalerModel,
-    PCA,
-    PCAModel,
-)
-from pyspark.ml.linalg import DenseVector
+
+# enable_iterative_imputer is prequisite for importing IterativeImputer
+# check the following issue for more details https://github.com/scikit-learn/scikit-learn/issues/16833
+from sklearn.experimental import enable_iterative_imputer  # noqa
+from sklearn.impute import IterativeImputer, KNNImputer
+from tensorflow.keras.layers import BatchNormalization, Dense, Input, LeakyReLU
+from tensorflow.keras.models import Model, load_model
 
 from anovos.data_analyzer.stats_generator import (
     missingCount_computation,
@@ -65,16 +77,8 @@ from anovos.data_analyzer.stats_generator import (
 )
 from anovos.data_ingest.data_ingest import read_dataset, recast_column
 from anovos.shared.utils import attributeType_segregation, get_dtype
+
 from ..shared.utils import platform_root_path
-
-# enable_iterative_imputer is prequisite for importing IterativeImputer
-# check the following issue for more details https://github.com/scikit-learn/scikit-learn/issues/16833
-from sklearn.experimental import enable_iterative_imputer  # noqa
-from sklearn.impute import KNNImputer, IterativeImputer
-
-import tensorflow
-from tensorflow.keras.models import load_model, Model
-from tensorflow.keras.layers import Dense, Input, BatchNormalization, LeakyReLU
 
 
 def attribute_binning(

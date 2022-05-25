@@ -1,19 +1,23 @@
 # coding=utf-8
 """
-This module consists of functions to read the dataset as Spark DataFrame, concatenate/join with other functions (if required), 
-and perform some basic ETL actions such as selecting, deleting, renaming and/or recasting columns. List of functions included in this module are: 
-- read_dataset 
-- write_dataset 
-- concatenate_dataset 
-- join_dataset 
-- delete_column 
-- select_column 
-- rename_column 
-- recast_column 
+This module consists of functions to read the dataset as Spark DataFrame, concatenate/join with other functions (if required),
+and perform some basic ETL actions such as selecting, deleting, renaming and/or recasting columns. List of functions included in this module are:
+- read_dataset
+- write_dataset
+- concatenate_dataset
+- join_dataset
+- delete_column
+- select_column
+- rename_column
+- recast_column
 """
+import warnings
+
 import pyspark.sql.functions as F
 from pyspark.sql import DataFrame
-from anovos.shared.utils import pairwise_reduce
+from pyspark.sql import types as T
+
+from anovos.shared.utils import attributeType_segregation, pairwise_reduce
 
 
 def read_dataset(spark, file_path, file_type, file_configs={}):
@@ -361,3 +365,169 @@ def recast_column(idf, list_of_cols, list_of_dtypes, print_impact=False):
         print("After: ")
         odf.printSchema()
     return odf
+
+
+def recommend_type(
+    spark,
+    idf,
+    list_of_cols="all",
+    drop_cols=[],
+    dynamic_threshold=0.01,
+    static_threshold=100,
+):
+    """
+    This function is to recommend the form and datatype of columns. Cardinality of each column will be measured,
+    then both dynamic_threshold and static_threshold will be used to determine the recommended form and datatype
+    for each column.
+
+    Parameters
+    ----------
+    spark
+        Spark Session
+    idf
+        Input Dataframe
+    list_of_cols
+        List of columns to cast e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2". (Default value = 'all')
+    drop_cols
+        List of columns to be dropped e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        It is most useful when coupled with the “all” value of strata_cols, when we need to consider all columns except
+        a few handful of them. (Default value = [])
+    dynamic_threshold
+        Cardinality threshold to determine columns recommended form and datatype.
+        If the column's unique values < column total records * dynamic_threshold, column will be recommended as
+        categorical, and in string datatype. Else, column will be recommended as numerical, and in double datatype
+        In recommend_type, we will use the general threshold equals to the minimum of dynamic_threshold and
+        static_threshold. (Default value = 0.01)
+    static_threshold
+        Cardinality threshold to determine columns recommended form and datatype.
+        If the column's unique values < static_threshold, column will be recommended as
+        categorical, and in string datatype. Else, column will be recommended as numerical, and in double datatype
+        In recommend_type, we will use the general threshold equals to the minimum of dynamic_threshold and
+        static_threshold. (Default value = 100)
+
+
+    Returns
+    -------
+    DataFrame
+        Dataframe with attributes and their original/recommended form and datatype
+
+    """
+    if list_of_cols == "all":
+        list_of_cols = idf.columns
+
+    if isinstance(list_of_cols, str):
+        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
+
+    if isinstance(drop_cols, str):
+        drop_cols = [x.strip() for x in drop_cols.split("|")]
+
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
+
+    if any(x not in idf.columns for x in list_of_cols):
+        raise TypeError("Invalid input for Column(s)")
+
+    if len(list_of_cols) == 0:
+        warnings.warn("No recommend_attributeType analysis - No column(s) to analyze")
+        schema = T.StructType(
+            [
+                T.StructField("attribute", T.StringType(), True),
+                T.StructField("original_form", T.StringType(), True),
+                T.StructField("original_dataType", T.StringType(), True),
+                T.StructField("recommended_form", T.StringType(), True),
+                T.StructField("recommended_dataType", T.StringType(), True),
+                T.StructField("distinct_value_count", T.StringType(), True),
+            ]
+        )
+        odf = spark.sparkContext.emptyRDD().toDF(schema)
+        return odf
+
+    if type(dynamic_threshold) != float:
+        raise TypeError("Invalid input for dynamic_threshold: float type only")
+
+    if dynamic_threshold <= 0 or dynamic_threshold > 1:
+        raise TypeError(
+            "Invalid input for dynamic_threshold: Value need to be between 0 and 1"
+        )
+
+    if type(static_threshold) != int:
+        raise TypeError("Invalid input for static_threshold: int type only")
+
+    def min_val(val1, val2):
+        if val1 > val2:
+            return val2
+        else:
+            return val1
+
+    num_cols, cat_cols, other_cols = attributeType_segregation(idf)
+    rec_num_cols = []
+    rec_cat_cols = []
+    for col in num_cols:
+        if idf.select(col).distinct().na.drop().count() < min_val(
+            (dynamic_threshold * idf.select(col).na.drop().count()), static_threshold
+        ):
+            rec_cat_cols.append(col)
+
+    for col in cat_cols:
+        idf_inter = (
+            idf.na.drop(subset=col).withColumn(col, idf[col].cast("double")).select(col)
+        )
+        if (
+            idf_inter.distinct().na.drop().count() == idf_inter.distinct().count()
+            and idf_inter.distinct().na.drop().count() != 0
+        ):
+            if idf.select(col).distinct().na.drop().count() >= min_val(
+                (dynamic_threshold * idf.select(col).na.drop().count()),
+                static_threshold,
+            ):
+                rec_num_cols.append(col)
+
+    rec_cols = rec_num_cols + rec_cat_cols
+    ori_form = []
+    ori_type = []
+    rec_form = []
+    rec_type = []
+    num_dist_val = []
+    if len(rec_cols) > 0:
+        for col in rec_cols:
+            if col in rec_num_cols:
+                ori_form.append("categorical")
+                ori_type.append(idf.select(col).dtypes[0][1])
+                rec_form.append("numerical")
+                rec_type.append("double")
+                num_dist_val.append(idf.select(col).distinct().count())
+            else:
+                ori_form.append("numerical")
+                ori_type.append(idf.select(col).dtypes[0][1])
+                rec_form.append("categorical")
+                rec_type.append("string")
+                num_dist_val.append(idf.select(col).distinct().count())
+        odf_rec = spark.createDataFrame(
+            zip(rec_cols, ori_form, ori_type, rec_form, rec_type, num_dist_val),
+            schema=(
+                "attribute",
+                "original_form",
+                "original_dataType",
+                "recommended_form",
+                "recommended_dataType",
+                "distinct_value_count",
+            ),
+        )
+        return odf_rec
+    else:
+        warnings.warn("No column type change recommendation is made")
+        schema = T.StructType(
+            [
+                T.StructField("attribute", T.StringType(), True),
+                T.StructField("original_form", T.StringType(), True),
+                T.StructField("original_dataType", T.StringType(), True),
+                T.StructField("recommended_form", T.StringType(), True),
+                T.StructField("recommended_dataType", T.StringType(), True),
+                T.StructField("distinct_value_count", T.StringType(), True),
+            ]
+        )
+        odf = spark.sparkContext.emptyRDD().toDF(schema)
+        return odf
