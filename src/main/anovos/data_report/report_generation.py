@@ -531,8 +531,8 @@ def executive_summary_gen(
         )
         # @FIXME: never used local variable
         text_val = list(list(obj_dtls.values())[0][0].items())[8][1]
-        x_val = list(list(obj_dtls.values())[0][0].items())[11][1]
-        y_val = list(list(obj_dtls.values())[0][0].items())[13][1]
+        x_val = list(list(obj_dtls.values())[0][0].items())[10][1]
+        y_val = list(list(obj_dtls.values())[0][0].items())[12][1]
         label_fig_ = go.Figure(
             data=[
                 go.Pie(
@@ -757,7 +757,7 @@ def executive_summary_gen(
             ]
         ]
     )
-    x = x[x.Attribute.values != "NA"]
+    x = x[~x["Attribute"].isnull()]
     if ds_ind[0] == 1 and ds_ind[1] >= 0.5:
         a5 = "Data Health based on Drift Metrics & Stability Index : "
         report = dp.Group(
