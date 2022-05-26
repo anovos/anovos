@@ -215,7 +215,9 @@ def drift_statistics(
         p = np.array(xy.select("p").rdd.flatMap(lambda x: x).collect())
         q = np.array(xy.select("q").rdd.flatMap(lambda x: x).collect())
 
-        metrics = [float(round(drift_function[method](p, q), 4)) for method in method_type]
+        metrics = [
+            float(round(drift_function[method](p, q), 4)) for method in method_type
+        ]
 
         cols_metrices.append(metrics)
 
@@ -224,9 +226,7 @@ def drift_statistics(
     result["attribute"] = list_of_cols
 
     odf = (
-        spark.createDataFrame(
-            result
-        )
+        spark.createDataFrame(result)
         .select(["attribute"] + method_type + ["flagged"])
         .orderBy(F.desc("flagged"))
     )
