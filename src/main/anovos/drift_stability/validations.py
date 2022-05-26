@@ -77,6 +77,7 @@ def refactor_arguments(func):
             idfs = all_kwargs.get("idfs")
             list_of_cols = all_kwargs.get("list_of_cols")
             drop_cols = all_kwargs.get("drop_cols")
+            existing_metric_path = all_kwargs.get("existing_metric_path")
 
             if isinstance(list_of_cols, str):
                 list_of_cols = [x.strip() for x in list_of_cols.split("|") if x.strip()]
@@ -84,24 +85,36 @@ def refactor_arguments(func):
                 drop_cols = [x.strip() for x in drop_cols.split("|")]
 
             if all_kwargs.get("pre_computed_stats") is False:
-                num_cols = attributeType_segregation(idfs[0])[0]
-                all_valid_cols = num_cols
-
-                if list_of_cols == ["all"]:
-                    list_of_cols = all_valid_cols
-
-                list_of_cols = [e for e in list_of_cols if e not in drop_cols]
-
-                if len(list_of_cols) == 0:
-                    raise TypeError(
-                        f"Invalid input for column(s) in the function {func.__name__}."
-                    )
-
-                for idf in idfs:
-                    if any(x not in idf.columns for x in list_of_cols):
+                if len(idfs) == 0:
+                    if existing_metric_path == "":
                         raise TypeError(
-                            f"Invalid input for column(s) in the function {func.__name__}. One or more columns are not present in all input dataframes."
+                            f"Invalid input dataframe in the function {func.__name__}. idfs must be provided if pre_computed_stats is False and existing_metric_path is empty."
                         )
+                    if list_of_cols != ["all"]:
+                        list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+                        if len(list_of_cols) == 0:
+                            raise TypeError(
+                                f"Invalid input for column(s) in the function {func.__name__}."
+                            )
+                else:
+                    num_cols = attributeType_segregation(idfs[0])[0]
+                    all_valid_cols = num_cols
+
+                    if list_of_cols == ["all"]:
+                        list_of_cols = all_valid_cols
+
+                    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+
+                    if len(list_of_cols) == 0:
+                        raise TypeError(
+                            f"Invalid input for column(s) in the function {func.__name__}."
+                        )
+
+                    for idf in idfs:
+                        if any(x not in idf.columns for x in list_of_cols):
+                            raise TypeError(
+                                f"Invalid input for column(s) in the function {func.__name__}. One or more columns are not present in all input dataframes."
+                            )
                 all_kwargs["list_of_cols"] = list_of_cols
                 all_kwargs["drop_cols"] = []
             else:

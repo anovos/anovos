@@ -14,6 +14,7 @@ from anovos.data_ingest.data_ingest import (
     concatenate_dataset,
     join_dataset,
     read_dataset,
+    delete_column,
 )
 from .validations import refactor_arguments
 
@@ -25,6 +26,8 @@ def stability_index_computation(
     list_of_cols="all",
     drop_cols=[],
     metric_weightages={"mean": 0.5, "stddev": 0.3, "kurtosis": 0.2},
+    binary_cols=[],
+    exclude_from_binary_cols=[],
     pre_computed_stats=False,
     stats={"mean": [], "stddev": [], "kurtosis": []},
     existing_metric_path="",
@@ -197,12 +200,36 @@ def stability_index_computation(
         existing_metric_df = spark.read.csv(
             existing_metric_path, header=True, inferSchema=True
         )
+        if ((len(idfs) == 0) and (list_of_cols != ["all"])) or (len(idfs) > 0):
+            existing_metric_df = existing_metric_df.where(
+                F.col("attribute").isin(list_of_cols)
+            )
+
         dfs_count = existing_metric_df.select(F.max(F.col("idx"))).first()[0]
+
+        existing_binary_cols = (
+            existing_metric_df.where(F.col("type") == "Binary")
+            .select("attribute")
+            .distinct()
+            .rdd.flatMap(list)
+            .collect()
+        )
+        all_binary_cols = list(dict.fromkeys(binary_cols + existing_binary_cols))
+        all_binary_cols = [
+            i for i in all_binary_cols if i not in exclude_from_binary_cols
+        ]
+        if len(existing_binary_cols) > 0:
+            logger.info(
+                "Attributes treated as binary in the existing metric: "
+                + ", ".join(existing_binary_cols)
+            )
+
     else:
         schema = T.StructType(
             [
                 T.StructField("idx", T.IntegerType(), True),
                 T.StructField("attribute", T.StringType(), True),
+                T.StructField("type", T.StringType(), True),
                 T.StructField("mean", T.DoubleType(), True),
                 T.StructField("stddev", T.DoubleType(), True),
                 T.StructField("kurtosis", T.DoubleType(), True),
@@ -210,6 +237,13 @@ def stability_index_computation(
         )
         existing_metric_df = spark.sparkContext.emptyRDD().toDF(schema)
         dfs_count = 0
+        all_binary_cols = [i for i in binary_cols if i not in exclude_from_binary_cols]
+
+    if len(all_binary_cols) > 0:
+        logger.info(
+            "Attributes treated as binary after including binary_cols and excluding exclude_from_binary_cols: "
+            + ", ".join(all_binary_cols)
+        )
 
     if pre_computed_stats:
         for i, (mean_dict, stddev_dict, kurtosis_dict) in enumerate(
@@ -256,28 +290,46 @@ def stability_index_computation(
         new_metric_df = new_metric_df.where(F.col("attribute").isin(list_of_cols))
 
     else:
-        metric_ls = []
-        for idf in idfs:
-            for i in list_of_cols:
-                mean, stddev, kurtosis = idf.select(
-                    F.mean(i), F.stddev(i), F.kurtosis(i)
-                ).first()
-                metric_ls.append(
-                    [
-                        dfs_count + 1,
-                        i,
-                        mean,
-                        stddev,
-                        kurtosis + 3.0 if kurtosis else None,
-                    ]
+        if len(idfs) == 0:
+            if list_of_cols == ["all"]:
+                list_of_cols = (
+                    existing_metric_df.select("attribute")
+                    .distinct()
+                    .rdd.flatMap(lambda x: x)
+                    .collect()
                 )
-            dfs_count += 1
+            appended_metric_df = delete_column(existing_metric_df, "type")
+        else:
+            metric_ls = []
+            for idf in idfs:
+                for i in list_of_cols:
+                    mean, stddev, kurtosis = idf.select(
+                        F.mean(i), F.stddev(i), F.kurtosis(i)
+                    ).first()
+                    metric_ls.append(
+                        [
+                            dfs_count + 1,
+                            i,
+                            mean,
+                            stddev,
+                            kurtosis + 3.0 if kurtosis else None,
+                        ]
+                    )
+                dfs_count += 1
 
-        new_metric_df = spark.createDataFrame(
-            metric_ls, schema=("idx", "attribute", "mean", "stddev", "kurtosis")
-        )
+            new_metric_df = spark.createDataFrame(
+                metric_ls, schema=("idx", "attribute", "mean", "stddev", "kurtosis")
+            )
+            appended_metric_df = concatenate_dataset(
+                delete_column(existing_metric_df, "type"), new_metric_df
+            )
 
-    appended_metric_df = concatenate_dataset(existing_metric_df, new_metric_df)
+        appended_metric_df = appended_metric_df.withColumn(
+            "type",
+            F.when(F.col("attribute").isin(all_binary_cols), "Binary").otherwise(
+                "Numerical"
+            ),
+        ).select("idx", "attribute", "type", "mean", "stddev", "kurtosis")
 
     if appended_metric_path:
         appended_metric_df.coalesce(1).write.csv(
@@ -285,35 +337,54 @@ def stability_index_computation(
         )
 
     result = []
-    small_mean_cols = []
+    # small_mean_cols = []
     for i in list_of_cols:
         i_output = [i]
-        for metric in ["mean", "stddev", "kurtosis"]:
+        if i in all_binary_cols:
+            i_output.append("Binary")
             metric_stats = (
                 appended_metric_df.where(F.col("attribute") == i)
                 .orderBy("idx")
-                .select(metric)
+                .select("mean")
                 .fillna(np.nan)
                 .rdd.flatMap(list)
                 .collect()
             )
-            if metric == "mean":
-                if np.mean(metric_stats) < 0.3:
-                    small_mean_cols.append(i)
-            metric_cv = round(float(variation([a for a in metric_stats])), 4) or None
-            i_output.append(metric_cv)
+
+            metric_stddev = round(float(np.std([a for a in metric_stats])), 4) or None
+            i_output.extend([metric_stddev, None, None, None])
+        else:
+            i_output.extend(["Numerical", None])
+            for metric in ["mean", "stddev", "kurtosis"]:
+                metric_stats = (
+                    appended_metric_df.where(F.col("attribute") == i)
+                    .orderBy("idx")
+                    .select(metric)
+                    .fillna(np.nan)
+                    .rdd.flatMap(list)
+                    .collect()
+                )
+                # if metric == "mean":
+                #     if np.mean(metric_stats) < 0.3:
+                #         small_mean_cols.append(i)
+                metric_cv = (
+                    round(float(variation([a for a in metric_stats])), 4) or None
+                )
+                i_output.append(metric_cv)
         result.append(i_output)
 
-    if len(small_mean_cols) > 0:
-        warnings.warn(
-            "Means of the following attributes are close to 0: "
-            + ", ".join(small_mean_cols)
-            + "."
-        )
+    # if len(small_mean_cols) > 0:
+    #     warnings.warn(
+    #         "Means of the following attributes are close to 0: "
+    #         + ", ".join(small_mean_cols)
+    #         + "."
+    #     )
 
     schema = T.StructType(
         [
             T.StructField("attribute", T.StringType(), True),
+            T.StructField("type", T.StringType(), True),
+            T.StructField("mean_stddev", T.FloatType(), True),
             T.StructField("mean_cv", T.FloatType(), True),
             T.StructField("stddev_cv", T.FloatType(), True),
             T.StructField("kurtosis_cv", T.FloatType(), True),
@@ -330,27 +401,50 @@ def stability_index_computation(
             stability_index = [4, 3, 2, 1, 0]
             for i, thresh in enumerate(thresholds):
                 if cv < thresh:
-                    return stability_index[i]
-            return stability_index[-1]
+                    return float(stability_index[i])
+            return float(stability_index[-1])
 
-    f_score_cv = F.udf(score_cv, T.IntegerType())
+    def score_stddev(stddev):
+        if stddev is None:
+            return None
+        if stddev <= 0.005:
+            return 4.0
+        elif stddev <= 0.025:
+            return round(-100 * stddev + 4.5, 4)
+        elif stddev <= 0.075:
+            return round(-40 * stddev + 3, 4)
+        else:
+            return 0.0
+
+    def compute_si(attr_type, mean_stddev, mean_cv, stddev_cv, kurtosis_cv):
+        if attr_type == "Binary":
+            mean_si = score_stddev(mean_stddev)
+            stability_index = mean_si
+            stddev_si, kurtosis_si = None, None
+        else:
+            mean_si = score_cv(mean_cv)
+            stddev_si = score_cv(stddev_cv)
+            kurtosis_si = score_cv(kurtosis_cv)
+            stability_index = round(
+                mean_si * metric_weightages.get("mean", 0)
+                + stddev_si * metric_weightages.get("stddev", 0)
+                + kurtosis_si * metric_weightages.get("kurtosis", 0),
+                4,
+            )
+        return [mean_si, stddev_si, kurtosis_si, stability_index]
+
+    f_compute_si = F.udf(compute_si, T.ArrayType(T.FloatType()))
 
     odf = (
         odf.replace(np.nan, None)
-        .withColumn("mean_si", f_score_cv(F.col("mean_cv")))
-        .withColumn("stddev_si", f_score_cv(F.col("stddev_cv")))
-        .withColumn("kurtosis_si", f_score_cv(F.col("kurtosis_cv")))
         .withColumn(
-            "stability_index",
-            F.round(
-                (
-                    F.col("mean_si") * metric_weightages.get("mean", 0)
-                    + F.col("stddev_si") * metric_weightages.get("stddev", 0)
-                    + F.col("kurtosis_si") * metric_weightages.get("kurtosis", 0)
-                ),
-                4,
-            ),
+            "si_array",
+            f_compute_si("type", "mean_stddev", "mean_cv", "stddev_cv", "kurtosis_cv"),
         )
+        .withColumn("mean_si", F.col("si_array").getItem(0))
+        .withColumn("stddev_si", F.col("si_array").getItem(1))
+        .withColumn("kurtosis_si", F.col("si_array").getItem(2))
+        .withColumn("stability_index", F.col("si_array").getItem(3))
         .withColumn(
             "flagged",
             F.when(
@@ -359,6 +453,7 @@ def stability_index_computation(
                 1,
             ).otherwise(0),
         )
+        .drop("si_array")
     )
 
     if print_impact:
