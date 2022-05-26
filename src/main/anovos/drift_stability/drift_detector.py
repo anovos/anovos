@@ -168,18 +168,26 @@ def drift_statistics(
     )
 
     target_bin.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
-    result = {"attribute": [], "flagged": []}
 
-    for method in method_type:
-        result[method] = []
-
+    drift_function = {
+        "PSI": psi,
+        "JSD": js_divergence,
+        "HD": hellinger,
+        "KS": ks,
+    }
+    cols_metrices = []
     for i in list_of_cols:
         if pre_existing_source:
-            x = spark.read.csv(
-                source_path + "/" + model_directory + "/frequency_counts/" + i,
-                header=True,
-                inferSchema=True,
-            )
+            # datei existiert nicht --> try/ except
+            try:
+                x = spark.read.csv(
+                    source_path + "/" + model_directory + "/frequency_counts/" + i,
+                    header=True,
+                    inferSchema=True,
+                )
+            except OSError as err:
+                print("OS error: {0}".format(err))
+
         else:
             x = (
                 source_bin.groupBy(i)
@@ -207,28 +215,17 @@ def drift_statistics(
         p = np.array(xy.select("p").rdd.flatMap(lambda x: x).collect())
         q = np.array(xy.select("q").rdd.flatMap(lambda x: x).collect())
 
-        result["attribute"].append(i)
-        counter = 0
+        metrics = [float(round(drift_function[method](p, q), 4)) for method in method_type]
 
-        for idx, method in enumerate(method_type):
-            drift_function = {
-                "PSI": psi,
-                "JSD": js_divergence,
-                "HD": hellinger,
-                "KS": ks,
-            }
-            metric = float(round(drift_function[method](p, q), 4))
-            result[method].append(metric)
-            if counter == 0:
-                if metric > threshold:
-                    result["flagged"].append(1)
-                    counter = 1
-            if (idx == (len(method_type) - 1)) & (counter == 0):
-                result["flagged"].append(0)
+        cols_metrices.append(metrics)
+
+    result = pd.DataFrame(cols_metrices, columns=method_type)
+    result["flagged"] = result.apply(lambda row: (row > threshold).any(), axis=1)
+    result["attribute"] = list_of_cols
 
     odf = (
         spark.createDataFrame(
-            pd.DataFrame.from_dict(result, orient="index").transpose()
+            result
         )
         .select(["attribute"] + method_type + ["flagged"])
         .orderBy(F.desc("flagged"))
