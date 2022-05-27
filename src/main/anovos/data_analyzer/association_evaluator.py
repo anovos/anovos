@@ -20,8 +20,11 @@ from popmon.analysis.hist_numpy import get_2dgrid
 from pyspark.sql import Window
 from pyspark.sql import functions as F
 from varclushi import VarClusHi
+from pyspark.ml.feature import VectorAssembler
+from pyspark.ml.stat import Correlation
 from anovos.data_analyzer.stats_generator import uniqueCount_computation
 from anovos.data_ingest.data_ingest import read_dataset
+from anovos.data_ingest.data_sampling import data_sample
 from anovos.data_transformer.transformers import (
     attribute_binning,
     monotonic_binning,
@@ -251,10 +254,29 @@ def correlation_matrix(
 
     cat_cols_select = attributeType_segregation(idf.select(list_of_cols))[1]
     if cat_cols_select:
-        if idf.count() < 10000000 and len(list_of_cols) < 200:
+        high_corr = False
+        col_need_treatment = []
+        for col in cat_cols_select:
+            if idf.select(col).distinct().count() > 150:
+                high_corr = True
+                col_need_treatment.append(col)
+        if idf.count() <= 100000 and not high_corr:
             return correlation_matrix_phik(
                 spark, idf, list_of_cols, drop_cols, stats_unique, print_impact
             )
+        elif idf.count() > 100000 and not high_corr:
+            warnings.warn(
+                "Data size is too big for computation. Only 100,000 random sampled rows are considered."
+            )
+            idf_sample = data_sample(idf, fraction=float(100000 / idf.count()), method_type='random')
+            return correlation_matrix_phik(
+                spark, idf_sample, list_of_cols, drop_cols, stats_unique, print_impact
+            )
+        elif idf.count() <= 100000 and high_corr:
+            warnings.warn(
+                "High cardinality column(s) are detected, and will go through cardinality treatments."
+            )
+            return
         else:
             warnings.warn(
                 "No Correlation Computation - Data size is too big for computation"
