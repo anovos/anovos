@@ -1,13 +1,18 @@
 name: Demo
+
 on:
+  workflow_dispatch:
+  workflow_call:
   push:
-    paths-ignore:
-      - '.github/**'
-      - '**.md'
+    paths:
+      - '.github/workflows/demo.yml'
+      - 'config/configs_basic.yaml'
+    branches-ignore:
+      - main
 
 jobs:
   run-demo:
-    runs-on: ${{ matrix.os }} 
+    runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       fail-fast: false
@@ -19,7 +24,7 @@ jobs:
             spark: '2.4.8'
             hadoop: '2.7'
             java: '8'
-            experimental: false
+            experimental: true
           - os: 'ubuntu-latest'
             python: '3.9'
             spark: '3.1.3'

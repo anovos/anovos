@@ -32,20 +32,22 @@ However, each of the functions have been detailed in the respective sections acr
 import json
 import os
 import subprocess
+import warnings
+
 import datapane as dp
+import dateutil.parser
 import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from loguru import logger
-import dateutil.parser
-from statsmodels.tsa.seasonal import seasonal_decompose
 import plotly.tools as tls
+from loguru import logger
 from plotly.subplots import make_subplots
-from statsmodels.tsa.stattools import adfuller, kpss
 from sklearn.preprocessing import PowerTransformer
+from statsmodels.tsa.seasonal import seasonal_decompose
+from statsmodels.tsa.stattools import adfuller, kpss
+
 from anovos.shared.utils import ends_with
-import warnings
 
 warnings.filterwarnings("ignore")
 
@@ -1575,7 +1577,7 @@ def data_drift_stability(
             dp.Text("# "),
             dp.Text(
                 """
-                *This section examines the dataset stability wrt the baseline dataset (via computing drift 
+                *This section examines the dataset stability wrt the baseline dataset (via computing drift
                 statistics) and/or wrt the historical datasets (via computing stability index).*
                 """
             ),

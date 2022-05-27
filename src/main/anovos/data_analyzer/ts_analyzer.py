@@ -1,8 +1,8 @@
 # coding=utf-8
 
-"""This module generates the intermediate output specific to the inspection of Time series analysis. 
+"""This module generates the intermediate output specific to the inspection of Time series analysis.
 
-As a part of generation of final output, there are various functions created such as - 
+As a part of generation of final output, there are various functions created such as -
 
 - ts_processed_feats
 - ts_eligiblity_check
@@ -14,33 +14,34 @@ Respective functions have sections containing the detailed definition of the par
 
 """
 
-import pyspark
-import datetime
-from pyspark.sql import functions as F
-from pyspark.sql import types as T
-from pyspark.sql import Window
-from loguru import logger
 import calendar
-from anovos.shared.utils import attributeType_segregation, ends_with, output_to_local
-from anovos.data_analyzer.stats_generator import measures_of_percentiles
-from anovos.data_ingest.ts_auto_detection import ts_preprocess
-from anovos.data_transformer.datetime import (
-    timeUnits_extraction,
-    unix_to_timestamp,
-    lagged_ts,
-)
-
 import csv
+import datetime
 import io
 import os
 import re
-import warnings
 import subprocess
+import warnings
 from pathlib import Path
+
 import dateutil.parser
-from statsmodels.tsa.seasonal import seasonal_decompose
-import pandas as pd
 import numpy as np
+import pandas as pd
+import pyspark
+from loguru import logger
+from pyspark.sql import Window
+from pyspark.sql import functions as F
+from pyspark.sql import types as T
+from statsmodels.tsa.seasonal import seasonal_decompose
+
+from anovos.data_analyzer.stats_generator import measures_of_percentiles
+from anovos.data_ingest.ts_auto_detection import ts_preprocess
+from anovos.data_transformer.datetime import (
+    lagged_ts,
+    timeUnits_extraction,
+    unix_to_timestamp,
+)
+from anovos.shared.utils import attributeType_segregation, ends_with, output_to_local
 
 
 def daypart_cat(column):

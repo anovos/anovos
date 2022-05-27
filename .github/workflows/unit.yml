@@ -1,12 +1,13 @@
 name: Unit Test
 
 on:
+  workflow_dispatch:
+  workflow_call:
   push:
     paths:
-      - 'requirements.txt'
-      - 'src/**'
-      - '!**.md'
-      - '!.github/**'
+      - '.github/workflows/unit.yml'
+    branches-ignore:
+      - main
 
 jobs:
   test:
@@ -27,7 +28,7 @@ jobs:
             hadoop: '3.2'
             java: '11'
             experimental: false
-          - python: '3.9'
+          - python: '3.10'
             spark: '3.2.1'
             hadoop: '3.2'
             java: '11'
@@ -83,6 +84,10 @@ jobs:
         run: |
           export SENTENCE_TRANSFORMERS_HOME="~/.cache"
 
+      - name: Run the unit tests for transformers module
+        run: |
+          pytest -v --cov=src/main/anovos src/test/anovos/data_transformer
+
       - name: Run the unit tests for feature_recommender
         run: |
           pytest -v --cov=src/main/anovos src/test/anovos/feature_recommender
@@ -91,14 +96,10 @@ jobs:
         run: |
           pytest -v --cov=src/main/anovos src/test/anovos/data_ingest
 
-      - name: Run the unit tests for data_analyzer module 
+      - name: Run the unit tests for data_analyzer module
         run: |
           pytest -v --cov=src/main/anovos src/test/anovos/data_analyzer/test_ts_analyzer.py src/test/anovos/data_analyzer/test_association_evaluator.py src/test/anovos/data_analyzer/test_quality_checker.py src/test/anovos/data_analyzer/test_stats_generator.py
 
       - name: Run the unit tests for drift module
         run: |
           pytest -v --cov=src/main/anovos src/test/anovos/drift
-
-      - name: Run the unit tests for transformers module
-        run: |
-          pytest -v --cov=src/main/anovos src/test/anovos/data_transformer
