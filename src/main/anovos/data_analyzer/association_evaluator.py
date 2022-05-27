@@ -30,6 +30,7 @@ from anovos.data_transformer.transformers import (
     monotonic_binning,
     cat_to_num_unsupervised,
     imputation_MMM,
+    outlier_categories,
 )
 from anovos.shared.utils import attributeType_segregation
 
@@ -257,7 +258,7 @@ def correlation_matrix(
         high_corr = False
         col_need_treatment = []
         for col in cat_cols_select:
-            if idf.select(col).distinct().count() > 150:
+            if idf.select(col).distinct().count() > 50:
                 high_corr = True
                 col_need_treatment.append(col)
         if idf.count() <= 100000 and not high_corr:
@@ -268,7 +269,9 @@ def correlation_matrix(
             warnings.warn(
                 "Data size is too big for computation. Only 100,000 random sampled rows are considered."
             )
-            idf_sample = data_sample(idf, fraction=float(100000 / idf.count()), method_type='random')
+            idf_sample = data_sample(
+                idf, fraction=float(100000 / idf.count()), method_type="random"
+            )
             return correlation_matrix_phik(
                 spark, idf_sample, list_of_cols, drop_cols, stats_unique, print_impact
             )
@@ -276,12 +279,26 @@ def correlation_matrix(
             warnings.warn(
                 "High cardinality column(s) are detected, and will go through cardinality treatments."
             )
-            return
+            idf_treat = outlier_categories(spark, idf, list_of_cols=col_need_treatment)
+            return correlation_matrix_phik(
+                spark, idf_treat, list_of_cols, drop_cols, stats_unique, print_impact
+            )
         else:
             warnings.warn(
-                "No Correlation Computation - Data size is too big for computation"
+                "Data size is too big for computation. Only 100,000 random sampled rows are considered."
             )
-            return idf
+            warnings.warn(
+                "High cardinality column(s) are detected, and will go through cardinality treatments."
+            )
+            idf_sample = data_sample(
+                idf, fraction=float(100000 / idf.count()), method_type="random"
+            )
+            idf_treat = outlier_categories(
+                spark, idf_sample, list_of_cols=col_need_treatment
+            )
+            return correlation_matrix_phik(
+                spark, idf_treat, list_of_cols, drop_cols, stats_unique, print_impact
+            )
     else:
         return correlation_matrix_numerical(
             spark, idf, list_of_cols, drop_cols, stats_unique, print_impact
