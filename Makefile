@@ -34,7 +34,7 @@ clean-test:
 	rm -rf .tox/
 	rm -f .coverage
 	rm -rf htmlcov/
-	rm -rf ./data/tmp/output 
+	rm -rf ./data/tmp/output
 	rm -rf ./unit_testing
 
 test:

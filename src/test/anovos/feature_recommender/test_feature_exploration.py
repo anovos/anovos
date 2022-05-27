@@ -1,19 +1,19 @@
 import pandas as pd
 import pytest
+
+from anovos.feature_recommender.featrec_init import model_download
 from anovos.feature_recommender.feature_exploration import (
     list_all_industry,
-    list_all_usecase,
     list_all_pair,
-    process_usecase,
-    process_industry,
-    list_usecase_by_industry,
-    list_industry_by_usecase,
+    list_all_usecase,
     list_feature_by_industry,
-    list_feature_by_usecase,
     list_feature_by_pair,
+    list_feature_by_usecase,
+    list_industry_by_usecase,
+    list_usecase_by_industry,
+    process_industry,
+    process_usecase,
 )
-from anovos.feature_recommender.featrec_init import model_download
-
 
 model_download()
 
@@ -25,8 +25,8 @@ def test_list_all_industry():
     assert test_df.iloc[:, 0].nunique() == len(test_df)
     for i in range(len(test_df)):
         assert "," not in test_df.iloc[i, 0]
-    assert 'telecommunication' in test_df.iloc[:,0].to_list()
-    assert 'healthcare' in test_df.iloc[:, 0].to_list()
+    assert "telecommunication" in test_df.iloc[:, 0].to_list()
+    assert "healthcare" in test_df.iloc[:, 0].to_list()
 
 
 def test_list_all_usecase():
@@ -36,8 +36,9 @@ def test_list_all_usecase():
     assert test_df.iloc[:, 0].nunique() == len(test_df)
     for i in range(len(test_df)):
         assert "," not in test_df.iloc[i, 0]
-    assert 'customer churn prediction' in test_df.iloc[:,0].to_list()
-    assert 'fraud detection' in test_df.iloc[:, 0].to_list()
+    assert "customer churn prediction" in test_df.iloc[:, 0].to_list()
+    assert "fraud detection" in test_df.iloc[:, 0].to_list()
+
 
 def test_list_all_pair():
     test_df = list_all_pair()
@@ -46,10 +47,10 @@ def test_list_all_pair():
     assert "Usecase" in test_df.columns
     assert test_df.groupby(["Industry", "Usecase"]).ngroups == len(test_df)
     for i in range(len(test_df)):
-        if 'telco-based credit scoring' in test_df.iloc[i, 1]:
-            assert 'telecommunication' in test_df.iloc[i, 0]
-        if 'stock price prediction' in test_df.iloc[i, 1]:
-            assert 'banking financial service and insurance' in test_df.iloc[i, 0]
+        if "telco-based credit scoring" in test_df.iloc[i, 1]:
+            assert "telecommunication" in test_df.iloc[i, 0]
+        if "stock price prediction" in test_df.iloc[i, 1]:
+            assert "banking financial service and insurance" in test_df.iloc[i, 0]
 
 
 def test_process_usecase():

@@ -7,7 +7,7 @@ assignees: ''
 
 ---
 
-## Expected Behavior 
+## Expected Behavior
 
 ## Current Behavior
 

@@ -23,8 +23,8 @@ RUN python3 -m pip install -r requirements.txt
 
 COPY config/log4j.properties .
 COPY config/configs.yaml .
-COPY jars/*.jar . 
-COPY dist/anovos.zip . 
+COPY jars/*.jar .
+COPY dist/anovos.zip .
 COPY dist/main.py .
 ADD dist/anovos.tar.gz .
 COPY examples/data/income_dataset ./data/income_dataset

@@ -1,7 +1,8 @@
-from anovos.data_ingest.data_sampling import data_sample
-from anovos.data_ingest.data_ingest import read_dataset
-from anovos.shared.spark import *
 import pytest
+
+from anovos.data_ingest.data_ingest import read_dataset
+from anovos.data_ingest.data_sampling import data_sample
+from anovos.shared.spark import *
 
 
 @pytest.fixture
@@ -76,6 +77,3 @@ def test_data_sampling(test_sample):
     assert output_4.filter(output_4["gender"] == "F").count() > 6
     assert output_4.filter(output_4["gender"] == "M").count() < 13
     assert output_4.filter(output_4["gender"] == "M").count() > 6
-
-
-

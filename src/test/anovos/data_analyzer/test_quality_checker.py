@@ -3,10 +3,10 @@ import pytest
 from pyspark.sql import SparkSession
 
 from anovos.data_analyzer.quality_checker import (
-    duplicate_detection,
-    invalidEntries_detection,
     IDness_detection,
     biasedness_detection,
+    duplicate_detection,
+    invalidEntries_detection,
     nullColumns_detection,
     nullRows_detection,
     outlier_detection,
