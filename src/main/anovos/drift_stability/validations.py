@@ -88,7 +88,9 @@ def refactor_arguments(func):
             if isinstance(binary_cols, str):
                 binary_cols = [x.strip() for x in binary_cols.split("|")]
             if isinstance(exclude_from_binary_cols, str):
-                exclude_from_binary_cols = [x.strip() for x in exclude_from_binary_cols.split("|")]
+                exclude_from_binary_cols = [
+                    x.strip() for x in exclude_from_binary_cols.split("|")
+                ]
 
             if all_kwargs.get("pre_computed_stats") is False:
                 if len(idfs) == 0:
@@ -105,7 +107,7 @@ def refactor_arguments(func):
                         all_kwargs["drop_cols"] = []
                     else:
                         all_kwargs["drop_cols"] = drop_cols
-                            
+
                 else:
                     num_cols = attributeType_segregation(idfs[0])[0]
                     all_valid_cols = num_cols
@@ -127,7 +129,7 @@ def refactor_arguments(func):
                             )
                     all_kwargs["drop_cols"] = []
                 all_kwargs["list_of_cols"] = list_of_cols
-                
+
             else:
                 stats = all_kwargs.get("stats")
                 if isinstance(stats, dict):
