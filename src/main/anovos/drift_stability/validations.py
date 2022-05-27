@@ -77,12 +77,18 @@ def refactor_arguments(func):
             idfs = all_kwargs.get("idfs")
             list_of_cols = all_kwargs.get("list_of_cols")
             drop_cols = all_kwargs.get("drop_cols")
+            binary_cols = all_kwargs.get("binary_cols")
+            exclude_from_binary_cols = all_kwargs.get("exclude_from_binary_cols")
             existing_metric_path = all_kwargs.get("existing_metric_path")
 
             if isinstance(list_of_cols, str):
                 list_of_cols = [x.strip() for x in list_of_cols.split("|") if x.strip()]
             if isinstance(drop_cols, str):
                 drop_cols = [x.strip() for x in drop_cols.split("|")]
+            if isinstance(binary_cols, str):
+                binary_cols = [x.strip() for x in binary_cols.split("|")]
+            if isinstance(exclude_from_binary_cols, str):
+                exclude_from_binary_cols = [x.strip() for x in exclude_from_binary_cols.split("|")]
 
             if all_kwargs.get("pre_computed_stats") is False:
                 if len(idfs) == 0:
@@ -96,6 +102,10 @@ def refactor_arguments(func):
                             raise TypeError(
                                 f"Invalid input for column(s) in the function {func.__name__}."
                             )
+                        all_kwargs["drop_cols"] = []
+                    else:
+                        all_kwargs["drop_cols"] = drop_cols
+                            
                 else:
                     num_cols = attributeType_segregation(idfs[0])[0]
                     all_valid_cols = num_cols
@@ -115,8 +125,9 @@ def refactor_arguments(func):
                             raise TypeError(
                                 f"Invalid input for column(s) in the function {func.__name__}. One or more columns are not present in all input dataframes."
                             )
+                    all_kwargs["drop_cols"] = []
                 all_kwargs["list_of_cols"] = list_of_cols
-                all_kwargs["drop_cols"] = []
+                
             else:
                 stats = all_kwargs.get("stats")
                 if isinstance(stats, dict):

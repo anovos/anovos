@@ -199,7 +199,8 @@ def stability_index_computation(
     if existing_metric_path:
         existing_metric_df = spark.read.csv(
             existing_metric_path, header=True, inferSchema=True
-        )
+        ).where(~F.col('attribute').isin(drop_cols))
+        
         if ((len(idfs) == 0) and (list_of_cols != ["all"])) or (len(idfs) > 0):
             existing_metric_df = existing_metric_df.where(
                 F.col("attribute").isin(list_of_cols)
