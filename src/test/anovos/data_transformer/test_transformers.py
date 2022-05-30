@@ -722,7 +722,7 @@ def test_cat_to_num_unsupervised(spark_session):
         df,
         list_of_cols=["workclass", "relationship", "marital-status"],
         drop_cols=["ifa"],
-        method_type=1,
+        method_type="label_encoding",
         index_order="frequencyDesc",
         cardinality_threshold=100,
         model_path="unit_testing/models/",
@@ -744,7 +744,7 @@ def test_cat_to_num_unsupervised(spark_session):
         df,
         list_of_cols=[],
         drop_cols=["ifa"],
-        method_type=1,
+        method_type="label_encoding",
         index_order="frequencyDesc",
         cardinality_threshold=100,
     )
@@ -758,7 +758,7 @@ def test_cat_to_num_unsupervised(spark_session):
         df,
         list_of_cols=["workclass", "relationship", "marital-status"],
         drop_cols=["ifa"],
-        method_type=1,
+        method_type="label_encoding",
         index_order="frequencyDesc",
         cardinality_threshold=100,
         output_mode="append",
@@ -766,7 +766,7 @@ def test_cat_to_num_unsupervised(spark_session):
     assert len(odf.columns) == 20
 
     odf = cat_to_num_unsupervised(
-        spark_session, df, drop_cols=["ifa"], method_type=0, cardinality_threshold=100
+        spark_session, df, drop_cols=["ifa"], method_type="onehot_encoding", cardinality_threshold=100
     )
     odf_min_dict = (
         odf.describe().where(F.col("summary") == "min").toPandas().to_dict("list")

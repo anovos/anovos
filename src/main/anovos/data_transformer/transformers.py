@@ -449,7 +449,7 @@ def cat_to_num_unsupervised(
     idf,
     list_of_cols="all",
     drop_cols=[],
-    method_type=1,
+    method_type="label_encoding",
     index_order="frequencyDesc",
     cardinality_threshold=100,
     pre_existing_model=False,
@@ -491,7 +491,7 @@ def cat_to_num_unsupervised(
         It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
         a few handful of them. (Default value = [])
     method_type
-        1 for Label Encoding or 0 for One hot encoding.
+        "label_encoding" or "onehot_encoding"
         In label encoding, each categorical value is assigned a unique integer based on alphabetical
         or frequency ordering (both ascending & descending options are available that can be selected by index_order argument).
         In one-hot encoding, every unique value in the column will be added in a form of dummy/binary column. (Default value = 1)
@@ -538,7 +538,7 @@ def cat_to_num_unsupervised(
     if any(x not in cat_cols for x in list_of_cols):
         raise TypeError("Invalid input for Column(s)")
 
-    if method_type not in (0, 1):
+    if method_type not in ("onehot_encoding", "label_encoding"):
         raise TypeError("Invalid input for method_type")
     if index_order not in (
         "frequencyDesc",
@@ -551,7 +551,7 @@ def cat_to_num_unsupervised(
         raise TypeError("Invalid input for output_mode")
 
     skip_cols = []
-    if method_type == 0:
+    if method_type == "onehot_encoding":
         if stats_unique == {}:
             skip_cols = (
                 uniqueCount_computation(spark, idf, list_of_cols)
@@ -641,7 +641,7 @@ def cat_to_num_unsupervised(
     ).drop("tempID")
     odf_indexed.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
 
-    if method_type == 0:
+    if method_type == "onehot_encoding":
         if pre_existing_model:
             encoder = OneHotEncoder.load(
                 model_path + "/cat_to_num_unsupervised/encoder"
@@ -705,7 +705,7 @@ def cat_to_num_unsupervised(
                 odf = odf.drop(i).withColumnRenamed(i + "_index", i)
             odf = odf.select(idf.columns)
 
-    if print_impact and method_type == 1:
+    if print_impact and method_type == "label_encoding":
         print("Before")
         idf.describe().where(F.col("summary").isin("count", "min", "max")).show(
             3, False
@@ -714,7 +714,7 @@ def cat_to_num_unsupervised(
         odf.describe().where(F.col("summary").isin("count", "min", "max")).show(
             3, False
         )
-    if print_impact and method_type == 0:
+    if print_impact and method_type == "onehot_encoding":
         print("Before")
         idf.printSchema()
         print("After")

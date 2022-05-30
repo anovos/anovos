@@ -357,7 +357,7 @@ transformers:
     # cat_to_num_unsupervised:
     #   list_of_cols: 'all'
     #   drop_cols: ['ifa']
-    #   method_type: 0
+    #   method_type: onehot_encoding
 
     cat_to_num_supervised:
       list_of_cols: all
