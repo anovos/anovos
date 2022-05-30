@@ -410,10 +410,12 @@ def stability_index_computation(
             return None
         if stddev <= 0.005:
             return 4.0
-        elif stddev <= 0.025:
-            return round(-100 * stddev + 4.5, 4)
-        elif stddev <= 0.075:
-            return round(-40 * stddev + 3, 4)
+        elif stddev <= 0.01:
+            return round(-100 * stddev + 4.5, 1)
+        elif stddev <= 0.05:
+            return round(-50 * stddev + 4, 1)
+        elif stddev <= 0.1:
+            return round(-30 * stddev + 3, 1)
         else:
             return 0.0
 
