@@ -91,6 +91,8 @@ def refactor_arguments(func):
                 exclude_from_binary_cols = [
                     x.strip() for x in exclude_from_binary_cols.split("|")
                 ]
+            all_kwargs["binary_cols"] = binary_cols
+            all_kwargs["exclude_from_binary_cols"] = exclude_from_binary_cols
 
             if all_kwargs.get("pre_computed_stats") is False:
                 if len(idfs) == 0:
