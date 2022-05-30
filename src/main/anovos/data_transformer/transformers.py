@@ -3288,11 +3288,11 @@ def outlier_categories(
 ):
     """
     This function replaces less frequently seen values (called as outlier values in the current context) in a
-    categorical column by 'others'. Outlier values can be defined in two ways –
+    categorical column by 'outlier_categories'. Outlier values can be defined in two ways –
     a) Max N categories, where N is used defined value. In this method, top N-1 frequently seen categories are considered
-    and rest are clubbed under single category 'others'. or Alternatively,
+    and rest are clubbed under single category 'outlier_categories'. or Alternatively,
     b) Coverage – top frequently seen categories are considered till it covers minimum N% of rows and rest lesser seen values
-    are mapped to mapped to others. Even if the Coverage is less, maximum category constraint is given priority. Further,
+    are mapped to mapped to 'outlier_categories'. Even if the Coverage is less, maximum category constraint is given priority. Further,
     there is a caveat that when multiple categories have same rank. Then, number of categorical values can be more than
     max_category defined by the user.
 
@@ -3318,10 +3318,10 @@ def outlier_categories(
         a few handful of them. (Default value = [])
     coverage
         Defines the minimum % of rows that will be mapped to actual category name and the rest to be mapped
-        to others and takes value between 0 to 1. Coverage of 0.8 can be interpreted as top frequently seen
-        categories are considered till it covers minimum 80% of rows and rest lesser seen values are mapped to others. (Default value = 1.0)
+        to 'outlier_categories' and takes value between 0 to 1. Coverage of 0.8 can be interpreted as top frequently seen
+        categories are considered till it covers minimum 80% of rows and rest lesser seen values are mapped to 'outlier_categories'. (Default value = 1.0)
     max_category
-        Even if coverage is less, only (max_category - 1) categories will be mapped to actual name and rest to others.
+        Even if coverage is less, only (max_category - 1) categories will be mapped to actual name and rest to 'outlier_categories'.
         Caveat is when multiple categories have same rank, then #categories can be more than max_category. (Default value = 50)
     pre_existing_model
         Boolean argument – True or False. True if the model with the outlier/other values
@@ -3416,14 +3416,14 @@ def outlier_categories(
                 i,
                 F.when(
                     (F.col(i).isin(parameters)) | (F.col(i).isNull()), F.col(i)
-                ).otherwise("others"),
+                ).otherwise("outlier_categories"),
             )
         else:
             odf = odf.withColumn(
                 i + "_outliered",
                 F.when(
                     (F.col(i).isin(parameters)) | (F.col(i).isNull()), F.col(i)
-                ).otherwise("others"),
+                ).otherwise("outlier_categories"),
             )
 
     if (not pre_existing_model) & (model_path != "NA"):
