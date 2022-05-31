@@ -10,7 +10,7 @@ from pyspark.sql import functions as F
 
 from anovos.data_transformer.transformers import attribute_binning
 from .distances import hellinger, psi, js_divergence, ks
-from .validations import refactor_arguments
+from .validations import refactor_arguments, generate_source
 from ..shared.utils import platform_root_path
 
 drift_function = {
@@ -153,16 +153,15 @@ def drift_statistics(
         source_path = root_path + "intermediate_data"
 
     if not pre_existing_source:
-        source_bin = attribute_binning(
+        generate_source(
             spark,
             idf_source,
-            list_of_cols=list_of_cols,
-            method_type=bin_method,
-            bin_size=bin_size,
-            pre_existing_model=False,
-            model_path=source_path + "/" + model_directory,
+            list_of_cols,
+            bin_method,
+            bin_size,
+            source_path,
+            model_directory,
         )
-        source_bin.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
 
     target_bin = attribute_binning(
         spark,
@@ -179,27 +178,15 @@ def drift_statistics(
     cols_metrics = {}
 
     for column in list_of_cols:
-        if pre_existing_source:
-            try:
-                x = spark.read.csv(
-                    source_path + "/" + model_directory + "/frequency_counts/" + i,
-                    header=True,
-                    inferSchema=True,
-                )
-            except OSError as err:
-                print("OS error: {0}".format(err))
 
-        else:
-            x = (
-                source_bin.groupBy(column)
-                .agg((F.count(column) / idf_source.count()).alias("p"))
-                .fillna(-1)
-            )
-            x.coalesce(1).write.csv(
+        try:
+            x = spark.read.csv(
                 source_path + "/" + model_directory + "/frequency_counts/" + column,
                 header=True,
-                mode="overwrite",
+                inferSchema=True,
             )
+        except OSError as err:
+            print("OS error: {0}".format(err))
 
         y = (
             target_bin.groupBy(column)

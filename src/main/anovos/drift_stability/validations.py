@@ -1,7 +1,10 @@
 from functools import wraps, partial
 import warnings
+from anovos.data_transformer.transformers import attribute_binning
 from anovos.shared.utils import attributeType_segregation
 from inspect import getcallargs
+from pyspark.sql import functions as F
+import pyspark
 
 
 def refactor_arguments(func):
@@ -217,3 +220,30 @@ def refactor_arguments(func):
             return func(**all_kwargs)
 
     return wrapper
+
+
+def generate_source(
+    spark, idf_source, list_of_cols, bin_method, bin_size, source_path, model_directory
+):
+    source_bin = attribute_binning(
+        spark,
+        idf_source,
+        list_of_cols=list_of_cols,
+        method_type=bin_method,
+        bin_size=bin_size,
+        pre_existing_model=False,
+        model_path=source_path + "/" + model_directory,
+    )
+    source_bin.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
+
+    for column in list_of_cols:
+        x = (
+            source_bin.groupBy(column)
+            .agg((F.count(column) / idf_source.count()).alias("p"))
+            .fillna(-1)
+        )
+        x.coalesce(1).write.csv(
+            source_path + "/" + model_directory + "/frequency_counts/" + column,
+            header=True,
+            mode="overwrite",
+        )
