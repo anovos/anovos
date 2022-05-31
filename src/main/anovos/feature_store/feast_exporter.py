@@ -185,7 +185,7 @@ def generate_feature_description(types: list, feast_config: dict, file_name: str
         file_content = format_str(file_content, mode=FileMode())
         file_content = isort.code(file_content)
 
-        feature_file = os.path.join(feast_config["file_path"], "feature_demo.py")
+        feature_file = os.path.join(feast_config["file_path"], "anovos.py")
         with open(feature_file, "w") as of:
             of.write(file_content)
 
