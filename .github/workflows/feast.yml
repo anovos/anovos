@@ -96,3 +96,6 @@ jobs:
           cd anovos_repo
           feast apply
           feast materialize `date "+%Y-%m-%dT"` `date "+%Y-%m-%dT%H:%M:%S"`
+      -name: Retrieve generated historical features
+       run: |
+         python -m anovos.feature_store.feature_retrieval ./anovos_repo
