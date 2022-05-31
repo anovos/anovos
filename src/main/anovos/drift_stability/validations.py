@@ -250,7 +250,7 @@ def generate_source(
         )
 
 
-def generate_bin_freuqencies(
+def generate_bin_frequencies(
     spark, source_path, model_directory, target_bin, idf_target, column
 ):
     try:

@@ -10,7 +10,7 @@ from pyspark.sql import functions as F
 
 from anovos.data_transformer.transformers import attribute_binning
 from .distances import hellinger, psi, js_divergence, ks
-from .validations import refactor_arguments, generate_source, generate_bin_freuqencies
+from .validations import refactor_arguments, generate_source, generate_bin_frequencies
 from ..shared.utils import platform_root_path
 
 drift_function = {
@@ -178,7 +178,7 @@ def drift_statistics(
     cols_metrics = {}
 
     for column in list_of_cols:
-        p, q = generate_bin_freuqencies(
+        p, q = generate_bin_frequencies(
             spark, source_path, model_directory, target_bin, idf_target, column
         )
 
