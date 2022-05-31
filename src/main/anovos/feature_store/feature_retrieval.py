@@ -35,7 +35,7 @@ def retrieve_historical_feature_demo(repo_path: str):
         }
     )
 
-    fs = feast.FeatureStore(repo_path=path)
+    fs = feast.FeatureStore(repo_path=repo_path)
     income_features_df = fs.get_historical_features(
         entity_df=income_entities,
         features=[
@@ -49,6 +49,12 @@ def retrieve_historical_feature_demo(repo_path: str):
     print(income_features_df.head())
 
     # train model from here ...
+
+    feature_service = fs.get_feature_service("income_feature_service")
+    income_features_by_service_df = fs.get_historical_features(
+        features=feature_service, entity_df=income_entities
+    ).to_df()
+    print(income_features_by_service_df.head())
 
 
 if __name__ == "__main__":
