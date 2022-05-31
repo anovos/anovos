@@ -53,7 +53,9 @@ def generate_entity_definition(config: dict) -> str:
         return entity_template.render(data)
 
 
-def generate_feature_view(types: list, config: dict, entity_name: str) -> str:
+def generate_feature_view(
+    types: list, exclude_list: list, config: dict, entity_name: str
+) -> str:
     source_template_path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "templates", "feature_view.txt"
     )
@@ -61,8 +63,7 @@ def generate_feature_view(types: list, config: dict, entity_name: str) -> str:
     with open(source_template_path, "r") as f:
         template_string = f.read()
 
-        # TODO: remove id_columns and dedicated timestamp columns from columns list
-        fields = generate_fields(types)
+        fields = generate_fields(types, exclude_list)
 
         feature_view_template = Template(template_string)
         data = {
@@ -78,12 +79,13 @@ def generate_feature_view(types: list, config: dict, entity_name: str) -> str:
         return feature_view_template.render(data)
 
 
-def generate_fields(types: list) -> str:
+def generate_fields(types: list, exclude_list: list) -> str:
     fields = ""
     for (field_name, field_type) in types:
-        fields += generate_field(
-            field_name, dataframe_to_feast_type_mapping[field_type]
-        )
+        if field_name not in exclude_list:
+            fields += generate_field(
+                field_name, dataframe_to_feast_type_mapping[field_type]
+            )
 
     return fields
 
@@ -153,8 +155,13 @@ def generate_feature_description(types: list, feast_config: dict, file_name: str
     entity_definition = generate_entity_definition(entity_config)
 
     feature_view_config = feast_config["feature_view"]
+    columns_to_exclude = [
+        feast_config["entity"]["id_col"],
+        feast_config["file_source"]["timestamp_col"],
+        feast_config["file_source"]["create_timestamp_col"],
+    ]
     feature_view = generate_feature_view(
-        types, feature_view_config, entity_config["name"]
+        types, columns_to_exclude, feature_view_config, entity_config["name"]
     )
 
     feature_service = (
