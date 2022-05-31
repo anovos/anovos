@@ -78,6 +78,7 @@ from anovos.data_analyzer.stats_generator import (
 from anovos.data_ingest.data_ingest import read_dataset, recast_column
 from anovos.shared.utils import ends_with, attributeType_segregation, get_dtype
 
+
 def attribute_binning(
     spark,
     idf,

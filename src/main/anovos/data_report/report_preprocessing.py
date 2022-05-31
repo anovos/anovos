@@ -25,6 +25,7 @@ from anovos.shared.utils import (
     output_to_local,
     path_ak8s_modify,
 )
+
 warnings.filterwarnings("ignore")
 
 global_theme = px.colors.sequential.Plasma

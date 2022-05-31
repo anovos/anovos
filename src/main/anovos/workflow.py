@@ -547,7 +547,7 @@ def main(all_configs, run_type, auth_key_val={}):
 
 
 def run(config_path, run_type, auth_key_val={}):
-    if run_type in ("local", "databricks","ak8s"):
+    if run_type in ("local", "databricks", "ak8s"):
         config_file = config_path
     elif run_type == "emr":
         bash_cmd = "aws s3 cp " + config_path + " config.yaml"
