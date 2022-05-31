@@ -97,7 +97,7 @@ def anovos_basic_report(
     id_col="",
     label_col="",
     event_label="",
-    skip_corr_matrix=False,
+    skip_corr_matrix=True,
     output_path=".",
     run_type="local",
     print_impact=True,
@@ -118,7 +118,7 @@ def anovos_basic_report(
         Value of (positive) event (i.e label 1) (Default value = "")
     skip_corr_matrix
         True, False.
-        This argument is to skip correlation matrix generation in basic_report.(Default value = False)
+        This argument is to skip correlation matrix generation in basic_report.(Default value = True)
     output_path
         File Path for saving metrics and basic report (Default value = ".")
     run_type
