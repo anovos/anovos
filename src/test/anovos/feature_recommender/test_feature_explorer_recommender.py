@@ -2,18 +2,17 @@ import pandas as pd
 import pytest
 from anovos.feature_recommender.feature_explorer_recommender import (
     list_all_industry,
-    list_all_usecase,
     list_all_pair,
-    process_usecase,
-    process_industry,
-    list_usecase_by_industry,
-    list_industry_by_usecase,
+    list_all_usecase,
     list_feature_by_industry,
-    list_feature_by_usecase,
     list_feature_by_pair,
+    list_feature_by_usecase,
+    list_industry_by_usecase,
+    list_usecase_by_industry,
+    process_industry,
+    process_usecase,
 )
 from anovos.feature_recommender.featrec_init import model_download
-
 
 model_download()
 

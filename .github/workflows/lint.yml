@@ -1,8 +1,13 @@
 name: Code Quality
 
 on:
+  workflow_dispatch:
+  workflow_call:
   push:
-
+    paths:
+      - '.github/workflows/lint.yml'
+    branches-ignore:
+      - main
 
 jobs:
   lint:

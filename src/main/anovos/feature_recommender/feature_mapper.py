@@ -9,12 +9,12 @@ import plotly.graph_objects as go
 from sentence_transformers import util
 
 from anovos.feature_recommender.featrec_init import (
-    recommendation_data_prep,
-    model_fer,
+    EmbeddingsTrainFer,
     camel_case_split,
     feature_recommendation_prep,
     get_column_name,
-    EmbeddingsTrainFer,
+    model_fer,
+    recommendation_data_prep,
 )
 from anovos.feature_recommender.feature_explorer_recommender import (
     list_usecase_by_industry,

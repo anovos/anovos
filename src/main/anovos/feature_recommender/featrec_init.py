@@ -1,11 +1,11 @@
-import os
 import copy
+import os
+import site
 from re import finditer
 
 import pandas as pd
 from sentence_transformers import SentenceTransformer
 from torch.hub import _get_torch_home
-import site
 
 
 def detect_model_path():

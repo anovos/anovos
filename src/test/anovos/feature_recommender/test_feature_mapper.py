@@ -7,7 +7,6 @@ from anovos.feature_recommender.feature_mapper import (
 )
 from anovos.feature_recommender.featrec_init import model_download
 
-
 model_download()
 
 

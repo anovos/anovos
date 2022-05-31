@@ -5,19 +5,20 @@ from __future__ import division, print_function
 import numpy as np
 import pandas as pd
 import pyspark
+import sympy as sp
 from loguru import logger
-from pyspark.sql import SparkSession, DataFrame
+from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
 from scipy.stats import variation
-import sympy as sp
 
 from anovos.data_ingest.data_ingest import concatenate_dataset
 from anovos.data_transformer.transformers import attribute_binning
 from anovos.shared.utils import attributeType_segregation
-from .distances import hellinger, psi, js_divergence, ks
-from .validations import check_distance_method, check_list_of_columns
+
 from ..shared.utils import platform_root_path
+from .distances import hellinger, js_divergence, ks, psi
+from .validations import check_distance_method, check_list_of_columns
 
 
 @check_distance_method
