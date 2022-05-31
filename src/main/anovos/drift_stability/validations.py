@@ -5,6 +5,7 @@ from anovos.shared.utils import attributeType_segregation
 from inspect import getcallargs
 from pyspark.sql import functions as F
 import pyspark
+import numpy as np
 
 
 def refactor_arguments(func):
@@ -247,3 +248,33 @@ def generate_source(
             header=True,
             mode="overwrite",
         )
+
+
+def generate_bin_freuqencies(
+    spark, source_path, model_directory, target_bin, idf_target, column
+):
+    try:
+        x = spark.read.csv(
+            source_path + "/" + model_directory + "/frequency_counts/" + column,
+            header=True,
+            inferSchema=True,
+        )
+    except OSError as err:
+        print("OS error: {0}".format(err))
+
+    y = (
+        target_bin.groupBy(column)
+        .agg((F.count(column) / idf_target.count()).alias("q"))
+        .fillna(-1)
+    )
+
+    xy = (
+        x.join(y, column, "full_outer")
+        .fillna(0.0001, subset=["p", "q"])
+        .replace(0, 0.0001)
+        .orderBy(column)
+    )
+    p = np.array(xy.select("p").rdd.flatMap(lambda x: x).collect())
+    q = np.array(xy.select("q").rdd.flatMap(lambda x: x).collect())
+
+    return p, q

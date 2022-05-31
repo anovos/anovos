@@ -10,7 +10,7 @@ from pyspark.sql import functions as F
 
 from anovos.data_transformer.transformers import attribute_binning
 from .distances import hellinger, psi, js_divergence, ks
-from .validations import refactor_arguments, generate_source
+from .validations import refactor_arguments, generate_source, generate_bin_freuqencies
 from ..shared.utils import platform_root_path
 
 drift_function = {
@@ -178,30 +178,9 @@ def drift_statistics(
     cols_metrics = {}
 
     for column in list_of_cols:
-
-        try:
-            x = spark.read.csv(
-                source_path + "/" + model_directory + "/frequency_counts/" + column,
-                header=True,
-                inferSchema=True,
-            )
-        except OSError as err:
-            print("OS error: {0}".format(err))
-
-        y = (
-            target_bin.groupBy(column)
-            .agg((F.count(column) / idf_target.count()).alias("q"))
-            .fillna(-1)
+        p, q = generate_bin_freuqencies(
+            spark, source_path, model_directory, target_bin, idf_target, column
         )
-
-        xy = (
-            x.join(y, column, "full_outer")
-            .fillna(0.0001, subset=["p", "q"])
-            .replace(0, 0.0001)
-            .orderBy(column)
-        )
-        p = np.array(xy.select("p").rdd.flatMap(lambda x: x).collect())
-        q = np.array(xy.select("q").rdd.flatMap(lambda x: x).collect())
 
         metrics = {
             method: float(drift_function[method](p, q)) for method in method_type
