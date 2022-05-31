@@ -1,6 +1,8 @@
 import copy
 import subprocess
 import timeit
+import glob
+import os
 
 import yaml
 from loguru import logger
@@ -16,6 +18,7 @@ from anovos.data_report.report_preprocessing import save_stats
 from anovos.data_transformer import transformers
 from anovos.drift import detector as ddetector
 from anovos.shared.spark import spark
+from anovos.feature_store import feast_exporter
 
 
 def ETL(args):
@@ -122,6 +125,12 @@ def main(all_configs, run_type):
     write_main = all_configs.get("write_main", None)
     write_intermediate = all_configs.get("write_intermediate", None)
     write_stats = all_configs.get("write_stats", None)
+
+    write_feast_features = all_configs.get("write_feast_features", None)
+
+    repartition_count = write_main['file_configs']['repartition'] \
+        if 'file_configs' in write_main and 'repartition' in write_main['file_configs'] else -1
+    feast_exporter.check_feast_configuration(write_feast_features, repartition_count)
 
     report_input_path = ""
     report_configs = all_configs.get("report_preprocessing", None)
@@ -515,8 +524,23 @@ def main(all_configs, run_type):
                 logger.info(
                     f"{key}, full_report: execution time (in secs) ={round(end - start, 4)}"
                 )
+    if write_feast_features is not None:
+        file_source_config = write_feast_features['file_source']
+        df = feast_exporter.add_timestamp_columns(df, file_source_config)
 
     save(df, write_main, folder_name="final_dataset", reread=False)
+
+    if write_feast_features is not None:
+        if "file_path" not in write_feast_features:
+            raise ValueError(
+                "File path missing for saving feature_store feature descriptions"
+            )
+        else:
+            path = os.path.join(write_main["file_path"], "final_dataset", "part*")
+            filename = glob.glob(path)[0]
+            feast_exporter.generate_feature_description(
+                df.dtypes, write_feast_features, filename
+            )
 
 
 def run(config_path, run_type):
