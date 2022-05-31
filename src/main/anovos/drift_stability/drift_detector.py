@@ -21,7 +21,7 @@ def drift_statistics(
     idf_source,
     list_of_cols="all",
     drop_cols=[],
-    method_type="PSI",
+    method_type=["PSI"],
     bin_method="equal_range",
     bin_size=10,
     threshold=0.1,
@@ -175,10 +175,11 @@ def drift_statistics(
         "HD": hellinger,
         "KS": ks,
     }
-    cols_metrices = []
-    for i in list_of_cols:
+
+    cols_metrics = {}
+
+    for column in list_of_cols:
         if pre_existing_source:
-            # datei existiert nicht --> try/ except
             try:
                 x = spark.read.csv(
                     source_path + "/" + model_directory + "/frequency_counts/" + i,
@@ -190,38 +191,38 @@ def drift_statistics(
 
         else:
             x = (
-                source_bin.groupBy(i)
-                .agg((F.count(i) / idf_source.count()).alias("p"))
+                source_bin.groupBy(column)
+                .agg((F.count(column) / idf_source.count()).alias("p"))
                 .fillna(-1)
             )
             x.coalesce(1).write.csv(
-                source_path + "/" + model_directory + "/frequency_counts/" + i,
+                source_path + "/" + model_directory + "/frequency_counts/" + column,
                 header=True,
                 mode="overwrite",
             )
 
         y = (
-            target_bin.groupBy(i)
-            .agg((F.count(i) / idf_target.count()).alias("q"))
+            target_bin.groupBy(column)
+            .agg((F.count(column) / idf_target.count()).alias("q"))
             .fillna(-1)
         )
 
         xy = (
-            x.join(y, i, "full_outer")
+            x.join(y, column, "full_outer")
             .fillna(0.0001, subset=["p", "q"])
             .replace(0, 0.0001)
-            .orderBy(i)
+            .orderBy(column)
         )
         p = np.array(xy.select("p").rdd.flatMap(lambda x: x).collect())
         q = np.array(xy.select("q").rdd.flatMap(lambda x: x).collect())
 
-        metrics = [
-            float(round(drift_function[method](p, q), 4)) for method in method_type
-        ]
+        metrics = {
+            method: float(drift_function[method](p, q)) for method in method_type
+        }
 
-        cols_metrices.append(metrics)
+        cols_metrics[column] = metrics
 
-    result = pd.DataFrame(cols_metrices, columns=method_type)
+    result = pd.DataFrame.from_dict(cols_metrics, orient="index")
     result["flagged"] = result.apply(lambda row: (row > threshold).any(), axis=1)
     result["attribute"] = list_of_cols
 
