@@ -13,6 +13,13 @@ from .distances import hellinger, psi, js_divergence, ks
 from .validations import refactor_arguments
 from ..shared.utils import platform_root_path
 
+drift_function = {
+    "PSI": psi,
+    "JSD": js_divergence,
+    "HD": hellinger,
+    "KS": ks,
+}
+
 
 @refactor_arguments
 def drift_statistics(
@@ -168,13 +175,6 @@ def drift_statistics(
     )
 
     target_bin.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
-
-    drift_function = {
-        "PSI": psi,
-        "JSD": js_divergence,
-        "HD": hellinger,
-        "KS": ks,
-    }
 
     cols_metrics = {}
 
