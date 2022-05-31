@@ -1,8 +1,8 @@
 import copy
-import subprocess
-import timeit
 import glob
 import os
+import subprocess
+import timeit
 
 import yaml
 from loguru import logger
@@ -17,8 +17,8 @@ from anovos.data_report.report_generation import anovos_report
 from anovos.data_report.report_preprocessing import save_stats
 from anovos.data_transformer import transformers
 from anovos.drift import detector as ddetector
-from anovos.shared.spark import spark
 from anovos.feature_store import feast_exporter
+from anovos.shared.spark import spark
 
 
 def ETL(args):
@@ -128,8 +128,11 @@ def main(all_configs, run_type):
 
     write_feast_features = all_configs.get("write_feast_features", None)
 
-    repartition_count = write_main['file_configs']['repartition'] \
-        if 'file_configs' in write_main and 'repartition' in write_main['file_configs'] else -1
+    repartition_count = (
+        write_main["file_configs"]["repartition"]
+        if "file_configs" in write_main and "repartition" in write_main["file_configs"]
+        else -1
+    )
     feast_exporter.check_feast_configuration(write_feast_features, repartition_count)
 
     report_input_path = ""
@@ -525,7 +528,7 @@ def main(all_configs, run_type):
                     f"{key}, full_report: execution time (in secs) ={round(end - start, 4)}"
                 )
     if write_feast_features is not None:
-        file_source_config = write_feast_features['file_source']
+        file_source_config = write_feast_features["file_source"]
         df = feast_exporter.add_timestamp_columns(df, file_source_config)
 
     save(df, write_main, folder_name="final_dataset", reread=False)
