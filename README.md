@@ -4,22 +4,22 @@
 
 # Anovos
 
-[![Release Latest](https://img.shields.io/badge/release-%20v0.2.2-yellowgreen?style=plastic)](https://github.com/anovos/anovos/releases/)
+[![Release Latest](https://img.shields.io/badge/release-%20v0.3.0-yellowgreen?style=plastic)](https://github.com/anovos/anovos/releases/)
 [![Docs Latest](https://img.shields.io/badge/docs-latest-blue.svg?style=plastic)](https://docs.anovos.ai/)
 [![License](https://img.shields.io/badge/License-Apache_2.0-red.svg?style=plastic)](https://opensource.org/licenses/Apache-2.0)
 [![twitter](https://img.shields.io/badge/Follow--lightgrey?logo=twitter&style=social)](https://twitter.com/ml_anovos)
-[![Slack](https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&style=social)](https://go.mlops.community/slack)
+[![Slack](https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&style=social)](https://featureengineers.slack.com/)
 
-_Anovos_ is an open source library for feature engineering at scale. 
+_Anovos_ is an open source library for feature engineering at scale.
 Built by data scientists & ML Engineers for the data science community,
 it provides all the capabilities required for data ingestion, data analysis,
 data drift & data stability analysis, feature recommendation and feature composition.
-In addition, it automatically produces easily interpretable professional data reports 
-that help users understand the nature of data at first sight and further enable data 
+In addition, it automatically produces easily interpretable professional data reports
+that help users understand the nature of data at first sight and further enable data
 scientists to identify and engineer features.
 
-Leveraging the power of [Apache Spark](https://spark.apache.org/) behind the scenes, 
-_Anovos_ improves data scientists' productivity and helps them build more resilient 
+Leveraging the power of [Apache Spark](https://spark.apache.org/) behind the scenes,
+_Anovos_ improves data scientists' productivity and helps them build more resilient
 and better performing models.
 
 # Quick Start
@@ -30,7 +30,7 @@ on your local machine.
 
 ```bash
 # Launch an anovos-examples Docker container
-sudo docker run -p 8888:8888 anovos/anovos-examples-3.2.0:latest
+sudo docker run -p 8888:8888 anovos/anovos-examples-3.2.1:latest
 ```
 
 To reach the Jupyter environment, open the link to `http://127.0.0.1:8888/?token...`
@@ -56,7 +56,7 @@ Currently, we officially support the following combinations:
 - Apache Spark 3.1.x on Java 11 with Python 3.9.x
 - Apache Spark 3.2.x on Java 11 with Python 3.9.x
 
-To see what we're currently testing, see 
+To see what we're currently testing, see
 [this configuration](https://github.com/anovos/anovos/blob/main/.github/workflows/full-demo.yml#L21).
 
 ## Installation
@@ -103,3 +103,14 @@ at [docs.anovos.ai](https://docs.anovos.ai).
 
 We're always happy to discuss and accept improvements to _Anovos_. To get started, please refer to
 our [Contributing to Anovos](https://docs.anovos.ai/community/contributing.html) page in the documentation.
+
+To start coding, clone this repository, install both the regular and development requirements,
+and set up the pre-commit hooks:
+
+```bash
+git clone https://github.com/anovos/anovos.git
+cd anovos/
+pip install -r requirements.txt
+pip install -r dev_requirements.txt
+pre-commit install
+```

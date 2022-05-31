@@ -1,0 +1,26 @@
+name: Push to main
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'requirements.txt'
+
+jobs:
+  lint:
+    name: "Code Quality"
+    uses: ./.github/workflows/lint.yml
+
+  unit:
+    name: "Unit Test"
+    needs:
+      - lint
+    uses: ./.github/workflows/unit.yml
+
+  full_demo:
+    name: "Full Demo"
+    needs:
+      - unit
+    uses: ./.github/workflows/full-demo.yml

@@ -14,6 +14,7 @@ Association between an attribute and binary target is measured by:
 """
 import itertools
 import math
+
 import pyspark
 import pandas as pd
 import warnings
@@ -29,10 +30,10 @@ from anovos.data_ingest.data_ingest import read_dataset
 from anovos.data_ingest.data_sampling import data_sample
 from anovos.data_transformer.transformers import (
     attribute_binning,
-    monotonic_binning,
     cat_to_num_unsupervised,
     imputation_MMM,
     outlier_categories,
+    monotonic_binning,
 )
 from anovos.shared.utils import attributeType_segregation
 
