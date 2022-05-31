@@ -1,7 +1,7 @@
-from pandas import util
 import pandas
 import numpy
 from anovos.drift_stability.drift_detector import drift_statistics
+from numpy.testing import assert_almost_equal
 
 
 def test_that_drift_statistics_can_be_calculated(spark_session):
@@ -31,20 +31,12 @@ def test_that_drift_statistics_can_be_calculated(spark_session):
     df_statistics_equal_freq.index = df_statistics_equal_freq["attribute"]
 
     assert df_statistics.loc["A", "PSI":"KS"].tolist() == [0, 0, 0, 0]
-    assert df_statistics.loc["B", "PSI":"KS"].tolist() == [
-        7.6776,
-        0.3704,
-        0.7091,
-        0.4999,
-    ]
+    assert_almost_equal(
+        df_statistics.loc["B", "PSI":"KS"], [7.6776, 0.3704, 0.7091, 0.4999], 4,
+    )
     assert df_statistics.loc[["A", "B"], "flagged"].tolist() == [0, 1]
-
-    print(df_statistics)
     assert df_statistics_equal_freq.loc["A", "PSI":"KS"].tolist() == [0, 0, 0, 0]
-    assert df_statistics_equal_freq.loc["B", "PSI":"KS"].tolist() == [
-        3.0899,
-        0.1769,
-        0.4775,
-        0.4,
-    ]
+    assert_almost_equal(
+        df_statistics_equal_freq.loc["B", "PSI":"KS"], [3.0899, 0.1769, 0.4775, 0.4], 4
+    )
     assert df_statistics_equal_freq.loc[["A", "B"], "flagged"].tolist() == [0, 1]
