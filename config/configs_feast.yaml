@@ -98,7 +98,8 @@ write_feast_features:
   feature_view:
     name: 'income_view'
     owner: 'view@owner.com'
-    ttl_in_seconds: 3600
+    ttl_in_seconds: 3600000
     create_timestamps: True
+  service_name: 'income_feature_service'
   file_configs:
     mode: overwrite

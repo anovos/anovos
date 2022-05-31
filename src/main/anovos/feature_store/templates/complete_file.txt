@@ -5,3 +5,5 @@
 {{entity}}
 
 {{feature_view}}
+
+{{feature_service}}
