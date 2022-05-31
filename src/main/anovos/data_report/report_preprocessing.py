@@ -1,5 +1,7 @@
 import subprocess
+import warnings
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -13,9 +15,9 @@ from pyspark.sql.window import Window
 from anovos.data_analyzer.stats_generator import uniqueCount_computation
 from anovos.data_ingest.data_ingest import read_dataset
 from anovos.data_transformer.transformers import (
-    outlier_categories,
-    imputation_MMM,
     attribute_binning,
+    imputation_MMM,
+    outlier_categories,
 )
 from anovos.shared.utils import (
     attributeType_segregation,
@@ -23,8 +25,6 @@ from anovos.shared.utils import (
     output_to_local,
     path_ak8s_modify,
 )
-import warnings
-
 warnings.filterwarnings("ignore")
 
 global_theme = px.colors.sequential.Plasma

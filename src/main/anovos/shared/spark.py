@@ -1,13 +1,13 @@
-import __main__
 from os import environ
 
+import __main__
 import findspark
 from loguru import logger
 from packaging import version
 
 findspark.init()
 import pyspark
-from pyspark.sql import SQLContext, SparkSession
+from pyspark.sql import SparkSession, SQLContext
 
 if version.parse(pyspark.__version__) < version.parse("3.0.0"):
     SPARK_JARS_PACKAGES = [
@@ -86,7 +86,6 @@ configs = {
     "jars_packages": SPARK_JARS_PACKAGES,
     "py_files": [],
     "spark_config": {
-        "spark.sql.session.timeZone": "GMT",
         "spark.python.profile": "false",
         "spark.yarn.appMasterEnv.ARROW_PRE_0_15_IPC_FORMAT": "1",
         "spark.executorEnv.ARROW_PRE_0_15_IPC_FORMAT": "1",

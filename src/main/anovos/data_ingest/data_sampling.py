@@ -1,6 +1,8 @@
-from pyspark.sql import functions as F
-from anovos.shared.utils import attributeType_segregation
 import warnings
+
+from pyspark.sql import functions as F
+
+from anovos.shared.utils import attributeType_segregation
 
 
 def data_sample(
@@ -123,7 +125,9 @@ def data_sample(
             )
             return idf
     if method_type == "stratified":
-        sample_df = idf.withColumn("merge", F.concat(*strata_cols))
+        sample_df = idf.na.drop(subset=strata_cols).withColumn(
+            "merge", F.concat(*strata_cols)
+        )
         fractions = (
             sample_df.select("merge")
             .distinct()

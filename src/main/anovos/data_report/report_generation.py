@@ -32,20 +32,21 @@ However, each of the functions have been detailed in the respective sections acr
 import json
 import os
 import subprocess
+import warnings
+
 import datapane as dp
+import dateutil.parser
 import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from loguru import logger
-import dateutil.parser
-from statsmodels.tsa.seasonal import seasonal_decompose
 import plotly.tools as tls
+from loguru import logger
 from plotly.subplots import make_subplots
-from statsmodels.tsa.stattools import adfuller, kpss
 from sklearn.preprocessing import PowerTransformer
 from anovos.shared.utils import ends_with, path_ak8s_modify
-import warnings
+from statsmodels.tsa.seasonal import seasonal_decompose
+from statsmodels.tsa.stattools import adfuller, kpss
 
 warnings.filterwarnings("ignore")
 
@@ -531,8 +532,8 @@ def executive_summary_gen(
         )
         # @FIXME: never used local variable
         text_val = list(list(obj_dtls.values())[0][0].items())[8][1]
-        x_val = list(list(obj_dtls.values())[0][0].items())[11][1]
-        y_val = list(list(obj_dtls.values())[0][0].items())[13][1]
+        x_val = list(list(obj_dtls.values())[0][0].items())[10][1]
+        y_val = list(list(obj_dtls.values())[0][0].items())[12][1]
         label_fig_ = go.Figure(
             data=[
                 go.Pie(
@@ -757,7 +758,7 @@ def executive_summary_gen(
             ]
         ]
     )
-    x = x[x.Attribute.values != "NA"]
+    x = x[~x["Attribute"].isnull()]
     if ds_ind[0] == 1 and ds_ind[1] >= 0.5:
         a5 = "Data Health based on Drift Metrics & Stability Index : "
         report = dp.Group(
@@ -1575,7 +1576,7 @@ def data_drift_stability(
             dp.Text("# "),
             dp.Text(
                 """
-                *This section examines the dataset stability wrt the baseline dataset (via computing drift 
+                *This section examines the dataset stability wrt the baseline dataset (via computing drift
                 statistics) and/or wrt the historical datasets (via computing stability index).*
                 """
             ),
