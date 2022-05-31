@@ -20,15 +20,19 @@ dataframe_to_feast_type_mapping = {
 
 def check_feast_configuration(feast_config: dict, repartition_count: int):
     if repartition_count != 1:
-        raise ValueError('Please, set repartition parameter to 1 in write_main block in your config yml!')
-    if 'file_path' not in feast_config:
-        raise ValueError('Please, provide a path to the anovos feast repository!')
-    if 'entity' not in feast_config:
-        raise ValueError('Please, provide an entity definition in your config yml!')
-    if 'file_source' not in feast_config:
-        raise ValueError('Please, provide a file source definition in your config yml!')
-    if 'feature_view' not in feast_config:
-        raise ValueError('Please, provide a feature view definition in your config yml!')
+        raise ValueError(
+            "Please, set repartition parameter to 1 in write_main block in your config yml!"
+        )
+    if "file_path" not in feast_config:
+        raise ValueError("Please, provide a path to the anovos feast repository!")
+    if "entity" not in feast_config:
+        raise ValueError("Please, provide an entity definition in your config yml!")
+    if "file_source" not in feast_config:
+        raise ValueError("Please, provide a file source definition in your config yml!")
+    if "feature_view" not in feast_config:
+        raise ValueError(
+            "Please, provide a feature view definition in your config yml!"
+        )
 
 
 def generate_entity_definition(config: dict) -> str:
@@ -43,7 +47,7 @@ def generate_entity_definition(config: dict) -> str:
             "entity_name": config["name"],
             "join_keys": config["id_col"],
             "value_type": "STRING",
-            "description": config[  "description"],
+            "description": config["description"],
         }
 
         return entity_template.render(data)
@@ -127,12 +131,12 @@ def generate_feature_service(service_name: str, view_name: str):
         os.path.dirname(os.path.abspath(__file__)), "templates", "feature_service.txt"
     )
 
-    with open(service_template_path, 'r') as f:
+    with open(service_template_path, "r") as f:
         template_string = f.read()
         service_template = Template(template_string)
         data = {
-            'feature_service_name': service_name,
-            'view_name': view_name,
+            "feature_service_name": service_name,
+            "view_name": view_name,
         }
 
         return service_template.render(data)
@@ -142,18 +146,24 @@ def generate_feature_description(types: list, feast_config: dict, file_name: str
     print("Building feature definitions for feature_store")
     prefix = generate_prefix()
 
-    file_source_config = feast_config['file_source']
+    file_source_config = feast_config["file_source"]
     file_source_definition = generate_file_source(file_source_config, file_name)
 
-    entity_config = feast_config['entity']
+    entity_config = feast_config["entity"]
     entity_definition = generate_entity_definition(entity_config)
 
-    feature_view_config = feast_config['feature_view']
-    feature_view = generate_feature_view(types, feature_view_config, entity_config['name'])
+    feature_view_config = feast_config["feature_view"]
+    feature_view = generate_feature_view(
+        types, feature_view_config, entity_config["name"]
+    )
 
-    feature_service = \
-        generate_feature_service(feast_config['service_name'], feature_view_config['name']) \
-        if 'service_name' in feast_config else ""
+    feature_service = (
+        generate_feature_service(
+            feast_config["service_name"], feature_view_config["name"]
+        )
+        if "service_name" in feast_config
+        else ""
+    )
 
     complete_file_path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "templates", "complete_file.txt"
@@ -168,7 +178,7 @@ def generate_feature_description(types: list, feast_config: dict, file_name: str
             "file_source": file_source_definition,
             "entity": entity_definition,
             "feature_view": feature_view,
-            "feature_service": feature_service
+            "feature_service": feature_service,
         }
 
         file_content = complete_file_template.render(data)
