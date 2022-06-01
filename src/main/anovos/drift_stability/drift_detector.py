@@ -15,6 +15,7 @@ from .validations import (
     generate_source,
     generate_bin_frequencies,
     generate_list_of_cols,
+    generate_method_type
 )
 from ..shared.utils import platform_root_path
 
@@ -152,6 +153,8 @@ def drift_statistics(
     list_of_cols = generate_list_of_cols(
         list_of_cols, idf_target, idf_source, drop_cols
     )
+
+    method_type = generate_method_type(method_type)
 
     if run_type in list(platform_root_path.keys()):
         root_path = platform_root_path[run_type]

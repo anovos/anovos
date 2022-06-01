@@ -1,5 +1,8 @@
 from functools import wraps, partial
 import warnings
+
+import pandas as pd
+
 from anovos.data_transformer.transformers import attribute_binning
 from anovos.shared.utils import attributeType_segregation
 from inspect import getcallargs
@@ -31,21 +34,10 @@ def refactor_arguments(func):
                 all_kwargs[boolarg] = boolarg_val
 
         if func.__name__ == "drift_statistics":
-
-            method_type = all_kwargs.get("method_type")
-            if isinstance(method_type, str):
-                if method_type == "all":
-                    method_type = ["PSI", "JSD", "HD", "KS"]
-                else:
-                    method_type = [x.strip() for x in method_type.split("|")]
-            if any(x not in ("PSI", "JSD", "HD", "KS") for x in method_type):
-                raise TypeError(f"Invalid input for method_type")
-
             bin_method = all_kwargs.get("bin_method")
             if bin_method not in ("equal_frequency", "equal_range"):
                 raise TypeError(f"Invalid input for bin_method")
 
-            all_kwargs["method_type"] = method_type
             all_kwargs["drop_cols"] = []
 
         elif func.__name__ == "stability_index_computation":
@@ -277,3 +269,17 @@ def generate_list_of_cols(list_of_cols, idf_target, idf_source, drop_cols):
         )
 
     return list_of_cols
+
+
+def generate_method_type(method_type):
+
+    if isinstance(method_type, str):
+        if method_type == "all":
+            method_type = ["PSI", "JSD", "HD", "KS"]
+        else:
+            method_type = [x.strip() for x in method_type.split("|")]
+    if any(x not in ("PSI", "JSD", "HD", "KS") for x in method_type):
+        raise TypeError(f"Invalid input for method_type")
+
+    return method_type
+
