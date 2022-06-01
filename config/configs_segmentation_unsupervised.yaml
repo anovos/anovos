@@ -17,6 +17,7 @@ anovos_basic_report:
     id_col: ID
     label_col: [ ]
     event_label: [ ]
+    skip_corr_matrix: True
     output_path: report_stats
 
 #if anovos_basic_report.basic_report is True, then all configs below are ignored.

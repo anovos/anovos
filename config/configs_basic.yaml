@@ -76,6 +76,7 @@ anovos_basic_report:
     id_col: ifa
     label_col: income
     event_label: '>50K'
+    skip_corr_matrix: True
     output_path: report_stats
 
 #if anovos_basic_report.basic_report is True, then all configs below are ignored.
