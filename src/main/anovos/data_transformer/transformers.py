@@ -2691,6 +2691,9 @@ def autoencoder_latentFeatures(
         .toDF(schema=odf_schema)
         .drop("predicted_output")
     )
+
+    odf = odf.drop(*list_of_cols_scaled)
+
     if output_mode == "replace":
         odf = odf.drop(*list_of_cols)
 
