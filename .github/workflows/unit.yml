@@ -84,22 +84,6 @@ jobs:
         run: |
           export SENTENCE_TRANSFORMERS_HOME="~/.cache"
 
-      - name: Run the unit tests for transformers module
+      - name: Run all unit tests with coverage
         run: |
-          pytest -v --cov=src/main/anovos src/test/anovos/data_transformer
-
-      - name: Run the unit tests for feature_recommender
-        run: |
-          pytest -v --cov=src/main/anovos src/test/anovos/feature_recommender
-
-      - name: Run the unit tests for data_ingest module
-        run: |
-          pytest -v --cov=src/main/anovos src/test/anovos/data_ingest
-
-      - name: Run the unit tests for data_analyzer module
-        run: |
-          pytest -v --cov=src/main/anovos src/test/anovos/data_analyzer/test_ts_analyzer.py src/test/anovos/data_analyzer/test_association_evaluator.py src/test/anovos/data_analyzer/test_quality_checker.py src/test/anovos/data_analyzer/test_stats_generator.py
-
-      - name: Run the unit tests for drift module
-        run: |
-          pytest -v --cov=src/main/anovos src/test/anovos/drift
+          pytest -v --cov=src/main/anovos src/test/anovos
