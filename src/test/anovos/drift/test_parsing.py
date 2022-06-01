@@ -1,0 +1,40 @@
+import pytest
+from pandas.util.testing import makeDataFrame
+from anovos.drift_stability.parsing import (
+    parse_columns,
+    parse_numerical_columns,
+    parse_method_type,
+)
+
+
+@pytest.fixture
+def default_df(spark_session):
+    return spark_session.createDataFrame(makeDataFrame())
+
+
+def test_that_all_returns_all_columns(default_df):
+
+    list_of_cols = parse_numerical_columns(list_of_cols="all", idf=default_df)
+
+    assert list_of_cols == ["A", "B", "C", "D"]
+
+
+def test_that_string_with_pipes_is_parsed(default_df):
+
+    list_of_cols = parse_columns(list_of_cols="A|B|C", idf=default_df)
+
+    assert list_of_cols == ["A", "B", "C"]
+
+
+def test_that_unknown_column_raises_error(default_df):
+
+    with pytest.raises(ValueError):
+        list_of_cols = parse_columns(list_of_cols=["W"], idf=default_df)
+
+
+def test_that_dropping_unselected_column_raises_error(default_df):
+
+    with pytest.raises(ValueError):
+        list_of_cols = parse_columns(
+            list_of_cols=["A", "B"], idf=default_df, drop_cols=["C"]
+        )
