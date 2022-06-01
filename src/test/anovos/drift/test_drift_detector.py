@@ -100,7 +100,7 @@ def test_that_empty_list_of_cols_raises_error(spark_session):
 def test_that_wrong_column_name_raises_error(spark_session):
 
     df = spark_session.createDataFrame(makeDataFrame())
-    list_of_cols = ["Z"]
+    list_of_cols = ["W"]
 
     with raises(ValueError):
         generate_list_of_cols(
@@ -108,7 +108,7 @@ def test_that_wrong_column_name_raises_error(spark_session):
         )
 
 
-def test_that_non_numeric_column_raises_Error(spark_session):
+def test_that_non_numeric_column_raises_error(spark_session):
 
     df = pandas.DataFrame({"A": [1, 2], "B": ["a", "b"]})
     df = spark_session.createDataFrame(df)
