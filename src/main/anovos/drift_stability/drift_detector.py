@@ -9,14 +9,9 @@ from loguru import logger
 from pyspark.sql import functions as F
 
 from anovos.data_transformer.transformers import attribute_binning
+from anovos.drift_stability.parsing import parse_numerical_columns, parse_method_type
 from .distances import hellinger, psi, js_divergence, ks
-from .validations import (
-    refactor_arguments,
-    generate_source,
-    generate_bin_frequencies,
-    generate_list_of_cols,
-    generate_method_type
-)
+from .validations import refactor_arguments, generate_source, generate_bin_frequencies
 from ..shared.utils import platform_root_path
 
 drift_function = {
@@ -150,11 +145,9 @@ def drift_statistics(
 
     """
 
-    list_of_cols = generate_list_of_cols(
-        list_of_cols, idf_target, idf_source, drop_cols
-    )
+    list_of_cols = parse_numerical_columns(list_of_cols, idf_source, drop_cols)
 
-    method_type = generate_method_type(method_type)
+    method_type = parse_method_type(method_type)
 
     if run_type in list(platform_root_path.keys()):
         root_path = platform_root_path[run_type]
