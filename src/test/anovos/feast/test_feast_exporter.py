@@ -29,7 +29,7 @@ def _build_config() -> dict:
         "entity": entity_config,
         "file_source": file_source_config,
         "feature_view": feature_view_config,
-        "file_path": ".",
+        "file_path": f"{os.path.dirname(os.path.abspath(__file__))}",
     }
     return config
 
@@ -100,21 +100,21 @@ def test_generate_file_source():
 
 def test_integration():
     config = _build_config()
+    file_path = "/output/result.csv"
     from anovos.feature_store.feast_exporter import generate_feature_description
 
-    generate_feature_description(
-        [("field1", "string")], config, file_name="/output/result.csv"
-    )
+    generate_feature_description([("field1", "string")], config, file_name=file_path)
 
     output_file_path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "anovos.py"
     )
     with open(output_file_path, "r") as f:
         result = f.read()
+        print(result)
         assert config["entity"]["name"] in result
         assert config["file_source"]["owner"] in result
         assert config["feature_view"]["owner"] in result
-        assert config["file_path"] in result
+        assert file_path in result
 
 
 def test_generate_feature_service():
