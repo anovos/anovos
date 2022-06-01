@@ -5,7 +5,7 @@ from unittest.mock import Mock
 import pytest
 
 
-def _build_config() -> dict:
+def _build_config(file_path: str) -> dict:
     entity_config = {
         "name": "test_entity",
         "id_col": "id column",
@@ -29,7 +29,7 @@ def _build_config() -> dict:
         "entity": entity_config,
         "file_source": file_source_config,
         "feature_view": feature_view_config,
-        "file_path": f"{os.path.dirname(os.path.abspath(__file__))}",
+        "file_path": f"{file_path}",
     }
     return config
 
@@ -98,16 +98,15 @@ def test_generate_file_source():
     assert 'owner="test@owner.com"' in result
 
 
-def test_integration():
-    config = _build_config()
+def test_integration(tmp_path):
+    config = _build_config(tmp_path)
     file_path = "/output/result.csv"
     from anovos.feature_store.feast_exporter import generate_feature_description
 
     generate_feature_description([("field1", "string")], config, file_name=file_path)
 
-    output_file_path = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "anovos.py"
-    )
+    output_file_path = os.path.join(tmp_path, "anovos.py")
+
     with open(output_file_path, "r") as f:
         result = f.read()
         print(result)
@@ -130,15 +129,15 @@ def test_generate_feature_service():
     assert "FeatureService" in result
 
 
-def test_check_feast_configuration():
-    config = _build_config()
+def test_check_feast_configuration(tmp_path):
+    config = _build_config(tmp_path)
     from anovos.feature_store.feast_exporter import check_feast_configuration
 
     check_feast_configuration(config, 1)
 
 
-def test_that_missing_blocks_raise_exception_in_check_feast_configuration():
-    config = _build_config()
+def test_that_missing_blocks_raise_exception_in_check_feast_configuration(tmp_path):
+    config = _build_config(tmp_path)
     faulty_cfg = deepcopy(config)
     del faulty_cfg["file_source"]
     from anovos.feature_store.feast_exporter import check_feast_configuration
@@ -186,8 +185,10 @@ def test_that_missing_blocks_raise_exception_in_check_feast_configuration():
     assert e.value.args[0] == "Please, provide a path to the anovos feast repository!"
 
 
-def test_that_faulty_repartition_count_raises_exception_in_check_feast_configuration():
-    config = _build_config()
+def test_that_faulty_repartition_count_raises_exception_in_check_feast_configuration(
+    tmp_path,
+):
+    config = _build_config(tmp_path)
     from anovos.feature_store.feast_exporter import check_feast_configuration
 
     with pytest.raises(Exception) as e:
@@ -200,9 +201,9 @@ def test_that_faulty_repartition_count_raises_exception_in_check_feast_configura
     )
 
 
-def test_that_happy_path_works_for_add_timestamp_columns(mocker):
+def test_that_happy_path_works_for_add_timestamp_columns(mocker, tmp_path):
     idf_mock = Mock()
-    config = _build_config()
+    config = _build_config(tmp_path)
 
     from anovos.feature_store.feast_exporter import add_timestamp_columns
 
