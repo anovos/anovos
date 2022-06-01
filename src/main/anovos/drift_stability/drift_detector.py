@@ -10,7 +10,12 @@ from pyspark.sql import functions as F
 
 from anovos.data_transformer.transformers import attribute_binning
 from .distances import hellinger, psi, js_divergence, ks
-from .validations import refactor_arguments, generate_source, generate_bin_frequencies
+from .validations import (
+    refactor_arguments,
+    generate_source,
+    generate_bin_frequencies,
+    generate_list_of_cols,
+)
 from ..shared.utils import platform_root_path
 
 drift_function = {
@@ -143,6 +148,10 @@ def drift_statistics(
         Number of columns will be dependent on method argument. There will be one column for each drift method/metric.
 
     """
+
+    list_of_cols = generate_list_of_cols(
+        list_of_cols, idf_target, idf_source, drop_cols
+    )
 
     if run_type in list(platform_root_path.keys()):
         root_path = platform_root_path[run_type]

@@ -31,34 +31,6 @@ def refactor_arguments(func):
                 all_kwargs[boolarg] = boolarg_val
 
         if func.__name__ == "drift_statistics":
-            idf_target = all_kwargs.get("idf_target")
-            idf_source = all_kwargs.get("idf_source")
-            num_cols = attributeType_segregation(idf_target)[0]
-            list_of_cols = all_kwargs.get("list_of_cols")
-            drop_cols = all_kwargs.get("drop_cols", [])
-            all_valid_cols = num_cols
-
-            if list_of_cols == "all":
-                list_of_cols = all_valid_cols
-            if isinstance(list_of_cols, str):
-                list_of_cols = [x.strip() for x in list_of_cols.split("|") if x.strip()]
-            if isinstance(drop_cols, str):
-                drop_cols = [x.strip() for x in drop_cols.split("|")]
-
-            list_of_cols = [e for e in list_of_cols if e not in drop_cols]
-
-            if len(list_of_cols) == 0:
-                raise TypeError(
-                    f"Invalid input for column(s) in the function {func.__name__}."
-                )
-            if any(x not in all_valid_cols for x in list_of_cols):
-                raise TypeError(
-                    f"Invalid input for column(s) in the function {func.__name__}. Invalid Column(s): {set(list_of_cols) - set(all_valid_cols)} not found in target dataframe."
-                )
-            if any(x not in idf_source.columns for x in list_of_cols):
-                raise TypeError(
-                    f"Invalid input for column(s) in the function {func.__name__}. Invalid Column(s): {set(list_of_cols) - set(idf_source.columns)} not found in source dataframe."
-                )
 
             method_type = all_kwargs.get("method_type")
             if isinstance(method_type, str):
@@ -73,7 +45,6 @@ def refactor_arguments(func):
             if bin_method not in ("equal_frequency", "equal_range"):
                 raise TypeError(f"Invalid input for bin_method")
 
-            all_kwargs["list_of_cols"] = list_of_cols
             all_kwargs["method_type"] = method_type
             all_kwargs["drop_cols"] = []
 
@@ -278,3 +249,31 @@ def generate_bin_frequencies(
     q = np.array(xy.select("q").rdd.flatMap(lambda x: x).collect())
 
     return p, q
+
+
+def generate_list_of_cols(list_of_cols, idf_target, idf_source, drop_cols):
+
+    num_cols = attributeType_segregation(idf_target)[0]
+    if list_of_cols == "all":
+        list_of_cols = num_cols
+    if isinstance(list_of_cols, str):
+        list_of_cols = [x.strip() for x in list_of_cols.split("|") if x.strip()]
+    if isinstance(drop_cols, str):
+        drop_cols = [x.strip() for x in drop_cols.split("|")]
+
+    list_of_cols = [e for e in list_of_cols if e not in drop_cols]
+
+    if len(list_of_cols) == 0:
+        raise ValueError(
+            f"Invalid input for column(s) in the function drift_statistics."
+        )
+    if any(x not in num_cols for x in list_of_cols):
+        raise ValueError(
+            f"Invalid input for column(s) in the function drift_statistics. Invalid Column(s): {set(list_of_cols) - set(num_cols)} not found in target dataframe."
+        )
+    if any(x not in idf_source.columns for x in list_of_cols):
+        raise ValueError(
+            f"Invalid input for column(s) in the function drift_statistics. Invalid Column(s): {set(list_of_cols) - set(idf_source.columns)} not found in source dataframe."
+        )
+
+    return list_of_cols
