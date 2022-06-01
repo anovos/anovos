@@ -2,6 +2,9 @@ import pandas
 import numpy
 from anovos.drift_stability.drift_detector import drift_statistics
 from numpy.testing import assert_almost_equal
+from anovos.drift_stability.validations import generate_list_of_cols
+from pandas.util.testing import makeDataFrame
+from pytest import raises
 
 
 def test_that_drift_statistics_can_be_calculated(spark_session):
@@ -40,3 +43,78 @@ def test_that_drift_statistics_can_be_calculated(spark_session):
         df_statistics_equal_freq.loc["B", "PSI":"KS"], [3.0899, 0.1769, 0.4775, 0.4], 4
     )
     assert df_statistics_equal_freq.loc[["A", "B"], "flagged"].tolist() == [0, 1]
+
+
+def test_that_list_of_cols_can_be_generated(spark_session):
+
+    df = spark_session.createDataFrame(makeDataFrame())
+    list_of_cols = "A|B|C"
+
+    list_of_cols = generate_list_of_cols(
+        list_of_cols=list_of_cols, idf_target=df, idf_source=df, drop_cols=[]
+    )
+
+    assert list_of_cols == ["A", "B", "C"]
+
+    list_of_cols = "all"
+
+    list_of_cols = generate_list_of_cols(
+        list_of_cols=list_of_cols, idf_target=df, idf_source=df, drop_cols=[]
+    )
+
+    assert list_of_cols == ["A", "B", "C", "D"]
+
+
+def test_that_generate_list_of_cols_drops_cols(spark_session):
+
+    df = spark_session.createDataFrame(makeDataFrame())
+    list_of_cols = "all"
+    drop_cols = ["A", "B"]
+
+    list_of_cols = generate_list_of_cols(
+        list_of_cols=list_of_cols, idf_target=df, idf_source=df, drop_cols=drop_cols
+    )
+
+    assert list_of_cols == ["C", "D"]
+
+    list_of_cols = "all"
+    drop_cols = "A|B"
+
+    list_of_cols = generate_list_of_cols(
+        list_of_cols=list_of_cols, idf_target=df, idf_source=df, drop_cols=drop_cols
+    )
+
+    assert list_of_cols == ["C", "D"]
+
+
+def test_that_empty_list_of_cols_raises_error(spark_session):
+
+    df = spark_session.createDataFrame(makeDataFrame())
+    list_of_cols = []
+    with raises(ValueError):
+        generate_list_of_cols(
+            list_of_cols=list_of_cols, idf_target=df, idf_source=df, drop_cols=[]
+        )
+
+
+def test_that_wrong_column_name_raises_error(spark_session):
+
+    df = spark_session.createDataFrame(makeDataFrame())
+    list_of_cols = ["Z"]
+
+    with raises(ValueError):
+        generate_list_of_cols(
+            list_of_cols=list_of_cols, idf_target=df, idf_source=df, drop_cols=[]
+        )
+
+
+def test_that_non_numeric_column_raises_Error(spark_session):
+
+    df = pandas.DataFrame({"A": [1, 2], "B": ["a", "b"]})
+    df = spark_session.createDataFrame(df)
+    list_of_cols = ["B"]
+
+    with raises(ValueError):
+        generate_list_of_cols(
+            list_of_cols=list_of_cols, idf_target=df, idf_source=df, drop_cols=[]
+        )
