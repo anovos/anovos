@@ -6,3 +6,4 @@ isort==5.10.1
 flake8==4.0.1
 pre-commit==2.19.0
 pyspark==3.2.1
+pytest-mock==3.7.0
