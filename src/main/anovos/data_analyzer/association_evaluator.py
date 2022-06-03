@@ -273,7 +273,7 @@ def correlation_matrix(
                 "Data size is too big for computation. Only 100,000 random sampled rows are considered."
             )
             idf_sample = data_sample(
-                idf, fraction=float(100000 / idf.count()), method_type="random"
+                idf, fraction=float(100000) / idf.count(), method_type="random"
             )
             return correlation_matrix_phik(
                 spark, idf_sample, list_of_cols, drop_cols, stats_unique, print_impact
