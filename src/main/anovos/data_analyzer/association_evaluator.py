@@ -304,7 +304,7 @@ def correlation_matrix(
             )
     else:
         return correlation_matrix_numerical(
-            spark, idf, list_of_cols, drop_cols, stats_unique, print_impact
+            spark, idf, list_of_cols, drop_cols, print_impact
         )
 
 
