@@ -338,7 +338,7 @@ def stability_index_computation(
         )
 
     result = []
-    # small_mean_cols = []
+    small_mean_cols = []
     for i in list_of_cols:
         i_output = [i]
         if i in all_binary_cols:
@@ -365,21 +365,21 @@ def stability_index_computation(
                     .rdd.flatMap(list)
                     .collect()
                 )
-                # if metric == "mean":
-                #     if np.mean(metric_stats) < 0.3:
-                #         small_mean_cols.append(i)
+                if metric == "mean":
+                    if np.mean(metric_stats) < 1:
+                        small_mean_cols.append(i)
                 metric_cv = (
                     round(float(variation([a for a in metric_stats])), 4) or None
                 )
                 i_output.append(metric_cv)
         result.append(i_output)
 
-    # if len(small_mean_cols) > 0:
-    #     warnings.warn(
-    #         "Means of the following attributes are close to 0: "
-    #         + ", ".join(small_mean_cols)
-    #         + "."
-    #     )
+    if len(small_mean_cols) > 0:
+        warnings.warn(
+            "Means of the following attributes are smaller than 1: "
+            + ", ".join(small_mean_cols)
+            + ". Coefficient of variation is sensitive to small changes if the values are close to zero. If they are binary attributes, you can specify them in argument binary_cols."
+        )
 
     schema = T.StructType(
         [
