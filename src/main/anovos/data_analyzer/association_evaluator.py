@@ -256,10 +256,17 @@ def correlation_matrix(
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError("Invalid input for Column(s)")
 
-    idf = imputation_MMM(spark, idf)
-    idf.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
     cat_cols_select = attributeType_segregation(idf.select(list_of_cols))[1]
     if cat_cols_select:
+        drop_null_col = []
+        for col in idf.columns:
+            if idf.filter(F.col(col).isNull()).count() > 0.5 * idf.select(col).count():
+                drop_null_col.append(col)
+        if drop_null_col:
+            warnings.warn(
+                "Columns contains too much null values. Dropping" + drop_null_col
+            )
+            idf = idf.drop(*drop_null_col)
         high_corr = False
         col_need_treatment = []
         for col in cat_cols_select:
