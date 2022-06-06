@@ -315,7 +315,7 @@ def test_correlation_matrix(spark_session: SparkSession):
 
     result_df3 = correlation_matrix(spark_session, test_df, drop_cols=["ifa"])
 
-    assert result_df3.count() == 16
+    assert result_df3.count() == 15
     assert (
         result_df3.where(F.col("attribute") == "age")
         .toPandas()
