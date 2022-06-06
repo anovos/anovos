@@ -422,9 +422,10 @@ def test_autoencoder_latentFeatures(spark_session):
         reduction_params=0.5,
         model_path="unit_testing/models/",
     )
+
     if 'arm64' not in platform.version().lower():
-        assert len(odf.columns) > len(df.columns)
-        assert len(odf.columns) == 19
+        assert len(odf.columns) < len(df.columns)
+        assert len(odf.columns) == 14
 
         try:
             odf = autoencoder_latentFeatures(
@@ -453,12 +454,21 @@ def test_autoencoder_latentFeatures(spark_session):
             reduction_params=0.5,
             output_mode="append",
         )
-        assert len(odf.columns) > len(df.columns)
-        assert len(odf.columns) == 24
-        assert odf.where(F.col("latent_0").isNull()).count() == 0
-        assert odf.where(F.col("latent_1").isNull()).count() == 0
-    else:
-        assert odf == df
+
+    odf = autoencoder_latentFeatures(
+        spark_session,
+        df,
+        list_of_cols=["age", "fnlwgt", "logfnl", "education-num", "hours-per-week"],
+        epochs=20,
+        reduction_params=0.5,
+        output_mode="append",
+    )
+    assert len(odf.columns) > len(df.columns)
+    assert len(odf.columns) == 19
+    assert odf.where(F.col("latent_0").isNull()).count() == 0
+    assert odf.where(F.col("latent_1").isNull()).count() == 0
+  else:
+    assert odf == df
 
 
 # feature_transformation
@@ -726,7 +736,7 @@ def test_cat_to_num_unsupervised(spark_session):
         df,
         list_of_cols=["workclass", "relationship", "marital-status"],
         drop_cols=["ifa"],
-        method_type=1,
+        method_type="label_encoding",
         index_order="frequencyDesc",
         cardinality_threshold=100,
         model_path="unit_testing/models/",
@@ -748,7 +758,7 @@ def test_cat_to_num_unsupervised(spark_session):
         df,
         list_of_cols=[],
         drop_cols=["ifa"],
-        method_type=1,
+        method_type="label_encoding",
         index_order="frequencyDesc",
         cardinality_threshold=100,
     )
@@ -762,7 +772,7 @@ def test_cat_to_num_unsupervised(spark_session):
         df,
         list_of_cols=["workclass", "relationship", "marital-status"],
         drop_cols=["ifa"],
-        method_type=1,
+        method_type="label_encoding",
         index_order="frequencyDesc",
         cardinality_threshold=100,
         output_mode="append",
@@ -770,7 +780,7 @@ def test_cat_to_num_unsupervised(spark_session):
     assert len(odf.columns) == 20
 
     odf = cat_to_num_unsupervised(
-        spark_session, df, drop_cols=["ifa"], method_type=0, cardinality_threshold=100
+        spark_session, df, drop_cols=["ifa"], method_type="onehot_encoding", cardinality_threshold=100
     )
     odf_min_dict = (
         odf.describe().where(F.col("summary") == "min").toPandas().to_dict("list")
