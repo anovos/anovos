@@ -256,6 +256,8 @@ def correlation_matrix(
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError("Invalid input for Column(s)")
 
+    idf = imputation_MMM(spark, idf)
+    idf.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
     cat_cols_select = attributeType_segregation(idf.select(list_of_cols))[1]
     if cat_cols_select:
         high_corr = False
@@ -294,7 +296,7 @@ def correlation_matrix(
                 "High cardinality column(s) are detected, and will go through cardinality treatments."
             )
             idf_sample = data_sample(
-                idf, fraction=float(100000 / idf.count()), method_type="random"
+                idf, fraction=float(100000) / idf.count(), method_type="random"
             )
             idf_treat = outlier_categories(
                 spark, idf_sample, list_of_cols=col_need_treatment
