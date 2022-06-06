@@ -264,7 +264,8 @@ def correlation_matrix(
                 drop_null_col.append(col)
         if drop_null_col:
             warnings.warn(
-                "Columns contains too much null values. Dropping" + drop_null_col
+                "Columns contains too much null values. Dropping "
+                + ",".join(drop_null_col)
             )
             idf = idf.drop(*drop_null_col)
         high_corr = False
