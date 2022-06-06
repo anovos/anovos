@@ -273,7 +273,7 @@ def correlation_matrix(
         high_corr = False
         col_need_treatment = []
         for col in cat_cols_select:
-            if idf.select(col).distinct().count() > 50:
+            if idf.select(col).distinct().count() > 50 and col in list_of_cols:
                 high_corr = True
                 col_need_treatment.append(col)
         if idf.count() <= 100000 and not high_corr:
