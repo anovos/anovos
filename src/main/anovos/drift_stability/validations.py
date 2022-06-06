@@ -254,9 +254,7 @@ def read_pre_computed_stats(spark, stats, dfs_count):
     ):
         df_central_tendency = read_dataset(spark, **mean_dict).dropna()
         df_dispersion = (
-            read_dataset(spark, **stddev_dict)
-            .dropna()
-            .select("attribute", "stddev")
+            read_dataset(spark, **stddev_dict).dropna().select("attribute", "stddev")
         )
         df_shape = (
             read_dataset(spark, **kurtosis_dict)
@@ -280,7 +278,7 @@ def read_pre_computed_stats(spark, stats, dfs_count):
             new_metric_df = df_temp
         else:
             new_metric_df = concatenate_dataset(new_metric_df, df_temp)
-    
+
     return new_metric_df
 
 
@@ -290,7 +288,7 @@ def compute_score(value, method_type, cv_thresholds=[0.03, 0.1, 0.2, 0.5]):
     """
     if value is None:
         return None
-    
+
     if method_type == "cv":
         cv = abs(value)
         stability_index = [4, 3, 2, 1, 0]
@@ -333,4 +331,5 @@ def compute_si(metric_weightages):
                 4,
             )
         return [mean_si, stddev_si, kurtosis_si, stability_index]
+
     return compute_si_
