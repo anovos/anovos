@@ -9,6 +9,11 @@ from inspect import getcallargs
 from pyspark.sql import functions as F
 import pyspark
 import numpy as np
+from anovos.data_ingest.data_ingest import (
+    concatenate_dataset,
+    join_dataset,
+    read_dataset,
+)
 
 
 def refactor_arguments(func):
@@ -241,3 +246,91 @@ def generate_bin_frequencies(
     q = np.array(xy.select("q").rdd.flatMap(lambda x: x).collect())
 
     return p, q
+
+
+def read_pre_computed_stats(spark, stats, dfs_count):
+    for i, (mean_dict, stddev_dict, kurtosis_dict) in enumerate(
+        zip(stats["mean"], stats["stddev"], stats["kurtosis"])
+    ):
+        df_central_tendency = read_dataset(spark, **mean_dict).dropna()
+        df_dispersion = (
+            read_dataset(spark, **stddev_dict)
+            .dropna()
+            .select("attribute", "stddev")
+        )
+        df_shape = (
+            read_dataset(spark, **kurtosis_dict)
+            .dropna()
+            .select("attribute", "kurtosis")
+            .withColumn("kurtosis", F.col("kurtosis") + F.lit(3))
+        )
+        df_temp = (
+            join_dataset(
+                df_central_tendency,
+                df_dispersion,
+                df_shape,
+                join_cols="attribute",
+                join_type="inner",
+            )
+            .withColumn("idx", F.lit(dfs_count + i))
+            .select("idx", "attribute", "mean", "stddev", "kurtosis")
+        )
+
+        if i == 0:
+            new_metric_df = df_temp
+        else:
+            new_metric_df = concatenate_dataset(new_metric_df, df_temp)
+    
+    return new_metric_df
+
+
+def compute_score(value, method_type, cv_thresholds=[0.03, 0.1, 0.2, 0.5]):
+    """
+    This function maps CV or SD to a scire between 0 and 4.
+    """
+    if value is None:
+        return None
+    
+    if method_type == "cv":
+        cv = abs(value)
+        stability_index = [4, 3, 2, 1, 0]
+        for i, thresh in enumerate(cv_thresholds):
+            if cv < thresh:
+                return float(stability_index[i])
+        return float(stability_index[-1])
+
+    elif method_type == "sd":
+        sd = value
+        if sd <= 0.005:
+            return 4.0
+        elif sd <= 0.01:
+            return round(-100 * sd + 4.5, 1)
+        elif sd <= 0.05:
+            return round(-50 * sd + 4, 1)
+        elif sd <= 0.1:
+            return round(-30 * sd + 3, 1)
+        else:
+            return 0.0
+
+    else:
+        raise TypeError("method_type must be either 'cv' or 'sd'.")
+
+
+def compute_si(metric_weightages):
+    def compute_si_(attr_type, mean_stddev, mean_cv, stddev_cv, kurtosis_cv):
+        if attr_type == "Binary":
+            mean_si = compute_score(mean_stddev, "sd")
+            stability_index = mean_si
+            stddev_si, kurtosis_si = None, None
+        else:
+            mean_si = compute_score(mean_cv, "cv")
+            stddev_si = compute_score(stddev_cv, "cv")
+            kurtosis_si = compute_score(kurtosis_cv, "cv")
+            stability_index = round(
+                mean_si * metric_weightages.get("mean", 0)
+                + stddev_si * metric_weightages.get("stddev", 0)
+                + kurtosis_si * metric_weightages.get("kurtosis", 0),
+                4,
+            )
+        return [mean_si, stddev_si, kurtosis_si, stability_index]
+    return compute_si_

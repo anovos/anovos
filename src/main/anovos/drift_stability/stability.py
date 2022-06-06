@@ -12,11 +12,9 @@ import warnings
 
 from anovos.data_ingest.data_ingest import (
     concatenate_dataset,
-    join_dataset,
-    read_dataset,
     delete_column,
 )
-from .validations import refactor_arguments
+from .validations import refactor_arguments, read_pre_computed_stats, compute_si
 
 
 @refactor_arguments
@@ -247,37 +245,7 @@ def stability_index_computation(
         )
 
     if pre_computed_stats:
-        for i, (mean_dict, stddev_dict, kurtosis_dict) in enumerate(
-            zip(stats["mean"], stats["stddev"], stats["kurtosis"])
-        ):
-            df_central_tendency = read_dataset(spark, **mean_dict).dropna()
-            df_dispersion = (
-                read_dataset(spark, **stddev_dict)
-                .dropna()
-                .select("attribute", "stddev")
-            )
-            df_shape = (
-                read_dataset(spark, **kurtosis_dict)
-                .dropna()
-                .select("attribute", "kurtosis")
-                .withColumn("kurtosis", F.col("kurtosis") + F.lit(3))
-            )
-            df_temp = (
-                join_dataset(
-                    df_central_tendency,
-                    df_dispersion,
-                    df_shape,
-                    join_cols="attribute",
-                    join_type="inner",
-                )
-                .withColumn("idx", F.lit(dfs_count + i))
-                .select("idx", "attribute", "mean", "stddev", "kurtosis")
-            )
-
-            if i == 0:
-                new_metric_df = df_temp
-            else:
-                new_metric_df = concatenate_dataset(new_metric_df, df_temp)
+        new_metric_df = read_pre_computed_stats(spark, stats, dfs_count)
 
         if list_of_cols == ["all"]:
             list_of_cols = (
@@ -394,49 +362,7 @@ def stability_index_computation(
 
     odf = spark.createDataFrame(result, schema=schema)
 
-    def score_cv(cv, thresholds=[0.03, 0.1, 0.2, 0.5]):
-        if cv is None:
-            return None
-        else:
-            cv = abs(cv)
-            stability_index = [4, 3, 2, 1, 0]
-            for i, thresh in enumerate(thresholds):
-                if cv < thresh:
-                    return float(stability_index[i])
-            return float(stability_index[-1])
-
-    def score_stddev(stddev):
-        if stddev is None:
-            return None
-        if stddev <= 0.005:
-            return 4.0
-        elif stddev <= 0.01:
-            return round(-100 * stddev + 4.5, 1)
-        elif stddev <= 0.05:
-            return round(-50 * stddev + 4, 1)
-        elif stddev <= 0.1:
-            return round(-30 * stddev + 3, 1)
-        else:
-            return 0.0
-
-    def compute_si(attr_type, mean_stddev, mean_cv, stddev_cv, kurtosis_cv):
-        if attr_type == "Binary":
-            mean_si = score_stddev(mean_stddev)
-            stability_index = mean_si
-            stddev_si, kurtosis_si = None, None
-        else:
-            mean_si = score_cv(mean_cv)
-            stddev_si = score_cv(stddev_cv)
-            kurtosis_si = score_cv(kurtosis_cv)
-            stability_index = round(
-                mean_si * metric_weightages.get("mean", 0)
-                + stddev_si * metric_weightages.get("stddev", 0)
-                + kurtosis_si * metric_weightages.get("kurtosis", 0),
-                4,
-            )
-        return [mean_si, stddev_si, kurtosis_si, stability_index]
-
-    f_compute_si = F.udf(compute_si, T.ArrayType(T.FloatType()))
+    f_compute_si = F.udf(compute_si(metric_weightages), T.ArrayType(T.FloatType()))
 
     odf = (
         odf.replace(np.nan, None)
