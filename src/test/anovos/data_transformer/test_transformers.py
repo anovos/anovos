@@ -422,38 +422,33 @@ def test_autoencoder_latentFeatures(spark_session):
         reduction_params=0.5,
         model_path="unit_testing/models/",
     )
-
-    if 'arm64' not in platform.version().lower():
+    if "arm64" not in platform.version().lower():
         assert len(odf.columns) < len(df.columns)
         assert len(odf.columns) == 14
+    else:
+        assert odf == df
 
-        try:
-            odf = autoencoder_latentFeatures(
-                spark_session,
-                df,
-                list_of_cols=["education-num"],
-                epochs=20,
-                reduction_params=0.5,
-                pre_existing_model=True,
-                model_path="unit_testing/models/",
-            )
-        except Exception as error:
-            assert str(error) == "list index out of range"
-
-        odf = autoencoder_latentFeatures(
-            spark_session, df, list_of_cols=[], epochs=20, reduction_params=0.5
-        )
-        assert len(odf.columns) == len(df.columns)
-        assert len(odf.columns) == 17
-
+    try:
         odf = autoencoder_latentFeatures(
             spark_session,
             df,
-            list_of_cols=["age", "fnlwgt", "logfnl", "education-num", "hours-per-week"],
+            list_of_cols=["education-num"],
             epochs=20,
             reduction_params=0.5,
-            output_mode="append",
+            pre_existing_model=True,
+            model_path="unit_testing/models/",
         )
+    except Exception as error:
+        assert str(error) == "list index out of range"
+
+    odf = autoencoder_latentFeatures(
+        spark_session, df, list_of_cols=[], epochs=20, reduction_params=0.5
+    )
+    if "arm64" not in platform.version().lower():
+        assert len(odf.columns) == len(df.columns)
+        assert len(odf.columns) == 17
+    else:
+        assert odf == df
 
     odf = autoencoder_latentFeatures(
         spark_session,
@@ -463,12 +458,13 @@ def test_autoencoder_latentFeatures(spark_session):
         reduction_params=0.5,
         output_mode="append",
     )
-    assert len(odf.columns) > len(df.columns)
-    assert len(odf.columns) == 19
-    assert odf.where(F.col("latent_0").isNull()).count() == 0
-    assert odf.where(F.col("latent_1").isNull()).count() == 0
-  else:
-    assert odf == df
+    if "arm64" not in platform.version().lower():
+        assert len(odf.columns) > len(df.columns)
+        assert len(odf.columns) == 19
+        assert odf.where(F.col("latent_0").isNull()).count() == 0
+        assert odf.where(F.col("latent_1").isNull()).count() == 0
+    else:
+        assert odf == df
 
 
 # feature_transformation
@@ -780,7 +776,11 @@ def test_cat_to_num_unsupervised(spark_session):
     assert len(odf.columns) == 20
 
     odf = cat_to_num_unsupervised(
-        spark_session, df, drop_cols=["ifa"], method_type="onehot_encoding", cardinality_threshold=100
+        spark_session,
+        df,
+        drop_cols=["ifa"],
+        method_type="onehot_encoding",
+        cardinality_threshold=100,
     )
     odf_min_dict = (
         odf.describe().where(F.col("summary") == "min").toPandas().to_dict("list")
