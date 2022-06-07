@@ -2,6 +2,7 @@ from pandas import util
 import pytest
 import pandas
 import numpy
+from numpy.testing import assert_almost_equal
 from anovos.data_ingest.data_ingest import read_dataset
 from anovos.drift_stability.stability import (
     stability_index_computation,
@@ -94,12 +95,11 @@ def test_that_stability_index_can_be_calculated(
     ).toPandas()
 
     df_stability.index = df_stability["attribute"]
-
-    df_stability_result = [
-        round(float(i), 3)
-        for i in df_stability.loc["A", cols_to_check_numerical].tolist()
-    ]
-    assert df_stability_result == [0.132, 0.507, 0.162, 2.0, 0.0, 2.0, 1.4, 0.0]
+    assert assert_almost_equal(
+        df_stability.loc["A", cols_to_check_numerical],
+        [0.132, 0.507, 0.162, 2.0, 0.0, 2.0, 1.4, 0.0],
+        3,
+    )
 
 
 def test_that_existing_metric_can_be_used(
@@ -112,11 +112,11 @@ def test_that_existing_metric_can_be_used(
         existing_metric_path="unit_testing/stats/stability/df1_3",
     ).toPandas()
     df_stability.index = df_stability["attribute"]
-    df_stability_result = [
-        round(float(i), 3)
-        for i in df_stability.loc["A", cols_to_check_numerical].tolist()
-    ]
-    assert df_stability_result == [0.174, 0.451, 0.177, 2.0, 1.0, 2.0, 1.7, 0.0]
+    assert assert_almost_equal(
+        df_stability.loc["A", cols_to_check_numerical],
+        [0.174, 0.451, 0.177, 2.0, 1.0, 2.0, 1.7, 0.0],
+        3,
+    )
 
 
 def test_that_binary_column_can_be_calculated(
@@ -126,11 +126,9 @@ def test_that_binary_column_can_be_calculated(
         spark_session, *idfs_binary, binary_cols="A"
     ).toPandas()
     df_stability.index = df_stability["attribute"]
-
-    df_stability_result = [
-        round(float(i), 3) for i in df_stability.loc["A", cols_to_check_binary].tolist()
-    ]
-    assert df_stability_result == [0.082, 0.6, 0.6, 1.0]
+    assert assert_almost_equal(
+        df_stability.loc["A", cols_to_check_binary], [0.082, 0.6, 0.6, 1.0], 3
+    )
 
 
 def test_that_feature_stability_can_be_estimated(
@@ -140,11 +138,11 @@ def test_that_feature_stability_can_be_estimated(
         spark_session, attribute_stats, {"A": "A**2"}
     ).toPandas()
     df_stability.index = df_stability["feature_formula"]
-    df_stability_result = [
-        round(float(i), 3)
-        for i in df_stability.loc["A**2", cols_to_check_si_estimation].tolist()
-    ]
-    assert df_stability_result == [0.298, 0.603, 1.0, 0.0, 0.5, 1.3, 1.0, 0.0]
+    assert assert_almost_equal(
+        df_stability.loc["A**2", cols_to_check_si_estimation],
+        [0.298, 0.603, 1.0, 0.0, 0.5, 1.3, 1.0, 0.0],
+        3,
+    )
 
 
 def test_that_different_weightages_can_be_used(
@@ -157,8 +155,8 @@ def test_that_different_weightages_can_be_used(
         metric_weightages={"mean": 0.7, "stddev": 0.3},
     ).toPandas()
     df_stability.index = df_stability["feature_formula"]
-    df_stability_result = [
-        round(float(i), 3)
-        for i in df_stability.loc["A**2", cols_to_check_si_estimation].tolist()
-    ]
-    assert df_stability_result == [0.298, 0.603, 1.0, 0.0, 0.7, 0.7, 1.0, 1.0]
+    assert assert_almost_equal(
+        df_stability.loc["A**2", cols_to_check_si_estimation],
+        [0.298, 0.603, 1.0, 0.0, 0.7, 0.7, 1.0, 1.0],
+        3,
+    )
