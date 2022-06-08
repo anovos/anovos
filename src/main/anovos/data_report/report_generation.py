@@ -44,7 +44,7 @@ import plotly.tools as tls
 from loguru import logger
 from plotly.subplots import make_subplots
 from sklearn.preprocessing import PowerTransformer
-from anovos.shared.utils import ends_with, path_ak8s_modify
+from anovos.shared.utils import ends_with, path_ak8s_modify, output_to_local
 from statsmodels.tsa.seasonal import seasonal_decompose
 from statsmodels.tsa.stattools import adfuller, kpss
 
