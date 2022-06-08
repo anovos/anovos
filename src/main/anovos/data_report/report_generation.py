@@ -44,7 +44,7 @@ import plotly.tools as tls
 from loguru import logger
 from plotly.subplots import make_subplots
 from sklearn.preprocessing import PowerTransformer
-from anovos.shared.utils import ends_with, path_ak8s_modify
+from anovos.shared.utils import ends_with, path_ak8s_modify, output_to_local
 from statsmodels.tsa.seasonal import seasonal_decompose
 from statsmodels.tsa.stattools import adfuller, kpss
 
@@ -902,7 +902,7 @@ def wiki_generator(
     except Exception:
         logger.info("generate an empty dataframe with columns attribute and data_type ")
         datatype_df = pd.DataFrame(columns=["attribute", "data_type"], index=range(1))
-    try:
+    try:  
         data_dict = pd.read_csv(dataDict_path).merge(
             datatype_df, how="outer", on="attribute"
         )
@@ -3223,6 +3223,11 @@ def anovos_report(
         master_path = "report_stats"
         subprocess.check_output(["bash", "-c", bash_cmd])
 
+    if run_type == "databricks":
+        master_path = output_to_local(master_path)
+        dataDict_path = output_to_local(dataDict_path)
+        metricDict_path = output_to_local(metricDict_path)
+
     if run_type == "ak8s":
         output_path_mod = path_ak8s_modify(master_path)
         bash_cmd = (
@@ -3528,12 +3533,20 @@ def anovos_report(
             pass
         else:
             final_tabs_list.append(i)
-    if run_type in ("local", "databricks"):
+    if run_type == "local":
         dp.Report(
             default_template[0],
             default_template[1],
             dp.Select(blocks=final_tabs_list, type=dp.SelectType.TABS),
         ).save(ends_with(final_report_path) + "ml_anovos_report.html", open=True)
+
+    elif run_type == "databricks":
+        dp.Report(
+            default_template[0],
+            default_template[1],
+            dp.Select(blocks=final_tabs_list, type=dp.SelectType.TABS),
+        ).save(ends_with(output_to_local(final_report_path)) + "ml_anovos_report.html", open=True)
+            
     elif run_type == "emr":
         dp.Report(
             default_template[0],
