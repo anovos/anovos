@@ -3223,6 +3223,12 @@ def anovos_report(
         master_path = "report_stats"
         subprocess.check_output(["bash", "-c", bash_cmd])
 
+    if run_type == "databricks":
+        master_path = output_to_local(master_path)
+        dataDict_path = output_to_local(dataDict_path)
+        metricDict_path = output_to_local(metricDict_path)
+        final_report_path = output_to_local(final_report_path)
+
     if run_type == "ak8s":
         output_path_mod = path_ak8s_modify(master_path)
         bash_cmd = (
