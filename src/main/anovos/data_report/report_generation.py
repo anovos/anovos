@@ -902,7 +902,7 @@ def wiki_generator(
     except Exception:
         logger.info("generate an empty dataframe with columns attribute and data_type ")
         datatype_df = pd.DataFrame(columns=["attribute", "data_type"], index=range(1))
-    try:  
+    try:
         data_dict = pd.read_csv(dataDict_path).merge(
             datatype_df, how="outer", on="attribute"
         )
@@ -3545,8 +3545,11 @@ def anovos_report(
             default_template[0],
             default_template[1],
             dp.Select(blocks=final_tabs_list, type=dp.SelectType.TABS),
-        ).save(ends_with(output_to_local(final_report_path)) + "ml_anovos_report.html", open=True)
-            
+        ).save(
+            ends_with(output_to_local(final_report_path)) + "ml_anovos_report.html",
+            open=True,
+        )
+
     elif run_type == "emr":
         dp.Report(
             default_template[0],
