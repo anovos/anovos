@@ -194,6 +194,20 @@ def anovos_basic_report(
             )
             subprocess.check_output(["bash", "-c", bash_cmd])
 
+        elif run_type == "ak8s":
+            local_file = ends_with(local_path) + func.__name__ + ".csv"
+            output_path_mod = path_ak8s_modify(output_path)
+            bash_cmd = (
+                'azcopy cp "'
+                + local_file
+                + '" "'
+                + ends_with(output_path_mod)
+                + str(auth_key)
+                + '" --recursive=true'
+            )
+
+            subprocess.check_output(["bash", "-c", bash_cmd])
+
         if print_impact:
             print(func.__name__, ":\n")
             stats = spark.read.csv(
