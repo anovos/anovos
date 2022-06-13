@@ -32,9 +32,6 @@ def test_that_unknown_column_raises_error(default_df):
         list_of_cols = parse_columns(list_of_cols=["W"], idf=default_df)
 
 
-def test_that_dropping_unselected_column_raises_error(default_df):
-
-    with pytest.raises(ValueError):
-        list_of_cols = parse_columns(
-            list_of_cols=["A", "B"], idf=default_df, drop_cols=["C"]
-        )
+def test_that_dropping_unselected_column_raises_warning(default_df):
+    with pytest.warns(UserWarning):
+        parse_columns(list_of_cols=["A", "B"], idf=default_df, drop_cols=["C", "D"])
