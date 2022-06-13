@@ -29,9 +29,30 @@ def test_that_string_with_pipes_is_parsed(default_df):
 def test_that_unknown_column_raises_error(default_df):
 
     with pytest.raises(ValueError):
-        list_of_cols = parse_columns(list_of_cols=["W"], idf=default_df)
+        parse_columns(list_of_cols=["W"], idf=default_df)
 
 
 def test_that_dropping_unselected_column_raises_warning(default_df):
+
     with pytest.warns(UserWarning):
         parse_columns(list_of_cols=["A", "B"], idf=default_df, drop_cols=["C", "D"])
+
+
+def test_that_all_methods_returns_all():
+
+    method_type = parse_method_type("all")
+
+    assert method_type == ["PSI", "JSD", "HD", "KS"]
+
+
+def test_that_string_methods_as_pipe_is_parsed():
+
+    method_type = parse_method_type(method_type="JSD|HD|KS")
+
+    assert method_type == ["JSD", "HD", "KS"]
+
+
+def test_that_unknown_method_raises_warning():
+
+    with pytest.raises(ValueError):
+        parse_method_type(method_type="JSD|HAD")
