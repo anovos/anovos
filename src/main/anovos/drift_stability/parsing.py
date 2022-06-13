@@ -1,4 +1,5 @@
 from anovos.shared.utils import attributeType_segregation
+import warnings
 
 
 def parse_columns(list_of_cols, idf, drop_cols=None):
@@ -11,8 +12,9 @@ def parse_columns(list_of_cols, idf, drop_cols=None):
 
     if any(x not in list_of_cols for x in drop_cols):
         invalid_cols = [x for x in drop_cols if x not in list_of_cols]
-        raise ValueError(
-            f"Invalid input for drop_cols. Invalid Column(s): {invalid_cols} not found in source dataframe."
+        warnings.warn(
+            f"Invalid input for column(s): {invalid_cols} not found in list of columns.",
+            UserWarning,
         )
 
     list_of_cols = [e for e in list_of_cols if e not in drop_cols]
