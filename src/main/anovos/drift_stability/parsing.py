@@ -50,6 +50,7 @@ def parse_method_type(method_type):
         else:
             method_type = [x.strip() for x in method_type.split("|")]
     if any(x not in ("PSI", "JSD", "HD", "KS") for x in method_type):
-        raise TypeError(f"Invalid input for method_type")
+        invalid_method = [x for x in method_type if x not in ("PSI", "JSD", "HD", "KS")]
+        raise ValueError(f"Invalid input for method_type: {invalid_method}")
 
     return method_type
