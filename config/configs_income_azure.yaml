@@ -11,7 +11,7 @@ input_dataset:
       header: True
       delimiter: ","
       inferSchema: True
-  delete_column: ['logfnl']
+  delete_column: ['logfnl','constant']
   select_column: null
   rename_column:
     list_of_cols: ['marital-status','education-num']
@@ -62,12 +62,21 @@ join_dataset:
       list_of_newcols: "dupl_age|dupl_workclass"
     recast_column: null
 
+timeseries_analyzer:
+  auto_detection: True
+  id_col: 'ifa'
+  tz_offset: 'local'
+  inspection: True
+  analysis_level: 'daily'
+  max_days: 3600
+
 anovos_basic_report:
   basic_report: False
   report_args:
     id_col: ifa
     label_col: income
     event_label: '>50K'
+    skip_corr_matrix: True
     output_path: "dbfs:/FileStore/tables/report_stats"
 
 #if anovos_basic_report.basic_report is True, then all configs below are ignored.
@@ -173,7 +182,7 @@ drift_detector:
   drift_statistics:
     configs:
       list_of_cols: all
-      drop_cols: ['ifa']
+      drop_cols: ['ifa','income']
       method_type: all
       threshold: 0.1
       bin_method: equal_range
@@ -292,7 +301,7 @@ drift_detector:
 
         
 report_preprocessing:
-  master_path: "dbfs:/FileStore/tables/report_stats"
+  master_path: 'dbfs:/FileStore/tables/report_stats'
   charts_to_objects:
     list_of_cols: all
     drop_cols: ifa
@@ -301,21 +310,90 @@ report_preprocessing:
     bin_method: equal_frequency
     bin_size: 10
     drift_detector: True
+    outlier_charts: False
     source_path: "dbfs:/FileStore/tables/NA"
 
 report_generation:
-  master_path: "/dbfs/FileStore/tables/report_stats"
+  master_path: '/dbfs/FileStore/tables/report_stats'
   id_col: 'ifa'
   label_col: 'income'
   corr_threshold: 0.4
   iv_threshold: 0.02
   drift_threshold_model: 0.1
-  dataDict_path: '/dbfs/FileStore/tables/data_dictionary.csv'
-  metricDict_path: '/dbfs/FileStore/tables//metric_dictionary.csv'
+  dataDict_path: '/dbfs/FileStore/tables/income_dataset/data_dictionary.csv'
+  metricDict_path: '/dbfs/FileStore/tables/metric_dictionary.csv'
   final_report_path: '/dbfs/FileStore/tables/report_stats'
 
+transformers:
+  numerical_mathops:
+    feature_transformation:
+      list_of_cols: all
+      drop_cols: []
+      method_type: sqrt
+
+    boxcox_transformation:
+      list_of_cols: age|education_num
+      drop_cols: []
+
+  numerical_binning:
+    attribute_binning:
+      list_of_cols: all
+      drop_cols: []
+      method_type: equal_frequency
+      bin_size: 10
+      bin_dtype: numerical
+
+  numerical_expression:
+    expression_parser:
+      list_of_expr: 'log(age) + 1.5|sin(capital-gain)+cos(capital-loss)'
+
+  categorical_outliers:
+    outlier_categories:
+      list_of_cols: all
+      drop_cols: ['ifa','income']
+      coverage: 0.9
+      max_category: 20
+
+  categorical_encoding:
+    # cat_to_num_unsupervised:
+    #   list_of_cols: 'all'
+    #   drop_cols: ['ifa']
+    #   method_type: onehot_encoding
+
+    cat_to_num_supervised:
+      list_of_cols: all
+      drop_cols: ['ifa']
+      label_col: income
+      event_label: '>50K'
+
+  numerical_rescaling:
+    # normalization:
+    #   list_of_cols: all
+
+    z_standardization:
+      list_of_cols: all
+
+    # IQR_standardization:
+    #   list_of_cols: all
+
+   
+  numerical_latentFeatures:
+  #   PCA_latentFeatures:
+  #     list_of_cols: all
+  #     explained_variance_cutoff: 0.95
+  #     standardization: False
+  #     imputation: True
+
+
+    autoencoder_latentFeatures:
+      list_of_cols: all
+      reduction_params: 0.5
+      sample_size: 10000 
+      epochs: 25
+      batch_size: 256
+
 write_intermediate:
-  file_path: "dbfs:/FileStore/tables/result/intermediate_data"
+  file_path: "dbfs:/FileStore/tables/results/intermediate_data"
   file_type: csv
   file_configs:
     mode: overwrite
@@ -324,13 +402,13 @@ write_intermediate:
     inferSchema: True
 
 write_main:
-  file_path: "dbfs:/FileStore/tables/result/output"
+  file_path: "dbfs:/FileStore/tables/results/output"
   file_type: parquet
   file_configs:
     mode: overwrite
     
 write_stats:
-  file_path: "dbfs:/FileStore/tables/result/stats"
+  file_path: "dbfs:/FileStore/tables/results/stats"
   file_type: parquet
   file_configs:
     mode: overwrite

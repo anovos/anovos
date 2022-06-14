@@ -6,25 +6,25 @@ import pandas as pd
 import plotly.express as px
 
 from anovos.data_analyzer.association_evaluator import (
+    IG_calculation,
+    IV_calculation,
     correlation_matrix,
     variable_clustering,
-    IV_calculation,
-    IG_calculation,
 )
 from anovos.data_analyzer.quality_checker import (
-    duplicate_detection,
-    nullRows_detection,
-    nullColumns_detection,
-    outlier_detection,
     IDness_detection,
     biasedness_detection,
+    duplicate_detection,
     invalidEntries_detection,
+    nullColumns_detection,
+    nullRows_detection,
+    outlier_detection,
 )
 from anovos.data_analyzer.stats_generator import (
     global_summary,
-    measures_of_counts,
-    measures_of_centralTendency,
     measures_of_cardinality,
+    measures_of_centralTendency,
+    measures_of_counts,
     measures_of_dispersion,
     measures_of_percentiles,
     measures_of_shape,
@@ -97,6 +97,7 @@ def anovos_basic_report(
     id_col="",
     label_col="",
     event_label="",
+    skip_corr_matrix=True,
     output_path=".",
     run_type="local",
     print_impact=True,
@@ -115,6 +116,9 @@ def anovos_basic_report(
         Label/Target column (Default value = "")
     event_label
         Value of (positive) event (i.e label 1) (Default value = "")
+    skip_corr_matrix
+        True, False.
+        This argument is to skip correlation matrix generation in basic_report.(Default value = True)
     output_path
         File Path for saving metrics and basic report (Default value = ".")
     run_type
@@ -146,7 +150,11 @@ def anovos_basic_report(
         biasedness_detection,
         invalidEntries_detection,
     ]
-    AA_funcs = [correlation_matrix, variable_clustering]
+
+    if skip_corr_matrix:
+        AA_funcs = [variable_clustering]
+    else:
+        AA_funcs = [correlation_matrix, variable_clustering]
     AT_funcs = [IV_calculation, IG_calculation]
     all_funcs = SG_funcs + QC_rows_funcs + QC_cols_funcs + AA_funcs + AT_funcs
 
@@ -270,9 +278,7 @@ def anovos_basic_report(
                 " Number of Categorical Attributes : **" + str(catcols_count) + "**"
             ),
             dp.Text(" Categorical Attributes Name : **" + str(catcols_name) + "**"),
-            rows=6,
         ),
-        rows=8,
     )
 
     l2 = dp.Text("### Statistics by Metric Type")
@@ -371,7 +377,6 @@ def anovos_basic_report(
                         dp.Text(unique_rows_count),
                         dp.Text(duplicate_rows_count),
                         dp.Text(duplicate_rows_pct),
-                        rows=4,
                     ),
                     dp.Text("#"),
                     dp.Text("#"),
@@ -402,15 +407,8 @@ def anovos_basic_report(
         dp.Text("# "),
         dp.Select(
             blocks=[
-                dp.Group(
-                    dp.Text("# "),
-                    dp.Group(*QCcol_content),
-                    rows=2,
-                    label="Column Level",
-                ),
-                dp.Group(
-                    dp.Text("# "), dp.Group(*QCrow_content), rows=2, label="Row Level"
-                ),
+                dp.Group(dp.Text("# "), dp.Group(*QCcol_content), label="Column Level"),
+                dp.Group(dp.Text("# "), dp.Group(*QCrow_content), label="Row Level"),
             ],
             type=dp.SelectType.TABS,
         ),
@@ -440,7 +438,6 @@ def anovos_basic_report(
                     dp.Text("##"),
                     dp.DataTable(stats[["attribute"] + feats_order]),
                     dp.Plot(fig),
-                    rows=3,
                     label=remove_u_score(i.__name__),
                 )
             )
@@ -465,7 +462,6 @@ def anovos_basic_report(
                     dp.Text("##"),
                     dp.DataTable(stats),
                     dp.Plot(fig),
-                    rows=3,
                     label=remove_u_score(i.__name__),
                 )
             )
@@ -493,7 +489,6 @@ def anovos_basic_report(
                         dp.DataTable(stats),
                         dp.Plot(fig),
                         label=remove_u_score(i.__name__),
-                        rows=3,
                     )
                 )
 

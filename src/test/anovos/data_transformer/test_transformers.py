@@ -1,27 +1,33 @@
 import os
+
 import pytest
-from pytest import approx
 from pyspark.sql import functions as F
+from pytest import approx
+
 from anovos.data_ingest.data_ingest import read_dataset
 from anovos.data_transformer.transformers import (
-    attribute_binning,
-    monotonic_binning,
-    cat_to_num_unsupervised,
-    cat_to_num_supervised,
-    z_standardization,
     IQR_standardization,
-    normalization,
-    imputation_MMM,
-    imputation_sklearn,
-    imputation_matrixFactorization,
+    PCA_latentFeatures,
+    attribute_binning,
     auto_imputation,
     PCA_latentFeatures,
     feature_transformation,
+    autoencoder_latentFeatures,
     boxcox_transformation,
+    cat_to_num_supervised,
+    cat_to_num_unsupervised,
+    feature_transformation,
+    imputation_matrixFactorization,
+    imputation_MMM,
+    imputation_sklearn,
+    monotonic_binning,
+    normalization,
     outlier_categories,
+    z_standardization,
 )
 
 sample_parquet = "./data/test_dataset/part-00001-3eb0f7bb-05c2-46ec-8913-23ba231d2734-c000.snappy.parquet"
+
 
 # scaling
 def test_z_standardization(spark_session):
@@ -210,7 +216,7 @@ def test_imputation_sklearn(spark_session):
 
 
 def test_imputation_matrixFactorization(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+    df = read_dataset(spark_session, sample_parquet, "parquet").limit(100)
     odf = imputation_matrixFactorization(
         spark_session,
         df,
@@ -220,16 +226,38 @@ def test_imputation_matrixFactorization(spark_session):
     assert len(odf.columns) == 17
     assert odf.where(F.col("hours-per-week").isNull()).count() == 0
     assert odf.where(F.col("education-num").isNull()).count() == 0
-    assert odf.where(F.col("education").isNull()).count() == 258
-    assert odf.where(F.col("race").isNull()).count() == 162
-    assert odf.where(F.col("relationship").isNull()).count() == 4
 
+    assert (
+        odf.where(F.col("education").isNull()).count()
+        == df.where(F.col("education").isNull()).count()
+    )
+    assert (
+        odf.where(F.col("race").isNull()).count()
+        == df.where(F.col("race").isNull()).count()
+    )
+    assert (
+        odf.where(F.col("relationship").isNull()).count()
+        == df.where(F.col("relationship").isNull()).count()
+    )
+
+
+def test_imputation_matrixFactorization_with_empty_list_of_cols(spark_session):
+    df = read_dataset(spark_session, sample_parquet, "parquet")
     odf = imputation_matrixFactorization(
         spark_session, df, list_of_cols=[], id_col="ifa"
     )
-    assert odf.where(F.col("hours-per-week").isNull()).count() == 59
-    assert odf.where(F.col("education-num").isNull()).count() == 14
+    assert (
+        odf.where(F.col("hours-per-week").isNull()).count()
+        == df.where(F.col("hours-per-week").isNull()).count()
+    )
+    assert (
+        odf.where(F.col("education-num").isNull()).count()
+        == df.where(F.col("education-num").isNull()).count()
+    )
 
+
+def test_imputation_matrixFactorization_with_appended_output(spark_session):
+    df = read_dataset(spark_session, sample_parquet, "parquet")
     odf = imputation_matrixFactorization(
         spark_session,
         df,
@@ -237,7 +265,23 @@ def test_imputation_matrixFactorization(spark_session):
         id_col="ifa",
         output_mode="append",
     )
+
     assert len(odf.columns) == 20
+    assert (
+        odf.where(F.col("age").isNull()).count()
+        == df.where(F.col("age").isNull()).count()
+    )
+    assert (
+        odf.where(F.col("fnlwgt").isNull()).count()
+        == df.where(F.col("fnlwgt").isNull()).count()
+    )
+    assert (
+        odf.where(F.col("hours-per-week").isNull()).count()
+        == df.where(F.col("hours-per-week").isNull()).count()
+    )
+    assert odf.where(F.col("age_imputed").isNull()).count() == 0
+    assert odf.where(F.col("fnlwgt_imputed").isNull()).count() == 0
+    assert odf.where(F.col("hours-per-week_imputed").isNull()).count() == 0
 
 
 def test_imputation_MMM(spark_session):
@@ -302,12 +346,18 @@ def test_auto_imputation(spark_session):
     assert odf.where(F.col("logfnl").isNull()).count() == 10207
     assert odf.where(F.col("education").isNull()).count() == 254
 
+
+def test_auto_imputation_with_empty_list_of_cols(spark_session):
+    df = read_dataset(spark_session, sample_parquet, "parquet")
     odf = auto_imputation(spark_session, df, list_of_cols=[], id_col="ifa")
     assert odf.where(F.col("age").isNull()).count() == 30
     assert odf.where(F.col("fnlwgt").isNull()).count() == 8
     assert odf.where(F.col("race").isNull()).count() == 162
     assert odf.where(F.col("relationship").isNull()).count() == 4
 
+
+def test_auto_imputation_with_appended_output(spark_session):
+    df = read_dataset(spark_session, sample_parquet, "parquet")
     odf = auto_imputation(
         spark_session,
         df,
@@ -374,8 +424,8 @@ def test_autoencoder_latentFeatures(spark_session):
         reduction_params=0.5,
         model_path="unit_testing/models/",
     )
-    assert len(odf.columns) > len(df.columns)
-    assert len(odf.columns) == 19
+    assert len(odf.columns) < len(df.columns)
+    assert len(odf.columns) == 14
 
     try:
         odf = autoencoder_latentFeatures(
@@ -405,7 +455,7 @@ def test_autoencoder_latentFeatures(spark_session):
         output_mode="append",
     )
     assert len(odf.columns) > len(df.columns)
-    assert len(odf.columns) == 24
+    assert len(odf.columns) == 19
     assert odf.where(F.col("latent_0").isNull()).count() == 0
     assert odf.where(F.col("latent_1").isNull()).count() == 0
 
@@ -675,7 +725,7 @@ def test_cat_to_num_unsupervised(spark_session):
         df,
         list_of_cols=["workclass", "relationship", "marital-status"],
         drop_cols=["ifa"],
-        method_type=1,
+        method_type="label_encoding",
         index_order="frequencyDesc",
         cardinality_threshold=100,
         model_path="unit_testing/models/",
@@ -697,7 +747,7 @@ def test_cat_to_num_unsupervised(spark_session):
         df,
         list_of_cols=[],
         drop_cols=["ifa"],
-        method_type=1,
+        method_type="label_encoding",
         index_order="frequencyDesc",
         cardinality_threshold=100,
     )
@@ -711,7 +761,7 @@ def test_cat_to_num_unsupervised(spark_session):
         df,
         list_of_cols=["workclass", "relationship", "marital-status"],
         drop_cols=["ifa"],
-        method_type=1,
+        method_type="label_encoding",
         index_order="frequencyDesc",
         cardinality_threshold=100,
         output_mode="append",
@@ -719,7 +769,7 @@ def test_cat_to_num_unsupervised(spark_session):
     assert len(odf.columns) == 20
 
     odf = cat_to_num_unsupervised(
-        spark_session, df, drop_cols=["ifa"], method_type=0, cardinality_threshold=100
+        spark_session, df, drop_cols=["ifa"], method_type="onehot_encoding", cardinality_threshold=100
     )
     odf_min_dict = (
         odf.describe().where(F.col("summary") == "min").toPandas().to_dict("list")

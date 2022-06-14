@@ -27,7 +27,7 @@ jobs:
             checksum: '2AF22A096CAA616F7C2045D2CA2291DCBBB9112233434C2249944FBD6CE85AF58743A479A86BA8454E86EF3A3D5730664466EE6D12D05AB03C9F2128CCD8AB1B'
             hadoop: '3.2'
             java: '11'
-          - python: '3.9'
+          - python: '3.10'
             spark: '3.2.1'
             checksum: '145ADACF189FECF05FBA3A69841D2804DD66546B11D14FC181AC49D89F3CB5E4FECD9B25F56F0AF767155419CD430838FB651992AEB37D3A6F91E7E009D1F9AE'
             hadoop: '3.2'
@@ -39,7 +39,7 @@ jobs:
 
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@v3
+        uses: docker/metadata-action@v4
         with:
           images: anovos/anovos-notebook-${{ matrix.spark }}
           tags: |
@@ -62,7 +62,7 @@ jobs:
           echo "${{ steps.meta.outputs.tags }}" | xargs -n 1 docker tag anovos-notebook-${{ matrix.spark }}
 
       - name: Log in to Docker Hub
-        uses: docker/login-action@v1.14.1
+        uses: docker/login-action@v2.0.0
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
@@ -95,7 +95,7 @@ jobs:
 
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@v3
+        uses: docker/metadata-action@v4
         with:
           images: anovos/anovos-examples-${{ matrix.spark }}
           tags: |
@@ -109,13 +109,13 @@ jobs:
             tag: ${{ github.ref }}
 
       - name: Log in to Docker Hub
-        uses: docker/login-action@v1.14.1
+        uses: docker/login-action@v2.0.0
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build and push
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           context: examples
           file: examples/Dockerfile

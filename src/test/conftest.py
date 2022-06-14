@@ -6,10 +6,10 @@ import pytest
 SRC_DIR = pathlib.Path(__file__).parent.parent / "main"
 sys.path.insert(0, str(SRC_DIR.absolute()))
 
-from anovos.shared.spark import init_spark, SPARK_JARS_PACKAGES
+from anovos.shared.spark import SPARK_JARS_PACKAGES, init_spark
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def spark_session():
     configs = {
         "app_name": "Anovos_test_pipeline",

@@ -20,6 +20,7 @@ anovos_basic_report:
     id_col: Item_Identifier
     label_col: sales
     event_label: '>2k'
+    skip_corr_matrix: True
     output_path: report_stats
 
 #if anovos_basic_report.basic_report is True, then all configs below are ignored.
@@ -35,25 +36,25 @@ quality_checker:
     list_of_cols: all
     drop_cols: [ 'Item_Identifier' ]
     treatment: True
-  
+
   nullRows_detection:
     list_of_cols: all
     drop_cols: [ ]
     treatment: True
     treatment_threshold: 0.75
-  
+
   invalidEntries_detection:
     list_of_cols: all
     drop_cols: [ 'Item_Identifier' ]
     treatment: True
     output_mode: replace
-  
+
   IDness_detection:
     list_of_cols: all
     drop_cols: [ 'Item_Identifier' ]
     treatment: True
     treatment_threshold: 0.9
-  
+
   biasedness_detection:
     list_of_cols: all
     drop_cols: [ 'sales' ]
@@ -95,7 +96,7 @@ association_evaluator:
   correlation_matrix:
     list_of_cols: all
     drop_cols: [ 'Item_Identifier' ]
-  
+
   IV_calculation:
     list_of_cols: all
     drop_cols: Item_Identifier
@@ -115,7 +116,7 @@ association_evaluator:
       bin_method: equal_frequency
       bin_size: 10
       monotonicity_check: 0
-  
+
   variable_clustering:
     list_of_cols: all
     drop_cols: Item_Identifier|sales

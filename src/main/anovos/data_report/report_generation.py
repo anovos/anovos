@@ -32,20 +32,22 @@ However, each of the functions have been detailed in the respective sections acr
 import json
 import os
 import subprocess
+import warnings
+
 import datapane as dp
+import dateutil.parser
 import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from loguru import logger
-import dateutil.parser
-from statsmodels.tsa.seasonal import seasonal_decompose
 import plotly.tools as tls
+from loguru import logger
 from plotly.subplots import make_subplots
-from statsmodels.tsa.stattools import adfuller, kpss
 from sklearn.preprocessing import PowerTransformer
+from statsmodels.tsa.seasonal import seasonal_decompose
+from statsmodels.tsa.stattools import adfuller, kpss
+
 from anovos.shared.utils import ends_with
-import warnings
 
 warnings.filterwarnings("ignore")
 
@@ -195,11 +197,10 @@ def line_chart_gen_stability(df1, df2, col):
             dp.Text(f5),
             dp.Plot(f1),
             dp.Group(dp.Plot(f2), dp.Plot(f3), dp.Plot(f4), columns=3),
-            rows=4,
             label=col,
         )
     else:
-        return dp.Group(dp.Text("#"), dp.Text(f5), dp.Plot(f1), rows=3, label=col)
+        return dp.Group(dp.Text("#"), dp.Text(f5), dp.Plot(f1), label=col)
 
 
 def data_analyzer_output(master_path, avl_recs_tab, tab_name):
@@ -269,7 +270,6 @@ def data_analyzer_output(master_path, avl_recs_tab, tab_name):
                             dp.Text(unique_rows_count),
                             dp.Text(duplicate_rows),
                             dp.Text(duplicate_pct),
-                            rows=4,
                         ),
                         dp.Text("#"),
                         dp.Text("#"),
@@ -322,7 +322,6 @@ def data_analyzer_output(master_path, avl_recs_tab, tab_name):
                             dp.Text("##"),
                             dp.DataTable(df_list_[["attribute"] + feats_order]),
                             dp.Plot(fig),
-                            rows=3,
                             label=remove_u_score(j),
                         )
                     )
@@ -348,7 +347,6 @@ def data_analyzer_output(master_path, avl_recs_tab, tab_name):
                             dp.Text("##"),
                             dp.DataTable(df_list_),
                             dp.Plot(fig),
-                            rows=3,
                             label=remove_u_score(j),
                         )
                     )
@@ -378,7 +376,6 @@ def data_analyzer_output(master_path, avl_recs_tab, tab_name):
                                 dp.DataTable(df_list_),
                                 dp.Plot(fig),
                                 label=remove_u_score(j),
-                                rows=3,
                             )
                         )
                     except Exception as e:
@@ -536,8 +533,8 @@ def executive_summary_gen(
         )
         # @FIXME: never used local variable
         text_val = list(list(obj_dtls.values())[0][0].items())[8][1]
-        x_val = list(list(obj_dtls.values())[0][0].items())[11][1]
-        y_val = list(list(obj_dtls.values())[0][0].items())[13][1]
+        x_val = list(list(obj_dtls.values())[0][0].items())[10][1]
+        y_val = list(list(obj_dtls.values())[0][0].items())[12][1]
         label_fig_ = go.Figure(
             data=[
                 go.Pie(
@@ -574,21 +571,18 @@ def executive_summary_gen(
         a2 = dp.Group(
             dp.Text("- There is **no** target variable in the dataset"),
             dp.Text("- Data Diagnosis:"),
-            rows=2,
         )
     else:
         if label_fig_ is None:
             a2 = dp.Group(
                 dp.Text("- Target variable is **" + str(label_col) + "** "),
                 dp.Text("- Data Diagnosis:"),
-                rows=2,
             )
         else:
             a2 = dp.Group(
                 dp.Text("- Target variable is **" + str(label_col) + "** "),
                 dp.Plot(label_fig_),
                 dp.Text("- Data Diagnosis:"),
-                rows=3,
             )
     try:
         x1 = list(
@@ -765,7 +759,7 @@ def executive_summary_gen(
             ]
         ]
     )
-    x = x[x.Attribute.values != "NA"]
+    x = x[~x["Attribute"].isnull()]
     if ds_ind[0] == 1 and ds_ind[1] >= 0.5:
         a5 = "Data Health based on Drift Metrics & Stability Index : "
         report = dp.Group(
@@ -1034,9 +1028,7 @@ def descriptive_statistics(
                     dp.Text(
                         " Categorical Attributes Name : **" + str(catcols_name) + "**"
                     ),
-                    rows=6,
                 ),
-                rows=8,
             )
         else:
             l1 = dp.Text("# ")
@@ -1200,7 +1192,6 @@ def quality_check(
                 dp.Group(*c_),
                 dp.Text("# "),
                 dp.Text("# "),
-                rows=8,
                 label="Quality Check",
             )
         elif len_col_wise == 0:
@@ -1218,7 +1209,6 @@ def quality_check(
                 dp.Group(*r_),
                 dp.Text("# "),
                 dp.Text("# "),
-                rows=8,
                 label="Quality Check",
             )
         else:
@@ -1251,12 +1241,8 @@ def quality_check(
                 dp.Text("# "),
                 dp.Select(
                     blocks=[
-                        dp.Group(
-                            dp.Text("# "), dp.Group(*c_), rows=2, label="Column Level"
-                        ),
-                        dp.Group(
-                            dp.Text("# "), dp.Group(*r_), rows=2, label="Row Level"
-                        ),
+                        dp.Group(dp.Text("# "), dp.Group(*c_), label="Column Level"),
+                        dp.Group(dp.Text("# "), dp.Group(*r_), label="Row Level"),
                     ],
                     type=dp.SelectType.TABS,
                 ),
@@ -1591,7 +1577,7 @@ def data_drift_stability(
             dp.Text("# "),
             dp.Text(
                 """
-                *This section examines the dataset stability wrt the baseline dataset (via computing drift 
+                *This section examines the dataset stability wrt the baseline dataset (via computing drift
                 statistics) and/or wrt the historical datasets (via computing stability index).*
                 """
             ),
@@ -1603,7 +1589,6 @@ def data_drift_stability(
             dp.Group(
                 dp.Text("**Stability Index Interpretation:**"),
                 dp.Plot(plot_index_stability),
-                rows=2,
             ),
             label="Drift & Stability",
         )
@@ -1740,7 +1725,6 @@ def data_drift_stability(
                 dp.Group(
                     dp.Text("**Stability Index Interpretation:**"),
                     dp.Plot(plot_index_stability),
-                    rows=2,
                 ),
                 label="Drift & Stability",
             )
@@ -1782,7 +1766,6 @@ def data_drift_stability(
                 dp.Group(
                     dp.Text("**Stability Index Interpretation:**"),
                     dp.Plot(plot_index_stability),
-                    rows=2,
                 ),
                 label="Drift & Stability",
             )
@@ -1813,7 +1796,6 @@ def data_drift_stability(
             dp.Group(
                 dp.Text("**Stability Index Interpretation:**"),
                 dp.Plot(plot_index_stability),
-                rows=2,
             ),
             label="Drift & Stability",
         )
@@ -1875,7 +1857,6 @@ def data_drift_stability(
                 dp.Group(
                     dp.Text("**Stability Index Interpretation:**"),
                     dp.Plot(plot_index_stability),
-                    rows=2,
                 ),
                 label="Drift & Stability",
             )
@@ -1917,7 +1898,6 @@ def data_drift_stability(
                 dp.Group(
                     dp.Text("**Stability Index Interpretation:**"),
                     dp.Plot(plot_index_stability),
-                    rows=2,
                 ),
                 label="Drift & Stability",
             )
@@ -2664,7 +2644,6 @@ def ts_landscape(base_path, ts_cols, id_col):
                                 .T,
                                 label=i,
                             ),
-                            rows=5,
                         ),
                         dp.Group(
                             dp.Text(
@@ -2678,10 +2657,8 @@ def ts_landscape(base_path, ts_cols, id_col):
                                 ).T.rename(columns={0: ""}),
                                 label=i,
                             ),
-                            rows=4,
                         ),
                         label=i,
-                        rows=2,
                     )
                 )
 
@@ -2701,7 +2678,6 @@ def ts_landscape(base_path, ts_cols, id_col):
                                 .T,
                                 label=i,
                             ),
-                            rows=5,
                         ),
                         dp.Group(
                             dp.Text("#   "),
@@ -2712,10 +2688,8 @@ def ts_landscape(base_path, ts_cols, id_col):
                                 ).T.rename(columns={0: ""}),
                                 label=i,
                             ),
-                            rows=3,
                         ),
                         label=i,
-                        rows=2,
                     )
                 )
                 df_stats_ts.append(dp.Plot(blank_chart, label="_"))
@@ -2723,7 +2697,6 @@ def ts_landscape(base_path, ts_cols, id_col):
         return dp.Group(
             dp.Text("### Time Stamp Data Diagnosis"),
             dp.Select(blocks=df_stats_ts, type=dp.SelectType.DROPDOWN),
-            rows=2,
         )
 
 
@@ -2786,11 +2759,13 @@ def ts_viz_3_1(base_path, x_col, y_col):
 
     for metric_col in ["mean", "median", "min", "max"]:
 
-        adf_test = round(adfuller(df[metric_col])[0], 3), round(
-            adfuller(df[metric_col])[1], 3
+        adf_test = (
+            round(adfuller(df[metric_col])[0], 3),
+            round(adfuller(df[metric_col])[1], 3),
         )
-        kpss_test = round(kpss(df[metric_col], regression="ct")[0], 3), round(
-            kpss(df[metric_col], regression="ct")[1], 3
+        kpss_test = (
+            round(kpss(df[metric_col], regression="ct")[0], 3),
+            round(kpss(df[metric_col], regression="ct")[1], 3),
         )
 
         if adf_test[1] < 0.05:

@@ -17,6 +17,7 @@ anovos_basic_report:
     id_col: ID
     label_col: [ ]
     event_label: [ ]
+    skip_corr_matrix: True
     output_path: report_stats
 
 #if anovos_basic_report.basic_report is True, then all configs below are ignored.
@@ -32,25 +33,25 @@ quality_checker:
     list_of_cols: all
     drop_cols: [ 'ID' ]
     treatment: True
-  
+
   nullRows_detection:
     list_of_cols: all
     drop_cols: [ ]
     treatment: True
     treatment_threshold: 0.75
-  
+
   invalidEntries_detection:
     list_of_cols: all
     drop_cols: [ 'ID' ]
     treatment: True
     output_mode: replace
-  
+
   IDness_detection:
     list_of_cols: all
     drop_cols: [ 'ID' ]
     treatment: True
     treatment_threshold: 0.9
-  
+
   biasedness_detection:
     list_of_cols: all
     drop_cols: [ ]
@@ -92,11 +93,11 @@ association_evaluator:
   correlation_matrix:
     list_of_cols: all
     drop_cols: [ 'ID' ]
-  
+
   # IV_calculation:
   #   list_of_cols: all
   #   drop_cols: ID
-  #   label_col: 
+  #   label_col:
   #   event_label:
   #   encoding_configs:
   #     bin_method: equal_frequency
@@ -106,13 +107,13 @@ association_evaluator:
   # IG_calculation:
   #   list_of_cols: all
   #   drop_cols: ID
-  #   label_col: 
+  #   label_col:
   #   event_label:
   #   encoding_configs:
   #     bin_method: equal_frequency
   #     bin_size: 10
   #     monotonicity_check: 0
-  
+
   variable_clustering:
     list_of_cols: all
     drop_cols: ID
