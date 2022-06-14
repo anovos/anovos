@@ -447,7 +447,7 @@ def cat_to_num_unsupervised(
     idf,
     list_of_cols="all",
     drop_cols=[],
-    method_type=1,
+    method_type="label_encoding",
     index_order="frequencyDesc",
     cardinality_threshold=100,
     pre_existing_model=False,
@@ -489,7 +489,7 @@ def cat_to_num_unsupervised(
         It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
         a few handful of them. (Default value = [])
     method_type
-        1 for Label Encoding or 0 for One hot encoding.
+        "label_encoding" or "onehot_encoding"
         In label encoding, each categorical value is assigned a unique integer based on alphabetical
         or frequency ordering (both ascending & descending options are available that can be selected by index_order argument).
         In one-hot encoding, every unique value in the column will be added in a form of dummy/binary column. (Default value = 1)
@@ -536,7 +536,7 @@ def cat_to_num_unsupervised(
     if any(x not in cat_cols for x in list_of_cols):
         raise TypeError("Invalid input for Column(s)")
 
-    if method_type not in (0, 1):
+    if method_type not in ("onehot_encoding", "label_encoding"):
         raise TypeError("Invalid input for method_type")
     if index_order not in (
         "frequencyDesc",
@@ -549,7 +549,7 @@ def cat_to_num_unsupervised(
         raise TypeError("Invalid input for output_mode")
 
     skip_cols = []
-    if method_type == 0:
+    if method_type == "onehot_encoding":
         if stats_unique == {}:
             skip_cols = (
                 uniqueCount_computation(spark, idf, list_of_cols)
@@ -639,7 +639,7 @@ def cat_to_num_unsupervised(
     ).drop("tempID")
     odf_indexed.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
 
-    if method_type == 0:
+    if method_type == "onehot_encoding":
         if pre_existing_model:
             encoder = OneHotEncoder.load(
                 model_path + "/cat_to_num_unsupervised/encoder"
@@ -703,7 +703,7 @@ def cat_to_num_unsupervised(
                 odf = odf.drop(i).withColumnRenamed(i + "_index", i)
             odf = odf.select(idf.columns)
 
-    if print_impact and method_type == 1:
+    if print_impact and method_type == "label_encoding":
         print("Before")
         idf.describe().where(F.col("summary").isin("count", "min", "max")).show(
             3, False
@@ -712,7 +712,7 @@ def cat_to_num_unsupervised(
         odf.describe().where(F.col("summary").isin("count", "min", "max")).show(
             3, False
         )
-    if print_impact and method_type == 0:
+    if print_impact and method_type == "onehot_encoding":
         print("Before")
         idf.printSchema()
         print("After")
@@ -2753,6 +2753,9 @@ def autoencoder_latentFeatures(
         .toDF(schema=odf_schema)
         .drop("predicted_output")
     )
+
+    odf = odf.drop(*list_of_cols_scaled)
+
     if output_mode == "replace":
         odf = odf.drop(*list_of_cols)
 
@@ -3351,11 +3354,11 @@ def outlier_categories(
 ):
     """
     This function replaces less frequently seen values (called as outlier values in the current context) in a
-    categorical column by 'others'. Outlier values can be defined in two ways –
+    categorical column by 'outlier_categories'. Outlier values can be defined in two ways –
     a) Max N categories, where N is used defined value. In this method, top N-1 frequently seen categories are considered
-    and rest are clubbed under single category 'others'. or Alternatively,
+    and rest are clubbed under single category 'outlier_categories'. or Alternatively,
     b) Coverage – top frequently seen categories are considered till it covers minimum N% of rows and rest lesser seen values
-    are mapped to mapped to others. Even if the Coverage is less, maximum category constraint is given priority. Further,
+    are mapped to mapped to 'outlier_categories'. Even if the Coverage is less, maximum category constraint is given priority. Further,
     there is a caveat that when multiple categories have same rank. Then, number of categorical values can be more than
     max_category defined by the user.
 
@@ -3381,10 +3384,10 @@ def outlier_categories(
         a few handful of them. (Default value = [])
     coverage
         Defines the minimum % of rows that will be mapped to actual category name and the rest to be mapped
-        to others and takes value between 0 to 1. Coverage of 0.8 can be interpreted as top frequently seen
-        categories are considered till it covers minimum 80% of rows and rest lesser seen values are mapped to others. (Default value = 1.0)
+        to 'outlier_categories' and takes value between 0 to 1. Coverage of 0.8 can be interpreted as top frequently seen
+        categories are considered till it covers minimum 80% of rows and rest lesser seen values are mapped to 'outlier_categories'. (Default value = 1.0)
     max_category
-        Even if coverage is less, only (max_category - 1) categories will be mapped to actual name and rest to others.
+        Even if coverage is less, only (max_category - 1) categories will be mapped to actual name and rest to 'outlier_categories'.
         Caveat is when multiple categories have same rank, then #categories can be more than max_category. (Default value = 50)
     pre_existing_model
         Boolean argument – True or False. True if the model with the outlier/other values
@@ -3479,14 +3482,14 @@ def outlier_categories(
                 i,
                 F.when(
                     (F.col(i).isin(parameters)) | (F.col(i).isNull()), F.col(i)
-                ).otherwise("others"),
+                ).otherwise("outlier_categories"),
             )
         else:
             odf = odf.withColumn(
                 i + "_outliered",
                 F.when(
                     (F.col(i).isin(parameters)) | (F.col(i).isNull()), F.col(i)
-                ).otherwise("others"),
+                ).otherwise("outlier_categories"),
             )
 
     if (not pre_existing_model) & (model_path != "NA"):

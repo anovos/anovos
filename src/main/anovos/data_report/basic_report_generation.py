@@ -97,6 +97,7 @@ def anovos_basic_report(
     id_col="",
     label_col="",
     event_label="",
+    skip_corr_matrix=True,
     output_path=".",
     run_type="local",
     auth_key="NA",
@@ -116,6 +117,9 @@ def anovos_basic_report(
         Label/Target column (Default value = "")
     event_label
         Value of (positive) event (i.e label 1) (Default value = "")
+    skip_corr_matrix
+        True, False.
+        This argument is to skip correlation matrix generation in basic_report.(Default value = True)
     output_path
         File Path for saving metrics and basic report (Default value = ".")
     run_type
@@ -150,7 +154,11 @@ def anovos_basic_report(
         biasedness_detection,
         invalidEntries_detection,
     ]
-    AA_funcs = [correlation_matrix, variable_clustering]
+
+    if skip_corr_matrix:
+        AA_funcs = [variable_clustering]
+    else:
+        AA_funcs = [correlation_matrix, variable_clustering]
     AT_funcs = [IV_calculation, IG_calculation]
     all_funcs = SG_funcs + QC_rows_funcs + QC_cols_funcs + AA_funcs + AT_funcs
 

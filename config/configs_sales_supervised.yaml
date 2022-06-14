@@ -20,6 +20,7 @@ anovos_basic_report:
     id_col: Item_Identifier
     label_col: sales
     event_label: '>2k'
+    skip_corr_matrix: True
     output_path: report_stats
 
 #if anovos_basic_report.basic_report is True, then all configs below are ignored.
