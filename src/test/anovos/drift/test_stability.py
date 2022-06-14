@@ -37,6 +37,7 @@ def idfs_binary(spark_session):
     idf = []
     for l in [list1, list2, list3]:
         idf.append(spark_session.createDataFrame(pandas.DataFrame({"A": l})))
+    return idf
 
 
 @pytest.fixture
@@ -95,8 +96,8 @@ def test_that_stability_index_can_be_calculated(
     ).toPandas()
 
     df_stability.index = df_stability["attribute"]
-    assert assert_almost_equal(
-        df_stability.loc["A", cols_to_check_numerical],
+    assert_almost_equal(
+        df_stability.loc["A", cols_to_check_numerical].astype("float"),
         [0.132, 0.507, 0.162, 2.0, 0.0, 2.0, 1.4, 0.0],
         3,
     )
@@ -112,7 +113,7 @@ def test_that_existing_metric_can_be_used(
         existing_metric_path="unit_testing/stats/stability/df1_3",
     ).toPandas()
     df_stability.index = df_stability["attribute"]
-    assert assert_almost_equal(
+    assert_almost_equal(
         df_stability.loc["A", cols_to_check_numerical],
         [0.174, 0.451, 0.177, 2.0, 1.0, 2.0, 1.7, 0.0],
         3,
@@ -126,7 +127,7 @@ def test_that_binary_column_can_be_calculated(
         spark_session, *idfs_binary, binary_cols="A"
     ).toPandas()
     df_stability.index = df_stability["attribute"]
-    assert assert_almost_equal(
+    assert_almost_equal(
         df_stability.loc["A", cols_to_check_binary], [0.082, 0.6, 0.6, 1.0], 3
     )
 
@@ -138,7 +139,7 @@ def test_that_feature_stability_can_be_estimated(
         spark_session, attribute_stats, {"A": "A**2"}
     ).toPandas()
     df_stability.index = df_stability["feature_formula"]
-    assert assert_almost_equal(
+    assert_almost_equal(
         df_stability.loc["A**2", cols_to_check_si_estimation],
         [0.298, 0.603, 1.0, 0.0, 0.5, 1.3, 1.0, 0.0],
         3,
@@ -155,7 +156,7 @@ def test_that_different_weightages_can_be_used(
         metric_weightages={"mean": 0.7, "stddev": 0.3},
     ).toPandas()
     df_stability.index = df_stability["feature_formula"]
-    assert assert_almost_equal(
+    assert_almost_equal(
         df_stability.loc["A**2", cols_to_check_si_estimation],
         [0.298, 0.603, 1.0, 0.0, 0.7, 0.7, 1.0, 1.0],
         3,
