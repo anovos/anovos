@@ -1,6 +1,6 @@
 import pandas as pd
 import pytest
-from anovos.feature_recommender.feature_explorer_recommender import (
+from anovos.feature_recommender.feature_explorer import (
     list_all_industry,
     list_all_pair,
     list_all_usecase,

@@ -16,7 +16,7 @@ from anovos.feature_recommender.featrec_init import (
     model_fer,
     recommendation_data_prep,
 )
-from anovos.feature_recommender.feature_explorer_recommender import (
+from anovos.feature_recommender.feature_explorer import (
     list_usecase_by_industry,
     process_industry,
     process_usecase,
