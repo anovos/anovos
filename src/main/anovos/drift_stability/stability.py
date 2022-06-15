@@ -14,8 +14,8 @@ from anovos.data_ingest.data_ingest import (
     concatenate_dataset,
     delete_column,
 )
-from .validations import (
-    refactor_arguments,
+from .validations import refactor_arguments
+from .utils import (
     read_pre_computed_stats,
     compute_si,
     check_precomputed_scores,
@@ -502,8 +502,8 @@ def feature_stability_estimation(
             first_dev = sp.diff(transformation, attr)
             second_dev = sp.diff(transformation, attr, 2)
 
-            est_mean += s ** 2 * second_dev.subs(attribute_means) / 2
-            est_var += s ** 2 * (first_dev.subs(attribute_means)) ** 2
+            est_mean += s**2 * second_dev.subs(attribute_means) / 2
+            est_var += s**2 * (first_dev.subs(attribute_means)) ** 2
 
         transformation = sp.parse_expr(transformation)
         est_mean += transformation.subs(attribute_means)

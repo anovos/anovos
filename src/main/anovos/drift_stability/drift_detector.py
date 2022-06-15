@@ -11,7 +11,8 @@ from pyspark.sql import functions as F
 from anovos.data_transformer.transformers import attribute_binning
 from anovos.drift_stability.parsing import parse_numerical_columns, parse_method_type
 from .distances import hellinger, psi, js_divergence, ks
-from .validations import refactor_arguments, generate_source, generate_bin_frequencies
+from .validations import refactor_arguments
+from .utils import generate_source, generate_bin_frequencies
 from ..shared.utils import platform_root_path
 
 drift_function = {

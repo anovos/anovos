@@ -8,7 +8,7 @@ from anovos.drift_stability.stability import (
     stability_index_computation,
     feature_stability_estimation,
 )
-from anovos.drift_stability.validations import (
+from anovos.drift_stability.utils import (
     check_precomputed_scores,
     check_metric_weightages,
     check_threshold,
