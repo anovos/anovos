@@ -8,6 +8,11 @@ from anovos.drift_stability.stability import (
     stability_index_computation,
     feature_stability_estimation,
 )
+from anovos.drift_stability.validations import (
+    check_precomputed_scores,
+    check_metric_weightages,
+    check_threshold,
+)
 
 
 @pytest.fixture
@@ -83,6 +88,11 @@ def attribute_stats(spark_session, idfs_numerical):
         spark_session, metric_path, "csv", {"header": True, "inferSchema": True}
     )
     return attribute_stats
+
+
+@pytest.fixture
+def file_config():
+    return {"file_path": "/this_is_a_path", "file_type": "csv"}
 
 
 def test_that_stability_index_can_be_calculated(
@@ -161,3 +171,70 @@ def test_that_different_weightages_can_be_used(
         [0.298, 0.603, 1.0, 0.0, 0.7, 0.7, 1.0, 1.0],
         3,
     )
+
+
+def test_happy_path_check_precomputed_scores(spark_session, file_config):
+    idf = spark_session.createDataFrame(util.testing.makeDataFrame())
+    idfs = [idf, idf]
+    stats = {
+        "mean": [file_config, file_config],
+        "stddev": [file_config, file_config],
+        "kurtosis": [file_config, file_config],
+    }
+
+    check_precomputed_scores(stats, idfs)
+
+
+def test_that_unknown_stats_key_raises_error(spark_session, file_config):
+    idfs = spark_session.createDataFrame(util.testing.makeDataFrame())
+    stats = {
+        "typo": [file_config],
+    }
+    with pytest.raises(ValueError):
+        check_precomputed_scores(stats, idfs)
+
+
+def test_that_different_value_length_raises_error(spark_session, file_config):
+    idfs = spark_session.createDataFrame(util.testing.makeDataFrame())
+    stats = {
+        "mean": [file_config, file_config],
+        "stddev": [file_config],
+        "kurtosis": [file_config],
+    }
+    with pytest.raises(ValueError) as e:
+        check_precomputed_scores(stats, idfs)
+
+
+def test_that_unknown_config_raises_error(spark_session, file_config):
+    file_config = {"typo": "/this_is_a_path", "file_type": "csv"}
+    idfs = spark_session.createDataFrame(util.testing.makeDataFrame())
+    stats = {
+        "mean": [file_config, file_config],
+        "stddev": [file_config],
+        "kurtosis": [file_config],
+    }
+    with pytest.raises(ValueError) as e:
+        check_precomputed_scores(stats, idfs)
+
+
+def test_that_valid_metric_sum_gets_passed():
+    metric_weightages = {"mean": 0.2, "stddev": 0.5, "kurtosis": 0.3}
+    check_metric_weightages(metric_weightages)
+
+
+def test_that_invalid_weightage_sum_raises_error():
+    metric_weightages = {"mean": 0.2, "stddev": 0.5, "kurtosis": 0.33}
+    with pytest.raises(ValueError):
+        check_metric_weightages(metric_weightages)
+
+
+def test_that_threshold_gets_passed():
+    check_threshold(3)
+
+
+def test_that_invalid_threshold_raises_error():
+    with pytest.raises(ValueError):
+        check_threshold(5)
+
+    with pytest.raises(ValueError):
+        check_threshold(-1)
