@@ -14,7 +14,14 @@ from anovos.data_ingest.data_ingest import (
     concatenate_dataset,
     delete_column,
 )
-from .validations import refactor_arguments, read_pre_computed_stats, compute_si
+from .validations import (
+    refactor_arguments,
+    read_pre_computed_stats,
+    compute_si,
+    check_precomputed_scores,
+    check_metric_weightages,
+    check_threshold,
+)
 
 
 @refactor_arguments
@@ -193,6 +200,19 @@ def stability_index_computation(
         *_cv is coefficient of variation for each metric. *_si is stability index for each metric.
         stability_index is net weighted stability index based on the individual metrics' stability index.
     """
+
+    if isinstance(drop_cols, str):
+        drop_cols = [x.strip() for x in drop_cols.split("|")]
+    if isinstance(binary_cols, str):
+        binary_cols = [x.strip() for x in binary_cols.split("|")]
+    if isinstance(exclude_from_binary_cols, str):
+        exclude_from_binary_cols = [
+            x.strip() for x in exclude_from_binary_cols.split("|")
+        ]
+
+    check_precomputed_scores(stats, idfs)
+    check_metric_weightages(metric_weightages)
+    check_threshold(threshold)
 
     if existing_metric_path:
         existing_metric_df = spark.read.csv(
@@ -470,6 +490,8 @@ def feature_stability_estimation(
 
     """
 
+    check_metric_weightages(metric_weightages)
+
     def stats_estimation(attributes, transformation, mean, stddev):
         attribute_means = list(zip(attributes, mean))
         first_dev = []
@@ -480,8 +502,8 @@ def feature_stability_estimation(
             first_dev = sp.diff(transformation, attr)
             second_dev = sp.diff(transformation, attr, 2)
 
-            est_mean += s**2 * second_dev.subs(attribute_means) / 2
-            est_var += s**2 * (first_dev.subs(attribute_means)) ** 2
+            est_mean += s ** 2 * second_dev.subs(attribute_means) / 2
+            est_var += s ** 2 * (first_dev.subs(attribute_means)) ** 2
 
         transformation = sp.parse_expr(transformation)
         est_mean += transformation.subs(attribute_means)

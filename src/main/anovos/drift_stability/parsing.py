@@ -2,7 +2,7 @@ from anovos.shared.utils import attributeType_segregation
 import warnings
 
 
-def parse_columns(list_of_cols, idf, drop_cols=None):
+def parse_columns(list_of_cols, idfs, drop_cols=None):
     drop_cols = drop_cols or []
 
     if isinstance(list_of_cols, str):
@@ -23,21 +23,26 @@ def parse_columns(list_of_cols, idf, drop_cols=None):
         raise ValueError(
             f"Invalid input for column(s) in the function drift_statistics."
         )
-    if any(x not in idf.columns for x in list_of_cols):
-        invalid_cols = [x for x in list_of_cols if x not in idf.columns]
-        raise ValueError(
-            f"Invalid input for list_of_cols in the function drift_statistics. Invalid Column(s): {invalid_cols} not found in source dataframe."
-        )
+    if len(idfs) > 0:
+        for idf in idfs:
+            if any(x not in idf.columns for x in list_of_cols):
+                invalid_cols = [x for x in list_of_cols if x not in idf.columns]
+                raise ValueError(
+                    f"Invalid input for list_of_cols in the function drift_statistics. Invalid Column(s): {invalid_cols} not found in source dataframe."
+                )
 
     return list_of_cols
 
 
-def parse_numerical_columns(list_of_cols, idf, drop_cols=None):
-    num_cols = attributeType_segregation(idf)[0]
-    if list_of_cols == "all":
-        list_of_cols = num_cols
-
-    list_of_cols = parse_columns(list_of_cols, idf, drop_cols)
+def parse_numerical_columns(list_of_cols, idfs, drop_cols=None):
+    idfs = idfs or []
+    if not isinstance(idfs, list):
+        idfs = [idfs]
+    if len(idfs) > 0:
+        num_cols = attributeType_segregation(idfs[0])[0]
+        if list_of_cols == "all":
+            list_of_cols = num_cols
+    list_of_cols = parse_columns(list_of_cols, idfs, drop_cols)
 
     return list_of_cols
 
