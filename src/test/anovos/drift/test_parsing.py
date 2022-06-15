@@ -14,14 +14,14 @@ def default_df(spark_session):
 
 def test_that_all_returns_all_columns(default_df):
 
-    list_of_cols = parse_numerical_columns(list_of_cols="all", idf=default_df)
+    list_of_cols = parse_numerical_columns(list_of_cols="all", idfs=default_df)
 
     assert list_of_cols == ["A", "B", "C", "D"]
 
 
 def test_that_string_with_pipes_is_parsed(default_df):
 
-    list_of_cols = parse_columns(list_of_cols="A|B|C", idf=default_df)
+    list_of_cols = parse_columns(list_of_cols="A|B|C", idfs=[default_df])
 
     assert list_of_cols == ["A", "B", "C"]
 
@@ -29,13 +29,13 @@ def test_that_string_with_pipes_is_parsed(default_df):
 def test_that_unknown_column_raises_error(default_df):
 
     with pytest.raises(ValueError):
-        parse_columns(list_of_cols=["W"], idf=default_df)
+        parse_columns(list_of_cols=["W"], idfs=[default_df])
 
 
 def test_that_dropping_unselected_column_raises_warning(default_df):
 
     with pytest.warns(UserWarning):
-        parse_columns(list_of_cols=["A", "B"], idf=default_df, drop_cols=["C", "D"])
+        parse_columns(list_of_cols=["A", "B"], idfs=[default_df], drop_cols=["C", "D"])
 
 
 def test_that_all_methods_returns_all():
