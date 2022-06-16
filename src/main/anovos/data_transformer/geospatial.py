@@ -8,6 +8,7 @@ from .geo_utils import (
 )
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
+from loguru import logger
 
 
 def geo_format_latlon(
@@ -483,5 +484,79 @@ def location_distance(
 
     if output_mode == "replace":
         odf = odf.drop(*(list_of_cols_loc1 + list_of_cols_loc2))
+
+    return odf
+
+
+def geohash_precision_control(
+    idf, list_of_geohash, output_precision=8, km_max_error=None, output_mode="append"
+):
+
+    """
+    Parameters
+    ----------
+
+    idf
+        Input Dataframe.
+    list_of_geohash
+        List of columns in geohash format e.g., ["gh1","gh2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "gh1|gh2".
+    output_precision
+        Precision of the transformed geohash in the output dataframe. (Default value = 8)
+    km_max_error
+        Maximum permissible error in kilometers. If km_max_error is sprcified, output_precision
+        will be ignored and km_max_error will be mapped to an output_precision according to the
+        following dictionary: {2500: 1, 630: 2, 78: 3, 20: 4, 2.4: 5, 0.61: 6, 0.076: 7,
+        0.019: 8, 0.0024: 9, 0.00060: 10, 0.000074: 11}. (Default value = None)
+    output_mode
+        "replace", "append".
+        "replace" option replaces original columns with transformed column.
+        "append" option appends the transformed column to the input dataset
+        with postfix "_precision_<output_precision>". (Default value = "append")
+
+    Returns
+    -------
+    DataFrame
+    """
+
+    if isinstance(list_of_geohash, str):
+        list_of_geohash = [x.strip() for x in list_of_geohash.split("|")]
+
+    if any(x not in idf.columns for x in list_of_geohash):
+        raise TypeError("Invalid input for list_of_geohash")
+
+    error_precision_mapping = {
+        2500: 1,
+        630: 2,
+        78: 3,
+        20: 4,
+        2.4: 5,
+        0.61: 6,
+        0.076: 7,
+        0.019: 8,
+        0.0024: 9,
+        0.00060: 10,
+        0.000074: 11,
+    }
+    if km_max_error is not None:
+        output_precision = 12
+        for key, val in error_precision_mapping.items():
+            if km_max_error >= key:
+                output_precision = val
+                break
+    output_precision = int(output_precision)
+    logger.info(
+        "Precision of the output geohashes will be capped at "
+        + str(output_precision)
+        + "."
+    )
+    odf = idf
+    for i, geohash in enumerate(list_of_geohash):
+        if output_mode == "replace":
+            col_name = geohash
+        else:
+            col_name = geohash + "_precision_" + str(output_precision)
+        odf = odf.withColumn(col_name, F.substring(geohash, 1, output_precision))
 
     return odf
