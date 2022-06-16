@@ -4,13 +4,14 @@ from geopy import distance
 from scipy import spatial
 
 EARTH_RADIUS = 6371009
-UNIT_FACTOR = {"m": 1.0, "km":1000.0}
+UNIT_FACTOR = {"m": 1.0, "km": 1000.0}
+
 
 def to_latlon_decimal_degrees(loc, input_format, radius=EARTH_RADIUS):
     """
     Parameters
     ----------
-    
+
     loc
         Location to format.
         If input_format is "dd", [lat, lon] format is required.
@@ -22,7 +23,7 @@ def to_latlon_decimal_degrees(loc, input_format, radius=EARTH_RADIUS):
         "dd", "dms", "radian", "cartesian", "geohash".
     radius
         Radius of Earth. (Default value = EARTH_RADIUS)
-    
+
     Returns
     -------
     List
@@ -34,7 +35,7 @@ def to_latlon_decimal_degrees(loc, input_format, radius=EARTH_RADIUS):
         if any(i is None for i in loc):
             return None
     if isinstance(loc[0], (list, tuple)):
-        if any(i is None for i in loc[0]+loc[1]):
+        if any(i is None for i in loc[0] + loc[1]):
             return None
 
     if input_format == "dd":
@@ -44,8 +45,8 @@ def to_latlon_decimal_degrees(loc, input_format, radius=EARTH_RADIUS):
     elif input_format == "dms":
         # loc = [[d1,m1,s1], [d2,m2,s2]]
         d1, m1, s1, d2, m2, s2 = loc[0] + loc[1]
-        lat = d1 + float(m1)/60 + float(s1)/3600
-        lon = d2 + float(m2)/60 + float(s2)/3600
+        lat = d1 + float(m1) / 60 + float(s1) / 3600
+        lon = d2 + float(m2) / 60 + float(s2) / 3600
 
     elif input_format == "radian":
         # loc = [lat_radian, lon_radian]
@@ -65,33 +66,37 @@ def to_latlon_decimal_degrees(loc, input_format, radius=EARTH_RADIUS):
 
     return [lat, lon]
 
+
 def decimal_degrees_to_degrees_minutes_seconds(dd):
     """
     Parameters
     ----------
-    
+
     dd
         Float value in decimal degree.
-    
+
     Returns
     -------
     List
         [degree, minute, second]
-    
+
     """
     if dd is None:
         return [None, None, None]
     else:
-        minute,second = divmod(dd*3600,60)
-        degree,minute = divmod(minute,60)
+        minute, second = divmod(dd * 3600, 60)
+        degree, minute = divmod(minute, 60)
         return [degree, minute, second]
 
-def from_latlon_decimal_degrees(loc, output_format, radius=EARTH_RADIUS, geohash_precision=8):
+
+def from_latlon_decimal_degrees(
+    loc, output_format, radius=EARTH_RADIUS, geohash_precision=8
+):
 
     """
     Parameters
     ----------
-    
+
     loc
         Location to format with format [lat, lon].
     output_format
@@ -99,9 +104,9 @@ def from_latlon_decimal_degrees(loc, output_format, radius=EARTH_RADIUS, geohash
     radius
         Radius of Earth. (Default value = EARTH_RADIUS)
     geohash_precision
-        Precision of the resultant geohash. 
+        Precision of the resultant geohash.
         This argument is only used when output_format is "geohash". (Default value = 8)
-    
+
     Returns
     -------
     String if output_format is "geohash", list otherwise.
@@ -121,8 +126,10 @@ def from_latlon_decimal_degrees(loc, output_format, radius=EARTH_RADIUS, geohash
         return [lat, lon]
 
     elif output_format == "dms":
-        return [decimal_degrees_to_degrees_minutes_seconds(lat), 
-                decimal_degrees_to_degrees_minutes_seconds(lon)]
+        return [
+            decimal_degrees_to_degrees_minutes_seconds(lat),
+            decimal_degrees_to_degrees_minutes_seconds(lon),
+        ]
 
     elif output_format == "radian":
         if (lat is None) | (lon is None):
@@ -138,8 +145,8 @@ def from_latlon_decimal_degrees(loc, output_format, radius=EARTH_RADIUS, geohash
         else:
             lat_rad = radians(float(lat))
             lon_rad = radians(float(lon))
-            x = radius * cos(lat_rad) * cos(lon_rad); 
-            y = radius * cos(lat_rad) * sin(lon_rad); 
+            x = radius * cos(lat_rad) * cos(lon_rad)
+            y = radius * cos(lat_rad) * sin(lon_rad)
             z = radius * sin(lat_rad)
             return [x, y, z]
 
@@ -151,11 +158,11 @@ def from_latlon_decimal_degrees(loc, output_format, radius=EARTH_RADIUS, geohash
 
 
 def haversine_distance(loc1, loc2, loc_format, unit="m", radius=EARTH_RADIUS):
-    
+
     """
     Parameters
     ----------
-    
+
     loc1
         The first location.
         If loc_format is "dd", [lat, lon] format is required.
@@ -167,11 +174,11 @@ def haversine_distance(loc1, loc2, loc_format, unit="m", radius=EARTH_RADIUS):
     loc_format
         "dd", "radian".
     unit
-        "m", "km". 
+        "m", "km".
         Unit of the result. (Default value = "m")
     radius
         Radius of Earth. (Default value = EARTH_RADIUS)
-    
+
     Returns
     -------
     Float
@@ -182,32 +189,32 @@ def haversine_distance(loc1, loc2, loc_format, unit="m", radius=EARTH_RADIUS):
     if None in loc1 + loc2:
         return None
     if loc_format not in ["dd", "radian"]:
-        raise TypeError('Invalid input for loc_format')
+        raise TypeError("Invalid input for loc_format")
 
     lat1, lon1 = float(loc1[0]), float(loc1[1])
     lat2, lon2 = float(loc2[0]), float(loc2[1])
-    
+
     if loc_format == "dd":
         lat1, lon1 = radians(lat1), radians(lon1)
         lat2, lon2 = radians(lat2), radians(lon2)
-    
+
     dlon = lon2 - lon1
     dlat = lat2 - lat1
     a = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
     c = 2 * atan2(sqrt(a), sqrt(1 - a))
     distance = radius * c / UNIT_FACTOR[unit]
-    
+
     return distance
 
 
 def vincenty_distance(loc1, loc2, unit="m", ellipsoid="WGS-84"):
     """
-    Vincenty's formulae are two related iterative methods used in geodesy to calculate 
+    Vincenty's formulae are two related iterative methods used in geodesy to calculate
     the distance between two points on the surface of a spheroid.
-    
+
     Parameters
     ----------
-    
+
     loc1
         The first location. [lat, lon] format is required.
     loc2
@@ -219,39 +226,39 @@ def vincenty_distance(loc1, loc2, unit="m", ellipsoid="WGS-84"):
         "WGS-84", "GRS-80", "Airy (1830)", "Intl 1924", "Clarke (1880)", "GRS-67".
         The ellipsoidal model to use. For more information, please refer to geopy.distance.ELLIPSOIDS.
         (Default value = "WGS-84")
-    
+
     Returns
     -------
     Float
     """
-    
+
     if None in [loc1, loc2]:
         return None
     if None in loc1 + loc2:
         return None
-    
+
     loc_distance = distance.distance(loc1, loc2, ellipsoid=ellipsoid)
-    
-    if unit=="m":
+
+    if unit == "m":
         return loc_distance.m
     else:
         return loc_distance.km
-    
+
 
 def euclidean_distance(loc1, loc2):
     """
     The Euclidean distance between 2 lists loc1 and loc2, is defined as
     .. math::
        {\\|loc1-loc2\\|}_2
-    
+
     Parameters
     ----------
-    
+
     loc1
         The first location. [x1, y1, z1] format is required.
     loc2
         The second location. [x2, y2, z2] format is required.
-    
+
     Returns
     -------
     Float
@@ -260,10 +267,7 @@ def euclidean_distance(loc1, loc2):
         return None
     if None in loc1 + loc2:
         return None
-        
+
     # loc1 = [x1, y1, z1]; loc2 = [x2, y2, z2]
     euclidean_distance = spatial.distance.euclidean(loc1, loc2)
     return euclidean_distance
-
-
-
