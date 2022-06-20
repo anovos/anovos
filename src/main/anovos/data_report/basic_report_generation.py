@@ -2,6 +2,7 @@ import subprocess
 from pathlib import Path
 
 import datapane as dp
+import mlflow
 import pandas as pd
 import plotly.express as px
 
@@ -517,6 +518,8 @@ def anovos_basic_report(
         default_template[1],
         dp.Select(blocks=[tab1, tab2, tab3], type=dp.SelectType.TABS),
     ).save(ends_with(local_path) + "basic_report.html", open=True)
+
+    mlflow.log_artifact(local_path)
 
     if run_type == "emr":
         bash_cmd = (
