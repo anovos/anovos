@@ -44,14 +44,27 @@ def test_centroid(df, null_df, invalid_df):
     assert null_df.count() == 1000
     assert invalid_df.count() == 1000
 
+    assert df.collect()[0][0] == "1"
+    assert df.collect()[0][1] == "-82.32652528778522"
+    assert df.collect()[0][2] == "-126.64267115740057"
+    assert null_df.collect()[0][0] == "1"
+    assert null_df.collect()[0][1] == "-82.32652528778522"
+    assert null_df.collect()[0][2] == "-126.64267115740057"
+    assert invalid_df.collect()[0][0] == "1"
+    assert invalid_df.collect()[0][1] == "-82.32652528778522"
+    assert invalid_df.collect()[0][2] == "-126.64267115740057"
+
     assert odf.count() == 1000
     assert null_odf.count() == 811
     assert invalid_odf.count() == 549
 
+    assert odf.collect()[0][0] == "296"
     assert odf.collect()[0][1] == -27.637183976372057
     assert odf.collect()[0][2] == -120.569067380193
+    assert null_odf.collect()[0][0] == "296"
     assert null_odf.collect()[0][1] == -27.637183976372057
     assert null_odf.collect()[0][2] == -120.569067380193
+    assert invalid_odf.collect()[0][0] == "296"
     assert invalid_odf.collect()[0][1] == -27.637183976372057
     assert invalid_odf.collect()[0][2] == -120.569067380193
 
@@ -74,14 +87,27 @@ def test_weighted_centroid(df, null_df, invalid_df):
     assert null_df.count() == 1000
     assert invalid_df.count() == 1000
 
+    assert df.collect()[0][0] == "1"
+    assert df.collect()[0][1] == "-82.32652528778522"
+    assert df.collect()[0][2] == "-126.64267115740057"
+    assert null_df.collect()[0][0] == "1"
+    assert null_df.collect()[0][1] == "-82.32652528778522"
+    assert null_df.collect()[0][2] == "-126.64267115740057"
+    assert invalid_df.collect()[0][0] == "1"
+    assert invalid_df.collect()[0][1] == "-82.32652528778522"
+    assert invalid_df.collect()[0][2] == "-126.64267115740057"
+
     assert odf.count() == 1000
     assert null_odf.count() == 811
     assert invalid_odf.count() == 549
 
+    assert odf.collect()[0][0] == "296"
     assert odf.collect()[0][1] == -54.96660520402398
     assert odf.collect()[0][2] == -113.80808799888887
+    assert null_odf.collect()[0][0] == "296"
     assert null_odf.collect()[0][1] == -34.07695747993671
     assert null_odf.collect()[0][2] == -109.93653864023601
+    assert invalid_odf.collect()[0][0] == "296"
     assert invalid_odf.collect()[0][1] == -15.524187758097781
     assert invalid_odf.collect()[0][2] == -139.32366574495202
 
@@ -104,10 +130,23 @@ def test_rog_calculation(df, null_df, invalid_df):
     assert null_df.count() == 1000
     assert invalid_df.count() == 1000
 
+    assert df.collect()[0][0] == "1"
+    assert df.collect()[0][1] == "-82.32652528778522"
+    assert df.collect()[0][2] == "-126.64267115740057"
+    assert null_df.collect()[0][0] == "1"
+    assert null_df.collect()[0][1] == "-82.32652528778522"
+    assert null_df.collect()[0][2] == "-126.64267115740057"
+    assert invalid_df.collect()[0][0] == "1"
+    assert invalid_df.collect()[0][1] == "-82.32652528778522"
+    assert invalid_df.collect()[0][2] == "-126.64267115740057"
+
     assert odf.count() == 1000
     assert null_odf.count() == 811
     assert invalid_odf.count() == 549
 
+    assert odf.collect()[0][0] == "296"
     assert odf.collect()[0][1] == 0.17222900688648224
+    assert null_odf.collect()[0][0] == "296"
     assert null_odf.collect()[0][1] == 0.17222900688648224
+    assert invalid_odf.collect()[0][0] == "296"
     assert invalid_odf.collect()[0][1] == 0.17222900688648224
