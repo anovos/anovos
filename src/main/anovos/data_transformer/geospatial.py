@@ -32,9 +32,9 @@ def centroid(idf, lat_col, long_col, id_col=None):
     if long_col not in idf.columns:
         raise TypeError("Invalid input for long_col")
 
-    idf = recast_column(idf,
-                        list_of_cols=[lat_col, long_col],
-                        list_of_dtypes=['double', 'double'])
+    idf = recast_column(
+        idf, list_of_cols=[lat_col, long_col], list_of_dtypes=["double", "double"]
+    )
 
     invalid = False
     for x in idf.collect():
@@ -43,18 +43,24 @@ def centroid(idf, lat_col, long_col, id_col=None):
             break
 
     if invalid:
-        warnings.warn(
-            "Rows dropped due to invalid longitude and/or latitude values")
+        warnings.warn("Rows dropped due to invalid longitude and/or latitude values")
 
     idf = idf.withColumn("lat_null", idf[lat_col].contains("")).withColumn(
-        "long_null", idf[long_col].contains(""))
+        "long_null", idf[long_col].contains("")
+    )
 
-    idf = delete_column(idf.where((idf["lat_null"]) & (idf["long_null"])),
-                        ["lat_null", "long_null"])
+    idf = delete_column(
+        idf.where((idf["lat_null"]) & (idf["long_null"])), ["lat_null", "long_null"]
+    )
 
     out_of_range = False
     for x in idf.collect():
-        if x[lat_col] > 90 or x[lat_col] < -90 or x[long_col] > 180 or x[long_col] < -180:
+        if (
+            x[lat_col] > 90
+            or x[lat_col] < -90
+            or x[long_col] > 180
+            or x[long_col] < -180
+        ):
             out_of_range = True
             break
 
@@ -63,9 +69,10 @@ def centroid(idf, lat_col, long_col, id_col=None):
             "Rows dropped due to longitude and/or latitude values being out of the valid range"
         )
 
-    idf = idf.where(((idf[lat_col] <= 90) & (idf[lat_col] >= -90))
-                    & ((idf[long_col] <= 180)
-                       & (idf[long_col] >= -180)))
+    idf = idf.where(
+        ((idf[lat_col] <= 90) & (idf[lat_col] >= -90))
+        & ((idf[long_col] <= 180) & (idf[long_col] >= -180))
+    )
 
     def degree_to_radian(deg):
         return deg * pi / 180
@@ -153,9 +160,9 @@ def weighted_centroid(idf, id_col, lat_col, long_col):
     if long_col not in idf.columns:
         raise TypeError("Invalid input for long_col")
 
-    idf = recast_column(idf,
-                        list_of_cols=[lat_col, long_col],
-                        list_of_dtypes=['double', 'double'])
+    idf = recast_column(
+        idf, list_of_cols=[lat_col, long_col], list_of_dtypes=["double", "double"]
+    )
 
     invalid = False
     for x in idf.collect():
@@ -164,18 +171,24 @@ def weighted_centroid(idf, id_col, lat_col, long_col):
             break
 
     if invalid:
-        warnings.warn(
-            "Rows dropped due to invalid longitude and/or latitude values")
+        warnings.warn("Rows dropped due to invalid longitude and/or latitude values")
 
     idf = idf.withColumn("lat_null", idf[lat_col].contains("")).withColumn(
-        "long_null", idf[long_col].contains(""))
+        "long_null", idf[long_col].contains("")
+    )
 
-    idf = delete_column(idf.where((idf["lat_null"]) & (idf["long_null"])),
-                        ["lat_null", "long_null"])
+    idf = delete_column(
+        idf.where((idf["lat_null"]) & (idf["long_null"])), ["lat_null", "long_null"]
+    )
 
     out_of_range = False
     for x in idf.collect():
-        if x[lat_col] > 90 or x[lat_col] < -90 or x[long_col] > 180 or x[long_col] < -180:
+        if (
+            x[lat_col] > 90
+            or x[lat_col] < -90
+            or x[long_col] > 180
+            or x[long_col] < -180
+        ):
             out_of_range = True
             break
 
@@ -184,9 +197,10 @@ def weighted_centroid(idf, id_col, lat_col, long_col):
             "Rows dropped due to longitude and/or latitude values being out of the valid range"
         )
 
-    idf = idf.where(((idf[lat_col] <= 90) & (idf[lat_col] >= -90))
-                    & ((idf[long_col] <= 180)
-                       & (idf[long_col] >= -180)))
+    idf = idf.where(
+        ((idf[lat_col] <= 90) & (idf[lat_col] >= -90))
+        & ((idf[long_col] <= 180) & (idf[long_col] >= -180))
+    )
 
     def degree_to_radian(deg):
         return deg * pi / 180
@@ -279,9 +293,9 @@ def rog_calculation(idf, lat_col, long_col, id_col=None):
     if long_col not in idf.columns:
         raise TypeError("Invalid input for long_col")
 
-    idf = recast_column(idf,
-                        list_of_cols=[lat_col, long_col],
-                        list_of_dtypes=['double', 'double'])
+    idf = recast_column(
+        idf, list_of_cols=[lat_col, long_col], list_of_dtypes=["double", "double"]
+    )
 
     invalid = False
     for x in idf.collect():
@@ -290,18 +304,24 @@ def rog_calculation(idf, lat_col, long_col, id_col=None):
             break
 
     if invalid:
-        warnings.warn(
-            "Rows dropped due to invalid longitude and/or latitude values")
+        warnings.warn("Rows dropped due to invalid longitude and/or latitude values")
 
     idf = idf.withColumn("lat_null", idf[lat_col].contains("")).withColumn(
-        "long_null", idf[long_col].contains(""))
+        "long_null", idf[long_col].contains("")
+    )
 
-    idf = delete_column(idf.where((idf["lat_null"]) & (idf["long_null"])),
-                        ["lat_null", "long_null"])
+    idf = delete_column(
+        idf.where((idf["lat_null"]) & (idf["long_null"])), ["lat_null", "long_null"]
+    )
 
     out_of_range = False
     for x in idf.collect():
-        if x[lat_col] > 90 or x[lat_col] < -90 or x[long_col] > 180 or x[long_col] < -180:
+        if (
+            x[lat_col] > 90
+            or x[lat_col] < -90
+            or x[long_col] > 180
+            or x[long_col] < -180
+        ):
             out_of_range = True
             break
 
@@ -310,9 +330,10 @@ def rog_calculation(idf, lat_col, long_col, id_col=None):
             "Rows dropped due to longitude and/or latitude values being out of the valid range"
         )
 
-    idf = idf.where(((idf[lat_col] <= 90) & (idf[lat_col] >= -90))
-                    & ((idf[long_col] <= 180)
-                       & (idf[long_col] >= -180)))
+    idf = idf.where(
+        ((idf[lat_col] <= 90) & (idf[lat_col] >= -90))
+        & ((idf[long_col] <= 180) & (idf[long_col] >= -180))
+    )
 
     def getHaversineDist(lat1, lon1, lat2, lon2):
 

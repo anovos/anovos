@@ -3,7 +3,7 @@ from anovos.data_ingest.data_ingest import read_dataset
 from anovos.data_transformer.geospatial import (
     centroid,
     weighted_centroid,
-    rog_calculation
+    rog_calculation,
 )
 
 path = "./data/test_dataset/geo_data/sample_geo_data.csv"
@@ -18,27 +18,24 @@ def df(spark_session):
 
 @pytest.fixture
 def null_df(spark_session):
-    return read_dataset(spark_session, path_null, "csv", file_configs={"header": "True"})
+    return read_dataset(
+        spark_session, path_null, "csv", file_configs={"header": "True"}
+    )
 
 
 @pytest.fixture
 def invalid_df(spark_session):
-    return read_dataset(spark_session, path_invalid, "csv", file_configs={"header": "True"})
+    return read_dataset(
+        spark_session, path_invalid, "csv", file_configs={"header": "True"}
+    )
 
 
 def test_centroid(df, null_df, invalid_df):
-    odf = centroid(df,
-                   id_col="id",
-                   lat_col="latitude",
-                   long_col="longitude")
-    null_odf = centroid(null_df,
-                        id_col="id",
-                        lat_col="latitude",
-                        long_col="longitude")
-    invalid_odf = centroid(invalid_df,
-                           id_col="id",
-                           lat_col="latitude",
-                           long_col="longitude")
+    odf = centroid(df, id_col="id", lat_col="latitude", long_col="longitude")
+    null_odf = centroid(null_df, id_col="id", lat_col="latitude", long_col="longitude")
+    invalid_odf = centroid(
+        invalid_df, id_col="id", lat_col="latitude", long_col="longitude"
+    )
 
     assert df.count() == 1000
     assert null_df.count() == 1000
@@ -70,18 +67,13 @@ def test_centroid(df, null_df, invalid_df):
 
 
 def test_weighted_centroid(df, null_df, invalid_df):
-    odf = weighted_centroid(df,
-                            id_col="id",
-                            lat_col="latitude",
-                            long_col="longitude")
-    null_odf = weighted_centroid(null_df,
-                                 id_col="id",
-                                 lat_col="latitude",
-                                 long_col="longitude")
-    invalid_odf = weighted_centroid(invalid_df,
-                                    id_col="id",
-                                    lat_col="latitude",
-                                    long_col="longitude")
+    odf = weighted_centroid(df, id_col="id", lat_col="latitude", long_col="longitude")
+    null_odf = weighted_centroid(
+        null_df, id_col="id", lat_col="latitude", long_col="longitude"
+    )
+    invalid_odf = weighted_centroid(
+        invalid_df, id_col="id", lat_col="latitude", long_col="longitude"
+    )
 
     assert df.count() == 1000
     assert null_df.count() == 1000
@@ -113,18 +105,13 @@ def test_weighted_centroid(df, null_df, invalid_df):
 
 
 def test_rog_calculation(df, null_df, invalid_df):
-    odf = rog_calculation(df,
-                          id_col="id",
-                          lat_col="latitude",
-                          long_col="longitude")
-    null_odf = rog_calculation(null_df,
-                               id_col="id",
-                               lat_col="latitude",
-                               long_col="longitude")
-    invalid_odf = rog_calculation(invalid_df,
-                                  id_col="id",
-                                  lat_col="latitude",
-                                  long_col="longitude")
+    odf = rog_calculation(df, id_col="id", lat_col="latitude", long_col="longitude")
+    null_odf = rog_calculation(
+        null_df, id_col="id", lat_col="latitude", long_col="longitude"
+    )
+    invalid_odf = rog_calculation(
+        invalid_df, id_col="id", lat_col="latitude", long_col="longitude"
+    )
 
     assert df.count() == 1000
     assert null_df.count() == 1000
