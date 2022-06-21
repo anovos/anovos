@@ -94,14 +94,14 @@ def test_weighted_centroid(df, null_df, invalid_df):
     assert invalid_odf.count() == 549
 
     assert odf.collect()[0][0] == "296"
-    assert odf.collect()[0][1] == -54.96660520402398
-    assert odf.collect()[0][2] == -113.80808799888887
+    assert odf.collect()[0][1] == -54.96660520402393
+    assert odf.collect()[0][2] == -113.80808799888884
     assert null_odf.collect()[0][0] == "296"
-    assert null_odf.collect()[0][1] == -34.07695747993671
-    assert null_odf.collect()[0][2] == -109.93653864023601
+    assert null_odf.collect()[0][1] == -34.07695747993663
+    assert null_odf.collect()[0][2] == -109.93653864023595
     assert invalid_odf.collect()[0][0] == "296"
     assert invalid_odf.collect()[0][1] == -15.524187758097781
-    assert invalid_odf.collect()[0][2] == -139.32366574495202
+    assert invalid_odf.collect()[0][2] == -139.32366574495205
 
 
 def test_rog_calculation(df, null_df, invalid_df):
