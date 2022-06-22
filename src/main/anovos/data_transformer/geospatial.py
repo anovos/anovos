@@ -33,47 +33,37 @@ def centroid(idf, lat_col, long_col, id_col=None):
     if long_col not in idf.columns:
         raise TypeError("Invalid input for long_col")
 
+    if idf != idf.dropna(subset=(lat_col, long_col)):
+        warnings.warn(
+            "Rows dropped due to null value in longitude and/or latitude values"
+        )
+        idf = idf.dropna(subset=(lat_col, long_col))
+
     idf = recast_column(
         idf, list_of_cols=[lat_col, long_col], list_of_dtypes=["double", "double"]
     )
 
-    invalid = False
-    for x in idf.collect():
-        if x[lat_col] is None or x[long_col] is None:
-            invalid = True
-            break
-
-    if invalid:
-        warnings.warn("Rows dropped due to invalid longitude and/or latitude values")
-
-    idf = idf.withColumn("lat_null", idf[lat_col].contains("")).withColumn(
-        "long_null", idf[long_col].contains("")
-    )
-
-    idf = delete_column(
-        idf.where((idf["lat_null"]) & (idf["long_null"])), ["lat_null", "long_null"]
-    )
-
-    out_of_range = False
-    for x in idf.collect():
-        if (
-            x[lat_col] > 90
-            or x[lat_col] < -90
-            or x[long_col] > 180
-            or x[long_col] < -180
-        ):
-            out_of_range = True
-            break
-
-    if out_of_range:
+    if not idf.where(
+        (F.col(lat_col) > 90)
+        | (F.col(lat_col) < -90)
+        | (F.col(long_col) > 180)
+        | (F.col(long_col) < -180)
+    ).rdd.isEmpty():
         warnings.warn(
             "Rows dropped due to longitude and/or latitude values being out of the valid range"
         )
+        idf = idf.where(
+            (F.col(lat_col) <= 90)
+            & (F.col(lat_col) >= -90)
+            & (F.col(long_col) <= 180)
+            & (F.col(long_col) >= -180)
+        )
 
-    idf = idf.where(
-        ((idf[lat_col] <= 90) & (idf[lat_col] >= -90))
-        & ((idf[long_col] <= 180) & (idf[long_col] >= -180))
-    )
+    if idf.rdd.isEmpty():
+        warnings.warn(
+            "No reverse_geocoding Computation - No valid latitude/longitude row(s) to compute"
+        )
+        return idf
 
     def degree_to_radian(deg):
         return deg * pi / 180
@@ -161,47 +151,37 @@ def weighted_centroid(idf, id_col, lat_col, long_col):
     if long_col not in idf.columns:
         raise TypeError("Invalid input for long_col")
 
+    if idf != idf.dropna(subset=(lat_col, long_col)):
+        warnings.warn(
+            "Rows dropped due to null value in longitude and/or latitude values"
+        )
+        idf = idf.dropna(subset=(lat_col, long_col))
+
     idf = recast_column(
         idf, list_of_cols=[lat_col, long_col], list_of_dtypes=["double", "double"]
     )
 
-    invalid = False
-    for x in idf.collect():
-        if x[lat_col] is None or x[long_col] is None:
-            invalid = True
-            break
-
-    if invalid:
-        warnings.warn("Rows dropped due to invalid longitude and/or latitude values")
-
-    idf = idf.withColumn("lat_null", idf[lat_col].contains("")).withColumn(
-        "long_null", idf[long_col].contains("")
-    )
-
-    idf = delete_column(
-        idf.where((idf["lat_null"]) & (idf["long_null"])), ["lat_null", "long_null"]
-    )
-
-    out_of_range = False
-    for x in idf.collect():
-        if (
-            x[lat_col] > 90
-            or x[lat_col] < -90
-            or x[long_col] > 180
-            or x[long_col] < -180
-        ):
-            out_of_range = True
-            break
-
-    if out_of_range:
+    if not idf.where(
+        (F.col(lat_col) > 90)
+        | (F.col(lat_col) < -90)
+        | (F.col(long_col) > 180)
+        | (F.col(long_col) < -180)
+    ).rdd.isEmpty():
         warnings.warn(
             "Rows dropped due to longitude and/or latitude values being out of the valid range"
         )
+        idf = idf.where(
+            (F.col(lat_col) <= 90)
+            & (F.col(lat_col) >= -90)
+            & (F.col(long_col) <= 180)
+            & (F.col(long_col) >= -180)
+        )
 
-    idf = idf.where(
-        ((idf[lat_col] <= 90) & (idf[lat_col] >= -90))
-        & ((idf[long_col] <= 180) & (idf[long_col] >= -180))
-    )
+    if idf.rdd.isEmpty():
+        warnings.warn(
+            "No reverse_geocoding Computation - No valid latitude/longitude row(s) to compute"
+        )
+        return idf
 
     def degree_to_radian(deg):
         return deg * pi / 180
@@ -294,47 +274,37 @@ def rog_calculation(idf, lat_col, long_col, id_col=None):
     if long_col not in idf.columns:
         raise TypeError("Invalid input for long_col")
 
+    if idf != idf.dropna(subset=(lat_col, long_col)):
+        warnings.warn(
+            "Rows dropped due to null value in longitude and/or latitude values"
+        )
+        idf = idf.dropna(subset=(lat_col, long_col))
+
     idf = recast_column(
         idf, list_of_cols=[lat_col, long_col], list_of_dtypes=["double", "double"]
     )
 
-    invalid = False
-    for x in idf.collect():
-        if x[lat_col] is None or x[long_col] is None:
-            invalid = True
-            break
-
-    if invalid:
-        warnings.warn("Rows dropped due to invalid longitude and/or latitude values")
-
-    idf = idf.withColumn("lat_null", idf[lat_col].contains("")).withColumn(
-        "long_null", idf[long_col].contains("")
-    )
-
-    idf = delete_column(
-        idf.where((idf["lat_null"]) & (idf["long_null"])), ["lat_null", "long_null"]
-    )
-
-    out_of_range = False
-    for x in idf.collect():
-        if (
-            x[lat_col] > 90
-            or x[lat_col] < -90
-            or x[long_col] > 180
-            or x[long_col] < -180
-        ):
-            out_of_range = True
-            break
-
-    if out_of_range:
+    if not idf.where(
+        (F.col(lat_col) > 90)
+        | (F.col(lat_col) < -90)
+        | (F.col(long_col) > 180)
+        | (F.col(long_col) < -180)
+    ).rdd.isEmpty():
         warnings.warn(
             "Rows dropped due to longitude and/or latitude values being out of the valid range"
         )
+        idf = idf.where(
+            (F.col(lat_col) <= 90)
+            & (F.col(lat_col) >= -90)
+            & (F.col(long_col) <= 180)
+            & (F.col(long_col) >= -180)
+        )
 
-    idf = idf.where(
-        ((idf[lat_col] <= 90) & (idf[lat_col] >= -90))
-        & ((idf[long_col] <= 180) & (idf[long_col] >= -180))
-    )
+    if idf.rdd.isEmpty():
+        warnings.warn(
+            "No reverse_geocoding Computation - No valid latitude/longitude row(s) to compute"
+        )
+        return idf
 
     def getHaversineDist(lat1, lon1, lat2, lon2):
 
@@ -412,47 +382,37 @@ def reverse_geocoding(idf, lat_col, long_col):
     if long_col not in idf.columns:
         raise TypeError("Invalid input for long_col")
 
+    if idf != idf.dropna(subset=(lat_col, long_col)):
+        warnings.warn(
+            "Rows dropped due to null value in longitude and/or latitude values"
+        )
+        idf = idf.dropna(subset=(lat_col, long_col))
+
     idf = recast_column(
         idf, list_of_cols=[lat_col, long_col], list_of_dtypes=["double", "double"]
     )
 
-    invalid = False
-    for x in idf.collect():
-        if x[lat_col] is None or x[long_col] is None:
-            invalid = True
-            break
-
-    if invalid:
-        warnings.warn("Rows dropped due to invalid longitude and/or latitude values")
-
-    idf = idf.withColumn("lat_null", idf[lat_col].contains("")).withColumn(
-        "long_null", idf[long_col].contains("")
-    )
-
-    idf = delete_column(
-        idf.where((idf["lat_null"]) & (idf["long_null"])), ["lat_null", "long_null"]
-    )
-
-    out_of_range = False
-    for x in idf.collect():
-        if (
-            x[lat_col] > 90
-            or x[lat_col] < -90
-            or x[long_col] > 180
-            or x[long_col] < -180
-        ):
-            out_of_range = True
-            break
-
-    if out_of_range:
+    if not idf.where(
+        (F.col(lat_col) > 90)
+        | (F.col(lat_col) < -90)
+        | (F.col(long_col) > 180)
+        | (F.col(long_col) < -180)
+    ).rdd.isEmpty():
         warnings.warn(
             "Rows dropped due to longitude and/or latitude values being out of the valid range"
         )
+        idf = idf.where(
+            (F.col(lat_col) <= 90)
+            & (F.col(lat_col) >= -90)
+            & (F.col(long_col) <= 180)
+            & (F.col(long_col) >= -180)
+        )
 
-    idf = idf.where(
-        ((idf[lat_col] <= 90) & (idf[lat_col] >= -90))
-        & ((idf[long_col] <= 180) & (idf[long_col] >= -180))
-    )
+    if idf.rdd.isEmpty():
+        warnings.warn(
+            "No reverse_geocoding Computation - No valid latitude/longitude row(s) to compute"
+        )
+        return idf
 
     def reverse_geocode(lat, long):
         coordinates = (float(lat), float(long))
