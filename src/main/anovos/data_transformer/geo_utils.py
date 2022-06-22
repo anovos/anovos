@@ -2,6 +2,9 @@ from math import sin, cos, atan2, asin, radians, degrees, sqrt
 import pygeohash as pgh
 from geopy import distance
 from scipy import spatial
+import numbers
+from pyspark.sql import functions as F
+from pyspark.sql import types as T
 
 EARTH_RADIUS = 6371009
 UNIT_FACTOR = {"m": 1.0, "km": 1000.0}
@@ -271,3 +274,116 @@ def euclidean_distance(loc1, loc2):
     # loc1 = [x1, y1, z1]; loc2 = [x2, y2, z2]
     euclidean_distance = spatial.distance.euclidean(loc1, loc2)
     return euclidean_distance
+
+
+def point_in_polygon(x, y, polygon):
+    """
+    Check whether (x,y) is inside a polygon
+
+    Parameters
+    ----------
+
+    x
+        x coordinate/longitude
+    y
+        y coordinate/latitude
+    polygon
+        polygon consists of list of (x,y)s
+
+    Returns
+    -------
+    Integer
+        1 if (x, y) is in the polygon and 0 otherwise.
+    """
+    if (x is None) | (y is None):
+        return None
+
+    counter = 0
+    for index, poly in enumerate(polygon):
+        # Check whether x and y are numbers
+        if not isinstance(x, numbers.Number) or not isinstance(y, numbers.Number):
+            raise TypeError("Input coordinate should be of type float")
+
+        # Check whether poly is list of (x,y)s
+        if any([not isinstance(i, numbers.Number) for point in poly for i in point]):
+            # Polygon from multipolygon have extra bracket - that need to be removed
+            poly = poly[0]
+            if any(
+                [not isinstance(i, numbers.Number) for point in poly for i in point]
+            ):
+                raise TypeError("The polygon is invalid")
+
+        # Check if point is a vertex
+        test_vertex = (x, y) if isinstance(poly[0], tuple) else [x, y]
+        if test_vertex in poly:
+            return 1
+
+        # Check if point is on a boundary
+        poly_length = len(poly)
+        for i in range(poly_length):
+            if i == 0:
+                p1 = poly[0]
+                p2 = poly[1]
+            else:
+                p1 = poly[i - 1]
+                p2 = poly[i]
+            if (
+                p1[1] == p2[1]
+                and p1[1] == y
+                and (min(p1[0], p2[0]) <= x <= max(p1[0], p2[0]))
+            ):
+                return 1
+            if (
+                p1[0] == p2[0]
+                and p1[0] == x
+                and (min(p1[1], p2[1]) <= y <= max(p1[1], p2[1]))
+            ):
+                return 1
+
+        # Check if the point is inside
+        p1x, p1y = poly[0]
+        for i in range(1, poly_length + 1):
+            p2x, p2y = poly[i % poly_length]
+            if y > min(p1y, p2y):
+                if y <= max(p1y, p2y):
+                    if x <= max(p1x, p2x):
+                        if p1y != p2y:
+                            xints = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
+                            if p1x == p2x or x <= xints:
+                                counter += 1
+            p1x, p1y = p2x, p2y
+
+    if counter % 2 == 0:
+        return 0
+    else:
+        return 1
+
+
+def point_in_polygons(x, y, polygon_list):
+    """
+    Check whether (x,y) is inside any polygon in a list of polygon
+
+    Parameters
+    ----------
+
+    x
+        x coordinate/longitude
+    y
+        y coordinate/latitude
+    polygon_list
+        A list of polygon(s)
+
+    Returns
+    -------
+    Integer
+        1 if (x, y) is inside any polygon of polygon_list and 0 otherwise.
+    """
+
+    flag_list = []
+    for polygon in polygon_list:
+        flag_list.append(point_in_polygon(x, y, polygon))
+    return int(any(flag_list))
+
+
+def f_point_in_polygons(polygon_list):
+    return F.udf(lambda x, y: point_in_polygons(x, y, polygon_list), T.IntegerType())

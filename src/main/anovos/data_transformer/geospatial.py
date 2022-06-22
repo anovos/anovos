@@ -5,6 +5,7 @@ from .geo_utils import (
     haversine_distance,
     vincenty_distance,
     euclidean_distance,
+    f_point_in_polygons,
 )
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
@@ -558,5 +559,96 @@ def geohash_precision_control(
         else:
             col_name = geohash + "_precision_" + str(output_precision)
         odf = odf.withColumn(col_name, F.substring(geohash, 1, output_precision))
+
+    return odf
+
+
+def location_in_polygon(
+    idf, list_of_lat, list_of_lon, polygon, result_prefix=None, output_mode="replace"
+):
+    """
+    To check whether each lat-lon pair is insided of a GeoJSON object
+
+    Parameters
+    ----------
+
+    idf
+        Input Dataframe.
+    list_of_lat
+        List of columns representing latitude e.g., ["lat1","lat2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "lat1|lat2".
+    list_of_lon
+        List of columns representing longitude e.g., ["lon1","lon2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "lon1|lon2".
+        list_of_lon must have the same length as list_of_lat such that i-th element of
+        list_of_lat and i-th element of list_of_lon form a lat-lon pair to format.
+    polygon
+        The following types of GeoJSON objects are supported: Polygon, MultiPolygon, Feature or FeatureCollection
+    output_format
+        "dd", "dms", "radian", "cartesian", "geohash".
+        "cartesian" represents the Cartesian coordinates of the point in three-dimensional space.
+        "geohash" represents geocoded locations.
+    result_prefix
+        List of prefixes for the newly generated column names.
+        Alternatively, prefixes can be specified in a string format,
+        where different prefixes are separated by pipe delimiter “|” e.g., "pf1|pf2".
+        result_prefix must have the same length as list_of_lat and list_of_lon.
+        If it is None, <lat>_<lon> will be used for each lat-lon pair.
+        For example, list_of_lat is "lat1|lat2", list_of_lon is "L1|L2".
+        Case 1: result_prefix = "L1|L2".
+            New columns will be named as L1_in_poly and L2_in_poly.
+        Calse 2: result_prefix = None.
+             New columns will be named as lat1_lon1_in_poly and lat2_lon2_in_poly.
+        (Default value = None)
+    output_mode
+        "replace", "append".
+        "replace" option appends transformed column to the input dataset and removes the original ones.
+        "append" option appends transformed column to the input dataset.
+        (Default value = "append")
+
+    Returns
+    -------
+    DataFrame
+    """
+
+    if isinstance(list_of_lat, str):
+        list_of_lat = [x.strip() for x in list_of_lat.split("|")]
+    if isinstance(list_of_lon, str):
+        list_of_lon = [x.strip() for x in list_of_lon.split("|")]
+    if isinstance(result_prefix, str):
+        result_prefix = [x.strip() for x in result_prefix.split("|")]
+
+    if any(x not in idf.columns for x in list_of_lat + list_of_lon):
+        raise TypeError("Invalid input for list_of_lat or list_of_lon")
+
+    if len(list_of_lat) != len(list_of_lon):
+        raise TypeError("list_of_lat and list_of_lon must have the same length")
+    if (result_prefix is not None) and (len(result_prefix) != len(list_of_lat)):
+        raise TypeError(
+            "result_prefix must have the same length as list_of_lat and list_of_lon"
+        )
+
+    if "coordinates" in polygon.keys():
+        polygon_list = polygon["coordinates"]
+        if polygon["type"] == "Polygon":
+            polygon_list = [polygon_list]
+    elif "geometry" in polygon.keys():
+        polygon_list = [polygon["geometry"]["coordinates"]]
+    elif "features" in polygon.keys():
+        polygon_list = []
+        for poly in polygon["features"]:
+            polygon_list.append(poly["geometry"]["coordinates"])
+
+    odf = idf
+    for i, (lat, lon) in enumerate(zip(list_of_lat, list_of_lon)):
+        col = result_prefix[i] if result_prefix is not None else (lat + "_" + lon)
+        odf = odf.withColumn(
+            col + "_in_poly", f_point_in_polygons(polygon_list)(F.col(lon), F.col(lat))
+        )
+
+        if output_mode == "replace":
+            odf = odf.drop(lat, lon)
 
     return odf
