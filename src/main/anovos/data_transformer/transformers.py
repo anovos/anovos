@@ -81,8 +81,6 @@ if "arm64" not in platform.version().lower():
     from tensorflow.keras.models import load_model, Model
     from tensorflow.keras.layers import Dense, Input, BatchNormalization, LeakyReLU
 
-from ..shared.utils import platform_root_path
-
 
 def attribute_binning(
     spark,
