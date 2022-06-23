@@ -1,9 +1,15 @@
 from os import path
 
+import platform
+
 from setuptools import setup
 
 DIR = path.dirname(path.abspath(__file__))
-INSTALL_PACKAGES = open(path.join(DIR, "requirements.txt")).read().splitlines()
+
+if 'arm64' not in platform.version().lower():
+    INSTALL_PACKAGES = open(path.join(DIR, "requirements.txt")).read().splitlines()
+else:
+    INSTALL_PACKAGES = open(path.join(DIR, "requirements_m1.txt")).read().splitlines()
 
 with open(path.join(DIR, "README.md")) as f:
     README = f.read()

@@ -27,6 +27,7 @@ import copy
 import os
 import pickle
 import random
+import platform
 import subprocess
 import tempfile
 import warnings
@@ -43,7 +44,6 @@ if version.parse(pyspark.__version__) < version.parse("3.0.0"):
 else:
     from pyspark.ml.feature import OneHotEncoder
 
-import tensorflow
 from pyspark.ml.evaluation import RegressionEvaluator
 from pyspark.ml.feature import (
     PCA,
@@ -64,19 +64,24 @@ from pyspark.sql import functions as F
 from pyspark.sql import types as T
 from pyspark.sql.window import Window
 
-# enable_iterative_imputer is prequisite for importing IterativeImputer
-# check the following issue for more details https://github.com/scikit-learn/scikit-learn/issues/16833
-from sklearn.experimental import enable_iterative_imputer  # noqa
-from sklearn.impute import IterativeImputer, KNNImputer
-from tensorflow.keras.layers import BatchNormalization, Dense, Input, LeakyReLU
-from tensorflow.keras.models import Model, load_model
-
 from anovos.data_analyzer.stats_generator import (
     missingCount_computation,
     uniqueCount_computation,
 )
 from anovos.data_ingest.data_ingest import read_dataset, recast_column
 from anovos.shared.utils import ends_with, attributeType_segregation, get_dtype
+
+# enable_iterative_imputer is prequisite for importing IterativeImputer
+# check the following issue for more details https://github.com/scikit-learn/scikit-learn/issues/16833
+from sklearn.experimental import enable_iterative_imputer  # noqa
+from sklearn.impute import KNNImputer, IterativeImputer
+
+if "arm64" not in platform.version().lower():
+    import tensorflow
+    from tensorflow.keras.models import load_model, Model
+    from tensorflow.keras.layers import Dense, Input, BatchNormalization, LeakyReLU
+
+from ..shared.utils import platform_root_path
 
 
 def attribute_binning(
@@ -2495,6 +2500,11 @@ def autoencoder_latentFeatures(
         Dataframe with Latent Features
 
     """
+    if "arm64" in platform.version().lower():
+        warnings.warn(
+            "This function is currently not supported for ARM64 - Mac M1 Machine"
+        )
+        return idf
 
     num_cols = attributeType_segregation(idf)[0]
     if list_of_cols == "all":
