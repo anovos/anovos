@@ -4,7 +4,7 @@ from pyspark.sql import functions as F
 from pyspark.sql import types as T
 from math import sin, cos, sqrt, atan2, pi, radians
 import reverse_geocoder as rg
-from anovos.data_ingest.data_ingest import recast_column, delete_column
+from anovos.data_ingest.data_ingest import recast_column
 
 
 def centroid(idf, lat_col, long_col, id_col=None):
@@ -33,15 +33,15 @@ def centroid(idf, lat_col, long_col, id_col=None):
     if long_col not in idf.columns:
         raise TypeError("Invalid input for long_col")
 
+    idf = recast_column(
+        idf, list_of_cols=[lat_col, long_col], list_of_dtypes=["double", "double"]
+    )
+
     if idf != idf.dropna(subset=(lat_col, long_col)):
         warnings.warn(
             "Rows dropped due to null value in longitude and/or latitude values"
         )
         idf = idf.dropna(subset=(lat_col, long_col))
-
-    idf = recast_column(
-        idf, list_of_cols=[lat_col, long_col], list_of_dtypes=["double", "double"]
-    )
 
     if not idf.where(
         (F.col(lat_col) > 90)
@@ -151,15 +151,15 @@ def weighted_centroid(idf, id_col, lat_col, long_col):
     if long_col not in idf.columns:
         raise TypeError("Invalid input for long_col")
 
+    idf = recast_column(
+        idf, list_of_cols=[lat_col, long_col], list_of_dtypes=["double", "double"]
+    )
+
     if idf != idf.dropna(subset=(lat_col, long_col)):
         warnings.warn(
             "Rows dropped due to null value in longitude and/or latitude values"
         )
         idf = idf.dropna(subset=(lat_col, long_col))
-
-    idf = recast_column(
-        idf, list_of_cols=[lat_col, long_col], list_of_dtypes=["double", "double"]
-    )
 
     if not idf.where(
         (F.col(lat_col) > 90)
@@ -274,15 +274,15 @@ def rog_calculation(idf, lat_col, long_col, id_col=None):
     if long_col not in idf.columns:
         raise TypeError("Invalid input for long_col")
 
+    idf = recast_column(
+        idf, list_of_cols=[lat_col, long_col], list_of_dtypes=["double", "double"]
+    )
+
     if idf != idf.dropna(subset=(lat_col, long_col)):
         warnings.warn(
             "Rows dropped due to null value in longitude and/or latitude values"
         )
         idf = idf.dropna(subset=(lat_col, long_col))
-
-    idf = recast_column(
-        idf, list_of_cols=[lat_col, long_col], list_of_dtypes=["double", "double"]
-    )
 
     if not idf.where(
         (F.col(lat_col) > 90)
@@ -382,15 +382,15 @@ def reverse_geocoding(idf, lat_col, long_col):
     if long_col not in idf.columns:
         raise TypeError("Invalid input for long_col")
 
+    idf = recast_column(
+        idf, list_of_cols=[lat_col, long_col], list_of_dtypes=["double", "double"]
+    )
+
     if idf != idf.dropna(subset=(lat_col, long_col)):
         warnings.warn(
             "Rows dropped due to null value in longitude and/or latitude values"
         )
         idf = idf.dropna(subset=(lat_col, long_col))
-
-    idf = recast_column(
-        idf, list_of_cols=[lat_col, long_col], list_of_dtypes=["double", "double"]
-    )
 
     if not idf.where(
         (F.col(lat_col) > 90)
