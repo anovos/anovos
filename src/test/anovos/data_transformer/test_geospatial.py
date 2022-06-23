@@ -4,6 +4,7 @@ from anovos.data_transformer.geospatial import (
     centroid,
     weighted_centroid,
     rog_calculation,
+    reverse_geocode,
 )
 
 path = "./data/test_dataset/geo_data/sample_geo_data.csv"
@@ -137,3 +138,34 @@ def test_rog_calculation(df, null_df, invalid_df):
     assert round(null_odf.collect()[0][1], 2) == 0.17
     assert int(invalid_odf.collect()[0][0]) == 296
     assert round(invalid_odf.collect()[0][1], 2) == 0.17
+
+
+def test_reverse_geocoding(df, null_df, invalid_df):
+    odf = reverse_geocode(df, lat_col="latitude", long_col="longitude")
+    null_odf = reverse_geocode(null_df, lat_col="latitude", long_col="longitude")
+    invalid_odf = reverse_geocode(invalid_df, lat_col="latitude", long_col="longitude")
+
+    assert df.count() == 1000
+    assert null_df.count() == 1000
+    assert invalid_df.count() == 1000
+
+    assert int(df.collect()[0][0]) == 1
+    assert int(float(df.collect()[0][1])) == -82
+    assert int(float(df.collect()[0][2])) == -126
+    assert int(null_df.collect()[0][0]) == 1
+    assert int(float(null_df.collect()[0][1])) == -82
+    assert int(float(null_df.collect()[0][2])) == -126
+    assert int(invalid_df.collect()[0][0]) == 1
+    assert int(float(invalid_df.collect()[0][1])) == -82
+    assert int(float(invalid_df.collect()[0][2])) == -126
+
+    assert odf.count() == 1000
+    assert null_odf.count() == 811
+    assert invalid_odf.count() == 549
+
+    assert int(odf.collect()[0][0]) == -82
+    assert int(odf.collect()[0][1], 2) == -126
+    assert int(null_odf.collect()[0][0]) == -82
+    assert int(null_odf.collect()[0][1], 2) == -126
+    assert int(invalid_odf.collect()[0][0]) == -82
+    assert int(invalid_odf.collect()[0][1], 2) == -126
