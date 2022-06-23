@@ -4,7 +4,7 @@ from anovos.data_transformer.geospatial import (
     centroid,
     weighted_centroid,
     rog_calculation,
-    reverse_geocode,
+    reverse_geocoding,
 )
 
 path = "./data/test_dataset/geo_data/sample_geo_data.csv"
