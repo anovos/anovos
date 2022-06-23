@@ -141,9 +141,11 @@ def test_rog_calculation(df, null_df, invalid_df):
 
 
 def test_reverse_geocoding(df, null_df, invalid_df):
-    odf = reverse_geocode(df, lat_col="latitude", long_col="longitude")
-    null_odf = reverse_geocode(null_df, lat_col="latitude", long_col="longitude")
-    invalid_odf = reverse_geocode(invalid_df, lat_col="latitude", long_col="longitude")
+    odf = reverse_geocoding(df, lat_col="latitude", long_col="longitude")
+    null_odf = reverse_geocoding(null_df, lat_col="latitude", long_col="longitude")
+    invalid_odf = reverse_geocoding(
+        invalid_df, lat_col="latitude", long_col="longitude"
+    )
 
     assert df.count() == 1000
     assert null_df.count() == 1000
@@ -164,8 +166,8 @@ def test_reverse_geocoding(df, null_df, invalid_df):
     assert invalid_odf.count() == 549
 
     assert int(odf.collect()[0][0]) == -82
-    assert int(odf.collect()[0][1], 2) == -126
+    assert int(odf.collect()[0][1]) == -126
     assert int(null_odf.collect()[0][0]) == -82
-    assert int(null_odf.collect()[0][1], 2) == -126
+    assert int(null_odf.collect()[0][1]) == -126
     assert int(invalid_odf.collect()[0][0]) == -82
-    assert int(invalid_odf.collect()[0][1], 2) == -126
+    assert int(invalid_odf.collect()[0][1]) == -126
