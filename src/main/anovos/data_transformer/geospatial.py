@@ -18,7 +18,7 @@ def geo_format_latlon(
     list_of_lon,
     input_format,
     output_format,
-    result_prefix=None,
+    result_prefix=[],
     geohash_precision=8,
     radius=EARTH_RADIUS,
     output_mode="append",
@@ -55,18 +55,18 @@ def geo_format_latlon(
         Alternatively, prefixes can be specified in a string format,
         where different prefixes are separated by pipe delimiter “|” e.g., "pf1|pf2".
         result_prefix must have the same length as list_of_lat and list_of_lon.
-        If it is None, <lat>_<lon> will be used for each lat-lon pair.
+        If it is empty, <lat>_<lon> will be used for each lat-lon pair.
         For example, list_of_lat is "lat1|lat2", list_of_lon is "L1|L2".
         Case 1: result_prefix = "L1|L2".
-            If output_format is "dd", "dms" or "radian", new columns added will be
+            If output_format is "dd", "dms" or "radian", new columns will be named as
             L1_lat_<output_format>, L1_lon_<output_format>, L2_lat_<output_format>, L2_lon_<output_format>.
-            If output_format is "cartesian", new columns added will be
+            If output_format is "cartesian", new columns will be named as
             L1_x, L1_y, L1_z, L2_x, L2_y, L2_z.
-            If output_format is "geohash", new columns added will be
+            If output_format is "geohash", new columns will be named as
             L1_geohash and L2_geohash.
-        Calse 2: result_prefix = None.
+        Case 2: result_prefix = [].
             The "L1" and "L2" in above column names will be replaced by "lat1_lon1" and "lat2_lon2".
-        (Default value = None)
+        (Default value = [])
     geohash_precision
         Precision of the resultant geohash.
         This argument is only used when output_format is "geohash". (Default value = 8)
@@ -101,9 +101,9 @@ def geo_format_latlon(
 
     if len(list_of_lat) != len(list_of_lon):
         raise TypeError("list_of_lat and list_of_lon must have the same length")
-    if len(result_prefix) != len(list_of_lat):
+    if result_prefix and (len(result_prefix) != len(list_of_lat)):
         raise TypeError(
-            "result_prefix must have the same length as list_of_lat and list_of_lon"
+            "result_prefix must have the same length as list_of_lat and list_of_lon if it is not empty"
         )
 
     f_to_latlon_dd = F.udf(
@@ -125,7 +125,7 @@ def geo_format_latlon(
 
     odf = idf
     for i, (lat, lon) in enumerate(zip(list_of_lat, list_of_lon)):
-        col = result_prefix[i] if result_prefix is not None else (lat + "_" + lon)
+        col = result_prefix[i] if result_prefix else (lat + "_" + lon)
 
         odf = odf.withColumn(col + "_temp", F.array(lat, lon)).withColumn(
             col + "_" + output_format, f_from_latlon_dd(f_to_latlon_dd(col + "_temp"))
@@ -164,7 +164,7 @@ def geo_format_cartesian(
     list_of_y,
     list_of_z,
     output_format,
-    result_prefix=None,
+    result_prefix=[],
     geohash_precision=8,
     radius=EARTH_RADIUS,
     output_mode="append",
@@ -190,9 +190,9 @@ def geo_format_cartesian(
 
     if len(set([len(list_of_x), len(list_of_y), len(list_of_z)])) != 1:
         raise TypeError("list_of_x, list_of_y and list_of_z must have the same length")
-    if len(result_prefix) != len(list_of_x):
+    if result_prefix and (len(result_prefix) != len(list_of_x)):
         raise TypeError(
-            "result_prefix must have the same length as list_of_x, list_of_y and list_of_y"
+            "result_prefix must have the same length as list_of_x, list_of_y and list_of_y if it is not empty"
         )
 
     f_to_latlon_dd = F.udf(
@@ -214,7 +214,7 @@ def geo_format_cartesian(
 
     odf = idf
     for i, (x, y, z) in enumerate(zip(list_of_x, list_of_y, list_of_z)):
-        col = result_prefix[i] if result_prefix is not None else (x + "_" + y + "_" + z)
+        col = result_prefix[i] if result_prefix else (x + "_" + y + "_" + z)
 
         odf = odf.withColumn(col + "_temp", F.array(x, y, z)).withColumn(
             col + "_" + output_format, f_from_latlon_dd(f_to_latlon_dd(col + "_temp"))
@@ -243,7 +243,7 @@ def geo_format_geohash(
     idf,
     list_of_geohash,
     output_format,
-    result_prefix=None,
+    result_prefix=[],
     geohash_precision=8,
     radius=EARTH_RADIUS,
     output_mode="append",
@@ -263,8 +263,10 @@ def geo_format_geohash(
     if output_format not in format_list:
         raise TypeError("Invalid input for output_format")
 
-    if len(result_prefix) != len(list_of_geohash):
-        raise TypeError("result_prefix must have the same length as list_of_geohash")
+    if result_prefix and (len(result_prefix) != len(list_of_geohash)):
+        raise TypeError(
+            "result_prefix must have the same length as list_of_geohash if it is not empty"
+        )
 
     f_to_latlon_dd = F.udf(
         lambda loc: to_latlon_decimal_degrees(loc, "geohash", radius),
@@ -283,7 +285,7 @@ def geo_format_geohash(
 
     odf = idf
     for i, geohash in enumerate(list_of_geohash):
-        col = result_prefix[i] if result_prefix is not None else geohash
+        col = result_prefix[i] if result_prefix else geohash
 
         odf = odf.withColumn(
             col + "_" + output_format, f_from_latlon_dd(f_to_latlon_dd(geohash))
@@ -319,7 +321,7 @@ def location_distance(
     list_of_cols_loc1,
     list_of_cols_loc2,
     loc_format="dd",
-    result_prefix=None,
+    result_prefix="",
     distance_type="haversine",
     unit="m",
     radius=EARTH_RADIUS,
@@ -343,6 +345,14 @@ def location_distance(
         where different column names are separated by pipe delimiter “|” e.g., "lat2|lon2".
     loc_format
         "dd", "dms", "radian", "cartesian", "geohash". (Default value = "dd")
+    result_prefix
+        Prefix for the newly generated column. It must be a string or a list with one element.
+        If it is empty, <list_of_cols_loc1 joined by '_'>_<list_of_cols_loc2 joined by '_'>
+        will be used as the prefix.
+        For example, list_of_cols_loc1 is "lat1|lon1", list_of_lon is "lat2|lon2".
+        Case 1: result_prefix = "L1_L2": the new column will be named as L1_L2_distance.
+        Case 2: result_prefix = []: the new column will be named as lat1_lon1_lat2_lon2_distance.
+        (Default value = '')
     distance_type
         "vincenty", "haversine", "euclidean". (Default value = "haversine")
         "vincenty" option calculates the distance between two points on the surface of a spheroid.
@@ -370,6 +380,14 @@ def location_distance(
         list_of_cols_loc1 = [x.strip() for x in list_of_cols_loc1.split("|")]
     if isinstance(list_of_cols_loc2, str):
         list_of_cols_loc2 = [x.strip() for x in list_of_cols_loc2.split("|")]
+
+    if isinstance(result_prefix, list):
+        if len(result_prefix) > 1:
+            raise TypeError(
+                "If result_prefix is a list, it can contain maximally 1 element"
+            )
+        elif len(result_prefix) == 1:
+            result_prefix = result_prefix[0]
 
     if any(i not in idf.columns for i in list_of_cols_loc1 + list_of_cols_loc2):
         raise TypeError("Invalid input for list_of_cols_loc1 or list_of_cols_loc2")
@@ -476,11 +494,11 @@ def location_distance(
 
     col_prefix = (
         result_prefix
-        if result_prefix is not None
+        if result_prefix
         else "_".join(list_of_cols_loc1) + "_" + "_".join(list_of_cols_loc2)
     )
     odf = idf.withColumn(
-        col_prefix + "_" + "distance", f_compute_distance("temp_loc1", "temp_loc2")
+        col_prefix + "_distance", f_compute_distance("temp_loc1", "temp_loc2")
     ).drop("temp_loc1", "temp_loc2")
 
     if output_mode == "replace":
@@ -564,7 +582,7 @@ def geohash_precision_control(
 
 
 def location_in_polygon(
-    idf, list_of_lat, list_of_lon, polygon, result_prefix=None, output_mode="replace"
+    idf, list_of_lat, list_of_lon, polygon, result_prefix=[], output_mode="replace"
 ):
     """
     To check whether each lat-lon pair is insided of a GeoJSON object
@@ -595,13 +613,13 @@ def location_in_polygon(
         Alternatively, prefixes can be specified in a string format,
         where different prefixes are separated by pipe delimiter “|” e.g., "pf1|pf2".
         result_prefix must have the same length as list_of_lat and list_of_lon.
-        If it is None, <lat>_<lon> will be used for each lat-lon pair.
-        For example, list_of_lat is "lat1|lat2", list_of_lon is "L1|L2".
+        If it is empty, <lat>_<lon> will be used for each lat-lon pair.
+        For example, list_of_lat is "lat1|lat2", list_of_lon is "lon1|lon2".
         Case 1: result_prefix = "L1|L2".
             New columns will be named as L1_in_poly and L2_in_poly.
-        Calse 2: result_prefix = None.
-             New columns will be named as lat1_lon1_in_poly and lat2_lon2_in_poly.
-        (Default value = None)
+        Calse 2: result_prefix = [].
+            New columns will be named as lat1_lon1_in_poly and lat2_lon2_in_poly.
+        (Default value = [])
     output_mode
         "replace", "append".
         "replace" option appends transformed column to the input dataset and removes the original ones.
@@ -625,9 +643,9 @@ def location_in_polygon(
 
     if len(list_of_lat) != len(list_of_lon):
         raise TypeError("list_of_lat and list_of_lon must have the same length")
-    if (result_prefix is not None) and (len(result_prefix) != len(list_of_lat)):
+    if result_prefix and (len(result_prefix) != len(list_of_lat)):
         raise TypeError(
-            "result_prefix must have the same length as list_of_lat and list_of_lon"
+            "result_prefix must have the same length as list_of_lat and list_of_lon if it is not empty"
         )
 
     if "coordinates" in polygon.keys():
@@ -643,7 +661,7 @@ def location_in_polygon(
 
     odf = idf
     for i, (lat, lon) in enumerate(zip(list_of_lat, list_of_lon)):
-        col = result_prefix[i] if result_prefix is not None else (lat + "_" + lon)
+        col = result_prefix[i] if result_prefix else (lat + "_" + lon)
         odf = odf.withColumn(
             col + "_in_poly", f_point_in_polygons(polygon_list)(F.col(lon), F.col(lat))
         )
