@@ -12,6 +12,7 @@ loguru==0.6.0
 pyaml==21.10.1
 boto3
 cython
+pygeohash
 s3path
 s3fs
 pybind11
