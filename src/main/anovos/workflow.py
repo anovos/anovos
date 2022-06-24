@@ -7,8 +7,10 @@ from loguru import logger
 
 from anovos.data_analyzer import association_evaluator, quality_checker, stats_generator
 from anovos.data_analyzer.ts_analyzer import ts_analyzer
+from anovos.data_analyzer.geospatial_analyzer import geospatial_autodetection
 from anovos.data_ingest import data_ingest
 from anovos.data_ingest.ts_auto_detection import ts_preprocess
+from anovos.data_ingest.geo_auto_detection import ll_gh_cols
 from anovos.data_report import report_preprocessing
 from anovos.data_report.basic_report_generation import anovos_basic_report
 from anovos.data_report.report_generation import anovos_report
@@ -16,6 +18,16 @@ from anovos.data_report.report_preprocessing import save_stats
 from anovos.data_transformer import transformers
 from anovos.drift import detector as ddetector
 from anovos.shared.spark import spark
+
+mapbox_list = [
+    "open-street-map",
+    "white-bg",
+    "carto-positron",
+    "carto-darkmatter",
+    "stamen-terrain",
+    "stamen-toner",
+    "stamen-watercolor",
+]
 
 
 def ETL(args):
@@ -211,6 +223,46 @@ def main(all_configs, run_type):
                 )
             continue
 
+        if (key == "geospatial_analyzer") & (args is not None):
+
+            start = timeit.default_timer()
+
+            auto_detection_analyzer_flag = args.get("auto_detection_analyzer", False)
+            id_col = args.get("id_col", None)
+            max_analysis_records = args.get("max_analysis_records", None)
+            top_geo_records = args.get("top_geo_records", None)
+            max_cluster = args.get("max_cluster", None)
+            eps = args.get("eps", None)
+            min_samples = args.get("min_samples", None)
+            try:
+                global_map_box_val = mapbox_list.index(
+                    args.get("global_map_box_val", None)
+                )
+            except:
+                global_map_box_val = 0
+
+            if auto_detection_analyzer_flag:
+                start = timeit.default_timer()
+
+                lat_cols, long_cols, gh_cols = geospatial_autodetection(
+                    df,
+                    id_col=id_col,
+                    master_path=report_input_path,
+                    max_records=max_analysis_records,
+                    top_geo_records=top_geo_records,
+                    max_cluster=max_cluster,
+                    eps=eps,
+                    min_samples=min_samples,
+                    global_map_box_val=global_map_box_val,
+                )
+
+                end = timeit.default_timer()
+                logger.info(
+                    f"{key}, auto_detection_geospatial: execution time (in secs) ={round(end - start, 4)}"
+                )
+
+            continue
+
         if (
             (key == "anovos_basic_report")
             & (args is not None)
@@ -218,10 +270,7 @@ def main(all_configs, run_type):
         ):
             start = timeit.default_timer()
             anovos_basic_report(
-                spark,
-                df,
-                **args.get("report_args", {}),
-                run_type=run_type,
+                spark, df, **args.get("report_args", {}), run_type=run_type,
             )
             end = timeit.default_timer()
             logger.info(
@@ -510,7 +559,24 @@ def main(all_configs, run_type):
                     analysis_level = timeseries_analyzer.get("analysis_level", None)
                 else:
                     analysis_level = None
-                anovos_report(**args, run_type=run_type, output_type=analysis_level)
+
+                geospatial_analyzer = all_configs.get("geospatial_analyzer", None)
+                if geospatial_analyzer:
+                    max_analysis_records = geospatial_analyzer.get(
+                        "max_analysis_records", None
+                    )
+                    top_geo_records = geospatial_analyzer.get("top_geo_records", None)
+
+                anovos_report(
+                    **args,
+                    run_type=run_type,
+                    output_type=analysis_level,
+                    lat_cols=lat_cols,
+                    long_cols=long_cols,
+                    gh_cols=gh_cols,
+                    max_records=max_analysis_records,
+                    top_geo_records=top_geo_records,
+                )
                 end = timeit.default_timer()
                 logger.info(
                     f"{key}, full_report: execution time (in secs) ={round(end - start, 4)}"
