@@ -1,12 +1,6 @@
-name: Push to Branch
+name: Pull Request
 
 on:
-  push:
-    branches-ignore:
-      - main
-    paths:
-      - 'src/**'
-      - 'requirements.txt'
   pull_request:
     branches:
       - main
