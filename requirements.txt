@@ -24,3 +24,4 @@ tensorflow
 soupsieve
 statsmodels==0.13.2
 sentence_transformers
+geohash2
