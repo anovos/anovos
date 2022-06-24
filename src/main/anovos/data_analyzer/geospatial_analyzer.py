@@ -87,7 +87,7 @@ def zoom_center(
     Must be passed (lons & lats) or lonlats.
     Temporary solution awaiting official implementation, see:
     https://github.com/plotly/plotly.js/issues/3434
-    
+
     Parameters
     --------
     lons: tuple, optional, longitude component of each location
@@ -99,7 +99,7 @@ def zoom_center(
         raises `NotImplementedError` if other is passed
     width_to_height: float, expected ratio of final graph's with to height,
         used to select the constrained axis.
-    
+
     Returns
     --------
     zoom: float, from 1 to 20

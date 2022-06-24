@@ -270,7 +270,10 @@ def main(all_configs, run_type):
         ):
             start = timeit.default_timer()
             anovos_basic_report(
-                spark, df, **args.get("report_args", {}), run_type=run_type,
+                spark,
+                df,
+                **args.get("report_args", {}),
+                run_type=run_type,
             )
             end = timeit.default_timer()
             logger.info(
