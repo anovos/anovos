@@ -20,47 +20,47 @@ input_dataset:
     list_of_cols: ['age','education_num']
     list_of_dtypes: ['float','float']
 
-concatenate_dataset:
-  method: name
-  dataset1:
-    read_dataset:
-      file_path: "data/income_dataset/parquet"
-      file_type: parquet
-    delete_column: ['logfnl']
-    select_column: null
-    rename_column:
-      list_of_cols: ['marital-status','education-num']
-      list_of_newcols: ['marital_status','education_num']
-    recast_column:
-      list_of_cols: ['age','education_num']
-      list_of_dtypes: ['float','float']
+# concatenate_dataset:
+#   method: name
+#   dataset1:
+#     read_dataset:
+#       file_path: "data/income_dataset/parquet"
+#       file_type: parquet
+#     delete_column: ['logfnl']
+#     select_column: null
+#     rename_column:
+#       list_of_cols: ['marital-status','education-num']
+#       list_of_newcols: ['marital_status','education_num']
+#     recast_column:
+#       list_of_cols: ['age','education_num']
+#       list_of_dtypes: ['float','float']
 
-  dataset2:
-    read_dataset:
-      file_path: "data/income_dataset/parquet"
-      file_type: parquet
-    delete_column: ['logfnl']
-    select_column: null
-    rename_column:
-      list_of_cols: ['marital-status','education-num']
-      list_of_newcols: ['marital_status','education_num']
-    recast_column:
-      list_of_cols: ['age','education_num']
-      list_of_dtypes: ['float','float']
+#   dataset2:
+#     read_dataset:
+#       file_path: "data/income_dataset/parquet"
+#       file_type: parquet
+#     delete_column: ['logfnl']
+#     select_column: null
+#     rename_column:
+#       list_of_cols: ['marital-status','education-num']
+#       list_of_newcols: ['marital_status','education_num']
+#     recast_column:
+#       list_of_cols: ['age','education_num']
+#       list_of_dtypes: ['float','float']
 
-join_dataset:
-  join_cols: ifa
-  join_type: inner
-  dataset1:
-    read_dataset:
-      file_path: "data/income_dataset/join"
-      file_type: avro
-    delete_column: null
-    select_column: null
-    rename_column:
-      list_of_cols: "age|workclass"
-      list_of_newcols: "dupl_age|dupl_workclass"
-    recast_column: null
+# join_dataset:
+#   join_cols: ifa
+#   join_type: inner
+#   dataset1:
+#     read_dataset:
+#       file_path: "data/income_dataset/join"
+#       file_type: avro
+#     delete_column: null
+#     select_column: null
+#     rename_column:
+#       list_of_cols: "age|workclass"
+#       list_of_newcols: "dupl_age|dupl_workclass"
+#     recast_column: null
 
 timeseries_analyzer:
   auto_detection: True
@@ -69,6 +69,17 @@ timeseries_analyzer:
   inspection: True
   analysis_level: 'daily'
   max_days: 3600
+
+
+geospatial_analyzer:
+  auto_detection_analyzer: True
+  id_col: 'ifa'
+  max_analysis_records: 100000
+  top_geo_records: 100
+  max_cluster: 20
+  eps: 0.6
+  min_samples: 25
+  global_map_box_val: 'open-street-map'
 
 anovos_basic_report:
   basic_report: False
@@ -309,7 +320,7 @@ report_preprocessing:
     event_label: '>50K'
     bin_method: equal_frequency
     bin_size: 10
-    drift_detector: True
+    drift_detector: False
     outlier_charts: False
     source_path: "NA"
 

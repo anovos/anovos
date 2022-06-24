@@ -70,6 +70,16 @@ timeseries_analyzer:
   analysis_level: 'daily'
   max_days: 3600
 
+geospatial_analyzer:
+  auto_detection_analyzer: True
+  id_col: 'ifa'
+  max_analysis_records: 100000
+  top_geo_records: 100
+  max_cluster: 20
+  eps: 0.6
+  min_samples: 25
+  global_map_box_val: 'carto-positron'
+
 anovos_basic_report:
   basic_report: False
   report_args:
