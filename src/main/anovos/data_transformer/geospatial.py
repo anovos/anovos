@@ -6,6 +6,7 @@ from .geo_utils import (
     vincenty_distance,
     euclidean_distance,
     f_point_in_polygons,
+    f_point_in_country_approx,
 )
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
@@ -582,10 +583,10 @@ def geohash_precision_control(
 
 
 def location_in_polygon(
-    idf, list_of_lat, list_of_lon, polygon, result_prefix=[], output_mode="replace"
+    idf, list_of_lat, list_of_lon, polygon, result_prefix=[], output_mode="append"
 ):
     """
-    To check whether each lat-lon pair is insided of a GeoJSON object
+    To check whether each lat-lon pair is insided a GeoJSON object
 
     Parameters
     ----------
@@ -604,10 +605,6 @@ def location_in_polygon(
         list_of_lat and i-th element of list_of_lon form a lat-lon pair to format.
     polygon
         The following types of GeoJSON objects are supported: Polygon, MultiPolygon, Feature or FeatureCollection
-    output_format
-        "dd", "dms", "radian", "cartesian", "geohash".
-        "cartesian" represents the Cartesian coordinates of the point in three-dimensional space.
-        "geohash" represents geocoded locations.
     result_prefix
         List of prefixes for the newly generated column names.
         Alternatively, prefixes can be specified in a string format,
@@ -665,6 +662,159 @@ def location_in_polygon(
         odf = odf.withColumn(
             col + "_in_poly", f_point_in_polygons(polygon_list)(F.col(lon), F.col(lat))
         )
+
+        if output_mode == "replace":
+            odf = odf.drop(lat, lon)
+
+    return odf
+
+
+def location_in_country(
+    spark,
+    idf,
+    list_of_lat,
+    list_of_lon,
+    country,
+    method_type="approx",
+    result_prefix=[],
+    output_mode="append",
+):
+    """
+    To check whether each lat-lon pair is insided a country.
+
+    Parameters
+    ----------
+
+    idf
+        Input Dataframe.
+    list_of_lat
+        List of columns representing latitude e.g., ["lat1","lat2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "lat1|lat2".
+    list_of_lon
+        List of columns representing longitude e.g., ["lon1","lon2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "lon1|lon2".
+        list_of_lon must have the same length as list_of_lat such that i-th element of
+        list_of_lat and i-th element of list_of_lon form a lat-lon pair to format.
+    country
+        The Alpha-2 country code.
+    method_type
+        "approx", "exact".
+        "approx" uses the bounding box of a country to estimate whether a location is inside the country
+        "exact" uses the shapefile of a country to calculate whether a location is inside the country
+    result_prefix
+        List of prefixes for the newly generated column names.
+        Alternatively, prefixes can be specified in a string format,
+        where different prefixes are separated by pipe delimiter “|” e.g., "pf1|pf2".
+        result_prefix must have the same length as list_of_lat and list_of_lon.
+        If it is empty, <lat>_<lon> will be used for each lat-lon pair.
+        For example, list_of_lat is "lat1|lat2", list_of_lon is "lon1|lon2".
+        Case 1: result_prefix = "L1|L2", country="US"
+            New columns will be named as L1_in_US and L2_in_US.
+        Calse 2: result_prefix = [], country="US"
+            New columns will be named as lat1_lon1_in_US and lat2_lon2_in_US.
+        (Default value = [])
+    output_mode
+        "replace", "append".
+        "replace" option appends transformed column to the input dataset and removes the original ones.
+        "append" option appends transformed column to the input dataset.
+        (Default value = "append")
+
+    Returns
+    -------
+    DataFrame
+    """
+
+    if isinstance(list_of_lat, str):
+        list_of_lat = [x.strip() for x in list_of_lat.split("|")]
+    if isinstance(list_of_lon, str):
+        list_of_lon = [x.strip() for x in list_of_lon.split("|")]
+    if isinstance(result_prefix, str):
+        result_prefix = [x.strip() for x in result_prefix.split("|")]
+
+    if any(x not in idf.columns for x in list_of_lat + list_of_lon):
+        raise TypeError("Invalid input for list_of_lat or list_of_lon")
+
+    if len(list_of_lat) != len(list_of_lon):
+        raise TypeError("list_of_lat and list_of_lon must have the same length")
+    if result_prefix and (len(result_prefix) != len(list_of_lat)):
+        raise TypeError(
+            "result_prefix must have the same length as list_of_lat and list_of_lon if it is not empty"
+        )
+    if method_type not in ("approx", "exact"):
+        raise TypeError("Invalid input for method_type.")
+
+    if method_type == "exact":
+        country_shapefile_path = "./country_polygons.geojson"
+
+        def zip_feats(x, y):
+            """zipping two features (in list form) elementwise"""
+            return zip(x, y)
+
+        f_zip_feats = F.udf(
+            zip_feats,
+            T.ArrayType(
+                T.StructType(
+                    [
+                        T.StructField("first", T.StringType()),
+                        T.StructField(
+                            "second",
+                            T.ArrayType(
+                                T.ArrayType(T.ArrayType(T.ArrayType(T.DoubleType())))
+                            ),
+                        ),
+                    ]
+                )
+            ),
+        )
+
+        geo_data = spark.read.json(country_shapefile_path, multiLine=True).withColumn(
+            "tmp",
+            f_zip_feats("features.properties.ISO_A2", "features.geometry.coordinates"),
+        )
+        polygon_list = (
+            geo_data.select(F.explode(F.col("tmp")).alias("country_coord"))
+            .withColumn("country_code", F.col("country_coord").getItem("first"))
+            .withColumn("coordinates", F.col("country_coord").getItem("second"))
+            .where(F.col("country_code") == country)
+            .select("coordinates")
+            .rdd.map(lambda x: x[0])
+            .collect()[0]
+        )
+        print("No. of polygon: " + str(len(polygon_list)))
+
+        min_lon, min_lat = polygon_list[0][0][0]
+        max_lon, max_lat = polygon_list[0][0][0]
+        for polygon in polygon_list:
+            exterior = polygon[0]
+            for loc in exterior:
+                if loc[0] < min_lon:
+                    min_lon = loc[0]
+                elif loc[0] > max_lon:
+                    max_lon = loc[0]
+
+                if loc[1] < min_lat:
+                    min_lat = loc[1]
+                elif loc[1] > max_lat:
+                    max_lat = loc[1]
+
+    odf = idf
+    for i, (lat, lon) in enumerate(zip(list_of_lat, list_of_lon)):
+        col = result_prefix[i] if result_prefix else (lat + "_" + lon)
+
+        if method_type == "exact":
+            odf = odf.withColumn(
+                col + "_in_" + country + "_exact",
+                f_point_in_polygons(
+                    polygon_list, [min_lon, min_lat], [max_lon, max_lat]
+                )(F.col(lon), F.col(lat)),
+            )
+        else:
+            odf = odf.withColumn(
+                col + "_in_" + country + "_approx",
+                f_point_in_country_approx(F.col(lat), F.col(lon), F.lit(country)),
+            )
 
         if output_mode == "replace":
             odf = odf.drop(lat, lon)
