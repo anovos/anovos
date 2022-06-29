@@ -1,3 +1,4 @@
+import contextlib
 import copy
 import subprocess
 import timeit
@@ -39,16 +40,20 @@ def ETL(args):
     return df
 
 
-def save(data, write_configs, folder_name, reread=False, run_id=None):
+def save(data, write_configs, folder_name, reread=False, mlflow_config: dict = None):
     if write_configs:
         if "file_path" not in write_configs:
             raise TypeError("file path missing for writing data")
 
         write = copy.deepcopy(write_configs)
+
+        run_id = mlflow_config.get("run_id", "") if mlflow_config is not None else ""
+
         write["file_path"] = write["file_path"] + "/" + folder_name + "/" + str(run_id)
         data_ingest.write_dataset(data, **write)
 
-        mlflow.log_artifacts(write["file_path"])
+        if mlflow_config is not None:
+            mlflow.log_artifacts(write["file_path"])
 
         if reread:
             read = copy.deepcopy(write)
@@ -121,12 +126,20 @@ def stats_args(all_configs, func):
 
 def main(all_configs, run_type):
 
-    mlflow.set_tracking_uri("http://127.0.0.1:8889")
-    mlflow.set_experiment("Anovos Income Data Set")
-    run_id = uuid.uuid4()
+    mlflow_config = all_configs.get("mlflow", None)
 
-    with mlflow.start_run():
-        mlflow.set_tag("run-id", str(run_id))
+    if mlflow_config is not None:
+        mlflow.set_tracking_uri(mlflow_config["tracking_uri"])
+        mlflow.set_experiment(mlflow_config["experiment"])
+
+    mlflow_run = (
+        mlflow.start_run() if mlflow_config is not None else contextlib.suppress()
+    )
+
+    with mlflow_run:
+        mlflow_config["run_id"] = (
+            mlflow_run.info.run_id if mlflow_config is not None else None
+        )
         start_main = timeit.default_timer()
         df = ETL(all_configs.get("input_dataset"))
 
@@ -158,6 +171,7 @@ def main(all_configs, run_type):
                     write_intermediate,
                     folder_name="data_ingest/concatenate_dataset",
                     reread=True,
+                    mlflow_config=mlflow_config,
                 )
                 end = timeit.default_timer()
                 logger.info(
@@ -183,6 +197,7 @@ def main(all_configs, run_type):
                     write_intermediate,
                     folder_name="data_ingest/join_dataset",
                     reread=True,
+                    mlflow_config=mlflow_config,
                 )
                 end = timeit.default_timer()
                 logger.info(
@@ -238,11 +253,13 @@ def main(all_configs, run_type):
                 & args.get("basic_report", False)
             ):
                 start = timeit.default_timer()
+
                 anovos_basic_report(
                     spark,
                     df,
                     **args.get("report_args", {}),
                     run_type=run_type,
+                    mlflow_config=mlflow_config,
                 )
                 end = timeit.default_timer()
                 logger.info(
@@ -269,6 +286,7 @@ def main(all_configs, run_type):
                                 m,
                                 reread=True,
                                 run_type=run_type,
+                                mlflow_config=mlflow_config,
                             ).show(100)
                         else:
                             save(
@@ -548,14 +566,20 @@ def main(all_configs, run_type):
                         **args,
                         run_type=run_type,
                         output_type=analysis_level,
-                        run_id=run_id,
+                        mlflow_config=mlflow_config,
                     )
                     end = timeit.default_timer()
                     logger.info(
                         f"{key}, full_report: execution time (in secs) ={round(end - start, 4)}"
                     )
 
-        save(df, write_main, folder_name="final_dataset", reread=False, run_id=run_id)
+        save(
+            df,
+            write_main,
+            folder_name="final_dataset",
+            reread=False,
+            mlflow_config=mlflow_config,
+        )
 
 
 def run(config_path, run_type):

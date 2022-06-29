@@ -1,7 +1,0 @@
-attribute,lower_outliers,upper_outliers
-hours-per-week,0,1005
-fnlwgt,0,1100
-capital-gain,0,1908
-education_num,0,0
-capital-loss,0,1519
-age,0,118

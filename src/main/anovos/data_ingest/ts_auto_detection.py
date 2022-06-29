@@ -23,6 +23,7 @@ import warnings
 from pathlib import Path
 
 import dateutil.parser
+import mlflow
 import numpy as np
 import pandas as pd
 import pyspark
@@ -713,6 +714,8 @@ def ts_preprocess(spark, idf, id_col, output_path, tz_offset="local", run_type="
     )
 
     f.to_csv(ends_with(local_path) + "ts_cols_stats.csv", index=False)
+
+    mlflow.log_artifact(ends_with(local_path) + "ts_cols_stats.csv")
 
     if run_type == "emr":
         bash_cmd = (

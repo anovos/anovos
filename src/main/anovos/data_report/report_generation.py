@@ -3177,7 +3177,7 @@ def anovos_report(
     run_type="local",
     final_report_path=".",
     output_type=None,
-    run_id=None,
+    mlflow_config: dict = None,
 ):
     """
 
@@ -3516,7 +3516,13 @@ def anovos_report(
         else:
             final_tabs_list.append(i)
     if run_type in ("local", "databricks"):
-        report_run_path = ends_with(final_report_path) + str(run_id) + "/"
+        run_id = (
+            mlflow_config["run_id"]
+            if mlflow_config is not None and mlflow_config["track_reports"]
+            else ""
+        )
+
+        report_run_path = ends_with(final_report_path) + run_id + "/"
         dp.Report(
             default_template[0],
             default_template[1],

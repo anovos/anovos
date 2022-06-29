@@ -1,0 +1,122 @@
+#input_dataset: ETL configurations of main dataset.
+#input_dataset can be renamed but need to change the name in main script as well
+#keys of input_dataset are function names (cannot be renamed) & values are function arguments (value can be null to skip except for read_dataset)
+#delete_column/select_column: arguments can be in front or under as list_of_cols
+#list_of_cols: list or string with multiple columns separated by | (refer doc string for further details)
+input_dataset:
+  read_dataset:
+    file_path: "/Users/matzep/Workspaces/inlinity/mobilewalla/anovos/examples/data/income_dataset/csv"
+    file_type: csv
+    file_configs:
+      header: True
+      delimiter: ","
+      inferSchema: True
+  delete_column: ['logfnl']
+  select_column: null
+  rename_column:
+    list_of_cols: ['marital-status','education-num']
+    list_of_newcols: ['marital_status','education_num']
+  recast_column:
+    list_of_cols: ['age','education_num']
+    list_of_dtypes: ['float','float']
+
+transformers:
+  numerical_mathops:
+    feature_transformation:
+      list_of_cols: all
+      drop_cols: []
+      method_type: sqrt
+
+    boxcox_transformation:
+      list_of_cols: age|education_num
+      drop_cols: []
+
+  numerical_binning:
+    attribute_binning:
+      list_of_cols: all
+      drop_cols: []
+      method_type: equal_frequency
+      bin_size: 10
+      bin_dtype: numerical
+
+  numerical_expression:
+    expression_parser:
+      list_of_expr: 'log(age) + 1.5|sin(capital-gain)+cos(capital-loss)'
+
+  categorical_outliers:
+    outlier_categories:
+      list_of_cols: all
+      drop_cols: ['ifa','income']
+      coverage: 0.9
+      max_category: 20
+
+  categorical_encoding:
+    cat_to_num_supervised:
+      list_of_cols: all
+      drop_cols: ['ifa']
+      label_col: income
+      event_label: '>50K'
+
+  numerical_rescaling:
+    IQR_standardization:
+      list_of_cols: all
+
+
+  numerical_latentFeatures:
+    PCA_latentFeatures:
+      list_of_cols: all
+      explained_variance_cutoff: 0.95
+      standardization: False
+      imputation: True
+
+anovos_basic_report:
+  basic_report: True
+  report_args:
+    id_col: ifa
+    label_col: income
+    event_label: '>50K'
+    skip_corr_matrix: True
+    output_path: report_stats
+
+write_intermediate:
+  file_path: "/Users/matzep/Workspaces/inlinity/mobilewalla/feast-demo/anovos_repo/data/intermediate_data"
+  file_type: parquet
+  file_configs:
+    mode: overwrite
+    header: True
+    delimiter: ","
+    inferSchema: True
+
+write_main:
+  file_path: "/Users/matzep/Workspaces/inlinity/mobilewalla/feast-demo/anovos_repo/data/output/"
+  file_type: parquet
+  file_configs:
+    mode: overwrite
+    repartition: 1
+
+write_feast_features:
+  file_path: "/Users/matzep/Workspaces/inlinity/mobilewalla/feast-demo/anovos_repo/"
+  entity:
+    name: "income"
+    description: "first attempt to generate an entity"
+    id_col: 'ifa'
+  file_source:
+    description: 'data source description'
+    owner: "me@business.com"
+    timestamp_col: 'event_time'
+    create_timestamp_col: 'create_time_col'
+  feature_view:
+    name: 'income_view'
+    owner: 'view@owner.com'
+    ttl_in_seconds: 36000000
+    create_timestamps: True
+  service_name: 'income_feature_service'
+  file_configs:
+    mode: overwrite
+
+mlflow:
+  experiment: "Anovos"
+  tracking_uri: "http://127.0.0.1:8889"
+  track_output: True
+  track_reports: True
+  track_intermediates: False
