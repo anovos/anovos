@@ -79,16 +79,12 @@ jobs:
         run: |
           mlflow server --backend-store-uri ./mlflow-artifacts --host 127.0.0.1 --port 8889 &
 
-      - name: Run the demo
+      - name: Run the demo and read the results
         run: |
           cp config/configs_mlflow.yaml dist/configs.yaml
           cd dist/
           pwd
           ./spark-submit.sh
-
-      - name: List the mlflow experiments and stored artifacts
-        run: |
-          export MLFLOW_TRACKING_URI=http://127.0.0.1:8889
           mlflow runs list --experiment-id 1
           cd ./mlflow-artifacts
           tree
