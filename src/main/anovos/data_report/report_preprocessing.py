@@ -50,7 +50,7 @@ def save_stats(
     function_name,
     reread=False,
     run_type="local",
-    mlflow_config: dict = None,
+    mlflow_config=None,
 ):
     """
 

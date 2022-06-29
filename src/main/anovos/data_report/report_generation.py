@@ -3177,7 +3177,7 @@ def anovos_report(
     run_type="local",
     final_report_path=".",
     output_type=None,
-    mlflow_config: dict = None,
+    mlflow_config=None,
 ):
     """
 

@@ -102,7 +102,7 @@ def anovos_basic_report(
     output_path=".",
     run_type="local",
     print_impact=True,
-    mlflow_config: dict = None,
+    mlflow_config=None,
 ):
     """
 
