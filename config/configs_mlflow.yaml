@@ -5,7 +5,7 @@
 #list_of_cols: list or string with multiple columns separated by | (refer doc string for further details)
 input_dataset:
   read_dataset:
-    file_path: "/Users/matzep/Workspaces/inlinity/mobilewalla/anovos/examples/data/income_dataset/csv"
+    file_path: "data/income_dataset/csv"
     file_type: csv
     file_configs:
       header: True
@@ -79,8 +79,8 @@ anovos_basic_report:
     output_path: report_stats
 
 write_intermediate:
-  file_path: "/Users/matzep/Workspaces/inlinity/mobilewalla/feast-demo/anovos_repo/data/intermediate_data"
-  file_type: parquet
+  file_path: "intermediate_data"
+  file_type: csv
   file_configs:
     mode: overwrite
     header: True
@@ -88,11 +88,16 @@ write_intermediate:
     inferSchema: True
 
 write_main:
-  file_path: "/Users/matzep/Workspaces/inlinity/mobilewalla/feast-demo/anovos_repo/data/output/"
+  file_path: "output"
   file_type: parquet
   file_configs:
     mode: overwrite
-    repartition: 1
+
+write_stats:
+  file_path: "stats"
+  file_type: parquet
+  file_configs:
+    mode: overwrite
 
 write_feast_features:
   file_path: "/Users/matzep/Workspaces/inlinity/mobilewalla/feast-demo/anovos_repo/"
