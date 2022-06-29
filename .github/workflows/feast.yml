@@ -95,7 +95,6 @@ jobs:
         run: |
           cd anovos_repo
           feast apply
-          feast materialize `date "+%Y-%m-%dT"` `date "+%Y-%m-%dT%H:%M:%S"`
       - name: Retrieve generated historical features
         run: |
           cd dist
