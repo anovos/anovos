@@ -85,6 +85,7 @@ jobs:
           cd dist/
           pwd
           ./spark-submit.sh
+          tree
 
       - name: List the mlflow experiments and stored artifacts
         run: |
