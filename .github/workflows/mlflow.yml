@@ -85,11 +85,11 @@ jobs:
           cd dist/
           pwd
           ./spark-submit.sh
-          tree
+          tree ./mlflow-artifacts
 
       - name: List the mlflow experiments and stored artifacts
         run: |
           export MLFLOW_TRACKING_URI=http://127.0.0.1:8889
           mlflow runs list --experiment-id 1
           ls -lisah ./mlflow-artifacts/1/
-          tree ./mlflow-artifacts/
+          tree
