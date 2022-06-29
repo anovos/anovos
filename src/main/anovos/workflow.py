@@ -137,9 +137,9 @@ def main(all_configs, run_type):
     )
 
     with mlflow_run:
-        mlflow_config["run_id"] = (
-            mlflow_run.info.run_id if mlflow_config is not None else None
-        )
+        if mlflow_config is not None:
+            mlflow_config["run_id"] = mlflow_run.info.run_id
+
         start_main = timeit.default_timer()
         df = ETL(all_configs.get("input_dataset"))
 
