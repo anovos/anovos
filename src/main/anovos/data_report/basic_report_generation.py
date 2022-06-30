@@ -2,6 +2,7 @@ import subprocess
 from pathlib import Path
 
 import datapane as dp
+import mlflow
 import pandas as pd
 import plotly.express as px
 
@@ -101,6 +102,7 @@ def anovos_basic_report(
     output_path=".",
     run_type="local",
     print_impact=True,
+    mlflow_config=None,
 ):
     """
 
@@ -128,7 +130,6 @@ def anovos_basic_report(
     print_impact
         True, False.
         This argument is to print out the data analyzer statistics.(Default value = False)
-
     """
     global num_cols
     global cat_cols
@@ -151,6 +152,9 @@ def anovos_basic_report(
         invalidEntries_detection,
     ]
 
+    if mlflow_config is not None:
+        output_path = output_path + "/" + mlflow_config.get("run_id", "")
+
     if skip_corr_matrix:
         AA_funcs = [variable_clustering]
     else:
@@ -164,6 +168,7 @@ def anovos_basic_report(
             if x in punctuations:
                 local_path = output_path.replace(x, "")
                 local_path = "/" + local_path
+
         return local_path
 
     if run_type == "local":
@@ -517,6 +522,9 @@ def anovos_basic_report(
         default_template[1],
         dp.Select(blocks=[tab1, tab2, tab3], type=dp.SelectType.TABS),
     ).save(ends_with(local_path) + "basic_report.html", open=True)
+
+    if mlflow_config is not None:
+        mlflow.log_artifacts(local_dir=local_path, artifact_path=output_path)
 
     if run_type == "emr":
         bash_cmd = (
