@@ -40,20 +40,23 @@ def ETL(args):
     return df
 
 
-def save(data, write_configs, folder_name, reread=False, mlflow_config: dict = None):
+def save(data, write_configs, folder_name, reread=False):
     if write_configs:
         if "file_path" not in write_configs:
             raise TypeError("file path missing for writing data")
 
         write = copy.deepcopy(write_configs)
 
-        run_id = mlflow_config.get("run_id", "") if mlflow_config is not None else ""
+        run_id = write.pop("mlflow_run_id", "")
+        log_mlflow = write.pop("log_mlflow", False)
 
         write["file_path"] = write["file_path"] + "/" + folder_name + "/" + str(run_id)
         data_ingest.write_dataset(data, **write)
 
-        if mlflow_config is not None:
-            mlflow.log_artifacts(write["file_path"])
+        if log_mlflow:
+            mlflow.log_artifacts(
+                local_dir=write["file_path"], artifact_path=folder_name
+            )
 
         if reread:
             read = copy.deepcopy(write)
@@ -133,7 +136,7 @@ def main(all_configs, run_type):
         mlflow.set_experiment(mlflow_config["experiment"])
 
     mlflow_run = (
-        mlflow.start_run() if mlflow_config is not None else contextlib.suppress()
+        mlflow.start_run() if mlflow_config is not None else contextlib.nullcontext()
     )
 
     with mlflow_run:
@@ -146,6 +149,17 @@ def main(all_configs, run_type):
         write_main = all_configs.get("write_main", None)
         write_intermediate = all_configs.get("write_intermediate", None)
         write_stats = all_configs.get("write_stats", None)
+
+        if mlflow_config:
+            if write_main:
+                write_main["mlflow_run_id"] = mlflow_run.info.run_id
+                write_main["log_mlflow"] = mlflow_config["track_output"]
+            if write_intermediate:
+                write_intermediate["mlflow_run_id"] = mlflow_run.info.run_id
+                write_intermediate["log_mlflow"] = mlflow_config["track_intermediates"]
+            if write_stats:
+                write_stats["mlflow_run_id"] = mlflow_run.info.run_id
+                write_stats["log_mlflow"] = mlflow_config["track_reports"]
 
         report_input_path = ""
         report_configs = all_configs.get("report_preprocessing", None)
@@ -578,7 +592,6 @@ def main(all_configs, run_type):
             write_main,
             folder_name="final_dataset",
             reread=False,
-            mlflow_config=mlflow_config,
         )
 
 

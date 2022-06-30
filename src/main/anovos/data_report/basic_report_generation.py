@@ -524,7 +524,7 @@ def anovos_basic_report(
     ).save(ends_with(local_path) + "basic_report.html", open=True)
 
     if mlflow_config is not None:
-        mlflow.log_artifacts(local_path)
+        mlflow.log_artifacts(local_dir=local_path, artifact_path=output_path)
 
     if run_type == "emr":
         bash_cmd = (

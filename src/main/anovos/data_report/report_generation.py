@@ -3528,7 +3528,7 @@ def anovos_report(
             default_template[1],
             dp.Select(blocks=final_tabs_list, type=dp.SelectType.TABS),
         ).save(report_run_path + "ml_anovos_report.html", open=True)
-        mlflow.log_artifacts(report_run_path)
+        mlflow.log_artifact(report_run_path)
     elif run_type == "emr":
         dp.Report(
             default_template[0],
