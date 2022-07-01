@@ -435,7 +435,7 @@ def IV_calculation(
     label_col="label",
     event_label=1,
     encoding_configs={
-        "bin_method": "equal_frequency",
+        "bin_method": "equal_range",
         "bin_size": 10,
         "monotonicity_check": 0,
     },
@@ -533,47 +533,65 @@ def IV_calculation(
                 spark, idf, num_cols, [], label_col, event_label, bin_method, bin_size
             )
         else:
-            idf_encoded = attribute_binning(
-                spark, idf, num_cols, [], bin_method, bin_size
+            idf_encoded = attribute_binning_change(
+                spark, idf, num_cols, label_col, bin_method, bin_size
             )
 
-        idf_encoded.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
-    else:
-        idf_encoded = idf
-
-    output = []
-    for col in list_of_cols:
-        df_iv = (
-            idf_encoded.groupBy(col, label_col)
-            .count()
-            .withColumn(
-                label_col, F.when(F.col(label_col) == event_label, 1).otherwise(0)
-            )
-            .groupBy(col)
-            .pivot(label_col)
-            .sum("count")
-            .fillna(0.5)
-            .withColumn("event_pct", F.col("1") / F.sum("1").over(Window.partitionBy()))
-            .withColumn(
-                "nonevent_pct", F.col("0") / F.sum("0").over(Window.partitionBy())
-            )
-            .withColumn(
-                "iv",
-                (F.col("nonevent_pct") - F.col("event_pct"))
-                * F.log(F.col("nonevent_pct") / F.col("event_pct")),
-            )
+    list_df = []
+    for col in idf_encoded.columns:
+        list_df.append(
+            idf_encoded.select(col, label_col)
+            .withColumnRenamed(col, "value")
+            .withColumn("attribute", F.lit(str(col)))
         )
-        iv_value = df_iv.select(F.sum("iv")).collect()[0][0]
-        output.append([col, iv_value])
+
+    def unionAll(dfs):
+        first, *_ = dfs
+        return first.sql_ctx.createDataFrame(
+            first.sql_ctx._sc.union([df.rdd for df in dfs]), first.schema
+        )
+
+    df_union = unionAll(list_df)
+
+    df_agg = df_union.groupby("attribute", "value").agg(
+        F.count(F.when(F.col(label_col) != event_label, F.col(label_col))).alias(
+            "label_0"
+        ),
+        F.count(F.when(F.col(label_col) == event_label, F.col(label_col))).alias(
+            "label_1"
+        ),
+    )
+
+    df_join = (
+        df_agg.groupby("attribute")
+        .agg(
+            F.sum("label_0").alias("label_0_total"),
+            F.sum("label_1").alias("label_1_total"),
+        )
+        .join(df_agg, "attribute", "inner")
+    )
 
     odf = (
-        spark.createDataFrame(output, ["attribute", "iv"])
-        .withColumn("iv", F.round(F.col("iv"), 4))
-        .orderBy(F.desc("iv"))
+        df_join.withColumn("event_pcr", F.col("label_1") / F.col("label_1_total"))
+        .withColumn("nonevent_pcr", F.col("label_0") / F.col("label_0_total"))
+        .withColumn("diff_event", F.col("nonevent_pcr") - F.col("event_pcr"))
+        .withColumn("const", F.lit(0.5))
+        .withColumn(
+            "woe",
+            F.when(
+                (F.col("nonevent_pcr") != 0) & (F.col("event_pcr") != 0),
+                F.log(F.col("nonevent_pcr") / F.col("event_pcr")),
+            ).otherwise(
+                F.log(
+                    ((F.col("label_0") + F.col("const")) / F.col("label_0_total"))
+                    / ((F.col("label_1") + F.col("const")) / F.col("label_1_total"))
+                )
+            ),
+        )
+        .withColumn("iv", F.col("woe") * F.col("diff_event"))
+        .groupby("attribute")
+        .agg(F.sum(F.col("iv")).alias("iv"))
     )
-    if print_impact:
-        odf.show(odf.count())
-
     return odf
 
 
