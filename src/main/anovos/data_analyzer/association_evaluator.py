@@ -533,7 +533,7 @@ def IV_calculation(
                 spark, idf, num_cols, [], label_col, event_label, bin_method, bin_size
             )
         else:
-            idf_encoded = attribute_binning_change(
+            idf_encoded = attribute_binning(
                 spark, idf, num_cols, label_col, bin_method, bin_size
             )
 
