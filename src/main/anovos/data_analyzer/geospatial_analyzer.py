@@ -1,6 +1,6 @@
 from anovos.data_ingest.data_ingest import read_dataset
 from anovos.shared.spark import spark
-from anovos.shared.utils import ends_with
+from anovos.shared.utils import ends_with, output_to_local
 from anovos.data_ingest.geo_auto_detection import ll_gh_cols
 import pandas as pd
 import numpy as np
@@ -766,7 +766,19 @@ def geospatial_autodetection(
     eps=0.6,
     min_samples=25,
     global_map_box_val=0,
+    run_type="local",
 ):
+
+    if run_type == "local":
+        master_path = master_path
+    elif run_type == "databricks":
+        master_path = output_to_local(master_path)
+    elif run_type == "emr":
+        master_path = "report_stats"
+    else:
+        raise ValueError("Invalid run_type")
+
+    # Path(master_path).mkdir(parents=True, exist_ok=True)
 
     lat_cols, long_cols, gh_cols = ll_gh_cols(df, max_records)
 
@@ -814,3 +826,12 @@ def geospatial_autodetection(
         )
 
         return lat_cols, long_cols, gh_cols
+
+    if run_type == "emr":
+        bash_cmd = (
+            "aws s3 cp --recursive "
+            + ends_with(master_path)
+            + " "
+            + ends_with(report_stats)
+        )
+        output = subprocess.check_output(["bash", "-c", bash_cmd])
