@@ -559,8 +559,8 @@ def outlier_detection(
     In Machine Learning, outlier detection identifies values that deviate drastically from the rest of the
     attribute values. An outlier may be caused simply by chance, measurement error, or inherent heavy-tailed
     distribution. This function identifies extreme values in both directions (or any direction provided by the user
-    via detection_side argument). By default, outlier is identified by 3 different methodologies and tagged an outlier 
-    only if it is validated by at least 2 methods. Users can customize the methodologies they would like to apply and 
+    via detection_side argument). By default, outlier is identified by 3 different methodologies and tagged an outlier
+    only if it is validated by at least 2 methods. Users can customize the methodologies they would like to apply and
     the minimum number of methodologies to be validated under detection_configs argument.
 
     - Percentile Method: In this methodology, a value higher than a certain (default 95th) percentile value is considered
@@ -569,8 +569,8 @@ def outlier_detection(
     - Standard Deviation Method: In this methodology, if a value is a certain number of standard deviations (default 3)
       away from the mean, it is identified as an outlier.
 
-    - Interquartile Range (IQR) Method: if a value is a certain number of IQRs (default 1.5) below Q1 or above Q3, 
-    it is identified as an outlier. Q1 is in first quantile/25th percentile, Q3 is in third quantile/75th percentile, 
+    - Interquartile Range (IQR) Method: if a value is a certain number of IQRs (default 1.5) below Q1 or above Q3,
+    it is identified as an outlier. Q1 is in first quantile/25th percentile, Q3 is in third quantile/75th percentile,
     and IQR is the difference between third quantile & first quantile.
 
     As part of treatments available, outlier values can be replaced by null so that it can be imputed by a reliable
@@ -621,9 +621,9 @@ def outlier_detection(
         total number of methodologies applied.
         If detection_side is "upper", then "pctile_lower", "stdev_lower" and "IQR_lower" will be ignored and vice versa.
         Examples (detection_side = "lower")
-        - If detection_configs={"pctile_lower": 0.05, "stdev_lower": 3.0, "min_validation": 1}, Percentile and Standard Deviation 
+        - If detection_configs={"pctile_lower": 0.05, "stdev_lower": 3.0, "min_validation": 1}, Percentile and Standard Deviation
         methods will be applied and a value is considered as outlier if at least 1 methodology categorizes it as an outlier.
-        - If detection_configs={"pctile_lower": 0.05, "stdev_lower": 3.0}, since "min_validation" is not specified, 2 will be used 
+        - If detection_configs={"pctile_lower": 0.05, "stdev_lower": 3.0}, since "min_validation" is not specified, 2 will be used
         because there are 2 methodologies specified. A value is considered as outlier if at both 2 methodologies categorize it as an outlier.
     treatment
         Boolean argument – True or False. If True, outliers are treated as per treatment_method argument. (Default value = False)
@@ -678,9 +678,7 @@ def outlier_detection(
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split("|")]
 
-    list_of_cols = list(
-        set([e for e in list_of_cols if e not in (drop_cols)])
-    )
+    list_of_cols = list(set([e for e in list_of_cols if e not in (drop_cols)]))
 
     if any(x not in num_cols for x in list_of_cols):
         raise TypeError("Invalid input for Column(s)")
@@ -715,7 +713,10 @@ def outlier_detection(
             recast_cols.append(i)
             recast_type.append(get_dtype(idf, i))
 
-    pctiles = [detection_configs.get("pctile_lower", 0.05), detection_configs.get("pctile_upper", 0.95)]
+    pctiles = [
+        detection_configs.get("pctile_lower", 0.05),
+        detection_configs.get("pctile_upper", 0.95),
+    ]
     pctile_params = idf.approxQuantile(list_of_cols, pctiles, 0.01)
     skewed_cols = []
     for i, p in zip(list_of_cols, pctile_params):
@@ -734,7 +735,11 @@ def outlier_detection(
 
     if pre_existing_model:
         df_model = spark.read.parquet(model_path + "/outlier_numcols")
-        model_dict_list = df_model.where(F.col('attribute').isin(list_of_cols)).rdd.map(lambda row: {row[0]: row[1]}).collect()
+        model_dict_list = (
+            df_model.where(F.col("attribute").isin(list_of_cols))
+            .rdd.map(lambda row: {row[0]: row[1]})
+            .collect()
+        )
         model_dict = {}
         for d in model_dict_list:
             model_dict.update(d)
@@ -743,26 +748,36 @@ def outlier_detection(
         for i in list_of_cols:
             param = model_dict.get(i)
             if not param:
-                raise TypeError("Column " + i + " cannot be found in the pre-existing model")
+                raise TypeError(
+                    "Column " + i + " cannot be found in the pre-existing model"
+                )
             params.append(param)
 
     else:
-        check_dict = {"pctile": {"lower": 0, "upper": 0}, 
-                    "stdev": {"lower": 0, "upper": 0}, 
-                    "IQR": {"lower": 0, "upper": 0}}
-        side_mapping = {"lower": ["lower"], "upper": ["upper"], "both": ["lower", "upper"]}
-        
+        check_dict = {
+            "pctile": {"lower": 0, "upper": 0},
+            "stdev": {"lower": 0, "upper": 0},
+            "IQR": {"lower": 0, "upper": 0},
+        }
+        side_mapping = {
+            "lower": ["lower"],
+            "upper": ["upper"],
+            "both": ["lower", "upper"],
+        }
+
         for methodology in ["pctile", "stdev", "IQR"]:
             for side in side_mapping[detection_side]:
-                if methodology+"_"+side in detection_configs:
+                if methodology + "_" + side in detection_configs:
                     check_dict[methodology][side] = 1
-                    
+
         methodologies = []
         for key, val in list(check_dict.items()):
             val_list = list(val.values())
-            if detection_side == 'both':
+            if detection_side == "both":
                 if val_list in ([1, 0], [0, 1]):
-                    raise TypeError("Invalid input for detection_configs. If detection_side is 'both', the methodologies used on both sides should be the same")
+                    raise TypeError(
+                        "Invalid input for detection_configs. If detection_side is 'both', the methodologies used on both sides should be the same"
+                    )
                 if val_list[0]:
                     methodologies.append(key)
             else:
@@ -772,38 +787,51 @@ def outlier_detection(
 
         if "min_validation" in detection_configs:
             if detection_configs["min_validation"] > num_methodologies:
-                raise TypeError("Invalid input for min_validation of detection_configs. It cannot be larger than the total number of methodologies on any side that detection will be applied over.")
+                raise TypeError(
+                    "Invalid input for min_validation of detection_configs. It cannot be larger than the total number of methodologies on any side that detection will be applied over."
+                )
         else:
             # if min_validation is not present, num of specified methodologies will be used
             detection_configs["min_validation"] = num_methodologies
-        
+
         empty_params = [[None, None]] * len(list_of_cols)
 
         if "pctile" not in methodologies:
             pctile_params = copy.deepcopy(empty_params)
-        
+
         if "stdev" in methodologies:
             exprs = [f(F.col(c)) for f in [F.mean, F.stddev] for c in list_of_cols]
             stats = idf.select(*exprs).rdd.flatMap(lambda x: x).collect()
 
-            mean, stdev = stats[:len(list_of_cols)], stats[len(list_of_cols):]
-            stdev_lower = pd.Series(mean) - detection_configs.get("stdev_lower", 0.0) * pd.Series(stdev)
-            stdev_upper = pd.Series(mean) + detection_configs.get("stdev_upper", 0.0) * pd.Series(stdev)
+            mean, stdev = stats[: len(list_of_cols)], stats[len(list_of_cols) :]
+            stdev_lower = pd.Series(mean) - detection_configs.get(
+                "stdev_lower", 0.0
+            ) * pd.Series(stdev)
+            stdev_upper = pd.Series(mean) + detection_configs.get(
+                "stdev_upper", 0.0
+            ) * pd.Series(stdev)
             stdev_params = list(zip(stdev_lower, stdev_upper))
         else:
             stdev_params = copy.deepcopy(empty_params)
 
         if "IQR" in methodologies:
             quantiles = idf.approxQuantile(list_of_cols, [0.25, 0.75], 0.01)
-            IQR_params = [[e[0] - detection_configs.get("IQR_lower", 0.0) * (e[1] - e[0]),
-                        e[1] + detection_configs.get("IQR_upper", 0.0) * (e[1] - e[0]),] for e in quantiles]
+            IQR_params = [
+                [
+                    e[0] - detection_configs.get("IQR_lower", 0.0) * (e[1] - e[0]),
+                    e[1] + detection_configs.get("IQR_upper", 0.0) * (e[1] - e[0]),
+                ]
+                for e in quantiles
+            ]
         else:
             IQR_params = copy.deepcopy(empty_params)
-        
+
         n = detection_configs["min_validation"]
         params = []
         for x, y, z in list(zip(pctile_params, stdev_params, IQR_params)):
-            lower = sorted([i for i in [x[0], y[0], z[0]] if i is not None], reverse=True)[n - 1]
+            lower = sorted(
+                [i for i in [x[0], y[0], z[0]] if i is not None], reverse=True
+            )[n - 1]
             upper = sorted([i for i in [x[1], y[1], z[1]] if i is not None])[n - 1]
             if detection_side == "lower":
                 param = [lower, None]
@@ -828,9 +856,9 @@ def outlier_detection(
     def composite_outlier_pandas(col_param):
         def inner(v):
             if detection_side in ("lower", "both"):
-                lower = ((v - col_param[0])<0).replace(True, -1).replace(False, 0)
+                lower = ((v - col_param[0]) < 0).replace(True, -1).replace(False, 0)
             if detection_side in ("upper", "both"):
-                upper = ((v - col_param[1])>0).replace(True, 1).replace(False, 0)
+                upper = ((v - col_param[1]) > 0).replace(True, 1).replace(False, 0)
 
             if detection_side == "upper":
                 return upper
@@ -838,6 +866,7 @@ def outlier_detection(
                 return lower
             else:
                 return lower + upper
+
         return inner
 
     odf = idf
@@ -845,14 +874,16 @@ def outlier_detection(
 
     list_odf = []
     for index, i in enumerate(list_of_cols):
-        f_composite_outlier = F.pandas_udf(composite_outlier_pandas(params[index]), returnType=T.IntegerType())
+        f_composite_outlier = F.pandas_udf(
+            composite_outlier_pandas(params[index]), returnType=T.IntegerType()
+        )
         odf = odf.withColumn(i + "_outliered", f_composite_outlier(i))
 
         list_odf.append(
-             odf.select(i + "_outliered")
-             .withColumnRenamed(i + "_outliered", "outliered")
-             .withColumn("attribute", F.lit(str(i)))
-         )
+            odf.select(i + "_outliered")
+            .withColumnRenamed(i + "_outliered", "outliered")
+            .withColumn("attribute", F.lit(str(i)))
+        )
 
         if treatment & (treatment_method in ("value_replacement", "null_replacement")):
             if i not in skewed_cols:
@@ -878,18 +909,28 @@ def outlier_detection(
 
     def unionAll(dfs):
         first, *_ = dfs
-        return first.sql_ctx.createDataFrame(first.sql_ctx._sc.union([df.rdd for df in dfs]), first.schema)
+        return first.sql_ctx.createDataFrame(
+            first.sql_ctx._sc.union([df.rdd for df in dfs]), first.schema
+        )
+
     odf_union = unionAll(list_odf)
     odf_agg = odf_union.groupby("attribute").pivot("outliered").count()
     odf_print = (
-        odf_agg.withColumn("lower_outliers", F.col("-1") if "-1" in odf_agg.columns else F.lit(0))
-        .withColumn("upper_outliers", F.col("1") if "1" in odf_agg.columns else F.lit(0))
+        odf_agg.withColumn(
+            "lower_outliers", F.col("-1") if "-1" in odf_agg.columns else F.lit(0)
+        )
+        .withColumn(
+            "upper_outliers", F.col("1") if "1" in odf_agg.columns else F.lit(0)
+        )
         .select("attribute", "lower_outliers", "upper_outliers")
     )
-    
+
     if treatment & (treatment_method == "row_removal"):
-        conditions = [(F.col(i + "_outliered") == 0) | (F.col(i + "_outliered").isNull()) for i in list_of_cols]
-        conditions_combined = functools.reduce(lambda a, b: a & b, conditions) 
+        conditions = [
+            (F.col(i + "_outliered") == 0) | (F.col(i + "_outliered").isNull())
+            for i in list_of_cols
+        ]
+        conditions_combined = functools.reduce(lambda a, b: a & b, conditions)
         for index, i in enumerate(list_of_cols):
             odf = odf.where(conditions_combined)
         odf = odf.drop(*[i + "_outliered" for i in list_of_cols])
@@ -899,7 +940,7 @@ def outlier_detection(
 
     if print_impact:
         odf_print.show(len(list_of_cols))
-    
+
     return odf, odf_print
 
 
