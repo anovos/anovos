@@ -3666,28 +3666,41 @@ def loc_report_gen(
 
     _ = dp.Text("#")
     dp1 = dp.Group(_, loc_field_stats(lat_cols, long_cols, geohash_cols, max_records))
-    dp2 = dp.Group(
-        _,
-        dp.Text("## Descriptive Analysis by Location Attributes"),
-        read_stats_ll_geo(
-            lat_cols, long_cols, geohash_cols, master_path, top_geo_records
-        ),
-        _,
-    )
-    dp3 = dp.Group(
-        _,
-        dp.Text("## Clustering Geospatial Field"),
-        read_cluster_stats_ll_geo(lat_cols, long_cols, geohash_cols, master_path),
-        _,
-    )
-    dp4 = dp.Group(
-        _,
-        dp.Text("## Visualization by Geospatial Fields"),
-        read_loc_charts(master_path),
-        _,
-    )
 
-    report = dp.Group(dp1, dp2, dp3, dp4, label="Geospatial Analyzer")
+    if (len(lat_cols) + len(geohash_cols)) > 0:
+
+        dp2 = dp.Group(
+            _,
+            dp.Text("## Descriptive Analysis by Location Attributes"),
+            read_stats_ll_geo(
+                lat_cols, long_cols, geohash_cols, master_path, top_geo_records
+            ),
+            _,
+        )
+        dp3 = dp.Group(
+            _,
+            dp.Text("## Clustering Geospatial Field"),
+            read_cluster_stats_ll_geo(lat_cols, long_cols, geohash_cols, master_path),
+            _,
+        )
+        dp4 = dp.Group(
+            _,
+            dp.Text("## Visualization by Geospatial Fields"),
+            read_loc_charts(master_path),
+            _,
+        )
+
+        report = dp.Group(dp1, dp2, dp3, dp4, label="Geospatial Analyzer")
+
+    elif (len(lat_cols) + len(geohash_cols)) == 0:
+
+        dp2 = dp.Group(
+            dp.Text("#"),
+            dp.Text(
+                "*No further geospatial based analysis could be done owing to the unavailability of any geospatial field*"
+            ),
+        )
+        report = dp.Group(dp1, dp2, label="Geospatial Analyzer")
 
     if print_report:
         dp.Report(default_template[0], default_template[1], report).save(
@@ -4047,12 +4060,7 @@ def anovos_report(
     tab7 = ts_viz_generate(master_path, id_col, False, output_type)
 
     tab8 = loc_report_gen(
-        lat_cols=lat_cols,
-        long_cols=long_cols,
-        geohash_cols=gh_cols,
-        master_path=master_path,
-        max_records=max_records,
-        top_geo_records=top_geo_records,
+        lat_cols, long_cols, gh_cols, master_path, max_records, top_geo_records, False
     )
 
     final_tabs_list = []
