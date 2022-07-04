@@ -254,6 +254,7 @@ def main(all_configs, run_type):
                     eps=eps,
                     min_samples=min_samples,
                     global_map_box_val=global_map_box_val,
+                    run_type=run_type,
                 )
 
                 end = timeit.default_timer()
