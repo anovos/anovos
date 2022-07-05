@@ -832,6 +832,6 @@ def geospatial_autodetection(
             "aws s3 cp --recursive "
             + ends_with(master_path)
             + " "
-            + ends_with(report_stats)
+            + ends_with("report_stats")
         )
         output = subprocess.check_output(["bash", "-c", bash_cmd])
