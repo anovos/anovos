@@ -678,7 +678,7 @@ def outlier_detection(
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split("|")]
 
-    list_of_cols = list(set([e for e in list_of_cols if e not in (drop_cols)]))
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
     if any(x not in num_cols for x in list_of_cols):
         raise TypeError("Invalid input for Column(s)")
@@ -726,7 +726,7 @@ def outlier_detection(
     if skewed_cols:
         warnings.warn(
             "Columns excluded from outlier detection due to highly skewed distribution: "
-            + (",").join(skewed_cols)
+            + ",".join(skewed_cols)
         )
         for i in skewed_cols:
             idx = list_of_cols.index(i)
@@ -923,6 +923,7 @@ def outlier_detection(
             "upper_outliers", F.col("1") if "1" in odf_agg.columns else F.lit(0)
         )
         .select("attribute", "lower_outliers", "upper_outliers")
+        .fillna(0)
     )
 
     if treatment & (treatment_method == "row_removal"):
@@ -931,15 +932,13 @@ def outlier_detection(
             for i in list_of_cols
         ]
         conditions_combined = functools.reduce(lambda a, b: a & b, conditions)
-        for index, i in enumerate(list_of_cols):
-            odf = odf.where(conditions_combined)
-        odf = odf.drop(*[i + "_outliered" for i in list_of_cols])
+        odf = odf.where(conditions_combined).drop(*[i + "_outliered" for i in list_of_cols])
 
     if not treatment:
         odf = idf
 
     if print_impact:
-        odf_print.show(len(list_of_cols))
+        odf_print.show(len(list_of_cols), False)
 
     return odf, odf_print
 
