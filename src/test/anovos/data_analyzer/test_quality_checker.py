@@ -521,7 +521,7 @@ def test_outlier_detection(spark_session: SparkSession):
         1
     ]
 
-    assert result_df7.count() == 7
+    assert result_df7.count() == 6
     assert len(result_df7.columns) == 3
     assert (
         result_df7.where(F.col("attribute") == "age")
@@ -582,18 +582,6 @@ def test_outlier_detection(spark_session: SparkSession):
         .toPandas()
         .to_dict("list")["upper_outliers"][0]
         == 955
-    )
-    assert (
-        result_df7.where(F.col("attribute") == "capital-loss")
-        .toPandas()
-        .to_dict("list")["lower_outliers"][0]
-        == 0
-    )
-    assert (
-        result_df7.where(F.col("attribute") == "capital-loss")
-        .toPandas()
-        .to_dict("list")["upper_outliers"][0]
-        == 790
     )
     assert (
         result_df7.where(F.col("attribute") == "hours-per-week")
