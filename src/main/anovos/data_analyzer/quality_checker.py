@@ -932,7 +932,9 @@ def outlier_detection(
             for i in list_of_cols
         ]
         conditions_combined = functools.reduce(lambda a, b: a & b, conditions)
-        odf = odf.where(conditions_combined).drop(*[i + "_outliered" for i in list_of_cols])
+        odf = odf.where(conditions_combined).drop(
+            *[i + "_outliered" for i in list_of_cols]
+        )
 
     if not treatment:
         odf = idf
