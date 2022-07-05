@@ -1,4 +1,4 @@
-"""Feature recommender recommends features based on ingested data dictionary by the user."""
+"""Feature mapper maps attributes to features based on ingested data dictionary by the user."""
 import copy
 import random
 import re
@@ -16,7 +16,7 @@ from anovos.feature_recommender.featrec_init import (
     model_fer,
     recommendation_data_prep,
 )
-from anovos.feature_recommender.feature_exploration import (
+from anovos.feature_recommender.feature_explorer import (
     list_usecase_by_industry,
     process_industry,
     process_usecase,
@@ -32,7 +32,7 @@ list_embedding_train_fer = EmbeddingsTrainFer(list_train_fer)
 ) = get_column_name(df_rec_fer)
 
 
-def feature_recommendation(
+def feature_mapper(
     df,
     name_column=None,
     desc_column=None,
@@ -469,7 +469,7 @@ def sankey_visualization(df, industry_included=False, usecase_included=False):
     Parameters
     ----------
     df : DataFrame
-        Input DataFrame. This DataFrame needs to be output of feature_recommendation or find_attr_by_relevance, or in the same format.
+        Input DataFrame. This DataFrame needs to be output of feature_mapper or find_attr_by_relevance, or in the same format.
     industry_included : bool
         Whether the plot needs to include industry mapping or not. Default is False
     usecase_included : bool
@@ -652,7 +652,5 @@ def sankey_visualization(df, industry_included=False, usecase_included=False):
             )
         ]
     )
-    fig.update_layout(
-        title_text="Feature Recommendation Sankey Visualization", font_size=10
-    )
+    fig.update_layout(title_text="Feature Mapper Sankey Visualization", font_size=10)
     return fig
