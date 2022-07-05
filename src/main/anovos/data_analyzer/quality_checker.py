@@ -713,26 +713,6 @@ def outlier_detection(
             recast_cols.append(i)
             recast_type.append(get_dtype(idf, i))
 
-    pctiles = [
-        detection_configs.get("pctile_lower", 0.05),
-        detection_configs.get("pctile_upper", 0.95),
-    ]
-    pctile_params = idf.approxQuantile(list_of_cols, pctiles, 0.01)
-    skewed_cols = []
-    for i, p in zip(list_of_cols, pctile_params):
-        if p[0] == p[1]:
-            skewed_cols.append(i)
-
-    if skewed_cols:
-        warnings.warn(
-            "Columns excluded from outlier detection due to highly skewed distribution: "
-            + ",".join(skewed_cols)
-        )
-        for i in skewed_cols:
-            idx = list_of_cols.index(i)
-            list_of_cols.pop(idx)
-            pctile_params.pop(idx)
-
     if pre_existing_model:
         df_model = spark.read.parquet(model_path + "/outlier_numcols")
         model_dict_list = (
@@ -745,13 +725,21 @@ def outlier_detection(
             model_dict.update(d)
 
         params = []
+        present_cols = []
         for i in list_of_cols:
             param = model_dict.get(i)
-            if not param:
-                raise TypeError(
-                    "Column " + i + " cannot be found in the pre-existing model"
-                )
-            params.append(param)
+            if param:
+                params.append(param)
+                present_cols.append(i)
+
+        diff_cols = list(set(list_of_cols) - set(present_cols))
+        if diff_cols:
+            warnings.warn(
+                "Columns not found in model_path: "
+                + ",".join(diff_cols)
+                + ". They might be dropped in the previous calculation due to highly skewed distribution."
+            )
+            list_of_cols = present_cols
 
     else:
         check_dict = {
@@ -795,6 +783,26 @@ def outlier_detection(
             detection_configs["min_validation"] = num_methodologies
 
         empty_params = [[None, None]] * len(list_of_cols)
+
+        pctiles = [
+            detection_configs.get("pctile_lower", 0.05),
+            detection_configs.get("pctile_upper", 0.95),
+        ]
+        pctile_params = idf.approxQuantile(list_of_cols, pctiles, 0.01)
+        skewed_cols = []
+        for i, p in zip(list_of_cols, pctile_params):
+            if p[0] == p[1]:
+                skewed_cols.append(i)
+
+        if skewed_cols:
+            warnings.warn(
+                "Columns excluded from outlier detection due to highly skewed distribution: "
+                + ",".join(skewed_cols)
+            )
+            for i in skewed_cols:
+                idx = list_of_cols.index(i)
+                list_of_cols.pop(idx)
+                pctile_params.pop(idx)
 
         if "pctile" not in methodologies:
             pctile_params = copy.deepcopy(empty_params)
@@ -856,16 +864,16 @@ def outlier_detection(
     def composite_outlier_pandas(col_param):
         def inner(v):
             if detection_side in ("lower", "both"):
-                lower = ((v - col_param[0]) < 0).replace(True, -1).replace(False, 0)
+                lower_v = ((v - col_param[0]) < 0).replace(True, -1).replace(False, 0)
             if detection_side in ("upper", "both"):
-                upper = ((v - col_param[1]) > 0).replace(True, 1).replace(False, 0)
+                upper_v = ((v - col_param[1]) > 0).replace(True, 1).replace(False, 0)
 
             if detection_side == "upper":
-                return upper
+                return upper_v
             elif detection_side == "lower":
-                return lower
+                return lower_v
             else:
-                return lower + upper
+                return lower_v + upper_v
 
         return inner
 
