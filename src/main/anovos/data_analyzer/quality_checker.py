@@ -552,6 +552,7 @@ def outlier_detection(
     treatment_method="value_replacement",
     pre_existing_model=False,
     model_path="NA",
+    sample_size=1000000,
     output_mode="replace",
     print_impact=False,
 ):
@@ -640,6 +641,11 @@ def outlier_detection(
         If pre_existing_model is True, this argument is path for the pre-saved model.
         If pre_existing_model is False, this field can be used for saving the model.
         Default "NA" means there is neither pre-existing model nor there is a need to save one.
+    sample_size
+        The maximum number of rows used to calculate the thresholds of outlier detection including percentiles, means,
+        standard deviations and quantiles. The computed thresholds will be applied over all rows in the original idf
+        to detect outliers. If the number of rows of idf is smaller than sample_size, the original idf will be used.
+        (Default value = 1000000)
     output_mode
         "replace", "append".
         “replace” option replaces original columns with treated column. “append” option append treated
@@ -651,7 +657,7 @@ def outlier_detection(
     Returns
     -------
     odf : DataFrame
-        Imputed dataframe if treated, else original input dataframe.
+        Dataframe with outliers treated if treatment is True, else original input dataframe.
     odf_print : DataFrame
         schema [attribute, lower_outliers, upper_outliers].
         lower_outliers is no. of outliers found in the lower spectrum of the attribute range, and
@@ -704,14 +710,6 @@ def outlier_detection(
         if arg in detection_configs:
             if (detection_configs[arg] < 0) | (detection_configs[arg] > 1):
                 raise TypeError("Invalid input for " + arg)
-
-    recast_cols = []
-    recast_type = []
-    for i in list_of_cols:
-        if get_dtype(idf, i).startswith("decimal"):
-            idf = idf.withColumn(i, F.col(i).cast(T.DoubleType()))
-            recast_cols.append(i)
-            recast_type.append(get_dtype(idf, i))
 
     if pre_existing_model:
         df_model = spark.read.parquet(model_path + "/outlier_numcols")
@@ -784,11 +782,21 @@ def outlier_detection(
 
         empty_params = [[None, None]] * len(list_of_cols)
 
+        idf_count = idf.count()
+        if idf_count > sample_size:
+            idf_sample = idf.sample(sample_size/idf_count, False, 11).select(list_of_cols)
+        else:
+            idf_sample = idf.select(list_of_cols)
+
+        for i in list_of_cols:
+            if get_dtype(idf_sample, i).startswith("decimal"):
+                idf_sample = idf_sample.withColumn(i, F.col(i).cast(T.DoubleType()))
+
         pctiles = [
             detection_configs.get("pctile_lower", 0.05),
             detection_configs.get("pctile_upper", 0.95),
         ]
-        pctile_params = idf.approxQuantile(list_of_cols, pctiles, 0.01)
+        pctile_params = idf_sample.approxQuantile(list_of_cols, pctiles, 0.01)
         skewed_cols = []
         for i, p in zip(list_of_cols, pctile_params):
             if p[0] == p[1]:
@@ -809,9 +817,9 @@ def outlier_detection(
 
         if "stdev" in methodologies:
             exprs = [f(F.col(c)) for f in [F.mean, F.stddev] for c in list_of_cols]
-            stats = idf.select(*exprs).rdd.flatMap(lambda x: x).collect()
+            stats = idf_sample.select(exprs).rdd.flatMap(lambda x: x).collect()
 
-            mean, stdev = stats[: len(list_of_cols)], stats[len(list_of_cols) :]
+            mean, stdev = stats[:len(list_of_cols)], stats[len(list_of_cols):]
             stdev_lower = pd.Series(mean) - detection_configs.get(
                 "stdev_lower", 0.0
             ) * pd.Series(stdev)
@@ -823,7 +831,7 @@ def outlier_detection(
             stdev_params = copy.deepcopy(empty_params)
 
         if "IQR" in methodologies:
-            quantiles = idf.approxQuantile(list_of_cols, [0.25, 0.75], 0.01)
+            quantiles = idf_sample.approxQuantile(list_of_cols, [0.25, 0.75], 0.01)
             IQR_params = [
                 [
                     e[0] - detection_configs.get("IQR_lower", 0.0) * (e[1] - e[0]),
@@ -857,9 +865,6 @@ def outlier_detection(
             df_model.coalesce(1).write.parquet(
                 model_path + "/outlier_numcols", mode="overwrite"
             )
-
-    for i, j in zip(recast_cols, recast_type):
-        idf = idf.withColumn(i, F.col(i).cast(j))
 
     def composite_outlier_pandas(col_param):
         def inner(v):
