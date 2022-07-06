@@ -1,0 +1,7 @@
+input_dataset:
+output_parent_path:
+dataframe_size_list: [1,5,10,15,20,40,60,80,100,150,200,220]
+column_type_ratio: 0.2 
+functions: ["correlation_matrix", "outlier_detection", "IG_calculation", "IV_calculation", "variable_clustering"]
+node_counts: [1,2,3,4,5]
+machine_type: "r5.2xlarge"
