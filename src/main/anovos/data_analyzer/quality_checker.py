@@ -642,10 +642,10 @@ def outlier_detection(
         If pre_existing_model is False, this field can be used for saving the model.
         Default "NA" means there is neither pre-existing model nor there is a need to save one.
     sample_size
-        The maximum number of rows used to calculate the thresholds of outlier detection including percentiles, means,
-        standard deviations and quantiles. The computed thresholds will be applied over all rows in the original idf
-        to detect outliers. If the number of rows of idf is smaller than sample_size, the original idf will be used.
-        (Default value = 1000000)
+        The maximum number of rows used to calculate the thresholds of outlier detection. Relevant computation includes
+        percentiles, means, standard deviations and quantiles calculation. The computed thresholds will be applied over
+        all rows in the original idf to detect outliers. If the number of rows of idf is smaller than sample_size,
+        the original idf will be used. (Default value = 1000000)
     output_mode
         "replace", "append".
         “replace” option replaces original columns with treated column. “append” option append treated
