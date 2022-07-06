@@ -784,7 +784,9 @@ def outlier_detection(
 
         idf_count = idf.count()
         if idf_count > sample_size:
-            idf_sample = idf.sample(sample_size/idf_count, False, 11).select(list_of_cols)
+            idf_sample = idf.sample(sample_size / idf_count, False, 11).select(
+                list_of_cols
+            )
         else:
             idf_sample = idf.select(list_of_cols)
 
@@ -819,7 +821,7 @@ def outlier_detection(
             exprs = [f(F.col(c)) for f in [F.mean, F.stddev] for c in list_of_cols]
             stats = idf_sample.select(exprs).rdd.flatMap(lambda x: x).collect()
 
-            mean, stdev = stats[:len(list_of_cols)], stats[len(list_of_cols):]
+            mean, stdev = stats[: len(list_of_cols)], stats[len(list_of_cols) :]
             stdev_lower = pd.Series(mean) - detection_configs.get(
                 "stdev_lower", 0.0
             ) * pd.Series(stdev)
@@ -859,9 +861,13 @@ def outlier_detection(
 
         # Saving model File if required
         if model_path != "NA":
-            df_model = spark.createDataFrame(
-                zip(list_of_cols, params), schema=["attribute", "parameters"]
+            schema = T.StructType(
+                [
+                    T.StructField("attribute", T.StringType(), True),
+                    T.StructField("parameters", T.ArrayType(T.DoubleType()), True),
+                ]
             )
+            df_model = spark.createDataFrame(zip(list_of_cols, params), schema=schema)
             df_model.coalesce(1).write.parquet(
                 model_path + "/outlier_numcols", mode="overwrite"
             )
