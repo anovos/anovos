@@ -906,26 +906,23 @@ def outlier_detection(
         )
 
         if treatment & (treatment_method in ("value_replacement", "null_replacement")):
-            if i not in skewed_cols:
-                replace_vals = {
-                    "value_replacement": [params[index][0], params[index][1]],
-                    "null_replacement": [None, None],
-                }
-                odf = odf.withColumn(
-                    i + "_outliered",
+            replace_vals = {
+                "value_replacement": [params[index][0], params[index][1]],
+                "null_replacement": [None, None],
+            }
+            odf = odf.withColumn(
+                i + "_outliered",
+                F.when(
+                    F.col(i + "_outliered") == 1, replace_vals[treatment_method][1]
+                ).otherwise(
                     F.when(
-                        F.col(i + "_outliered") == 1, replace_vals[treatment_method][1]
-                    ).otherwise(
-                        F.when(
-                            F.col(i + "_outliered") == -1,
-                            replace_vals[treatment_method][0],
-                        ).otherwise(F.col(i))
-                    ),
-                )
-                if output_mode == "replace":
-                    odf = odf.drop(i).withColumnRenamed(i + "_outliered", i)
-            else:
-                odf = odf.drop(i + "_outliered")
+                        F.col(i + "_outliered") == -1,
+                        replace_vals[treatment_method][0],
+                    ).otherwise(F.col(i))
+                ),
+            )
+            if output_mode == "replace":
+                odf = odf.drop(i).withColumnRenamed(i + "_outliered", i)
 
     def unionAll(dfs):
         first, *_ = dfs
