@@ -664,6 +664,7 @@ def outlier_detection(
         upper_outliers is outlier count in the upper spectrum.
 
     """
+    column_order = idf.columns
     num_cols = attributeType_segregation(idf)[0]
     if len(num_cols) == 0:
         warnings.warn("No Outlier Check - No numerical column(s) to analyse")
@@ -955,7 +956,10 @@ def outlier_detection(
             *[i + "_outliered" for i in list_of_cols]
         )
 
-    if not treatment:
+    if treatment:
+        if output_mode == "replace":
+            odf = odf.select(column_order)
+    else:
         odf = idf
 
     if print_impact:
