@@ -322,7 +322,16 @@ def attribute_binning(
         bucketizer = Bucketizer(
             inputCols=list_of_cols, outputCols=binned_col, splitsArray=bin_cutoffs
         )
-        odf = bucketizer.setHandleInvalid("keep").transform(idf).drop(*list_of_cols)
+        odf = bucketizer.setHandleInvalid("keep").transform(idf)
+        if output_mode == "replace":
+            odf = odf.drop(*list_of_cols).select(
+                *(F.col(x).alias(str(x).split("_")[0]) for x in binned_col),
+                *(
+                    F.col(x)
+                    for x in odf.drop(*list_of_cols).columns
+                    if x not in binned_col
+                ),
+            )
         return odf
 
 

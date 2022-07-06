@@ -538,12 +538,51 @@ def IV_calculation(
             )
 
     list_df = []
-    for col in idf_encoded.columns:
-        list_df.append(
+    for col in list_of_cols:
+        df_agg = (
             idf_encoded.select(col, label_col)
-            .withColumnRenamed(col, "value")
-            .withColumn("attribute", F.lit(str(col)))
+            .groupby(col)
+            .agg(
+                F.count(
+                    F.when(F.col(label_col) != event_label, F.col(label_col))
+                ).alias("label_0"),
+                F.count(
+                    F.when(F.col(label_col) == event_label, F.col(label_col))
+                ).alias("label_1"),
+            )
+            .withColumn(
+                "label_0_total", F.sum(F.col("label_0")).over(Window.partitionBy())
+            )
+            .withColumn(
+                "label_1_total", F.sum(F.col("label_1")).over(Window.partitionBy())
+            )
         )
+
+        out_df = (
+            df_agg.withColumn("event_pcr", F.col("label_1") / F.col("label_1_total"))
+            .withColumn("nonevent_pcr", F.col("label_0") / F.col("label_0_total"))
+            .withColumn("diff_event", F.col("nonevent_pcr") - F.col("event_pcr"))
+            .withColumn("const", F.lit(0.5))
+            .withColumn(
+                "woe",
+                F.when(
+                    (F.col("nonevent_pcr") != 0) & (F.col("event_pcr") != 0),
+                    F.log(F.col("nonevent_pcr") / F.col("event_pcr")),
+                ).otherwise(
+                    F.log(
+                        ((F.col("label_0") + F.col("const")) / F.col("label_0_total"))
+                        / ((F.col("label_1") + F.col("const")) / F.col("label_1_total"))
+                    )
+                ),
+            )
+            .withColumn("iv_single", F.col("woe") * F.col("diff_event"))
+            .withColumn("iv", F.sum(F.col("iv_single")).over(Window.partitionBy()))
+            .withColumn("attribute", F.lit(str(col)))
+            .select("attribute", "iv")
+            .distinct()
+        )
+
+        list_df.append(out_df)
 
     def unionAll(dfs):
         first, *_ = dfs
@@ -551,47 +590,7 @@ def IV_calculation(
             first.sql_ctx._sc.union([df.rdd for df in dfs]), first.schema
         )
 
-    df_union = unionAll(list_df)
-
-    df_agg = df_union.groupby("attribute", "value").agg(
-        F.count(F.when(F.col(label_col) != event_label, F.col(label_col))).alias(
-            "label_0"
-        ),
-        F.count(F.when(F.col(label_col) == event_label, F.col(label_col))).alias(
-            "label_1"
-        ),
-    )
-
-    df_join = (
-        df_agg.groupby("attribute")
-        .agg(
-            F.sum("label_0").alias("label_0_total"),
-            F.sum("label_1").alias("label_1_total"),
-        )
-        .join(df_agg, "attribute", "inner")
-    )
-
-    odf = (
-        df_join.withColumn("event_pcr", F.col("label_1") / F.col("label_1_total"))
-        .withColumn("nonevent_pcr", F.col("label_0") / F.col("label_0_total"))
-        .withColumn("diff_event", F.col("nonevent_pcr") - F.col("event_pcr"))
-        .withColumn("const", F.lit(0.5))
-        .withColumn(
-            "woe",
-            F.when(
-                (F.col("nonevent_pcr") != 0) & (F.col("event_pcr") != 0),
-                F.log(F.col("nonevent_pcr") / F.col("event_pcr")),
-            ).otherwise(
-                F.log(
-                    ((F.col("label_0") + F.col("const")) / F.col("label_0_total"))
-                    / ((F.col("label_1") + F.col("const")) / F.col("label_1_total"))
-                )
-            ),
-        )
-        .withColumn("iv", F.col("woe") * F.col("diff_event"))
-        .groupby("attribute")
-        .agg(F.sum(F.col("iv")).alias("iv"))
-    )
+    odf = unionAll(list_df)
     return odf
 
 
