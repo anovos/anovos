@@ -591,6 +591,9 @@ def IV_calculation(
         )
 
     odf = unionAll(list_df)
+    if print_impact:
+        odf.show(odf.count())
+
     return odf
 
 
@@ -709,39 +712,46 @@ def IG_calculation(
     )
     for col in list_of_cols:
         idf_entropy = (
-            idf_encoded.withColumn(
-                label_col, F.when(F.col(label_col) == event_label, 1).otherwise(0)
+            (
+                idf_encoded.withColumn(
+                    label_col, F.when(F.col(label_col) == event_label, 1).otherwise(0)
+                )
+                .groupBy(col)
+                .agg(
+                    F.sum(F.col(label_col)).alias("event_count"),
+                    F.count(F.col(label_col)).alias("total_count"),
+                )
+                .withColumn("event_pct", F.col("event_count") / F.col("total_count"))
+                .withColumn(
+                    "segment_pct",
+                    F.col("total_count")
+                    / F.sum("total_count").over(Window.partitionBy()),
+                )
+                .withColumn(
+                    "entropy",
+                    -F.col("segment_pct")
+                    * (
+                        (F.col("event_pct") * F.log2(F.col("event_pct")))
+                        + ((1 - F.col("event_pct")) * F.log2((1 - F.col("event_pct"))))
+                    ),
+                )
             )
-            .groupBy(col)
-            .agg(
-                F.sum(F.col(label_col)).alias("event_count"),
-                F.count(F.col(label_col)).alias("total_count"),
-            )
-            .withColumn("event_pct", F.col("event_count") / F.col("total_count"))
-            .withColumn(
-                "segment_pct",
-                F.col("total_count") / F.sum("total_count").over(Window.partitionBy()),
-            )
-            .withColumn(
-                "entropy",
-                -F.col("segment_pct")
-                * (
-                    (F.col("event_pct") * F.log2(F.col("event_pct")))
-                    + ((1 - F.col("event_pct")) * F.log2((1 - F.col("event_pct"))))
-                ),
-            )
+            .groupBy()
+            .agg(F.sum(F.col("entropy")).alias("entropy_sum"))
+            .withColumn("attribute", F.lit(str(col)))
+            .withColumn("entropy_total", F.lit(float(total_entropy)))
+            .withColumn("ig", F.col("entropy_total") - F.col("entropy_sum"))
+            .select("attribute", "ig")
         )
-        entropy = (
-            idf_entropy.groupBy().sum("entropy").rdd.flatMap(lambda x: x).collect()[0]
-        )
-        ig_value = total_entropy - entropy if entropy else None
-        output.append([col, ig_value])
+        output.append(idf_entropy)
 
-    odf = (
-        spark.createDataFrame(output, ["attribute", "ig"])
-        .withColumn("ig", F.round(F.col("ig"), 4))
-        .orderBy(F.desc("ig"))
-    )
+    def unionAll(dfs):
+        first, *_ = dfs
+        return first.sql_ctx.createDataFrame(
+            first.sql_ctx._sc.union([df.rdd for df in dfs]), first.schema
+        )
+
+    odf = unionAll(output)
     if print_impact:
         odf.show(odf.count())
 
