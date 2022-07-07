@@ -23,6 +23,34 @@ sample_avro = (
 sample_output_path = "./data/tmp/output/"
 
 
+@pytest.fixture
+def df_parquet(spark_session: SparkSession):
+    df_parquet = spark_session.read.parquet(sample_parquet)
+    df_parquet = df_parquet.withColumn(
+        "label",
+        F.when(F.col("income") == "<=50K", F.lit(0.0)).when(
+            F.col("income") == ">50K", F.lit(1.0)
+        ),
+    ).drop("income")
+
+    assert df_parquet.where(F.col("ifa") == "4062a").count() == 1
+    assert (
+        df_parquet.where(F.col("ifa") == "4062a").toPandas().to_dict("list")["age"][0]
+        == 28
+    )
+    assert (
+        df_parquet.where(F.col("ifa") == "4062a").toPandas().to_dict("list")["sex"][0]
+        == "Male"
+    )
+    assert (
+        df_parquet.where(F.col("ifa") == "4062a")
+        .toPandas()
+        .to_dict("list")["education"][0]
+        == "11th"
+    )
+    return df_parquet
+
+
 @pytest.mark.usefixtures("spark_session")
 def test_nullRows_detection(spark_session: SparkSession):
     test_df = spark_session.createDataFrame(
@@ -493,105 +521,112 @@ def test_nullColumns_detection(spark_session: SparkSession):
     )
 
 
-def test_outlier_detection(spark_session: SparkSession):
-    test_df7 = spark_session.read.parquet(sample_parquet)
-    test_df7 = test_df7.withColumn(
-        "label",
-        F.when(F.col("income") == "<=50K", F.lit(0.0)).when(
-            F.col("income") == ">50K", F.lit(1.0)
-        ),
-    ).drop("income")
-    assert test_df7.where(F.col("ifa") == "4062a").count() == 1
-    assert (
-        test_df7.where(F.col("ifa") == "4062a").toPandas().to_dict("list")["age"][0]
-        == 28
-    )
-    assert (
-        test_df7.where(F.col("ifa") == "4062a").toPandas().to_dict("list")["sex"][0]
-        == "Male"
-    )
-    assert (
-        test_df7.where(F.col("ifa") == "4062a")
-        .toPandas()
-        .to_dict("list")["education"][0]
-        == "11th"
+def test_that_outlier_detection_works_with_row_removal_treatment(
+    spark_session: SparkSession, df_parquet
+):
+    odf, odf_print = outlier_detection(
+        spark_session,
+        df_parquet,
+        drop_cols=["ifa", "label"],
+        treatment=True,
+        treatment_method="row_removal",
     )
 
-    result_df7 = outlier_detection(spark_session, test_df7, drop_cols=["ifa", "label"])[
-        1
-    ]
+    assert df_parquet.count() > odf.count()
+    assert len(df_parquet.columns) == len(odf.columns)
 
-    assert result_df7.count() == 6
-    assert len(result_df7.columns) == 3
-    assert (
-        result_df7.where(F.col("attribute") == "age")
-        .toPandas()
-        .to_dict("list")["lower_outliers"][0]
-        == 0
+    odf_print = odf_print.toPandas()
+    assert odf_print.shape == (6, 3)
+
+    odf_print.index = odf_print["attribute"]
+    odf_print = odf_print[["lower_outliers", "upper_outliers"]]
+
+    assert odf_print.loc["age", :].tolist() == [0, 87]
+    assert odf_print.loc["fnlwgt", :].tolist() == [0, 518]
+    assert odf_print.loc["logfnl", :].tolist() == [0, 15]
+    assert odf_print.loc["education-num", :].tolist() == [0, 0]
+    assert odf_print.loc["capital-gain", :].tolist() == [0, 955]
+    assert odf_print.loc["hours-per-week", :].tolist() == [0, 515]
+
+
+def test_that_outlier_detection_works_with_value_replacement_treatment(
+    spark_session: SparkSession, df_parquet
+):
+    odf, odf_print = outlier_detection(
+        spark_session,
+        df_parquet,
+        list_of_cols=["age", "education-num"],
+        detection_side="both",
+        detection_configs={"pctile_lower": 0.02, "pctile_upper": 0.98},
+        treatment=True,
+        output_mode="append",
     )
-    assert (
-        result_df7.where(F.col("attribute") == "age")
-        .toPandas()
-        .to_dict("list")["upper_outliers"][0]
-        == 87
+
+    assert df_parquet.count() == odf.count()
+    assert len(df_parquet.columns) + 2 == len(odf.columns)
+    assert odf.select(
+        F.max("age"), F.max("age_outliered"), F.min("age"), F.min("age_outliered")
+    ).rdd.flatMap(list).collect() == [85, 66, 17, 18]
+    assert odf.select(
+        F.max("education-num"),
+        F.max("education-num_outliered"),
+        F.min("education-num"),
+        F.min("education-num_outliered"),
+    ).rdd.flatMap(list).collect() == [16, 15, 1, 4]
+
+    odf_print = odf_print.toPandas()
+    odf_print.index = odf_print["attribute"]
+    odf_print = odf_print[["lower_outliers", "upper_outliers"]]
+
+    assert odf_print.loc["age", :].tolist() == [202, 482]
+    assert odf_print.loc["education-num", :].tolist() == [267, 205]
+
+
+def test_that_outlier_detection_works_with_null_replacement_treatment_and_use_saved_model(
+    spark_session: SparkSession, df_parquet
+):
+    # save the model
+    odf, odf_print = outlier_detection(
+        spark_session,
+        df_parquet,
+        list_of_cols=["age", "education-num"],
+        detection_side="both",
+        treatment=True,
+        treatment_method="null_replacement",
+        sample_size=1000,
+        model_path="unit_testing/models/",
     )
-    assert (
-        result_df7.where(F.col("attribute") == "fnlwgt")
-        .toPandas()
-        .to_dict("list")["lower_outliers"][0]
-        == 0
+
+    assert df_parquet.count() == odf.count()
+    assert df_parquet.dropna().count() > odf.dropna().count()
+    assert len(df_parquet.columns) == len(odf.columns)
+
+    odf_print = odf_print.toPandas()
+    odf_print.index = odf_print["attribute"]
+    odf_print = odf_print[["lower_outliers", "upper_outliers"]]
+
+    assert odf_print.loc["age", :].tolist() == [0, 106]
+    assert odf_print.loc["education-num", :].tolist() == [593, 0]
+
+    # use the saved model
+    odf, odf_print = outlier_detection(
+        spark_session,
+        df_parquet,
+        list_of_cols=["age", "education-num"],
+        detection_side="upper",
+        treatment=True,
+        treatment_method="null_replacement",
+        pre_existing_model=True,
+        model_path="unit_testing/models/",
     )
-    assert (
-        result_df7.where(F.col("attribute") == "fnlwgt")
-        .toPandas()
-        .to_dict("list")["upper_outliers"][0]
-        == 518
-    )
-    assert (
-        result_df7.where(F.col("attribute") == "logfnl")
-        .toPandas()
-        .to_dict("list")["lower_outliers"][0]
-        == 0
-    )
-    assert (
-        result_df7.where(F.col("attribute") == "logfnl")
-        .toPandas()
-        .to_dict("list")["upper_outliers"][0]
-        == 15
-    )
-    assert (
-        result_df7.where(F.col("attribute") == "education-num")
-        .toPandas()
-        .to_dict("list")["lower_outliers"][0]
-        == 0
-    )
-    assert (
-        result_df7.where(F.col("attribute") == "education-num")
-        .toPandas()
-        .to_dict("list")["upper_outliers"][0]
-        == 0
-    )
-    assert (
-        result_df7.where(F.col("attribute") == "capital-gain")
-        .toPandas()
-        .to_dict("list")["lower_outliers"][0]
-        == 0
-    )
-    assert (
-        result_df7.where(F.col("attribute") == "capital-gain")
-        .toPandas()
-        .to_dict("list")["upper_outliers"][0]
-        == 955
-    )
-    assert (
-        result_df7.where(F.col("attribute") == "hours-per-week")
-        .toPandas()
-        .to_dict("list")["lower_outliers"][0]
-        == 0
-    )
-    assert (
-        result_df7.where(F.col("attribute") == "hours-per-week")
-        .toPandas()
-        .to_dict("list")["upper_outliers"][0]
-        == 515
-    )
+
+    assert df_parquet.count() == odf.count()
+    assert df_parquet.dropna().count() > odf.dropna().count()
+    assert len(df_parquet.columns) == len(odf.columns)
+
+    odf_print = odf_print.toPandas()
+    odf_print.index = odf_print["attribute"]
+    odf_print = odf_print[["lower_outliers", "upper_outliers"]]
+
+    assert odf_print.loc["age", :].tolist() == [0, 106]
+    assert odf_print.loc["education-num", :].tolist() == [0, 0]
