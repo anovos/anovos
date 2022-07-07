@@ -1,10 +1,8 @@
 import copy
 import subprocess
 import timeit
-
 import yaml
 from loguru import logger
-
 from anovos.data_analyzer import association_evaluator, quality_checker, stats_generator
 from anovos.data_analyzer.ts_analyzer import ts_analyzer
 from anovos.data_analyzer.geospatial_analyzer import geospatial_autodetection
@@ -255,12 +253,12 @@ def main(all_configs, run_type):
                         eps=eps,
                         min_samples=min_samples,
                         global_map_box_val=global_map_box_val,
-                        run_type=run_type
+                        run_type=run_type,
                     )
 
                 except:
                     lat_cols, long_cols, gh_cols = [], [], []
-
+                print(lat_cols, long_cols, gh_cols)
                 end = timeit.default_timer()
                 logger.info(
                     f"{key}, auto_detection_geospatial: execution time (in secs) ={round(end - start, 4)}"
