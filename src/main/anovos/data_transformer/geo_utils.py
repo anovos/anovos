@@ -3,6 +3,7 @@ import pygeohash as pgh
 from geopy import distance
 from scipy import spatial
 import numbers
+import warnings
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
 
@@ -43,29 +44,74 @@ def to_latlon_decimal_degrees(loc, input_format, radius=EARTH_RADIUS):
 
     if input_format == "dd":
         # loc = [lat, lon]
-        return [float(loc[0]), float(loc[1])]
+        try:
+            lat = float(loc[0])
+            lon = float(loc[1])
+            if lat > 90 or lat < -90 or lon > 180 or lon < -180:
+                warnings.warn(
+                    "Rows may contain unintended values due to longitude and/or latitude values being out of the "
+                    "valid range"
+                )
+        except:
+            lat, lon = None, None
+            warnings.warn(
+                "Rows dropped due to invalid longitude and/or latitude values"
+            )
 
     elif input_format == "dms":
         # loc = [[d1,m1,s1], [d2,m2,s2]]
-        d1, m1, s1, d2, m2, s2 = loc[0] + loc[1]
-        lat = d1 + float(m1) / 60 + float(s1) / 3600
-        lon = d2 + float(m2) / 60 + float(s2) / 3600
+        try:
+            d1, m1, s1, d2, m2, s2 = [float(i) for i in (loc[0] + loc[1])]
+            lat = d1 + m1 / 60 + s1 / 3600
+            lon = d2 + m2 / 60 + s2 / 3600
+            if lat > 90 or lat < -90 or lon > 180 or lon < -180:
+                warnings.warn(
+                    "Rows may contain unintended values due to longitude and/or latitude values being out of the "
+                    "valid range"
+                )
+        except:
+            lat, lon = None, None
+            warnings.warn(
+                "Rows dropped due to invalid longitude and/or latitude values"
+            )
 
     elif input_format == "radian":
         # loc = [lat_radian, lon_radian]
-        lat_rad, lon_rad = loc
-        lat = degrees(float(lat_rad))
-        lon = degrees(float(lon_rad))
+        try:
+            lat = degrees(float(loc[0]))
+            lon = degrees(float(loc[1]))
+            if lat > 90 or lat < -90 or lon > 180 or lon < -180:
+                warnings.warn(
+                    "Rows may contain unintended values due to longitude and/or latitude values being out of the "
+                    "valid range"
+                )
+        except:
+            lat, lon = None, None
+            warnings.warn(
+                "Rows dropped due to invalid longitude and/or latitude values"
+            )
 
     elif input_format == "cartesian":
         # loc = [x, y, z]
-        x, y, z = loc
-        lat = degrees(float(asin(z / radius)))
-        lon = degrees(float(atan2(y, x)))
+        try:
+            x, y, z = [float(i) for i in loc]
+            lat = degrees(float(asin(z / radius)))
+            lon = degrees(float(atan2(y, x)))
+            if lat > 90 or lat < -90 or lon > 180 or lon < -180:
+                warnings.warn("Rows may contain unintended values due to cartesian values being out of the valid range")
+        except:
+            lat, lon = None, None
+            warnings.warn("Rows dropped due to invalid cartesian values")
 
     elif input_format == "geohash":
         # loc = geohash
-        lat, lon = list(pgh.decode(loc))
+        try:
+            lat, lon = list(pgh.decode(loc))
+            if lat > 90 or lat < -90 or lon > 180 or lon < -180:
+                warnings.warn("Rows may contain unintended values due to cartesian values being out of the valid range")
+        except:
+            lat, lon = None, None
+            warnings.warn("Rows dropped due to an invalid geohash entry")
 
     return [lat, lon]
 
@@ -95,7 +141,6 @@ def decimal_degrees_to_degrees_minutes_seconds(dd):
 def from_latlon_decimal_degrees(
     loc, output_format, radius=EARTH_RADIUS, geohash_precision=8
 ):
-
     """
     Parameters
     ----------
@@ -161,7 +206,6 @@ def from_latlon_decimal_degrees(
 
 
 def haversine_distance(loc1, loc2, loc_format, unit="m", radius=EARTH_RADIUS):
-
     """
     Parameters
     ----------
