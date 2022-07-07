@@ -23,6 +23,12 @@ Below are some of the functions used to process the final output.
 - ts_landscape
 - ts_stats
 - ts_viz_generate
+- overall_stats_gen
+- loc_field_stats
+- read_stats_ll_geo
+- read_cluster_stats_ll_geo
+- read_loc_charts
+- loc_report_gen
 - anovos_report
 
 However, each of the functions have been detailed in the respective sections across the parameters used.
@@ -3165,6 +3171,25 @@ def ts_viz_generate(master_path, id_col, print_report=False, output_type=None):
 
 
 def overall_stats_gen(lat_col_list, long_col_list, geohash_col_list):
+
+    """
+
+    This function helps to produce a basic summary of all the geospatial fields auto-detected in a dictionary along with the length of lat-lon & geohash cols identified.
+
+    Parameters
+    ----------
+    lat_col_list
+        List of latitude columns identified
+    long_col_list
+        List of longitude columns identified
+    geohash_col_list
+        List of geohash columns identified
+
+    Returns
+    -------
+    Dictionary,Integer,Integer
+    """
+
     d = {}
     ll = []
 
@@ -3186,6 +3211,26 @@ def overall_stats_gen(lat_col_list, long_col_list, geohash_col_list):
 
 
 def loc_field_stats(lat_col_list, long_col_list, geohash_col_list, max_records):
+
+    """
+
+    This function helps to produce a basic summary of all the geospatial fields auto-detected
+
+    Parameters
+    ----------
+    lat_col_list
+        List of latitude columns identified
+    long_col_list
+        List of longitude columns identified
+    geohash_col_list
+        List of geohash columns identified
+    max_records
+        Maximum geospatial points analyzed
+
+    Returns
+    -------
+    DatapaneObject
+    """
 
     loc_cnt = (
         overall_stats_gen(lat_col_list, long_col_list, geohash_col_list)[1] * 2
@@ -3214,6 +3259,29 @@ def loc_field_stats(lat_col_list, long_col_list, geohash_col_list, max_records):
 
 
 def read_stats_ll_geo(lat_col, long_col, geohash_col, master_path, top_geo_records):
+
+    """
+
+    This function helps to read all the basis stats output for the lat-lon & geohash field produced from the analyzer module
+
+    Parameters
+    ----------
+    lat_col
+        Latitude column identified
+    long_col
+        Longitude column identified
+    geohash_col
+        Geohash column identified
+    master_path
+        Master path where the aggregated data resides
+    top_geo_records
+        Top geospatial records displayed
+
+    Returns
+    -------
+    DatapaneObject
+
+    """
 
     try:
         len_lat_col = len(lat_col)
@@ -3481,6 +3549,26 @@ def read_stats_ll_geo(lat_col, long_col, geohash_col, master_path, top_geo_recor
 
 def read_cluster_stats_ll_geo(lat_col, long_col, geohash_col, master_path):
 
+    """
+
+    This function helps to read all the cluster analysis output for the lat-lon & geohash field produced from the analyzer module
+
+    Parameters
+    ----------
+    lat_col
+        Latitude column identified
+    long_col
+        Longitude column identified
+    geohash_col
+        Geohash column identified
+    master_path
+        Master path where the aggregated data resides
+
+    Returns
+    -------
+    DatapaneObject
+    """
+
     ll_col, plot_ll, all_geo_cols = [], [], []
 
     try:
@@ -3581,6 +3669,21 @@ def read_cluster_stats_ll_geo(lat_col, long_col, geohash_col, master_path):
 
 def read_loc_charts(master_path):
 
+    """
+
+    This function helps to read all the geospatial charts from the master path and populate in the report
+
+    Parameters
+    ----------
+
+    master_path
+        Master path where the aggregated data resides
+
+    Returns
+    -------
+    DatapaneObject
+    """
+
     ll_charts_nm = [x for x in os.listdir(master_path) if "loc_charts_ll" in x]
     geo_charts_nm = [x for x in os.listdir(master_path) if "loc_charts_gh" in x]
 
@@ -3663,6 +3766,32 @@ def loc_report_gen(
     top_geo_records,
     print_report=False,
 ):
+
+    """
+
+    This function helps to read all the lat,long & geohash columns as input alongside few input parameters to produce the geospatial analysis report tab
+
+    Parameters
+    ----------
+    lat_cols
+        Latitude columns identified in the data
+    long_cols
+        Longitude columns identified in the data
+    geohash_cols
+        Geohash columns identified in the data
+    master_path
+        Master path where the aggregated data resides
+    max_records
+        Maximum geospatial points analyzed
+    top_geo_records
+        Top geospatial records displayed
+    print_report
+        Option to specify whether the Report needs to be saved or not. True / False can be used to specify the needful
+
+    Returns
+    -------
+    DatapaneObject
+    """
 
     _ = dp.Text("#")
     dp1 = dp.Group(_, loc_field_stats(lat_cols, long_cols, geohash_cols, max_records))
@@ -3756,6 +3885,17 @@ def anovos_report(
         Path where the report will be saved. (Default value = ".")
     output_type
         Time category of analysis which can be between "Daily", "Hourly", "Weekly"
+    lat_cols
+        Latitude columns identified in the data
+    long_cols
+        Longitude columns identified in the data
+    gh_cols
+        Geohash columns identified in the data
+    max_records
+        Maximum geospatial points analyzed
+    top_geo_records
+        Top geospatial records displayed
+
 
     Returns
     -------
