@@ -605,7 +605,7 @@ def test_that_outlier_detection_works_with_null_replacement_treatment_and_use_sa
     odf_print.index = odf_print["attribute"]
     odf_print = odf_print[["lower_outliers", "upper_outliers"]]
 
-    assert odf_print.loc["age", :].tolist() == [0, 106]
+    assert odf_print.loc["age", :].tolist() == [0, 87]
     assert odf_print.loc["education-num", :].tolist() == [593, 0]
 
     # use the saved model
@@ -628,5 +628,5 @@ def test_that_outlier_detection_works_with_null_replacement_treatment_and_use_sa
     odf_print.index = odf_print["attribute"]
     odf_print = odf_print[["lower_outliers", "upper_outliers"]]
 
-    assert odf_print.loc["age", :].tolist() == [0, 106]
+    assert odf_print.loc["age", :].tolist() == [0, 87]
     assert odf_print.loc["education-num", :].tolist() == [0, 0]
