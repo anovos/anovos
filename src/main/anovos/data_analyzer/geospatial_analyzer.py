@@ -1,18 +1,37 @@
+# coding=utf-8
+
+"""This module help to analyze & summarize the geospatial fields identified through the auto-detection module. Additionally, it generates the intermediate output which are fed in to the reporting section
+
+As a part of generation of final output, there are various functions created such as -
+
+- descriptive_stats_gen
+- lat_long_col_stats_gen
+- geohash_col_stats_gen
+- stats_gen_lat_long_geo
+- geo_cluster_analysis
+- geo_cluster_generator
+- generate_loc_charts_processor
+- generate_loc_charts_controller
+- geospatial_autodetection
+
+Respective functions have sections containing the detailed definition of the parameters used for computing.
+
+"""
+
 from anovos.data_ingest.data_ingest import read_dataset
 from anovos.shared.spark import spark
 from anovos.shared.utils import ends_with, output_to_local
-from anovos.data_ingest.geo_auto_detection import ll_gh_cols
+from anovos.data_ingest.geo_auto_detection import ll_gh_cols, geo_to_latlong
 import pandas as pd
 import numpy as np
 from sklearn.cluster import MiniBatchKMeans
 
 # from branca.element import Figure
 # from folium.plugins import FastMarkerCluster, HeatMapWithTime
+# from folium import plugins
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
 import geohash2 as gh
-
-# from folium import plugins
 from sklearn.cluster import DBSCAN
 import json
 import os
@@ -40,131 +59,125 @@ mapbox_list = [
 ]
 
 
-def geo_to_latlong(x, option):
+# def zoom_center(
+#     lons: tuple = None,
+#     lats: tuple = None,
+#     lonlats: tuple = None,
+#     format: str = "lonlat",
+#     projection: str = "mercator",
+#     width_to_height: float = 2.0,
+# ) -> (float, dict):
+#     """Finds optimal zoom and centering for a plotly mapbox.
+#     Must be passed (lons & lats) or lonlats.
+#     Temporary solution awaiting official implementation, see:
+#     https://github.com/plotly/plotly.js/issues/3434
 
-    if x is not None:
+#     Parameters
+#     --------
+#     lons: tuple, optional, longitude component of each location
+#     lats: tuple, optional, latitude component of each location
+#     lonlats: tuple, optional, gps locations
+#     format: str, specifying the order of longitud and latitude dimensions,
+#         expected values: 'lonlat' or 'latlon', only used if passed lonlats
+#     projection: str, only accepting 'mercator' at the moment,
+#         raises `NotImplementedError` if other is passed
+#     width_to_height: float, expected ratio of final graph's with to height,
+#         used to select the constrained axis.
 
-        if option == 0:
+#     Returns
+#     --------
+#     zoom: float, from 1 to 20
+#     center: dict, gps position with 'lon' and 'lat' keys
 
-            return [float(a) for a in gh.decode(x)][option]
-        elif option == 1:
-            return [float(a) for a in gh.decode(x)][option]
+#     >>> print(zoom_center((-109.031387, -103.385460),
+#     ...     (25.587101, 31.784620)))
+#     (5.75, {'lon': -106.208423, 'lat': 28.685861})
+#     """
+#     if lons is None and lats is None:
+#         if isinstance(lonlats, tuple):
+#             lons, lats = zip(*lonlats)
+#         else:
+#             raise ValueError("Must pass lons & lats or lonlats")
 
-        else:
-            return None
+#     maxlon, minlon = max(lons), min(lons)
+#     maxlat, minlat = max(lats), min(lats)
+#     center = {
+#         "lon": round((maxlon + minlon) / 2, 6),
+#         "lat": round((maxlat + minlat) / 2, 6),
+#     }
 
-    else:
+#     # longitudinal range by zoom level (20 to 1)
+#     # in degrees, if centered at equator
+#     lon_zoom_range = np.array(
+#         [
+#             0.0007,
+#             0.0014,
+#             0.003,
+#             0.006,
+#             0.012,
+#             0.024,
+#             0.048,
+#             0.096,
+#             0.192,
+#             0.3712,
+#             0.768,
+#             1.536,
+#             3.072,
+#             6.144,
+#             11.8784,
+#             23.7568,
+#             47.5136,
+#             98.304,
+#             190.0544,
+#             360.0,
+#         ]
+#     )
 
-        return None
+#     if projection == "mercator":
+#         margin = 1.2
+#         height = (maxlat - minlat) * margin * width_to_height
+#         width = (maxlon - minlon) * margin
+#         lon_zoom = np.interp(width, lon_zoom_range, range(20, 0, -1))
+#         lat_zoom = np.interp(height, lon_zoom_range, range(20, 0, -1))
+#         zoom = round(min(lon_zoom, lat_zoom), 2)
+#     else:
+#         raise NotImplementedError(f"{projection} projection is not implemented")
 
-
-f_geo_to_latlong = F.udf(geo_to_latlong, T.FloatType())
-
-
-def latlong_to_geo(lat, long, precision=9):
-
-    if (lat is not None) and (long is not None):
-
-        return gh.encode(lat, long, precision)
-
-    else:
-
-        return None
-
-
-f_latlong_to_geo = F.udf(latlong_to_geo, T.StringType())
-
-
-def zoom_center(
-    lons: tuple = None,
-    lats: tuple = None,
-    lonlats: tuple = None,
-    format: str = "lonlat",
-    projection: str = "mercator",
-    width_to_height: float = 2.0,
-) -> (float, dict):
-    """Finds optimal zoom and centering for a plotly mapbox.
-    Must be passed (lons & lats) or lonlats.
-    Temporary solution awaiting official implementation, see:
-    https://github.com/plotly/plotly.js/issues/3434
-
-    Parameters
-    --------
-    lons: tuple, optional, longitude component of each location
-    lats: tuple, optional, latitude component of each location
-    lonlats: tuple, optional, gps locations
-    format: str, specifying the order of longitud and latitude dimensions,
-        expected values: 'lonlat' or 'latlon', only used if passed lonlats
-    projection: str, only accepting 'mercator' at the moment,
-        raises `NotImplementedError` if other is passed
-    width_to_height: float, expected ratio of final graph's with to height,
-        used to select the constrained axis.
-
-    Returns
-    --------
-    zoom: float, from 1 to 20
-    center: dict, gps position with 'lon' and 'lat' keys
-
-    >>> print(zoom_center((-109.031387, -103.385460),
-    ...     (25.587101, 31.784620)))
-    (5.75, {'lon': -106.208423, 'lat': 28.685861})
-    """
-    if lons is None and lats is None:
-        if isinstance(lonlats, tuple):
-            lons, lats = zip(*lonlats)
-        else:
-            raise ValueError("Must pass lons & lats or lonlats")
-
-    maxlon, minlon = max(lons), min(lons)
-    maxlat, minlat = max(lats), min(lats)
-    center = {
-        "lon": round((maxlon + minlon) / 2, 6),
-        "lat": round((maxlat + minlat) / 2, 6),
-    }
-
-    # longitudinal range by zoom level (20 to 1)
-    # in degrees, if centered at equator
-    lon_zoom_range = np.array(
-        [
-            0.0007,
-            0.0014,
-            0.003,
-            0.006,
-            0.012,
-            0.024,
-            0.048,
-            0.096,
-            0.192,
-            0.3712,
-            0.768,
-            1.536,
-            3.072,
-            6.144,
-            11.8784,
-            23.7568,
-            47.5136,
-            98.304,
-            190.0544,
-            360.0,
-        ]
-    )
-
-    if projection == "mercator":
-        margin = 1.2
-        height = (maxlat - minlat) * margin * width_to_height
-        width = (maxlon - minlon) * margin
-        lon_zoom = np.interp(width, lon_zoom_range, range(20, 0, -1))
-        lat_zoom = np.interp(height, lon_zoom_range, range(20, 0, -1))
-        zoom = round(min(lon_zoom, lat_zoom), 2)
-    else:
-        raise NotImplementedError(f"{projection} projection is not implemented")
-
-    return zoom, center
+#     return zoom, center
 
 
 def descriptive_stats_gen(
     df, lat_col, long_col, geohash_col, id_col, master_path, max_val
 ):
+
+    """
+
+    This function helps to produce descriptive stats for the analyzed geospatial fields
+
+
+    Parameters
+    ----------
+
+    df
+        Analysis DataFrame
+
+    lat_col
+        Latitude column
+    long_col
+        Longitude column
+    geohash_col
+        Geohash column
+    id_col
+        ID column
+    master_path
+        Path containing all the output from analyzed data
+    max_val
+        Top geospatial records displayed
+
+    Returns
+    -------
+    DataFrame[CSV]
+    """
 
     if (lat_col is not None) & (long_col is not None):
 
@@ -295,6 +308,33 @@ def descriptive_stats_gen(
 
 def lat_long_col_stats_gen(df, lat_col, long_col, id_col, master_path, max_val):
 
+    """
+
+    This function helps to produce descriptive stats for the latitude longitude columns
+
+
+    Parameters
+    ----------
+
+    df
+        Analysis DataFrame
+
+    lat_col
+        Latitude column
+    long_col
+        Longitude column
+    id_col
+        ID column
+    master_path
+        Path containing all the output from analyzed data
+    max_val
+        Top geospatial records displayed
+
+    Returns
+    -------
+
+    """
+
     ll = []
 
     if len(lat_col) == 1 & len(long_col) == 1:
@@ -310,6 +350,31 @@ def lat_long_col_stats_gen(df, lat_col, long_col, id_col, master_path, max_val):
 
 
 def geohash_col_stats_gen(df, geohash_col, id_col, master_path, max_val):
+
+    """
+
+    This function helps to produce descriptive stats for the geohash columns
+
+
+    Parameters
+    ----------
+
+    df
+        Analysis DataFrame
+
+    geohash_col
+        Geohash column
+    id_col
+        ID column
+    master_path
+        Path containing all the output from analyzed data
+    max_val
+        Top geospatial records displayed
+
+    Returns
+    -------
+
+    """
 
     ll = []
 
@@ -327,6 +392,35 @@ def geohash_col_stats_gen(df, geohash_col, id_col, master_path, max_val):
 def stats_gen_lat_long_geo(
     df, lat_col, long_col, geohash_col, id_col, master_path, max_val
 ):
+
+    """
+
+    This function helps to produce descriptive stats for the analyzed geospatial fields
+
+
+    Parameters
+    ----------
+
+    df
+        Analysis DataFrame
+
+    lat_col
+        Latitude column
+    long_col
+        Longitude column
+    geohash_col
+        Geohash column
+    id_col
+        ID column
+    master_path
+        Path containing all the output from analyzed data
+    max_val
+        Top geospatial records displayed
+
+    Returns
+    -------
+
+    """
 
     if lat_col:
         len_lat = len(lat_col)
@@ -379,6 +473,38 @@ def geo_cluster_analysis(
     col_name,
     global_map_box_val,
 ):
+
+    """
+
+    This function helps to generate cluster analysis stats for the identified geospatial fields
+
+    Parameters
+    ----------
+
+    df
+        Analysis DataFrame
+
+    lat_col
+        Latitude column
+    long_col
+        Longitude column
+    max_cluster
+        Maximum number of iterations to decide on the optimum cluster
+    eps
+        Epsilon value used for DBSCAN clustering
+    min_samples
+        Minimum sample size used for DBSCAN clustering
+    master_path
+        Path containing all the output from analyzed data
+    col_name
+        Analysis column
+    global_map_box_val
+        Geospatial Chart Theme Index
+
+    Returns
+    -------
+
+    """
 
     df_ = df[[lat_col, long_col]]
     max_k = int(max_cluster)
@@ -502,6 +628,38 @@ def geo_cluster_generator(
     global_map_box_val,
 ):
 
+    """
+
+    This function helps to trigger cluster analysis stats for the identified geospatial fields
+
+    Parameters
+    ----------
+
+    df
+        Analysis DataFrame
+
+    lat_col_list
+        Latitude columns identified in the data
+    long_col_list
+        Longitude columns identified in the data
+    geo_col_list
+        Geohash columns identified in the data
+    max_cluster
+        Maximum number of iterations to decide on the optimum cluster
+    eps
+        Epsilon value used for DBSCAN clustering
+    min_samples
+        Minimum sample size used for DBSCAN clustering
+    master_path
+        Path containing all the output from analyzed data
+    global_map_box_val
+        Geospatial Chart Theme Index
+
+    Returns
+    -------
+
+    """
+
     if isinstance(df, pd.DataFrame):
         pass
     else:
@@ -559,6 +717,36 @@ def geo_cluster_generator(
 def generate_loc_charts_processor(
     df, lat_col, long_col, geohash_col, max_val, id_col, global_map_box_val, master_path
 ):
+
+    """
+
+    This function helps to generate the output of location charts for the analyzed geospatial fields
+
+    Parameters
+    ----------
+
+    df
+        Analysis DataFrame
+
+    lat_col
+        Latitude columns identified in the data
+    long_col
+        Longitude columns identified in the data
+    geohash_col
+        Geohash columns identified in the data
+    max_val
+        Maximum geospatial points analyzed
+    id_col
+        ID column
+    global_map_box_val
+        Geospatial Chart Theme Index
+    master_path
+        Path containing all the output from analyzed data
+
+    Returns
+    -------
+
+    """
 
     if lat_col:
 
@@ -702,6 +890,35 @@ def generate_loc_charts_controller(
     df, id_col, lat_col, long_col, geohash_col, max_val, global_map_box_val, master_path
 ):
 
+    """
+
+    This function helps to trigger the output generation of location charts for the analyzed geospatial fields
+
+    Parameters
+    ----------
+
+    df
+        Analysis DataFrame
+    id_col
+        ID column
+    lat_col
+        Latitude columns identified in the data
+    long_col
+        Longitude columns identified in the data
+    geohash_col
+        Geohash columns identified in the data
+    max_val
+        Maximum geospatial points analyzed
+    global_map_box_val
+        Geospatial Chart Theme Index
+    master_path
+        Path containing all the output from analyzed data
+
+    Returns
+    -------
+
+    """
+
     if lat_col:
         len_lat = len(lat_col)
         ll_plot = generate_loc_charts_processor(
@@ -768,6 +985,39 @@ def geospatial_autodetection(
     global_map_box_val=0,
     run_type="local",
 ):
+
+    """
+
+    This function helps to trigger the output of intermediate data which is further used for producing the geospatial analyzer report
+
+    Parameters
+    ----------
+
+    df
+        Analysis DataFrame
+    id_col
+        ID column
+    master_path
+        Path containing all the output from analyzed data
+    max_records
+            Maximum geospatial points analyzed
+    top_geo_records
+        Top geospatial records displayed
+    max_cluster
+        Maximum number of iterations to decide on the optimum cluster
+    eps
+        Epsilon value used for DBSCAN clustering
+    min_samples
+        Minimum sample size used for DBSCAN clustering
+    global_map_box_val
+        Geospatial Chart Theme Index
+    run_type
+        Option to choose between run type "Local" or "EMR" or "Azure" basis the user flexibility. Default option is set as "Local"
+
+    Returns
+    -------
+
+    """
 
     if run_type == "local":
         master_path = master_path
