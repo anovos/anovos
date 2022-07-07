@@ -593,7 +593,6 @@ def test_that_outlier_detection_works_with_null_replacement_treatment_and_use_sa
         detection_side="both",
         treatment=True,
         treatment_method="null_replacement",
-        sample_size=1000,
         model_path="unit_testing/models/",
     )
 
