@@ -1,9 +1,43 @@
+# coding=utf-8
+
+"""This module help to automatically identify the latitude, longitude as well as geohash columns present in the analysis data through some intelligent checks provisioned as a part of the module.
+
+As a part of generation of the auto detection output, there are various functions created such as -
+
+- reg_lat_lon
+- conv_str_plus
+- precision_lev
+- geo_to_latlong
+- latlong_to_geo
+- ll_gh_cols
+
+Respective functions have sections containing the detailed definition of the parameters used for computing.
+
+"""
+
 import pygeohash as gh
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
 
 
 def reg_lat_lon(option):
+
+    """
+
+    This function helps to produce the relevant regular expression to be used for further processing based on the input field category - latitude / longitude
+
+
+    Parameters
+    ----------
+
+    option
+        Can be either latitude or longitude basis which the desired regular expression will be produced
+
+    Returns
+    -------
+    Regular Expression
+    """
+
     if option == "latitude":
         return "^(\+|-|)?(?:90(?:(?:\.0{1,10})?)|(?:[0-9]|[1-8][0-9])(?:(?:\.[0-9]{1,})?))$"
     elif option == "longitude":
@@ -11,6 +45,23 @@ def reg_lat_lon(option):
 
 
 def conv_str_plus(col):
+
+    """
+
+    This function helps to produce an extra "+" to the positive values while negative values are kept as is
+
+
+    Parameters
+    ----------
+
+    col
+        Analysis column
+
+    Returns
+    -------
+    String
+    """
+
     if col is None:
         return None
     elif col < 0:
@@ -23,6 +74,23 @@ f_conv_str_plus = F.udf(conv_str_plus, T.StringType())
 
 
 def precision_lev(col):
+
+    """
+
+    This function helps to capture the precision level after decimal point
+
+
+    Parameters
+    ----------
+
+    col
+        Analysis column
+
+    Returns
+    -------
+    Integer
+    """
+
     if col is None:
         return None
     else:
@@ -33,6 +101,24 @@ f_precision_lev = F.udf(precision_lev, T.IntegerType())
 
 
 def geo_to_latlong(x, option):
+
+    """
+
+    This function helps to convert geohash to latitude / longitude
+
+
+    Parameters
+    ----------
+
+    x
+        Analysis column
+    option
+        Can be either 0 or 1 basis which the latitude / longitude will be produced
+
+    Returns
+    -------
+    Float
+    """
 
     if x is not None:
 
@@ -58,7 +144,64 @@ def geo_to_latlong(x, option):
 f_geo_to_latlong = F.udf(geo_to_latlong, T.FloatType())
 
 
+def latlong_to_geo(lat, long, precision=9):
+
+    """
+
+    This function helps to convert latitude-longitude to geohash
+
+
+    Parameters
+    ----------
+
+    lat
+        latitude column
+
+    long
+        longitude column
+
+    precision
+        precision at which the geohash is converted to
+
+    Returns
+    -------
+    Regular String
+    """
+
+    if (lat is not None) and (long is not None):
+
+        return gh.encode(lat, long, precision)
+
+    else:
+
+        return None
+
+
+f_latlong_to_geo = F.udf(latlong_to_geo, T.StringType())
+
+
 def ll_gh_cols(df, max_records=100000):
+
+    """
+
+    This function helps to auto-detect latitude, longitude & geohash from a given dataset
+
+
+    Parameters
+    ----------
+
+    df
+        Analysis dataframe
+
+    max_records
+
+        Maximum geospatial points analyzed
+
+    Returns
+    -------
+    List
+
+    """
 
     lat_cols, long_cols, gh_cols = [], [], []
     for i in df.dtypes:
