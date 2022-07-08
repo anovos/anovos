@@ -21,6 +21,7 @@ Respective functions have sections containing the detailed definition of the par
 from anovos.data_ingest.data_ingest import read_dataset
 from anovos.shared.spark import spark
 from anovos.shared.utils import ends_with, output_to_local
+from anovos.data_ingest import data_sampling
 from anovos.data_ingest.geo_auto_detection import ll_gh_cols, geo_to_latlong
 import pandas as pd
 import numpy as np
@@ -500,7 +501,6 @@ def geo_cluster_analysis(
         Analysis column
     global_map_box_val
         Geospatial Chart Theme Index
-
     Returns
     -------
 
@@ -626,6 +626,7 @@ def geo_cluster_generator(
     min_samples,
     master_path,
     global_map_box_val,
+    max_records,
 ):
 
     """
@@ -654,16 +655,27 @@ def geo_cluster_generator(
         Path containing all the output from analyzed data
     global_map_box_val
         Geospatial Chart Theme Index
+    max_records
+        Maximum geospatial points analyzed
 
     Returns
     -------
 
     """
-
     if isinstance(df, pd.DataFrame):
         pass
     else:
-        df = df.toPandas()
+
+        cnt_records = df.count()
+        frac_sample = float(max_records) / float(cnt_records)
+        if frac_sample > 1:
+            frac_sample_ = 1
+        else:
+            frac_sample_ = frac_sample
+
+        df = data_sampling.data_sample(
+            df.dropna(), strata_cols="all", fraction=frac_sample_
+        ).toPandas()
 
     try:
         lat_col = lat_col_list
@@ -747,6 +759,7 @@ def generate_loc_charts_processor(
     -------
 
     """
+    df = df.dropna()
 
     if lat_col:
 
@@ -765,7 +778,7 @@ def generate_loc_charts_processor(
                 lat=lat_col[0],
                 lon=long_col[0],
                 mapbox_style=mapbox_list[global_map_box_val],
-                size="count",
+                # size="count",
                 color_discrete_sequence=global_theme,
             )
             base_map.update_geos(fitbounds="locations")
@@ -799,7 +812,7 @@ def generate_loc_charts_processor(
                     lat=lat_col[i],
                     lon=long_col[i],
                     mapbox_style=mapbox_list[global_map_box_val],
-                    size="count",
+                    # size="count",
                     color_discrete_sequence=global_theme,
                 )
                 base_map.update_geos(fitbounds="locations")
@@ -837,7 +850,7 @@ def generate_loc_charts_processor(
                 lat="latitude",
                 lon="longitude",
                 mapbox_style=mapbox_list[global_map_box_val],
-                size="count",
+                # size="count",
                 color_discrete_sequence=global_theme,
             )
             base_map.update_geos(fitbounds="locations")
@@ -977,13 +990,13 @@ def geospatial_autodetection(
     df,
     id_col,
     master_path,
-    max_records=100000,
-    top_geo_records=100,
-    max_cluster=20,
-    eps=0.6,
-    min_samples=25,
-    global_map_box_val=0,
-    run_type="local",
+    max_records,
+    top_geo_records,
+    max_cluster,
+    eps,
+    min_samples,
+    global_map_box_val,
+    run_type,
 ):
 
     """
@@ -1053,6 +1066,7 @@ def geospatial_autodetection(
         stats_gen_lat_long_geo(
             df, lat_cols, long_cols, gh_cols, id_col, master_path, top_geo_records
         )
+
         geo_cluster_generator(
             df,
             lat_cols,
@@ -1063,7 +1077,9 @@ def geospatial_autodetection(
             min_samples,
             master_path,
             global_map_box_val,
+            max_records,
         )
+
         generate_loc_charts_controller(
             df,
             id_col,
@@ -1076,6 +1092,10 @@ def geospatial_autodetection(
         )
 
         return lat_cols, long_cols, gh_cols
+
+    elif len_lat_col + len_geohash_col == 0:
+
+        return [], [], []
 
     if run_type == "emr":
         bash_cmd = (
