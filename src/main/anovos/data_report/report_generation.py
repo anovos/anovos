@@ -1,7 +1,7 @@
 # coding=utf-8
 
 """This module generates the final report output specific to the intermediate data generated across each of the modules. The final report, however, can be proccessed through the config.yaml file or by generating it through the respective functions.
-
+ 
 Below are some of the functions used to process the final output.
 
 - line_chart_gen_stability
