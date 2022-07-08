@@ -880,7 +880,13 @@ def outlier_detection(
                     T.StructField("parameters", T.ArrayType(T.StringType()), True),
                 ]
             )
-            df_model = spark.createDataFrame(zip(list_of_cols+skewed_cols, params+[skewed_param]*len(skewed_cols)), schema=schema)
+            df_model = spark.createDataFrame(
+                zip(
+                    list_of_cols + skewed_cols,
+                    params + [skewed_param] * len(skewed_cols),
+                ),
+                schema=schema,
+            )
             df_model.coalesce(1).write.parquet(
                 model_path + "/outlier_numcols", mode="overwrite"
             )
@@ -952,14 +958,17 @@ def outlier_detection(
             "upper_outliers", F.col("1") if "1" in odf_agg.columns else F.lit(0)
         )
         .withColumn("excluded_due_to_skewness", F.lit(0))
-        .select("attribute", "lower_outliers", "upper_outliers", "excluded_due_to_skewness")
+        .select(
+            "attribute", "lower_outliers", "upper_outliers", "excluded_due_to_skewness"
+        )
         .fillna(0)
-
     )
 
     if skewed_cols:
         skewed_cols_print = [(i, 0, 0, 1) for i in skewed_cols]
-        skewed_cols_odf_print = spark.createDataFrame(skewed_cols_print, schema=odf_print.columns)
+        skewed_cols_odf_print = spark.createDataFrame(
+            skewed_cols_print, schema=odf_print.columns
+        )
         odf_print = unionAll([odf_print, skewed_cols_odf_print])
 
     if treatment & (treatment_method == "row_removal"):
