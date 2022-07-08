@@ -45,8 +45,10 @@ default_template = (
         </html>
         """
     ),
-    dp.Text("# ML-Anovos Report"),
+    dp.Text("# Anovos Data Assessment Report"),
 )
+
+blank_df = dp.DataTable(pd.DataFrame(columns=[" "], index=range(1)), label=" ")
 
 
 def stats_args(path, func):
@@ -491,6 +493,11 @@ def anovos_basic_report(
                         label=remove_u_score(i.__name__),
                     )
                 )
+
+    if len(AA_content) == 1:
+        AA_content.append(blank_df)
+    else:
+        AA_content
 
     # @TODO: is there better templating approach such as jinja
     tab3 = dp.Group(
