@@ -724,21 +724,26 @@ def outlier_detection(
             model_dict.update(d)
 
         params = []
-        present_cols = []
+        present_cols, skewed_cols = [], []
         for i in list_of_cols:
             param = model_dict.get(i)
             if param:
-                params.append(param)
-                present_cols.append(i)
+                if "skewed_attribute" in param:
+                    skewed_cols.append(i)
+                else:
+                    param = [float(p) if p else p for p in param]
+                    params.append(param)
+                    present_cols.append(i)
 
-        diff_cols = list(set(list_of_cols) - set(present_cols))
+        diff_cols = list(set(list_of_cols) - set(present_cols) - set(skewed_cols))
         if diff_cols:
-            warnings.warn(
-                "Columns not found in model_path: "
-                + ",".join(diff_cols)
-                + ". They might be dropped in the previous calculation due to highly skewed distribution."
-            )
+            warnings.warn("Columns not found in model_path: " + ",".join(diff_cols))
             list_of_cols = present_cols
+        if skewed_cols:
+            warnings.warn(
+                "Columns excluded from outlier detection due to highly skewed distribution: "
+                + ",".join(skewed_cols)
+            )
 
     else:
         check_dict = {
@@ -862,13 +867,20 @@ def outlier_detection(
 
         # Saving model File if required
         if model_path != "NA":
+            if detection_side == "lower":
+                skewed_param = ["skewed_attribute", None]
+            elif detection_side == "upper":
+                skewed_param = [None, "skewed_attribute"]
+            else:
+                skewed_param = ["skewed_attribute", "skewed_attribute"]
+
             schema = T.StructType(
                 [
                     T.StructField("attribute", T.StringType(), True),
-                    T.StructField("parameters", T.ArrayType(T.DoubleType()), True),
+                    T.StructField("parameters", T.ArrayType(T.StringType()), True),
                 ]
             )
-            df_model = spark.createDataFrame(zip(list_of_cols, params), schema=schema)
+            df_model = spark.createDataFrame(zip(list_of_cols+skewed_cols, params+[skewed_param]*len(skewed_cols)), schema=schema)
             df_model.coalesce(1).write.parquet(
                 model_path + "/outlier_numcols", mode="overwrite"
             )
@@ -939,9 +951,16 @@ def outlier_detection(
         .withColumn(
             "upper_outliers", F.col("1") if "1" in odf_agg.columns else F.lit(0)
         )
-        .select("attribute", "lower_outliers", "upper_outliers")
+        .withColumn("excluded_due_to_skewness", F.lit(0))
+        .select("attribute", "lower_outliers", "upper_outliers", "excluded_due_to_skewness")
         .fillna(0)
+
     )
+
+    if skewed_cols:
+        skewed_cols_print = [(i, 0, 0, 1) for i in skewed_cols]
+        skewed_cols_odf_print = spark.createDataFrame(skewed_cols_print, schema=odf_print.columns)
+        odf_print = unionAll([odf_print, skewed_cols_odf_print])
 
     if treatment & (treatment_method == "row_removal"):
         conditions = [
