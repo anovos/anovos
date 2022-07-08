@@ -242,23 +242,19 @@ def main(all_configs, run_type):
             if auto_detection_analyzer_flag:
                 start = timeit.default_timer()
 
-                try:
-                    lat_cols, long_cols, gh_cols = geospatial_autodetection(
-                        df,
-                        id_col=id_col,
-                        master_path=report_input_path,
-                        max_records=max_analysis_records,
-                        top_geo_records=top_geo_records,
-                        max_cluster=max_cluster,
-                        eps=eps,
-                        min_samples=min_samples,
-                        global_map_box_val=global_map_box_val,
-                        run_type=run_type,
-                    )
+                lat_cols, long_cols, gh_cols = geospatial_autodetection(
+                    df,
+                    id_col,
+                    report_input_path,
+                    max_analysis_records,
+                    top_geo_records,
+                    max_cluster,
+                    eps,
+                    min_samples,
+                    global_map_box_val,
+                    run_type,
+                )
 
-                except:
-                    lat_cols, long_cols, gh_cols = [], [], []
-                print(lat_cols, long_cols, gh_cols)
                 end = timeit.default_timer()
                 logger.info(
                     f"{key}, auto_detection_geospatial: execution time (in secs) ={round(end - start, 4)}"
