@@ -536,17 +536,20 @@ def test_that_outlier_detection_works_with_row_removal_treatment(
     assert len(df_parquet.columns) == len(odf.columns)
 
     odf_print = odf_print.toPandas()
-    assert odf_print.shape == (6, 3)
+    assert odf_print.shape == (7, 4)
 
     odf_print.index = odf_print["attribute"]
-    odf_print = odf_print[["lower_outliers", "upper_outliers"]]
+    odf_print = odf_print[
+        ["lower_outliers", "upper_outliers", "excluded_due_to_skewness"]
+    ]
 
-    assert odf_print.loc["age", :].tolist() == [0, 87]
-    assert odf_print.loc["fnlwgt", :].tolist() == [0, 518]
-    assert odf_print.loc["logfnl", :].tolist() == [0, 15]
-    assert odf_print.loc["education-num", :].tolist() == [0, 0]
-    assert odf_print.loc["capital-gain", :].tolist() == [0, 955]
-    assert odf_print.loc["hours-per-week", :].tolist() == [0, 515]
+    assert odf_print.loc["age", :].tolist() == [0, 87, 0]
+    assert odf_print.loc["fnlwgt", :].tolist() == [0, 518, 0]
+    assert odf_print.loc["logfnl", :].tolist() == [0, 15, 0]
+    assert odf_print.loc["education-num", :].tolist() == [0, 0, 0]
+    assert odf_print.loc["capital-gain", :].tolist() == [0, 955, 0]
+    assert odf_print.loc["hours-per-week", :].tolist() == [0, 515, 0]
+    assert odf_print.loc["capital-loss", :].tolist() == [0, 0, 1]
 
 
 def test_that_outlier_detection_works_with_value_replacement_treatment(
@@ -567,6 +570,7 @@ def test_that_outlier_detection_works_with_value_replacement_treatment(
     assert odf.select(
         F.max("age"), F.max("age_outliered"), F.min("age"), F.min("age_outliered")
     ).rdd.flatMap(list).collect() == [85, 66, 17, 18]
+
     assert odf.select(
         F.max("education-num"),
         F.max("education-num_outliered"),
@@ -576,10 +580,12 @@ def test_that_outlier_detection_works_with_value_replacement_treatment(
 
     odf_print = odf_print.toPandas()
     odf_print.index = odf_print["attribute"]
-    odf_print = odf_print[["lower_outliers", "upper_outliers"]]
+    odf_print = odf_print[
+        ["lower_outliers", "upper_outliers", "excluded_due_to_skewness"]
+    ]
 
-    assert odf_print.loc["age", :].tolist() == [202, 482]
-    assert odf_print.loc["education-num", :].tolist() == [267, 205]
+    assert odf_print.loc["age", :].tolist() == [202, 482, 0]
+    assert odf_print.loc["education-num", :].tolist() == [267, 205, 0]
 
 
 def test_that_outlier_detection_works_with_null_replacement_treatment_and_use_saved_model(
@@ -589,7 +595,7 @@ def test_that_outlier_detection_works_with_null_replacement_treatment_and_use_sa
     odf, odf_print = outlier_detection(
         spark_session,
         df_parquet,
-        list_of_cols=["age", "education-num"],
+        list_of_cols=["logfnl", "hours-per-week", "capital-loss"],
         detection_side="both",
         treatment=True,
         treatment_method="null_replacement",
@@ -602,17 +608,20 @@ def test_that_outlier_detection_works_with_null_replacement_treatment_and_use_sa
 
     odf_print = odf_print.toPandas()
     odf_print.index = odf_print["attribute"]
-    odf_print = odf_print[["lower_outliers", "upper_outliers"]]
+    odf_print = odf_print[
+        ["lower_outliers", "upper_outliers", "excluded_due_to_skewness"]
+    ]
 
-    assert odf_print.loc["age", :].tolist() == [0, 87]
-    assert odf_print.loc["education-num", :].tolist() == [593, 0]
+    assert odf_print.loc["hours-per-week", :].tolist() == [825, 515, 0]
+    assert odf_print.loc["logfnl", :].tolist() == [314, 15, 0]
+    assert odf_print.loc["capital-loss", :].tolist() == [0, 0, 1]
 
     # use the saved model
     odf, odf_print = outlier_detection(
         spark_session,
         df_parquet,
-        list_of_cols=["age", "education-num"],
-        detection_side="upper",
+        list_of_cols=["logfnl", "hours-per-week", "capital-gain", "capital-loss"],
+        detection_side="lower",
         treatment=True,
         treatment_method="null_replacement",
         pre_existing_model=True,
@@ -624,8 +633,13 @@ def test_that_outlier_detection_works_with_null_replacement_treatment_and_use_sa
     assert len(df_parquet.columns) == len(odf.columns)
 
     odf_print = odf_print.toPandas()
-    odf_print.index = odf_print["attribute"]
-    odf_print = odf_print[["lower_outliers", "upper_outliers"]]
+    assert odf_print.shape == (3, 4)
 
-    assert odf_print.loc["age", :].tolist() == [0, 87]
-    assert odf_print.loc["education-num", :].tolist() == [0, 0]
+    odf_print.index = odf_print["attribute"]
+    odf_print = odf_print[
+        ["lower_outliers", "upper_outliers", "excluded_due_to_skewness"]
+    ]
+
+    assert odf_print.loc["hours-per-week", :].tolist() == [825, 0, 0]
+    assert odf_print.loc["logfnl", :].tolist() == [314, 0, 0]
+    assert odf_print.loc["capital-loss", :].tolist() == [0, 0, 1]
