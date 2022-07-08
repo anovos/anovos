@@ -988,7 +988,7 @@ def outlier_detection(
         odf = idf
 
     if print_impact:
-        odf_print.show(len(list_of_cols), False)
+        odf_print.show(len(list_of_cols) + len(skewed_cols), False)
 
     return odf, odf_print
 
