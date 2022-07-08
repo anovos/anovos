@@ -88,16 +88,20 @@ def precision_lev(col):
 
     Returns
     -------
-    Integer
+    String
     """
 
     if col is None:
-        return None
+        return 0
     else:
-        return int(str(float(col)).split(".")[1])
+        x = float(str(format(float(col), ".8f")).split(".")[1])
+        if x > 0:
+            return len(str(format(float(col), ".8f")).split(".")[1])
+        else:
+            return 0
 
 
-f_precision_lev = F.udf(precision_lev, T.IntegerType())
+f_precision_lev = F.udf(precision_lev, T.StringType())
 
 
 def geo_to_latlong(x, option):
@@ -180,7 +184,7 @@ def latlong_to_geo(lat, long, precision=9):
 f_latlong_to_geo = F.udf(latlong_to_geo, T.StringType())
 
 
-def ll_gh_cols(df, max_records=100000):
+def ll_gh_cols(df, max_records):
 
     """
 
@@ -216,6 +220,14 @@ def ll_gh_cols(df, max_records=100000):
                 .collect()[0]
             )
 
+            max_val = (
+                df.withColumn("__", F.col(i[0]))
+                .agg(F.max("__"))
+                .rdd.flatMap(lambda x: x)
+                .collect()[0]
+            )
+            mean_val = df.agg(F.mean(F.col(i[0]))).rdd.flatMap(lambda x: x).collect()[0]
+
             if prec_val is None:
                 p = 0
             elif prec_val == 0:
@@ -223,7 +235,7 @@ def ll_gh_cols(df, max_records=100000):
             else:
                 p = prec_val
 
-            if p > 0:
+            if (int(p) > 0) & ((max_val > 1) & (max_val < 180)) & (mean_val > 0):
 
                 for j in [reg_lat_lon("latitude"), reg_lat_lon("longitude")]:
                     if c == 0:
@@ -257,7 +269,7 @@ def ll_gh_cols(df, max_records=100000):
             )
             x_ = x.agg(F.max("len_gh")).rdd.flatMap(lambda x: x).collect()[0]
             try:
-                if x_ < 12:
+                if (x_ > 4) & (x_ < 12):
                     if (
                         x.withColumn("_", f_geo_to_latlong(i[0], F.lit(0)))
                         .groupBy("_")
@@ -270,5 +282,8 @@ def ll_gh_cols(df, max_records=100000):
                         pass
             except:
                 pass
+
+    if len(lat_cols) != len(long_cols):
+        lat_cols, long_cols = [], []
 
     return lat_cols, long_cols, gh_cols
