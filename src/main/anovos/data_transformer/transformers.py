@@ -244,9 +244,7 @@ def attribute_binning(
                 zip(list_of_cols, bin_cutoffs), schema=["attribute", "parameters"]
             )
 
-            df_model.write.parquet(
-                model_path + "/attribute_binning", mode="overwrite"
-            )
+            df_model.write.parquet(model_path + "/attribute_binning", mode="overwrite")
 
         def bucket_label(value, index):
             if value is None:
@@ -271,9 +269,7 @@ def attribute_binning(
             if bin_dtype == "numerical":
                 return len(bin_cutoffs[0]) + 1
             else:
-                return "> " + str(
-                    round(bin_cutoffs[index][len(bin_cutoffs[0]) - 1], 4)
-                )
+                return "> " + str(round(bin_cutoffs[index][len(bin_cutoffs[0]) - 1], 4))
 
         if bin_dtype == "numerical":
             f_bucket_label = F.udf(bucket_label, T.IntegerType())
@@ -282,9 +278,7 @@ def attribute_binning(
 
         odf = idf
         for idx, i in enumerate(list_of_cols):
-            odf = odf.withColumn(
-                i + "_binned", f_bucket_label(F.col(i), F.lit(idx))
-            )
+            odf = odf.withColumn(i + "_binned", f_bucket_label(F.col(i), F.lit(idx)))
 
         if output_mode == "replace":
             for col in list_of_cols:
