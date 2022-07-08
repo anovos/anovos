@@ -698,9 +698,8 @@ def IG_calculation(
             )
         else:
             idf_encoded = attribute_binning(
-                spark, idf, num_cols, [], bin_method, bin_size
+                spark, idf, num_cols, label_col, bin_method, bin_size
             )
-        idf_encoded.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
     else:
         idf_encoded = idf
 

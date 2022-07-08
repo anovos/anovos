@@ -214,70 +214,6 @@ def attribute_binning(
             for j in range(1, bin_size):
                 pctile_cutoff.append(j * pctile_width)
             bin_cutoffs = idf.approxQuantile(list_of_cols, pctile_cutoff, 0.01)
-            if model_path != "NA":
-                df_model = spark.createDataFrame(
-                    zip(list_of_cols, bin_cutoffs), schema=["attribute", "parameters"]
-                )
-
-                df_model.write.parquet(
-                    model_path + "/attribute_binning", mode="overwrite"
-                )
-
-            def bucket_label(value, index):
-                if value is None:
-                    return None
-
-                for i in range(0, len(bin_cutoffs[index])):
-                    if value <= bin_cutoffs[index][i]:
-                        if bin_dtype == "numerical":
-                            return i + 1
-                        else:
-                            if i == 0:
-                                return "<= " + str(round(bin_cutoffs[index][i], 4))
-                            else:
-                                return (
-                                    str(round(bin_cutoffs[index][i - 1], 4))
-                                    + "-"
-                                    + str(round(bin_cutoffs[index][i], 4))
-                                )
-                    else:
-                        next
-
-                if bin_dtype == "numerical":
-                    return len(bin_cutoffs[0]) + 1
-                else:
-                    return "> " + str(
-                        round(bin_cutoffs[index][len(bin_cutoffs[0]) - 1], 4)
-                    )
-
-            if bin_dtype == "numerical":
-                f_bucket_label = F.udf(bucket_label, T.IntegerType())
-            else:
-                f_bucket_label = F.udf(bucket_label, T.StringType())
-
-            odf = idf
-            for idx, i in enumerate(list_of_cols):
-                odf = odf.withColumn(
-                    i + "_binned", f_bucket_label(F.col(i), F.lit(idx))
-                )
-
-                if idx % 5 == 0:
-                    odf.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
-
-            if output_mode == "replace":
-                for col in list_of_cols:
-                    odf = odf.drop(col).withColumnRenamed(col + "_binned", col)
-
-            if print_impact:
-                if output_mode == "replace":
-                    output_cols = list_of_cols
-                else:
-                    output_cols = [(i + "_binned") for i in list_of_cols]
-                uniqueCount_computation(spark, odf, output_cols).show(
-                    len(output_cols), False
-                )
-            return odf
-
         else:
             funs = [F.max, F.min]
             exprs = [f(F.col(c)) for f in funs for c in list_of_cols]
@@ -293,21 +229,8 @@ def attribute_binning(
                     continue
                 bin_width = (max_val - min_val) / bin_size
                 for j in range(1, bin_size):
-                    if j == 1:
-                        bin_cutoff.append(-float("inf"))
-                    elif j == bin_size - 1:
-                        bin_cutoff.append(float("inf"))
-                    else:
-                        bin_cutoff.append(min_val + j * bin_width)
+                    bin_cutoff.append(min_val + j * bin_width)
                 bin_cutoffs.append(bin_cutoff)
-            if model_path != "NA":
-                df_model = spark.createDataFrame(
-                    zip(list_of_cols, bin_cutoffs), schema=["attribute", "parameters"]
-                )
-
-                df_model.write.parquet(
-                    model_path + "/attribute_binning", mode="overwrite"
-                )
             if drop_col_process:
                 warnings.warn(
                     "Columns contains too much null values. Dropping "
@@ -316,21 +239,63 @@ def attribute_binning(
                 list_of_cols = list(
                     set([e for e in list_of_cols if e not in drop_col_process])
                 )
-        binned_col = []
-        for col in list_of_cols:
-            binned_col.append(str(col) + "_binned")
-        bucketizer = Bucketizer(
-            inputCols=list_of_cols, outputCols=binned_col, splitsArray=bin_cutoffs
-        )
-        odf = bucketizer.setHandleInvalid("keep").transform(idf)
+        if model_path != "NA":
+            df_model = spark.createDataFrame(
+                zip(list_of_cols, bin_cutoffs), schema=["attribute", "parameters"]
+            )
+
+            df_model.write.parquet(
+                model_path + "/attribute_binning", mode="overwrite"
+            )
+
+        def bucket_label(value, index):
+            if value is None:
+                return None
+
+            for i in range(0, len(bin_cutoffs[index])):
+                if value <= bin_cutoffs[index][i]:
+                    if bin_dtype == "numerical":
+                        return i + 1
+                    else:
+                        if i == 0:
+                            return "<= " + str(round(bin_cutoffs[index][i], 4))
+                        else:
+                            return (
+                                str(round(bin_cutoffs[index][i - 1], 4))
+                                + "-"
+                                + str(round(bin_cutoffs[index][i], 4))
+                            )
+                else:
+                    next
+
+            if bin_dtype == "numerical":
+                return len(bin_cutoffs[0]) + 1
+            else:
+                return "> " + str(
+                    round(bin_cutoffs[index][len(bin_cutoffs[0]) - 1], 4)
+                )
+
+        if bin_dtype == "numerical":
+            f_bucket_label = F.udf(bucket_label, T.IntegerType())
+        else:
+            f_bucket_label = F.udf(bucket_label, T.StringType())
+
+        odf = idf
+        for idx, i in enumerate(list_of_cols):
+            odf = odf.withColumn(
+                i + "_binned", f_bucket_label(F.col(i), F.lit(idx))
+            )
+
         if output_mode == "replace":
-            odf = odf.drop(*list_of_cols).select(
-                *(F.col(x).alias(str(x).split("_")[0]) for x in binned_col),
-                *(
-                    F.col(x)
-                    for x in odf.drop(*list_of_cols).columns
-                    if x not in binned_col
-                ),
+            for col in list_of_cols:
+                odf = odf.drop(col).withColumnRenamed(col + "_binned", col)
+        if print_impact:
+            if output_mode == "replace":
+                output_cols = list_of_cols
+            else:
+                output_cols = [(i + "_binned") for i in list_of_cols]
+            uniqueCount_computation(spark, odf, output_cols).show(
+                len(output_cols), False
             )
         return odf
 
@@ -413,19 +378,6 @@ def monotonic_binning(
 
     if any(x not in num_cols for x in list_of_cols):
         raise TypeError("Invalid input for Column(s)")
-
-    attribute_binning(
-        spark,
-        idf,
-        list_of_cols="all",
-        drop_cols=[],
-        method_type="equal_range",
-        bin_size=10,
-        pre_existing_model=False,
-        model_path="NA",
-        output_mode="replace",
-        print_impact=False,
-    )
 
     odf = idf
     for col in list_of_cols:

@@ -48,60 +48,94 @@ def test_IV_calculation(spark_session: SparkSession):
 
     assert result_df.count() == 15
     assert (
-        result_df.where(F.col("attribute") == "relationship")
-        .toPandas()
-        .to_dict("list")["iv"][0]
-        == 1.6205
+        round(
+            result_df.where(F.col("attribute") == "relationship")
+            .toPandas()
+            .to_dict("list")["iv"][0],
+            4,
+        )
+        == 1.6208
     )
     assert (
-        result_df.where(F.col("attribute") == "marital-status")
-        .toPandas()
-        .to_dict("list")["iv"][0]
+        round(
+            result_df.where(F.col("attribute") == "marital-status")
+            .toPandas()
+            .to_dict("list")["iv"][0],
+            4,
+        )
         == 1.3929
     )
     assert (
-        result_df.where(F.col("attribute") == "age").toPandas().to_dict("list")["iv"][0]
-        == 1.1891
+        round(
+            result_df.where(F.col("attribute") == "age")
+            .toPandas()
+            .to_dict("list")["iv"][0],
+            4,
+        )
+        == 1.0491
     )
     assert (
-        result_df.where(F.col("attribute") == "occupation")
-        .toPandas()
-        .to_dict("list")["iv"][0]
-        == 0.7467
+        round(
+            result_df.where(F.col("attribute") == "occupation")
+            .toPandas()
+            .to_dict("list")["iv"][0],
+            4,
+        )
+        == 0.7686
     )
     assert (
-        result_df.where(F.col("attribute") == "education")
-        .toPandas()
-        .to_dict("list")["iv"][0]
-        == 0.7459
+        round(
+            result_df.where(F.col("attribute") == "education")
+            .toPandas()
+            .to_dict("list")["iv"][0],
+            4,
+        )
+        == 0.7525
     )
     assert (
-        result_df.where(F.col("attribute") == "education-num")
-        .toPandas()
-        .to_dict("list")["iv"][0]
-        == 0.7095
+        round(
+            result_df.where(F.col("attribute") == "education-num")
+            .toPandas()
+            .to_dict("list")["iv"][0],
+            4,
+        )
+        == 0.7292
     )
     assert (
-        result_df.where(F.col("attribute") == "hours-per-week")
-        .toPandas()
-        .to_dict("list")["iv"][0]
-        == 0.4441
+        round(
+            result_df.where(F.col("attribute") == "hours-per-week")
+            .toPandas()
+            .to_dict("list")["iv"][0],
+            4,
+        )
+        == 0.4103
     )
     assert (
-        result_df.where(F.col("attribute") == "capital-gain")
-        .toPandas()
-        .to_dict("list")["iv"][0]
-        == 0.3179
+        round(
+            result_df.where(F.col("attribute") == "capital-gain")
+            .toPandas()
+            .to_dict("list")["iv"][0],
+            4,
+        )
+        == 0.5584
     )
     assert (
-        result_df.where(F.col("attribute") == "sex").toPandas().to_dict("list")["iv"][0]
-        == 0.3106
+        round(
+            result_df.where(F.col("attribute") == "sex")
+            .toPandas()
+            .to_dict("list")["iv"][0],
+            4,
+        )
+        == 0.3111
     )
     assert (
-        result_df.where(F.col("attribute") == "workclass")
-        .toPandas()
-        .to_dict("list")["iv"][0]
-        == 0.1669
+        round(
+            result_df.where(F.col("attribute") == "workclass")
+            .toPandas()
+            .to_dict("list")["iv"][0],
+            4,
+        )
+        == 0.1686
     )
 
 
@@ -133,64 +167,94 @@ def test_IG_calculation(spark_session: SparkSession):
 
     assert result_df1.count() == 15
     assert (
-        result_df1.where(F.col("attribute") == "relationship")
-        .toPandas()
-        .to_dict("list")["ig"][0]
+        round(
+            result_df1.where(F.col("attribute") == "relationship")
+            .toPandas()
+            .to_dict("list")["ig"][0],
+            4,
+        )
         == 0.1702
     )
     assert (
-        result_df1.where(F.col("attribute") == "marital-status")
-        .toPandas()
-        .to_dict("list")["ig"][0]
+        round(
+            result_df1.where(F.col("attribute") == "marital-status")
+            .toPandas()
+            .to_dict("list")["ig"][0],
+            4,
+        )
         == 0.1608
     )
 
     assert (
-        result_df1.where(F.col("attribute") == "age")
-        .toPandas()
-        .to_dict("list")["ig"][0]
+        round(
+            result_df1.where(F.col("attribute") == "age")
+            .toPandas()
+            .to_dict("list")["ig"][0],
+            4,
+        )
         == 0.0944
     )
     assert (
-        result_df1.where(F.col("attribute") == "occupation")
-        .toPandas()
-        .to_dict("list")["ig"][0]
+        round(
+            result_df1.where(F.col("attribute") == "occupation")
+            .toPandas()
+            .to_dict("list")["ig"][0],
+            4,
+        )
         == 0.0916
     )
     assert (
-        result_df1.where(F.col("attribute") == "education")
-        .toPandas()
-        .to_dict("list")["ig"][0]
+        round(
+            result_df1.where(F.col("attribute") == "education")
+            .toPandas()
+            .to_dict("list")["ig"][0],
+            4,
+        )
         == 0.0938
     )
     assert (
-        result_df1.where(F.col("attribute") == "education-num")
-        .toPandas()
-        .to_dict("list")["ig"][0]
+        round(
+            result_df1.where(F.col("attribute") == "education-num")
+            .toPandas()
+            .to_dict("list")["ig"][0],
+            4,
+        )
         == 0.0887
     )
     assert (
-        result_df1.where(F.col("attribute") == "hours-per-week")
-        .toPandas()
-        .to_dict("list")["ig"][0]
+        round(
+            result_df1.where(F.col("attribute") == "hours-per-week")
+            .toPandas()
+            .to_dict("list")["ig"][0],
+            4,
+        )
         == 0.0549
     )
     assert (
-        result_df1.where(F.col("attribute") == "capital-gain")
-        .toPandas()
-        .to_dict("list")["ig"][0]
+        round(
+            result_df1.where(F.col("attribute") == "capital-gain")
+            .toPandas()
+            .to_dict("list")["ig"][0],
+            4,
+        )
         == 0.0434
     )
     assert (
-        result_df1.where(F.col("attribute") == "sex")
-        .toPandas()
-        .to_dict("list")["ig"][0]
+        round(
+            result_df1.where(F.col("attribute") == "sex")
+            .toPandas()
+            .to_dict("list")["ig"][0],
+            4,
+        )
         == 0.0379
     )
     assert (
-        result_df1.where(F.col("attribute") == "workclass")
-        .toPandas()
-        .to_dict("list")["ig"][0]
+        round(
+            result_df1.where(F.col("attribute") == "workclass")
+            .toPandas()
+            .to_dict("list")["ig"][0],
+            4,
+        )
         == 0.0223
     )
 
