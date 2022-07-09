@@ -246,52 +246,50 @@ def attribute_binning(
 
             df_model.write.parquet(model_path + "/attribute_binning", mode="overwrite")
 
-        def bucket_label(value, index):
-            if value is None:
-                return None
+    def bucket_label(value, index):
+        if value is None:
+            return None
 
-            for i in range(0, len(bin_cutoffs[index])):
-                if value <= bin_cutoffs[index][i]:
-                    if bin_dtype == "numerical":
-                        return i + 1
-                    else:
-                        if i == 0:
-                            return "<= " + str(round(bin_cutoffs[index][i], 4))
-                        else:
-                            return (
-                                str(round(bin_cutoffs[index][i - 1], 4))
-                                + "-"
-                                + str(round(bin_cutoffs[index][i], 4))
-                            )
+        for i in range(0, len(bin_cutoffs[index])):
+            if value <= bin_cutoffs[index][i]:
+                if bin_dtype == "numerical":
+                    return i + 1
                 else:
-                    next
-
-            if bin_dtype == "numerical":
-                return len(bin_cutoffs[0]) + 1
+                    if i == 0:
+                        return "<= " + str(round(bin_cutoffs[index][i], 4))
+                    else:
+                        return (
+                            str(round(bin_cutoffs[index][i - 1], 4))
+                            + "-"
+                            + str(round(bin_cutoffs[index][i], 4))
+                        )
             else:
-                return "> " + str(round(bin_cutoffs[index][len(bin_cutoffs[0]) - 1], 4))
+                next
 
         if bin_dtype == "numerical":
-            f_bucket_label = F.udf(bucket_label, T.IntegerType())
+            return len(bin_cutoffs[0]) + 1
         else:
-            f_bucket_label = F.udf(bucket_label, T.StringType())
+            return "> " + str(round(bin_cutoffs[index][len(bin_cutoffs[0]) - 1], 4))
 
-        odf = idf
-        for idx, i in enumerate(list_of_cols):
-            odf = odf.withColumn(i + "_binned", f_bucket_label(F.col(i), F.lit(idx)))
+    if bin_dtype == "numerical":
+        f_bucket_label = F.udf(bucket_label, T.IntegerType())
+    else:
+        f_bucket_label = F.udf(bucket_label, T.StringType())
 
+    odf = idf
+    for idx, i in enumerate(list_of_cols):
+        odf = odf.withColumn(i + "_binned", f_bucket_label(F.col(i), F.lit(idx)))
+
+    if output_mode == "replace":
+        for col in list_of_cols:
+            odf = odf.drop(col).withColumnRenamed(col + "_binned", col)
+    if print_impact:
         if output_mode == "replace":
-            for col in list_of_cols:
-                odf = odf.drop(col).withColumnRenamed(col + "_binned", col)
-        if print_impact:
-            if output_mode == "replace":
-                output_cols = list_of_cols
-            else:
-                output_cols = [(i + "_binned") for i in list_of_cols]
-            uniqueCount_computation(spark, odf, output_cols).show(
-                len(output_cols), False
-            )
-        return odf
+            output_cols = list_of_cols
+        else:
+            output_cols = [(i + "_binned") for i in list_of_cols]
+        uniqueCount_computation(spark, odf, output_cols).show(len(output_cols), False)
+    return odf
 
 
 def monotonic_binning(
