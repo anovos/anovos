@@ -435,7 +435,7 @@ def IV_calculation(
     label_col="label",
     event_label=1,
     encoding_configs={
-        "bin_method": "equal_range",
+        "bin_method": "equal_frequency",
         "bin_size": 10,
         "monotonicity_check": 0,
     },
