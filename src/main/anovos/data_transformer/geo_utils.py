@@ -11,6 +11,23 @@ EARTH_RADIUS = 6371009
 UNIT_FACTOR = {"m": 1.0, "km": 1000.0}
 
 
+def in_range(
+        loc_cols,
+        loc_format="dd"
+):
+    if loc_format == "dd":
+        lat, lon = loc_cols
+    else:
+        lat, lon = to_latlon_decimal_degrees(loc_cols, loc_format)
+
+    if None not in [lat, lon]:
+        if lat > 90 or lat < -90 or lon > 180 or lon < -180:
+            warnings.warn(
+                "Rows may contain unintended values due to longitude and/or latitude values being out of the "
+                "valid range"
+            )
+
+
 def to_latlon_decimal_degrees(loc, input_format, radius=EARTH_RADIUS):
     """
     Parameters
@@ -47,11 +64,6 @@ def to_latlon_decimal_degrees(loc, input_format, radius=EARTH_RADIUS):
         try:
             lat = float(loc[0])
             lon = float(loc[1])
-            if lat > 90 or lat < -90 or lon > 180 or lon < -180:
-                warnings.warn(
-                    "Rows may contain unintended values due to longitude and/or latitude values being out of the "
-                    "valid range"
-                )
         except:
             lat, lon = None, None
             warnings.warn(
@@ -64,11 +76,6 @@ def to_latlon_decimal_degrees(loc, input_format, radius=EARTH_RADIUS):
             d1, m1, s1, d2, m2, s2 = [float(i) for i in (loc[0] + loc[1])]
             lat = d1 + m1 / 60 + s1 / 3600
             lon = d2 + m2 / 60 + s2 / 3600
-            if lat > 90 or lat < -90 or lon > 180 or lon < -180:
-                warnings.warn(
-                    "Rows may contain unintended values due to longitude and/or latitude values being out of the "
-                    "valid range"
-                )
         except:
             lat, lon = None, None
             warnings.warn(
@@ -80,11 +87,6 @@ def to_latlon_decimal_degrees(loc, input_format, radius=EARTH_RADIUS):
         try:
             lat = degrees(float(loc[0]))
             lon = degrees(float(loc[1]))
-            if lat > 90 or lat < -90 or lon > 180 or lon < -180:
-                warnings.warn(
-                    "Rows may contain unintended values due to longitude and/or latitude values being out of the "
-                    "valid range"
-                )
         except:
             lat, lon = None, None
             warnings.warn(
@@ -97,8 +99,6 @@ def to_latlon_decimal_degrees(loc, input_format, radius=EARTH_RADIUS):
             x, y, z = [float(i) for i in loc]
             lat = degrees(float(asin(z / radius)))
             lon = degrees(float(atan2(y, x)))
-            if lat > 90 or lat < -90 or lon > 180 or lon < -180:
-                warnings.warn("Rows may contain unintended values due to cartesian values being out of the valid range")
         except:
             lat, lon = None, None
             warnings.warn("Rows dropped due to invalid cartesian values")
@@ -107,11 +107,11 @@ def to_latlon_decimal_degrees(loc, input_format, radius=EARTH_RADIUS):
         # loc = geohash
         try:
             lat, lon = list(pgh.decode(loc))
-            if lat > 90 or lat < -90 or lon > 180 or lon < -180:
-                warnings.warn("Rows may contain unintended values due to cartesian values being out of the valid range")
         except:
             lat, lon = None, None
             warnings.warn("Rows dropped due to an invalid geohash entry")
+
+    in_range([lat, lon])
 
     return [lat, lon]
 
@@ -139,7 +139,7 @@ def decimal_degrees_to_degrees_minutes_seconds(dd):
 
 
 def from_latlon_decimal_degrees(
-    loc, output_format, radius=EARTH_RADIUS, geohash_precision=8
+        loc, output_format, radius=EARTH_RADIUS, geohash_precision=8
 ):
     """
     Parameters
@@ -353,7 +353,7 @@ def point_in_polygon(x, y, polygon):
             # Polygon from multipolygon have extra bracket - that need to be removed
             poly = poly[0]
             if any(
-                [not isinstance(i, numbers.Number) for point in poly for i in point]
+                    [not isinstance(i, numbers.Number) for point in poly for i in point]
             ):
                 raise TypeError("The polygon is invalid")
 
@@ -372,15 +372,15 @@ def point_in_polygon(x, y, polygon):
                 p1 = poly[i - 1]
                 p2 = poly[i]
             if (
-                p1[1] == p2[1]
-                and p1[1] == y
-                and (min(p1[0], p2[0]) <= x <= max(p1[0], p2[0]))
+                    p1[1] == p2[1]
+                    and p1[1] == y
+                    and (min(p1[0], p2[0]) <= x <= max(p1[0], p2[0]))
             ):
                 return 1
             if (
-                p1[0] == p2[0]
-                and p1[0] == x
-                and (min(p1[1], p2[1]) <= y <= max(p1[1], p2[1]))
+                    p1[0] == p2[0]
+                    and p1[0] == x
+                    and (min(p1[1], p2[1]) <= y <= max(p1[1], p2[1]))
             ):
                 return 1
 
