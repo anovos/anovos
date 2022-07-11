@@ -72,7 +72,7 @@ def test_IV_calculation(spark_session: SparkSession):
             .to_dict("list")["iv"][0],
             4,
         )
-        == 1.0491
+        == 1.1891
     )
     assert (
         round(
@@ -99,7 +99,7 @@ def test_IV_calculation(spark_session: SparkSession):
             .to_dict("list")["iv"][0],
             4,
         )
-        == 0.7292
+        == 0.7095
     )
     assert (
         round(
@@ -108,7 +108,7 @@ def test_IV_calculation(spark_session: SparkSession):
             .to_dict("list")["iv"][0],
             4,
         )
-        == 0.4103
+        == 0.4441
     )
     assert (
         round(
@@ -117,7 +117,7 @@ def test_IV_calculation(spark_session: SparkSession):
             .to_dict("list")["iv"][0],
             4,
         )
-        == 0.5584
+        == 0.3184
     )
     assert (
         round(
