@@ -26,6 +26,8 @@ from anovos.data_ingest.geo_auto_detection import ll_gh_cols, geo_to_latlong
 import pandas as pd
 import numpy as np
 from sklearn.cluster import MiniBatchKMeans
+from sklearn.metrics import silhouette_score
+from itertools import product
 
 # from branca.element import Figure
 # from folium.plugins import FastMarkerCluster, HeatMapWithTime
@@ -48,6 +50,14 @@ global_theme = px.colors.sequential.Plasma
 global_theme_r = px.colors.sequential.Plasma_r
 global_plot_bg_color = "rgba(0,0,0,0)"
 global_paper_bg_color = "rgba(0,0,0,0)"
+
+
+blank_chart = go.Figure()
+# blank_chart.update_layout(autosize=False, width=10, height=10)
+blank_chart.layout.plot_bgcolor = global_plot_bg_color
+blank_chart.layout.paper_bgcolor = global_paper_bg_color
+blank_chart.update_xaxes(visible=False)
+blank_chart.update_yaxes(visible=False)
 
 mapbox_list = [
     "open-street-map",
@@ -196,14 +206,20 @@ def descriptive_stats_gen(
                 ),
             )
             .groupBy("lat_long_pair")
-            .agg(F.countDistinct(id_col).alias("count_id"))
+            .agg(
+                F.countDistinct(id_col).alias("count_id"),
+                F.count(id_col).alias("count_records"),
+            )
             .orderBy("count_id", ascending=False)
             .limit(max_val)
         )
 
         top_lat = (
             df.groupBy(lat_col)
-            .agg(F.countDistinct(id_col).alias("count_id"))
+            .agg(
+                F.countDistinct(id_col).alias("count_id"),
+                F.count(id_col).alias("count_records"),
+            )
             .orderBy("count_id", ascending=False)
             .limit(max_val)
             .toPandas()
@@ -211,7 +227,10 @@ def descriptive_stats_gen(
 
         top_long = (
             df.groupBy(long_col)
-            .agg(F.countDistinct(id_col).alias("count_id"))
+            .agg(
+                F.countDistinct(id_col).alias("count_id"),
+                F.count(id_col).alias("count_records"),
+            )
             .orderBy("count_id", ascending=False)
             .limit(max_val)
             .toPandas()
@@ -236,14 +255,17 @@ def descriptive_stats_gen(
             .reset_index()
             .rename(columns={"index": "Stats", 0: "Count"})
         )
-        l = [
-            "Overall_Summary",
-            "Top_" + str(max_val) + "_Lat",
-            "Top_" + str(max_val) + "_Long",
-            "Top_" + str(max_val) + "_Lat_Long",
-        ]
+        # l = [
+        #     "Overall_Summary",
+        #     "Top_" + str(max_val) + "_Lat",
+        #     "Top_" + str(max_val) + "_Long",
+        #     "Top_" + str(max_val) + "_Lat_Long",
+        # ]
 
-        for idx, i in enumerate([gen_stats, top_lat, top_long, top_lat_long]):
+        l = ["Overall_Summary", "Top_" + str(max_val) + "_Lat_Long"]
+
+        # for idx, i in enumerate([gen_stats, top_lat, top_long, top_lat_long]):
+        for idx, i in enumerate([gen_stats, top_lat_long]):
 
             i.to_csv(
                 ends_with(master_path)
@@ -266,8 +288,8 @@ def descriptive_stats_gen(
         )
         max_occuring_geohash = (
             df.groupBy(geohash_col)
-            .agg(F.countDistinct(id_col).alias("count_id"))
-            .orderBy("count_id", ascending=False)
+            .agg(F.count(id_col).alias("count_records"))
+            .orderBy("count_records", ascending=False)
             .limit(1)
         )
 
@@ -275,13 +297,30 @@ def descriptive_stats_gen(
         geohash_cnt = max_occuring_geohash.rdd.flatMap(lambda x: x).collect()[1]
 
         l = ["Overall_Summary", "Top_" + str(max_val) + "_Geohash_Distribution"]
+        geohash_area_width_height_1_12 = [
+            "5,009.4km x 4,992.6km",
+            "1,252.3km x 624.1km",
+            "156.5km x 156km",
+            "39.1km x 19.5km",
+            "4.9km x 4.9km",
+            "1.2km x 609.4m",
+            "152.9m x 152.4m",
+            "38.2m x 19m",
+            "4.8m x 4.8m",
+            "1.2m x 59.5cm",
+            "14.9cm x 14.9cm",
+            "3.7cm x 1.9cm",
+        ]
 
         pd.DataFrame(
             [
                 ["Total number of Distinct Geohashes", str(dist_geohash)],
                 [
                     "The Precision level observed for the Geohashes",
-                    str(precision_geohash),
+                    str(precision_geohash)
+                    + " [Reference Area Width x Height : "
+                    + str(geohash_area_width_height_1_12[precision_geohash - 1])
+                    + "] ",
                 ],
                 [
                     "The Most Common Geohash",
@@ -297,7 +336,8 @@ def descriptive_stats_gen(
             "geohash_" + str(precision_geohash),
             F.substring(F.col(geohash_col), 1, precision_geohash),
         ).groupBy("geohash_" + str(precision_geohash)).agg(
-            F.countDistinct(id_col).alias("count_id")
+            F.countDistinct(id_col).alias("count_id"),
+            F.count(id_col).alias("count_records"),
         ).orderBy(
             "count_id", ascending=False
         ).limit(
@@ -492,9 +532,9 @@ def geo_cluster_analysis(
     max_cluster
         Maximum number of iterations to decide on the optimum cluster
     eps
-        Epsilon value used for DBSCAN clustering
+        Epsilon value range (Min EPS, Max EPS, Interval) used for DBSCAN clustering
     min_samples
-        Minimum sample size used for DBSCAN clustering
+        Minimum Sample Size range (Min Sample Size, Max Sample Size, Interval) used for DBSCAN clustering
     master_path
         Path containing all the output from analyzed data
     col_name
@@ -533,7 +573,13 @@ def geo_cluster_analysis(
             marker=dict(size=10),
         )
     )
-    f1.update_yaxes(showgrid=True, gridwidth=1, gridcolor=px.colors.sequential.gray[10])
+    f1.update_yaxes(
+        title="Distortion",
+        showgrid=True,
+        gridwidth=1,
+        gridcolor=px.colors.sequential.gray[10],
+    )
+    f1.update_xaxes(title="Values of K")
     f1.add_vline(x=k, line_width=3, line_dash="dash", line_color=global_theme[4])
     f1.update_layout(
         title_text="Elbow Curve Showing the Optimal Number of Clusters [K : "
@@ -543,77 +589,243 @@ def geo_cluster_analysis(
     f1.layout.plot_bgcolor = global_plot_bg_color
     f1.layout.paper_bgcolor = global_paper_bg_color
 
-    f1.write_json(ends_with(master_path) + "cluster_plot_1_" + col_name)
+    f1.write_json(ends_with(master_path) + "cluster_plot_1_elbow_" + col_name)
 
     model = MiniBatchKMeans(
         n_clusters=k, init="k-means++", max_iter=300, n_init=10, random_state=0
     )
     df_["cluster"] = model.fit_predict(df_)
     df_.to_csv(
-        ends_with(master_path) + "cluster_output_" + col_name + ".csv", index=False
+        ends_with(master_path) + "cluster_output_kmeans_" + col_name + ".csv",
+        index=False,
     )
 
     # Use `hole` to create a donut-like pie chart
     cluster_dtls = df_.groupby(["cluster"]).size().reset_index(name="counts")
     # zoom, center = zoom_center(lons=df_[long_col].values.tolist(),lats=df_[lat_col].values.tolist())
 
-    f2 = go.Figure()
-    f2.add_trace(
+    f2 = go.Figure(
         go.Pie(
-            labels=list(set(cluster_dtls.cluster.values)),
-            values=list(set(cluster_dtls.counts.values)),
+            labels=list(cluster_dtls.cluster.values),
+            values=list(cluster_dtls.counts.values),
             hole=0.3,
             marker_colors=global_theme,
-            text=list(set(cluster_dtls.cluster.values)),
+            text=list(cluster_dtls.cluster.values),
         )
     )
     f2.update_layout(
-        legend=dict(orientation="h", x=0.5, yanchor="bottom", xanchor="center")
+        title_text="Distribution of Clusters"
+        + "<br><sup>Algorithm Used : K-Means (Distance : Euclidean) </sup>",
+        legend=dict(orientation="h", x=0.5, yanchor="bottom", xanchor="center"),
     )
-    f2.write_json(ends_with(master_path) + "cluster_plot_2_" + col_name)
+    f2.write_json(ends_with(master_path) + "cluster_plot_2_kmeans_" + col_name)
 
     f3 = px.scatter_mapbox(
         df_,
         lat=lat_col,
         lon=long_col,
         color="cluster",
-        color_continuous_scale=global_theme_r,
+        color_continuous_scale=global_theme,
         mapbox_style=mapbox_list[global_map_box_val],
-        size="cluster",
     )
+
     f3.update_geos(fitbounds="locations")
     f3.update_layout(mapbox_style=mapbox_list[global_map_box_val])
-    # f3.update_layout(coloraxis_showscale=True,autosize=False,width=500,height=600)
+    f3.update_layout(
+        title_text="Cluster Wise Geospatial Datapoints "
+        + "<br><sup>Algorithm Used : K-Means</sup>"
+    )
     f3.update_layout(coloraxis_showscale=False, autosize=False, width=1200, height=900)
-    f3.write_json(ends_with(master_path) + "cluster_plot_3_" + col_name)
+    f3.write_json(ends_with(master_path) + "cluster_plot_3_kmeans_" + col_name)
 
     # Reading in 2D Feature Space
     df_ = df[[lat_col, long_col]]
 
     # DBSCAN model with parameters
-    model = DBSCAN(eps=0.6, min_samples=25).fit(df_)
-    df_["outlier"] = model.labels_
-    df_ = df_[df_.outlier.values == -1]
-    df_["outlier"] = 1
+    eps = eps.split(",")
+    min_samples = min_samples.split(",")
 
-    f4 = go.Figure(
-        go.Scatter(
-            mode="markers",
-            x=df_[long_col],
-            y=df_[lat_col],
-            marker_symbol="x-thin",
-            marker_line_color="black",
-            marker_color="black",
-            marker_line_width=2,
-            marker_size=20,
+    for i in range(3):
+        eps[i] = float(eps[i])
+        min_samples[i] = float(min_samples[i])
+
+    DBSCAN_params = list(
+        product(
+            np.arange(eps[0], eps[1], eps[2]),
+            np.arange(min_samples[0], min_samples[1], min_samples[2]),
         )
     )
-    f4.layout.plot_bgcolor = global_plot_bg_color
-    f4.layout.paper_bgcolor = global_paper_bg_color
-    f4.update_xaxes(title_text="longitude")
-    f4.update_yaxes(title_text="latitude")
-    f4.update_layout(autosize=False, width=1200, height=900)
-    f4.write_json(ends_with(master_path) + "cluster_plot_4_" + col_name)
+
+    no_of_clusters = []
+    sil_score = []
+    for p in DBSCAN_params:
+        try:
+            DBS_clustering = DBSCAN(eps=p[0], min_samples=p[1], metric="haversine").fit(
+                df_
+            )
+            sil_score.append(silhouette_score(df_, DBS_clustering.labels_))
+        except:
+            sil_score.append(0)
+
+    tmp = pd.DataFrame.from_records(DBSCAN_params, columns=["Eps", "Min_samples"])
+    tmp["Sil_score"] = sil_score
+
+    eps_, min_samples_ = list(tmp.sort_values("Sil_score", ascending=False).values[0])[
+        0:2
+    ]
+    DBS_clustering = DBSCAN(eps=eps_, min_samples=min_samples_, metric="haversine").fit(
+        df_
+    )
+    DBSCAN_clustered = df_.copy()
+    DBSCAN_clustered.loc[:, "Cluster"] = DBS_clustering.labels_
+    DBSCAN_clustered.to_csv(
+        ends_with(master_path) + "cluster_output_dbscan_" + col_name + ".csv",
+        index=False,
+    )
+
+    pivot_1 = pd.pivot_table(
+        tmp, values="Sil_score", index="Min_samples", columns="Eps"
+    )
+
+    # def df_to_plotly(df):
+    #     return {'z': df.values.tolist(),
+    #             'x': df.columns.tolist(),
+    #             'y': df.index.tolist()}
+
+    # f1_ = go.Figure(data=go.Heatmap(df_to_plotly(pivot_1),colorscale=global_theme_r,texttemplate="%{text}", textfont={"size":12}))
+    # f1_ = go.Figure(data=go.Heatmap(z=df_to_plotly(pivot_1)['z'],x = df_to_plotly(pivot_1)['x'], y = df_to_plotly(pivot_1)['y'] ,colorscale=global_theme_r))
+    f1_ = px.imshow(
+        pivot_1.values,
+        text_auto=".3f",
+        color_continuous_scale=global_theme,
+        aspect="auto",
+        y=list(pivot_1.index),
+        x=list(pivot_1.columns),
+    )
+    f1_.update_xaxes(title="Eps")
+    f1_.update_yaxes(title="Min_samples")
+    f1_.update_traces(
+        text=np.around(pivot_1.values, decimals=3), texttemplate="%{text}"
+    )
+    f1_.update_layout(
+        title_text="Distribution of Silhouette Scores Across Different Parameters "
+        + "<br><sup>Algorithm Used : DBSCAN</sup>"
+    )
+    f1_.layout.plot_bgcolor = global_plot_bg_color
+    f1_.layout.paper_bgcolor = global_paper_bg_color
+    f1_.write_json(ends_with(master_path) + "cluster_plot_1_silhoutte_" + col_name)
+
+    DBSCAN_clustered.loc[DBSCAN_clustered["Cluster"] == -1, "Cluster"] = 999
+    cluster_dtls_ = (
+        DBSCAN_clustered.groupby(["Cluster"]).size().reset_index(name="counts")
+    )
+
+    f2_ = go.Figure(
+        go.Pie(
+            labels=list(cluster_dtls_.Cluster.values),
+            values=list(cluster_dtls_.counts.values),
+            hole=0.3,
+            marker_colors=global_theme,
+            text=list(cluster_dtls_.Cluster.values),
+        )
+    )
+
+    f2_.update_layout(
+        title_text="Distribution of Clusters"
+        + "<br><sup>Algorithm Used : DBSCAN (Distance : Haversine) </sup>",
+        legend=dict(orientation="h", x=0.5, yanchor="bottom", xanchor="center"),
+    )
+    f2_.write_json(ends_with(master_path) + "cluster_plot_2_dbscan_" + col_name)
+
+    f3_ = px.scatter_mapbox(
+        DBSCAN_clustered,
+        lat=lat_col,
+        lon=long_col,
+        color="Cluster",
+        color_continuous_scale=global_theme,
+        mapbox_style=mapbox_list[global_map_box_val],
+    )
+
+    f3_.update_geos(fitbounds="locations")
+    f3_.update_layout(mapbox_style=mapbox_list[global_map_box_val])
+    f3_.update_layout(
+        title_text="Cluster Wise Geospatial Datapoints "
+        + "<br><sup>Algorithm Used : DBSCAN</sup>"
+    )
+    # f3_.update_layout(titlecoloraxis_showscale=False, autosize=False, width=1200, height=900)
+    f3_.update_layout(autosize=False, width=1200, height=900)
+    f3_.update_coloraxes(showscale=False)
+    f3_.write_json(ends_with(master_path) + "cluster_plot_3_dbscan_" + col_name)
+
+    try:
+        DBSCAN_clustered_ = df_.copy()
+        df_outlier = DBSCAN(eps=eps_, min_samples=min_samples_).fit(DBSCAN_clustered_)
+        DBSCAN_clustered_.loc[:, "Cluster"] = df_outlier.labels_
+        DBSCAN_clustered_ = DBSCAN_clustered_[DBSCAN_clustered_.Cluster.values == -1]
+        DBSCAN_clustered_["outlier"] = 1
+
+        f4 = go.Figure(
+            go.Scatter(
+                mode="markers",
+                x=DBSCAN_clustered_[long_col],
+                y=DBSCAN_clustered_[lat_col],
+                marker_symbol="x-thin",
+                marker_line_color="black",
+                marker_color="black",
+                marker_line_width=2,
+                marker_size=20,
+            )
+        )
+        f4.layout.plot_bgcolor = global_plot_bg_color
+        f4.layout.paper_bgcolor = global_paper_bg_color
+        f4.update_xaxes(title_text="longitude")
+        f4.update_yaxes(title_text="latitude")
+        f4.update_layout(autosize=False, width=1200, height=900)
+        f4.update_layout(
+            title_text="Outlier Points Captured By Cluster Analysis"
+            + "<br><sup>Algorithm Used : DBSCAN (Distance : Euclidean)</sup>"
+        )
+        f4.write_json(ends_with(master_path) + "cluster_plot_4_dbscan_1_" + col_name)
+
+    except:
+        f4 = blank_chart
+        f4.update_layout(
+            title_text="No Outliers Were Found Using DBSCAN (Distance : Euclidean)"
+        )
+        f4.write_json(ends_with(master_path) + "cluster_plot_4_dbscan_1_" + col_name)
+
+    try:
+        df_outlier_ = DBSCAN_clustered[DBSCAN_clustered.Cluster.values == 999]
+
+        f4_ = go.Figure(
+            go.Scatter(
+                mode="markers",
+                x=df_outlier_[long_col],
+                y=df_outlier_[lat_col],
+                marker_symbol="x-thin",
+                marker_line_color="black",
+                marker_color="black",
+                marker_line_width=2,
+                marker_size=20,
+            )
+        )
+        f4_.layout.plot_bgcolor = global_plot_bg_color
+        f4_.layout.paper_bgcolor = global_paper_bg_color
+        f4_.update_xaxes(title_text="longitude")
+        f4_.update_yaxes(title_text="latitude")
+        f4_.update_layout(autosize=False, width=1200, height=900)
+        f4_.update_layout(
+            title_text="Outlier Points Captured By Cluster Analysis"
+            + "<br><sup>Algorithm Used : DBSCAN (Distance : Haversine)</sup>"
+        )
+        f4_.write_json(ends_with(master_path) + "cluster_plot_4_dbscan_2_" + col_name)
+
+    except:
+        f4_ = blank_chart
+        f4_.update_layout(
+            title_text="No Outliers Were Found Using DBSCAN (Distance : Haversine)"
+        )
+        f4_.write_json(ends_with(master_path) + "cluster_plot_4_dbscan_2_" + col_name)
 
 
 def geo_cluster_generator(
@@ -648,9 +860,9 @@ def geo_cluster_generator(
     max_cluster
         Maximum number of iterations to decide on the optimum cluster
     eps
-        Epsilon value used for DBSCAN clustering
+        Epsilon value range (Min EPS, Max EPS, Interval) used for DBSCAN clustering
     min_samples
-        Minimum sample size used for DBSCAN clustering
+        Minimum Sample Size range (Min Sample Size, Max Sample Size, Interval) used for DBSCAN clustering
     master_path
         Path containing all the output from analyzed data
     global_map_box_val
@@ -665,17 +877,22 @@ def geo_cluster_generator(
     if isinstance(df, pd.DataFrame):
         pass
     else:
-
         cnt_records = df.count()
         frac_sample = float(max_records) / float(cnt_records)
         if frac_sample > 1:
-            frac_sample_ = 1
+            frac_sample_ = 1.0
         else:
-            frac_sample_ = frac_sample
+            frac_sample_ = float(frac_sample)
 
-        df = data_sampling.data_sample(
-            df.dropna(), strata_cols="all", fraction=frac_sample_
-        ).toPandas()
+        df = df.select(*[lat_col_list + long_col_list + geo_col_list]).dropna()
+
+        if frac_sample_ == 1.0:
+
+            df = df.toPandas()
+        else:
+            df = data_sampling.data_sample(
+                df, strata_cols="all", fraction=frac_sample_
+            ).toPandas()
 
     try:
         lat_col = lat_col_list
@@ -759,7 +976,13 @@ def generate_loc_charts_processor(
     -------
 
     """
-    df = df.dropna()
+
+    if lat_col:
+        cols_to_select = lat_col + long_col + [id_col]
+    elif geohash_col:
+        cols_to_select = geohash_col + [id_col]
+
+    df = df.select(cols_to_select).dropna()
 
     if lat_col:
 
@@ -778,7 +1001,7 @@ def generate_loc_charts_processor(
                 lat=lat_col[0],
                 lon=long_col[0],
                 mapbox_style=mapbox_list[global_map_box_val],
-                # size="count",
+                size="count",
                 color_discrete_sequence=global_theme,
             )
             base_map.update_geos(fitbounds="locations")
@@ -812,7 +1035,7 @@ def generate_loc_charts_processor(
                     lat=lat_col[i],
                     lon=long_col[i],
                     mapbox_style=mapbox_list[global_map_box_val],
-                    # size="count",
+                    size="count",
                     color_discrete_sequence=global_theme,
                 )
                 base_map.update_geos(fitbounds="locations")
@@ -850,7 +1073,7 @@ def generate_loc_charts_processor(
                 lat="latitude",
                 lon="longitude",
                 mapbox_style=mapbox_list[global_map_box_val],
-                # size="count",
+                size="count",
                 color_discrete_sequence=global_theme,
             )
             base_map.update_geos(fitbounds="locations")
@@ -1019,9 +1242,9 @@ def geospatial_autodetection(
     max_cluster
         Maximum number of iterations to decide on the optimum cluster
     eps
-        Epsilon value used for DBSCAN clustering
+        Epsilon value range (Min EPS, Max EPS, Interval) used for DBSCAN clustering
     min_samples
-        Minimum sample size used for DBSCAN clustering
+        Minimum Sample Size range (Min Sample Size, Max Sample Size, Interval) used for DBSCAN clustering
     global_map_box_val
         Geospatial Chart Theme Index
     run_type
