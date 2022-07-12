@@ -790,6 +790,7 @@ def location_in_country(
     list_of_lat,
     list_of_lon,
     country,
+    country_shapefile_path,
     method_type="approx",
     result_prefix=[],
     output_mode="append",
@@ -816,6 +817,10 @@ def location_in_country(
         list_of_lat and i-th element of list_of_lon form a lat-lon pair to format.
     country
         The Alpha-2 country code.
+    country_shapefile_path
+        The geojson file with a FeatureCollection object containing polygons for each country. One example
+        file country_polygons.geojson can be downloaded from Anovos GitHub repository:
+        https://github.com/anovos/anovos/tree/main/data/
     method_type
         "approx", "exact".
         "approx" uses the bounding box of a country to estimate whether a location is inside the country
@@ -863,7 +868,6 @@ def location_in_country(
         raise TypeError("Invalid input for method_type.")
 
     if method_type == "exact":
-        country_shapefile_path = "./country_polygons.geojson"
 
         def zip_feats(x, y):
             """zipping two features (in list form) elementwise"""
