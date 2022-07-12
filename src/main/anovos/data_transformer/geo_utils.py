@@ -11,10 +11,7 @@ EARTH_RADIUS = 6371009
 UNIT_FACTOR = {"m": 1.0, "km": 1000.0}
 
 
-def in_range(
-        loc_cols,
-        loc_format="dd"
-):
+def in_range(loc_cols, loc_format="dd"):
     if loc_format == "dd":
         lat, lon = loc_cols
     else:
@@ -139,7 +136,7 @@ def decimal_degrees_to_degrees_minutes_seconds(dd):
 
 
 def from_latlon_decimal_degrees(
-        loc, output_format, radius=EARTH_RADIUS, geohash_precision=8
+    loc, output_format, radius=EARTH_RADIUS, geohash_precision=8
 ):
     """
     Parameters
@@ -238,8 +235,14 @@ def haversine_distance(loc1, loc2, loc_format, unit="m", radius=EARTH_RADIUS):
     if loc_format not in ["dd", "radian"]:
         raise TypeError("Invalid input for loc_format")
 
-    lat1, lon1 = float(loc1[0]), float(loc1[1])
-    lat2, lon2 = float(loc2[0]), float(loc2[1])
+    try:
+        lat1, lon1 = float(loc1[0]), float(loc1[1])
+        lat2, lon2 = float(loc2[0]), float(loc2[1])
+    except:
+        return None
+
+    in_range([lat1, lon1], loc_format)
+    in_range([lat2, lon2], loc_format)
 
     if loc_format == "dd":
         lat1, lon1 = radians(lat1), radians(lon1)
@@ -278,13 +281,18 @@ def vincenty_distance(loc1, loc2, unit="m", ellipsoid="WGS-84"):
     -------
     Float
     """
-
     if None in [loc1, loc2]:
         return None
     if None in loc1 + loc2:
         return None
 
-    loc_distance = distance.distance(loc1, loc2, ellipsoid=ellipsoid)
+    in_range(loc1)
+    in_range(loc2)
+
+    try:
+        loc_distance = distance.distance(loc1, loc2, ellipsoid=ellipsoid)
+    except:
+        return None
 
     if unit == "m":
         return loc_distance.m
@@ -315,8 +323,15 @@ def euclidean_distance(loc1, loc2):
     if None in loc1 + loc2:
         return None
 
+    in_range(loc1, "cartesian")
+    in_range(loc2, "cartesian")
+
     # loc1 = [x1, y1, z1]; loc2 = [x2, y2, z2]
-    euclidean_distance = spatial.distance.euclidean(loc1, loc2)
+    try:
+        euclidean_distance = spatial.distance.euclidean(loc1, loc2)
+    except:
+        return None
+
     return euclidean_distance
 
 
@@ -353,7 +368,7 @@ def point_in_polygon(x, y, polygon):
             # Polygon from multipolygon have extra bracket - that need to be removed
             poly = poly[0]
             if any(
-                    [not isinstance(i, numbers.Number) for point in poly for i in point]
+                [not isinstance(i, numbers.Number) for point in poly for i in point]
             ):
                 raise TypeError("The polygon is invalid")
 
@@ -372,15 +387,15 @@ def point_in_polygon(x, y, polygon):
                 p1 = poly[i - 1]
                 p2 = poly[i]
             if (
-                    p1[1] == p2[1]
-                    and p1[1] == y
-                    and (min(p1[0], p2[0]) <= x <= max(p1[0], p2[0]))
+                p1[1] == p2[1]
+                and p1[1] == y
+                and (min(p1[0], p2[0]) <= x <= max(p1[0], p2[0]))
             ):
                 return 1
             if (
-                    p1[0] == p2[0]
-                    and p1[0] == x
-                    and (min(p1[1], p2[1]) <= y <= max(p1[1], p2[1]))
+                p1[0] == p2[0]
+                and p1[0] == x
+                and (min(p1[1], p2[1]) <= y <= max(p1[1], p2[1]))
             ):
                 return 1
 
