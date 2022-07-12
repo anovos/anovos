@@ -13,6 +13,148 @@ from pyspark.sql import types as T
 from loguru import logger
 
 
+def geo_format_cartesian(
+    idf,
+    list_of_x,
+    list_of_y,
+    list_of_z,
+    output_format,
+    result_prefix=[],
+    optional_configs={"geohash_precision": 8, "radius": EARTH_RADIUS},
+    output_mode="append",
+):
+    """
+    Convert locations from cartesian format to other formats.
+
+    Parameters
+    ----------
+
+    optional_configs
+    idf
+        Input Dataframe.
+    list_of_x
+        List of columns representing x axis values e.g., ["x1","x2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "x1|x2".
+    list_of_y
+        List of columns representing y axis values e.g., ["y1","y2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "y1|y2".
+    list_of_z
+        List of columns representing z axis values e.g., ["z1","z2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "z1|z2".
+        list_of_x, list_of_y and list_of_z must have the same length such that the
+        i-th element of 3 lists form an x-y-z pair to format.
+    output_format
+        "dd", "dms", "radian", "geohash"
+        "dd" represents latitude and longitude in decimal degrees.
+        "dms" represents latitude and longitude in degrees minutes second.
+        "radian" represents latitude and longitude in radians.
+        "geohash" represents geocoded locations.
+    result_prefix
+        List of prefixes for the newly generated column names.
+        Alternatively, prefixes can be specified in a string format,
+        where different prefixes are separated by pipe delimiter “|” e.g., "pf1|pf2".
+        result_prefix must have the same length as list_of_lat and list_of_lon.
+        If it is empty, <lat>_<lon> will be used for each lat-lon pair.
+        For example, list_of_lat is "lat1|lat2", list_of_lon is "L1|L2".
+        Case 1: result_prefix = "L1|L2".
+            If output_format is "dd", "dms" or "radian", new columns will be named as
+            L1_lat_<output_format>, L1_lon_<output_format>, L2_lat_<output_format>, L2_lon_<output_format>.
+            If output_format is "cartesian", new columns will be named as
+            L1_x, L1_y, L1_z, L2_x, L2_y, L2_z.
+            If output_format is "geohash", new columns will be named as
+            L1_geohash and L2_geohash.
+        Case 2: result_prefix = [].
+            The "L1" and "L2" in above column names will be replaced by "lat1_lon1" and "lat2_lon2".
+        (Default value = [])
+    optional_configs
+        The following keys can be used:
+        - geohash_precision: precision of the resultant geohash. This key is only used when output_format
+          is "geohash". (Default value = 8)
+        - radius: radius of Earth. (Default value = EARTH_RADIUS)
+    output_mode
+        "replace", "append".
+        "replace" option appends transformed column to the input dataset and removes the original ones.
+        "append" option appends transformed column to the input dataset.
+        (Default value = "append")
+
+    Returns
+    -------
+    DataFrame
+    """
+
+    geohash_precision = int(optional_configs.get("geohash_precision"), 8)
+    radius = optional_configs.get("radius", EARTH_RADIUS)
+
+    if isinstance(list_of_x, str):
+        list_of_x = [x.strip() for x in list_of_x.split("|")]
+    if isinstance(list_of_y, str):
+        list_of_y = [x.strip() for x in list_of_y.split("|")]
+    if isinstance(list_of_z, str):
+        list_of_z = [x.strip() for x in list_of_z.split("|")]
+    if isinstance(result_prefix, str):
+        result_prefix = [x.strip() for x in result_prefix.split("|")]
+
+    if any(x not in idf.columns for x in list_of_x + list_of_y + list_of_z):
+        raise TypeError("Invalid input for list_of_x or list_of_y or list_of_z")
+
+    format_list = ["dd", "dms", "radian", "geohash"]
+    if output_format not in format_list:
+        raise TypeError("Invalid input for output_format")
+
+    if len({len(list_of_x), len(list_of_y), len(list_of_z)}) != 1:
+        raise TypeError("list_of_x, list_of_y and list_of_z must have the same length")
+    if result_prefix and (len(result_prefix) != len(list_of_x)):
+        raise TypeError(
+            "result_prefix must have the same length as list_of_x, list_of_y and list_of_y if it is not empty"
+        )
+
+    f_to_latlon_dd = F.udf(
+        lambda loc: to_latlon_decimal_degrees(loc, "cartesian", radius),
+        T.ArrayType(T.FloatType()),
+    )
+
+    from_latlon_dd_ = lambda loc: from_latlon_decimal_degrees(
+        loc, output_format, radius, geohash_precision
+    )
+    if output_format in ["dd", "radian"]:
+        f_from_latlon_dd = F.udf(from_latlon_dd_, T.ArrayType(T.FloatType()))
+    elif output_format == "dms":
+        f_from_latlon_dd = F.udf(
+            from_latlon_dd_, T.ArrayType(T.ArrayType(T.FloatType()))
+        )
+    elif output_format == "geohash":
+        f_from_latlon_dd = F.udf(from_latlon_dd_, T.StringType())
+
+    odf = idf
+    for i, (x, y, z) in enumerate(zip(list_of_x, list_of_y, list_of_z)):
+        col = result_prefix[i] if result_prefix else (x + "_" + y + "_" + z)
+
+        odf = odf.withColumn(col + "_temp", F.array(x, y, z)).withColumn(
+            col + "_" + output_format, f_from_latlon_dd(f_to_latlon_dd(col + "_temp"))
+        )
+
+        if output_format in ["dd", "dms", "radian"]:
+            odf = (
+                odf.withColumn(
+                    col + "_lat_" + output_format, F.col(col + "_" + output_format)[0]
+                )
+                .withColumn(
+                    col + "_lon_" + output_format, F.col(col + "_" + output_format)[1]
+                )
+                .drop(col + "_" + output_format)
+            )
+
+        odf = odf.drop(col + "_temp")
+
+        if output_mode == "replace":
+            odf = odf.drop(x, y, z)
+
+    return odf
+
+
 def geo_format_latlon(
     idf,
     list_of_lat,
@@ -20,8 +162,7 @@ def geo_format_latlon(
     input_format,
     output_format,
     result_prefix=[],
-    geohash_precision=8,
-    radius=EARTH_RADIUS,
+    optional_configs={"geohash_precision": 8, "radius": EARTH_RADIUS},
     output_mode="append",
 ):
     """
@@ -68,12 +209,12 @@ def geo_format_latlon(
         Case 2: result_prefix = [].
             The "L1" and "L2" in above column names will be replaced by "lat1_lon1" and "lat2_lon2".
         (Default value = [])
-    geohash_precision
-        Precision of the resultant geohash.
-        This argument is only used when output_format is "geohash". (Default value = 8)
-    radius
-        Radius of Earth.
-        Necessary only when input_format or output_format is "cartesian". (Default value = EARTH_RADIUS).
+    optional_configs
+        The following keys can be used:
+        - geohash_precision: precision of the resultant geohash. This key is only used when output_format
+          is "geohash". (Default value = 8)
+        - radius: radius of Earth. Necessary only when output_format is "cartesian".
+          (Default value = EARTH_RADIUS)
     output_mode
         "replace", "append".
         "replace" option appends transformed column to the input dataset and removes the original ones.
@@ -84,7 +225,8 @@ def geo_format_latlon(
     -------
     DataFrame
     """
-    geohash_precision = int(geohash_precision)
+    geohash_precision = int(optional_configs.get("geohash_precision"), 8)
+    radius = optional_configs.get("radius", EARTH_RADIUS)
 
     if isinstance(list_of_lat, str):
         list_of_lat = [x.strip() for x in list_of_lat.split("|")]
@@ -159,98 +301,65 @@ def geo_format_latlon(
     return odf
 
 
-def geo_format_cartesian(
-    idf,
-    list_of_x,
-    list_of_y,
-    list_of_z,
-    output_format,
-    result_prefix=[],
-    geohash_precision=8,
-    radius=EARTH_RADIUS,
-    output_mode="append",
-):
-
-    geohash_precision = int(geohash_precision)
-
-    if isinstance(list_of_x, str):
-        list_of_x = [x.strip() for x in list_of_x.split("|")]
-    if isinstance(list_of_y, str):
-        list_of_y = [x.strip() for x in list_of_y.split("|")]
-    if isinstance(list_of_z, str):
-        list_of_z = [x.strip() for x in list_of_z.split("|")]
-    if isinstance(result_prefix, str):
-        result_prefix = [x.strip() for x in result_prefix.split("|")]
-
-    if any(x not in idf.columns for x in list_of_x + list_of_y + list_of_z):
-        raise TypeError("Invalid input for list_of_x or list_of_y or list_of_z")
-
-    format_list = ["dd", "dms", "radian", "geohash"]
-    if output_format not in format_list:
-        raise TypeError("Invalid input for output_format")
-
-    if len(set([len(list_of_x), len(list_of_y), len(list_of_z)])) != 1:
-        raise TypeError("list_of_x, list_of_y and list_of_z must have the same length")
-    if result_prefix and (len(result_prefix) != len(list_of_x)):
-        raise TypeError(
-            "result_prefix must have the same length as list_of_x, list_of_y and list_of_y if it is not empty"
-        )
-
-    f_to_latlon_dd = F.udf(
-        lambda loc: to_latlon_decimal_degrees(loc, "cartesian", radius),
-        T.ArrayType(T.FloatType()),
-    )
-
-    from_latlon_dd_ = lambda loc: from_latlon_decimal_degrees(
-        loc, output_format, radius, geohash_precision
-    )
-    if output_format in ["dd", "radian"]:
-        f_from_latlon_dd = F.udf(from_latlon_dd_, T.ArrayType(T.FloatType()))
-    elif output_format == "dms":
-        f_from_latlon_dd = F.udf(
-            from_latlon_dd_, T.ArrayType(T.ArrayType(T.FloatType()))
-        )
-    elif output_format == "geohash":
-        f_from_latlon_dd = F.udf(from_latlon_dd_, T.StringType())
-
-    odf = idf
-    for i, (x, y, z) in enumerate(zip(list_of_x, list_of_y, list_of_z)):
-        col = result_prefix[i] if result_prefix else (x + "_" + y + "_" + z)
-
-        odf = odf.withColumn(col + "_temp", F.array(x, y, z)).withColumn(
-            col + "_" + output_format, f_from_latlon_dd(f_to_latlon_dd(col + "_temp"))
-        )
-
-        if output_format in ["dd", "dms", "radian"]:
-            odf = (
-                odf.withColumn(
-                    col + "_lat_" + output_format, F.col(col + "_" + output_format)[0]
-                )
-                .withColumn(
-                    col + "_lon_" + output_format, F.col(col + "_" + output_format)[1]
-                )
-                .drop(col + "_" + output_format)
-            )
-
-        odf = odf.drop(col + "_temp")
-
-        if output_mode == "replace":
-            odf = odf.drop(x, y, z)
-
-    return odf
-
-
 def geo_format_geohash(
     idf,
     list_of_geohash,
     output_format,
     result_prefix=[],
-    geohash_precision=8,
-    radius=EARTH_RADIUS,
+    optional_configs={"radius": EARTH_RADIUS},
     output_mode="append",
 ):
+    """
+    Convert locations from geohash format to other formats.
 
-    geohash_precision = int(geohash_precision)
+    Parameters
+    ----------
+
+    idf
+        Input Dataframe.
+    list_of_geohash
+        List of columns representing geohash e.g., ["gh1","gh2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "gh1|gh2".
+    output_format
+        "dd", "dms", "radian", "cartesian"
+        "dd" represents latitude and longitude in decimal degrees.
+        "dms" represents latitude and longitude in degrees minutes second.
+        "radian" represents latitude and longitude in radians.
+        "cartesian" represents the Cartesian coordinates of the point in three-dimensional space.
+    result_prefix
+        List of prefixes for the newly generated column names.
+        Alternatively, prefixes can be specified in a string format,
+        where different prefixes are separated by pipe delimiter “|” e.g., "pf1|pf2".
+        result_prefix must have the same length as list_of_lat and list_of_lon.
+        If it is empty, <lat>_<lon> will be used for each lat-lon pair.
+        For example, list_of_lat is "lat1|lat2", list_of_lon is "L1|L2".
+        Case 1: result_prefix = "L1|L2".
+            If output_format is "dd", "dms" or "radian", new columns will be named as
+            L1_lat_<output_format>, L1_lon_<output_format>, L2_lat_<output_format>, L2_lon_<output_format>.
+            If output_format is "cartesian", new columns will be named as
+            L1_x, L1_y, L1_z, L2_x, L2_y, L2_z.
+            If output_format is "geohash", new columns will be named as
+            L1_geohash and L2_geohash.
+        Case 2: result_prefix = [].
+            The "L1" and "L2" in above column names will be replaced by "lat1_lon1" and "lat2_lon2".
+        (Default value = [])
+    optional_configs
+        The following key can be used:
+        - radius: radius of Earth. Necessary only when output_format is "cartesian".
+          (Default value = EARTH_RADIUS)
+    output_mode
+        "replace", "append".
+        "replace" option appends transformed column to the input dataset and removes the original ones.
+        "append" option appends transformed column to the input dataset.
+        (Default value = "append")
+
+    Returns
+    -------
+    DataFrame
+    """
+
+    radius = optional_configs.get("radius", EARTH_RADIUS)
 
     if isinstance(list_of_geohash, str):
         list_of_geohash = [x.strip() for x in list_of_geohash.split("|")]
@@ -275,7 +384,7 @@ def geo_format_geohash(
     )
 
     from_latlon_dd_ = lambda loc: from_latlon_decimal_degrees(
-        loc, output_format, radius, geohash_precision
+        loc, output_format, radius
     )
     if output_format in ["dd", "radian", "cartesian"]:
         f_from_latlon_dd = F.udf(from_latlon_dd_, T.ArrayType(T.FloatType()))
@@ -325,12 +434,12 @@ def location_distance(
     result_prefix="",
     distance_type="haversine",
     unit="m",
-    radius=EARTH_RADIUS,
-    vincenty_model="WGS-84",
+    optional_configs={"radius": EARTH_RADIUS, "vincenty_model": "WGS-84"},
     output_mode="append",
 ):
-
     """
+    Calculate the distance between 2 locations.
+
     Parameters
     ----------
 
@@ -362,10 +471,13 @@ def location_distance(
     unit
         "m", "km".
         Unit of the result. (Default value = "m")
-    vincenty_model
-        "WGS-84", "GRS-80", "Airy (1830)", "Intl 1924", "Clarke (1880)", "GRS-67".
-        The ellipsoidal model to use. For more information, please refer to geopy.distance.ELLIPSOIDS.
-        (Default value = "WGS-84")
+    optional_configs
+        The following keys can be used:
+        - radius: radius of Earth. Necessary only when output_format is "cartesian".
+          (Default value = EARTH_RADIUS)
+        - vincenty_model: The ellipsoidal model to use. Supported values: "WGS-84", "GRS-80", "Airy (1830)",
+          "Intl 1924", "Clarke (1880)", "GRS-67". For more information, please refer to geopy.distance.ELLIPSOIDS.
+          (Default value = "WGS-84")
     output_mode
         "replace", "append".
         "replace" option replaces original columns with transformed column.
@@ -376,6 +488,9 @@ def location_distance(
     -------
     DataFrame
     """
+
+    radius = optional_configs.get("radius", EARTH_RADIUS)
+    vincenty_model = optional_configs.get("vincenty_model", "WGS-84")
 
     if isinstance(list_of_cols_loc1, str):
         list_of_cols_loc1 = [x.strip() for x in list_of_cols_loc1.split("|")]
@@ -421,7 +536,6 @@ def location_distance(
                 input_format=loc_format,
                 output_format=format_required,
                 result_prefix=["temp_loc1", "temp_loc2"],
-                radius=radius,
                 output_mode="append",
             )
 
@@ -435,7 +549,6 @@ def location_distance(
                 list_of_z=[list_of_cols_loc1[2], list_of_cols_loc2[2]],
                 output_format=format_required,
                 result_prefix=["temp_loc1", "temp_loc2"],
-                radius=radius,
                 output_mode="append",
             )
 
@@ -511,8 +624,9 @@ def location_distance(
 def geohash_precision_control(
     idf, list_of_geohash, output_precision=8, km_max_error=None, output_mode="append"
 ):
-
     """
+    Control the precision of geohash columns.
+
     Parameters
     ----------
 
@@ -586,7 +700,8 @@ def location_in_polygon(
     idf, list_of_lat, list_of_lon, polygon, result_prefix=[], output_mode="append"
 ):
     """
-    To check whether each lat-lon pair is insided a GeoJSON object
+    To check whether each lat-lon pair is insided a GeoJSON object. The following types of GeoJSON objects
+    are supported by this function: Polygon, MultiPolygon, Feature or FeatureCollection
 
     Parameters
     ----------
@@ -680,11 +795,13 @@ def location_in_country(
     output_mode="append",
 ):
     """
-    To check whether each lat-lon pair is insided a country.
+    To check whether each lat-lon pair is insided a country. Two ways of checking are supported: "approx" (using the
+    bounding box of a country) and "exact" (using the shapefile of a country).
 
     Parameters
     ----------
-
+    spark
+        Spark Session
     idf
         Input Dataframe.
     list_of_lat
