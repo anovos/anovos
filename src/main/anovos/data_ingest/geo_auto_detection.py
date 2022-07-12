@@ -226,7 +226,9 @@ def ll_gh_cols(df, max_records):
                 .rdd.flatMap(lambda x: x)
                 .collect()[0]
             )
-            mean_val = df.agg(F.mean(F.col(i[0]))).rdd.flatMap(lambda x: x).collect()[0]
+            stddev_val = (
+                df.agg(F.stddev(F.col(i[0]))).rdd.flatMap(lambda x: x).collect()[0]
+            )
 
             if prec_val is None:
                 p = 0
@@ -235,8 +237,7 @@ def ll_gh_cols(df, max_records):
             else:
                 p = prec_val
 
-            if (int(p) > 0) & ((max_val > 1) & (max_val < 180)) & (mean_val > 0):
-
+            if (int(p) > 0) & ((max_val > 1) & (max_val <= 180)) & (stddev_val >= 1):
                 for j in [reg_lat_lon("latitude"), reg_lat_lon("longitude")]:
                     if c == 0:
                         x = (
