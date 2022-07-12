@@ -2765,23 +2765,32 @@ def ts_viz_3_1(base_path, x_col, y_col):
 
     for metric_col in ["mean", "median", "min", "max"]:
 
-        adf_test = (
-            round(adfuller(df[metric_col])[0], 3),
-            round(adfuller(df[metric_col])[1], 3),
-        )
-        kpss_test = (
-            round(kpss(df[metric_col], regression="ct")[0], 3),
-            round(kpss(df[metric_col], regression="ct")[1], 3),
-        )
-
-        if adf_test[1] < 0.05:
-            adf_flag = True
-        else:
+        try:
+            adf_test = (
+                round(adfuller(df[metric_col])[0], 3),
+                round(adfuller(df[metric_col])[1], 3),
+            )
+            if adf_test[1] < 0.05:
+                adf_flag = True
+            else:
+                adf_flag = False
+        except:
+            adf_test = ("nan", "nan")
             adf_flag = False
-        if kpss_test[1] < 0.05:
-            kpss_flag = True
-        else:
+
+        try:
+            kpss_test = (
+                round(kpss(df[metric_col], regression="ct")[0], 3),
+                round(kpss(df[metric_col], regression="ct")[1], 3),
+            )
+            if kpss_test[1] < 0.05:
+                kpss_flag = True
+            else:
+                kpss_flag = False
+        except:
+            kpss_test = ("nan", "nan")
             kpss_flag = False
+
         #         df[metric_col] = df[metric_col].apply(lambda x: boxcox1p(x,0.25))
         #         lambda_box_cox = round(boxcox(df[metric_col])[1],5)
         fit = PowerTransformer(method="yeo-johnson")
@@ -3316,32 +3325,32 @@ def read_stats_ll_geo(lat_col, long_col, geohash_col, master_path, top_geo_recor
                                     ),
                                     label="Overall Summary",
                                 ),
-                                dp.DataTable(
-                                    pd.read_csv(
-                                        ends_with(master_path)
-                                        + "Top_"
-                                        + str(top_geo_records)
-                                        + "_Lat_1_"
-                                        + lat_col[idx]
-                                        + "_"
-                                        + long_col[idx]
-                                        + ".csv"
-                                    ),
-                                    label="Top " + str(top_geo_records) + "  Lat",
-                                ),
-                                dp.DataTable(
-                                    pd.read_csv(
-                                        ends_with(master_path)
-                                        + "Top_"
-                                        + str(top_geo_records)
-                                        + "_Long_1_"
-                                        + lat_col[idx]
-                                        + "_"
-                                        + long_col[idx]
-                                        + ".csv"
-                                    ),
-                                    label="Top " + str(top_geo_records) + " Long",
-                                ),
+                                # dp.DataTable(
+                                #     pd.read_csv(
+                                #         ends_with(master_path)
+                                #         + "Top_"
+                                #         + str(top_geo_records)
+                                #         + "_Lat_1_"
+                                #         + lat_col[idx]
+                                #         + "_"
+                                #         + long_col[idx]
+                                #         + ".csv"
+                                #     ),
+                                #     label="Top " + str(top_geo_records) + "  Lat",
+                                # ),
+                                # dp.DataTable(
+                                #     pd.read_csv(
+                                #         ends_with(master_path)
+                                #         + "Top_"
+                                #         + str(top_geo_records)
+                                #         + "_Long_1_"
+                                #         + lat_col[idx]
+                                #         + "_"
+                                #         + long_col[idx]
+                                #         + ".csv"
+                                #     ),
+                                #     label="Top " + str(top_geo_records) + " Long",
+                                # ),
                                 dp.DataTable(
                                     pd.read_csv(
                                         ends_with(master_path)
@@ -3387,32 +3396,32 @@ def read_stats_ll_geo(lat_col, long_col, geohash_col, master_path, top_geo_recor
                                     ),
                                     label="Overall Summary",
                                 ),
-                                dp.DataTable(
-                                    pd.read_csv(
-                                        ends_with(master_path)
-                                        + "Top_"
-                                        + str(top_geo_records)
-                                        + "_Lat_1_"
-                                        + lat_col[idx]
-                                        + "_"
-                                        + long_col[idx]
-                                        + ".csv"
-                                    ),
-                                    label="Top " + str(top_geo_records) + "  Lat",
-                                ),
-                                dp.DataTable(
-                                    pd.read_csv(
-                                        ends_with(master_path)
-                                        + "Top_"
-                                        + str(top_geo_records)
-                                        + "_Long_1_"
-                                        + lat_col[idx]
-                                        + "_"
-                                        + long_col[idx]
-                                        + ".csv"
-                                    ),
-                                    label="Top " + str(top_geo_records) + " Long",
-                                ),
+                                # dp.DataTable(
+                                #     pd.read_csv(
+                                #         ends_with(master_path)
+                                #         + "Top_"
+                                #         + str(top_geo_records)
+                                #         + "_Lat_1_"
+                                #         + lat_col[idx]
+                                #         + "_"
+                                #         + long_col[idx]
+                                #         + ".csv"
+                                #     ),
+                                #     label="Top " + str(top_geo_records) + "  Lat",
+                                # ),
+                                # dp.DataTable(
+                                #     pd.read_csv(
+                                #         ends_with(master_path)
+                                #         + "Top_"
+                                #         + str(top_geo_records)
+                                #         + "_Long_1_"
+                                #         + lat_col[idx]
+                                #         + "_"
+                                #         + long_col[idx]
+                                #         + ".csv"
+                                #     ),
+                                #     label="Top " + str(top_geo_records) + " Long",
+                                # ),
                                 dp.DataTable(
                                     pd.read_csv(
                                         ends_with(master_path)
@@ -3599,64 +3608,221 @@ def read_cluster_stats_ll_geo(lat_col, long_col, geohash_col, master_path):
 
             if len(all_geo_cols) == 1:
 
-                p1 = dp.Plot(
-                    go.Figure(
-                        json.load(open(ends_with(master_path) + "cluster_plot_1_" + i))
+                p1 = dp.Group(
+                    dp.Plot(
+                        go.Figure(
+                            json.load(
+                                open(
+                                    ends_with(master_path) + "cluster_plot_1_elbow_" + i
+                                )
+                            )
+                        )
                     ),
-                    label="Elbow Curve",
+                    dp.Plot(
+                        go.Figure(
+                            json.load(
+                                open(
+                                    ends_with(master_path)
+                                    + "cluster_plot_1_silhoutte_"
+                                    + i
+                                )
+                            )
+                        )
+                    ),
+                    label="Cluster Identification",
                 )
-                p2 = dp.Plot(
-                    go.Figure(
-                        json.load(open(ends_with(master_path) + "cluster_plot_2_" + i))
+
+                p2 = dp.Group(
+                    dp.Plot(
+                        go.Figure(
+                            json.load(
+                                open(
+                                    ends_with(master_path)
+                                    + "cluster_plot_2_kmeans_"
+                                    + i
+                                )
+                            )
+                        )
+                    ),
+                    dp.Plot(
+                        go.Figure(
+                            json.load(
+                                open(
+                                    ends_with(master_path)
+                                    + "cluster_plot_2_dbscan_"
+                                    + i
+                                )
+                            )
+                        )
                     ),
                     label="Cluster Distribution",
                 )
-                p3 = dp.Plot(
-                    go.Figure(
-                        json.load(open(ends_with(master_path) + "cluster_plot_3_" + i))
+
+                p3 = dp.Group(
+                    dp.Plot(
+                        go.Figure(
+                            json.load(
+                                open(
+                                    ends_with(master_path)
+                                    + "cluster_plot_3_kmeans_"
+                                    + i
+                                )
+                            )
+                        )
+                    ),
+                    dp.Plot(
+                        go.Figure(
+                            json.load(
+                                open(
+                                    ends_with(master_path)
+                                    + "cluster_plot_3_dbscan_"
+                                    + i
+                                )
+                            )
+                        )
                     ),
                     label="Visualization",
                 )
-                p4 = dp.Plot(
-                    go.Figure(
-                        json.load(open(ends_with(master_path) + "cluster_plot_4_" + i))
+
+                p4 = dp.Group(
+                    dp.Plot(
+                        go.Figure(
+                            json.load(
+                                open(
+                                    ends_with(master_path)
+                                    + "cluster_plot_4_dbscan_1_"
+                                    + i
+                                )
+                            )
+                        )
+                    ),
+                    dp.Plot(
+                        go.Figure(
+                            json.load(
+                                open(
+                                    ends_with(master_path)
+                                    + "cluster_plot_4_dbscan_2_"
+                                    + i
+                                )
+                            )
+                        )
                     ),
                     label="Outlier Points",
                 )
+
                 plot_ll.append(
                     dp.Group(
                         dp.Select(blocks=[p1, p2, p3, p4], type=dp.SelectType.TABS),
                         label=i,
                     )
                 )
+
                 plot_ll.append(dp.Plot(blank_chart))
 
             elif len(all_geo_cols) > 1:
 
-                p1 = dp.Plot(
-                    go.Figure(
-                        json.load(open(ends_with(master_path) + "cluster_plot_1_" + i))
+                p1 = dp.Group(
+                    dp.Plot(
+                        go.Figure(
+                            json.load(
+                                open(
+                                    ends_with(master_path) + "cluster_plot_1_elbow_" + i
+                                )
+                            )
+                        )
                     ),
-                    label="Elbow Curve",
+                    dp.Plot(
+                        go.Figure(
+                            json.load(
+                                open(
+                                    ends_with(master_path)
+                                    + "cluster_plot_1_silhoutte_"
+                                    + i
+                                )
+                            )
+                        )
+                    ),
+                    label="Cluster Identification",
                 )
-                p2 = dp.Plot(
-                    go.Figure(
-                        json.load(open(ends_with(master_path) + "cluster_plot_2_" + i))
+
+                p2 = dp.Group(
+                    dp.Plot(
+                        go.Figure(
+                            json.load(
+                                open(
+                                    ends_with(master_path)
+                                    + "cluster_plot_2_kmeans_"
+                                    + i
+                                )
+                            )
+                        )
+                    ),
+                    dp.Plot(
+                        go.Figure(
+                            json.load(
+                                open(
+                                    ends_with(master_path)
+                                    + "cluster_plot_2_dbscan_"
+                                    + i
+                                )
+                            )
+                        )
                     ),
                     label="Cluster Distribution",
                 )
-                p3 = dp.Plot(
-                    go.Figure(
-                        json.load(open(ends_with(master_path) + "cluster_plot_3_" + i))
+
+                p3 = dp.Group(
+                    dp.Plot(
+                        go.Figure(
+                            json.load(
+                                open(
+                                    ends_with(master_path)
+                                    + "cluster_plot_3_kmeans_"
+                                    + i
+                                )
+                            )
+                        )
+                    ),
+                    dp.Plot(
+                        go.Figure(
+                            json.load(
+                                open(
+                                    ends_with(master_path)
+                                    + "cluster_plot_3_dbscan_"
+                                    + i
+                                )
+                            )
+                        )
                     ),
                     label="Visualization",
                 )
-                p4 = dp.Plot(
-                    go.Figure(
-                        json.load(open(ends_with(master_path) + "cluster_plot_4_" + i))
+
+                p4 = dp.Group(
+                    dp.Plot(
+                        go.Figure(
+                            json.load(
+                                open(
+                                    ends_with(master_path)
+                                    + "cluster_plot_4_dbscan_1_"
+                                    + i
+                                )
+                            )
+                        )
+                    ),
+                    dp.Plot(
+                        go.Figure(
+                            json.load(
+                                open(
+                                    ends_with(master_path)
+                                    + "cluster_plot_4_dbscan_2_"
+                                    + i
+                                )
+                            )
+                        )
                     ),
                     label="Outlier Points",
                 )
+
                 plot_ll.append(
                     dp.Group(
                         dp.Select(blocks=[p1, p2, p3, p4], type=dp.SelectType.TABS),
@@ -3794,7 +3960,13 @@ def loc_report_gen(
     """
 
     _ = dp.Text("#")
-    dp1 = dp.Group(_, loc_field_stats(lat_cols, long_cols, geohash_cols, max_records))
+    dp1 = dp.Group(
+        _,
+        dp.Text(
+            "*This section summarizes the information about the geospatial features identified in the data and their landscaping view*"
+        ),
+        loc_field_stats(lat_cols, long_cols, geohash_cols, max_records),
+    )
 
     if (len(lat_cols) + len(geohash_cols)) > 0:
 
