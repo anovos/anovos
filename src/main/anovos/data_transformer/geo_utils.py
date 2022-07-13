@@ -12,6 +12,19 @@ UNIT_FACTOR = {"m": 1.0, "km": 1000.0}
 
 
 def in_range(loc, loc_format="dd"):
+    """
+    Parameters
+    ----------
+    loc
+        Location to check if in range.
+        If loc_format is "dd", [lat, lon] format is required.
+        If loc_format is "dms", [[d1,m1,s1], [d2,m2,s2]] format is required.
+        If loc_format is "radian", [lat_radian, lon_radian] format is required.
+        If loc_format is "cartesian", [x, y, z] format is required.
+        If loc_format is "geohash", string format is required.
+    loc_format
+        "dd", "dms", "radian", "cartesian", "geohash". (Default value = "dd")
+    """
     if loc_format == "dd":
         lat, lon = loc
     else:
@@ -29,7 +42,6 @@ def to_latlon_decimal_degrees(loc, input_format, radius=EARTH_RADIUS):
     """
     Parameters
     ----------
-
     loc
         Location to format.
         If input_format is "dd", [lat, lon] format is required.
@@ -117,7 +129,6 @@ def decimal_degrees_to_degrees_minutes_seconds(dd):
     """
     Parameters
     ----------
-
     dd
         Float value in decimal degree.
 
@@ -141,7 +152,6 @@ def from_latlon_decimal_degrees(
     """
     Parameters
     ----------
-
     loc
         Location to format with format [lat, lon].
     output_format
@@ -206,7 +216,6 @@ def haversine_distance(loc1, loc2, loc_format, unit="m", radius=EARTH_RADIUS):
     """
     Parameters
     ----------
-
     loc1
         The first location.
         If loc_format is "dd", [lat, lon] format is required.
@@ -264,7 +273,6 @@ def vincenty_distance(loc1, loc2, unit="m", ellipsoid="WGS-84"):
 
     Parameters
     ----------
-
     loc1
         The first location. [lat, lon] format is required.
     loc2
@@ -308,7 +316,6 @@ def euclidean_distance(loc1, loc2):
 
     Parameters
     ----------
-
     loc1
         The first location. [x1, y1, z1] format is required.
     loc2
@@ -341,7 +348,6 @@ def point_in_polygon(x, y, polygon):
 
     Parameters
     ----------
-
     x
         x coordinate/longitude
     y
@@ -430,7 +436,6 @@ def point_in_polygons(x, y, polygon_list, south_west_loc=[], north_east_loc=[]):
 
     Parameters
     ----------
-
     x
         x coordinate/longitude
     y
