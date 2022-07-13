@@ -367,9 +367,6 @@ def point_in_polygon(x, y, polygon):
         x = float(x)
         y = float(y)
     except:
-        warnings.warn(
-            "Rows dropped due to invalid longitude and/or latitude values"
-        )
         return None
 
     in_range((y, x))
@@ -454,6 +451,17 @@ def point_in_polygons(x, y, polygon_list, south_west_loc=[], north_east_loc=[]):
     Integer
         1 if (x, y) is inside any polygon of polygon_list and 0 otherwise.
     """
+    try:
+        x = float(x)
+        y = float(y)
+    except:
+        warnings.warn(
+            "Rows dropped due to invalid longitude and/or latitude values"
+        )
+        return None
+
+    in_range((y, x))
+
     if south_west_loc:
         if (x < south_west_loc[0]) or (y < south_west_loc[1]):
             return 0
@@ -770,10 +778,18 @@ def point_in_country_approx(lat, lon, country):
     if (lat is None) | (lon is None):
         return None
 
+    try:
+        lat = float(lat)
+        lon = float(lon)
+    except:
+        warnings.warn(
+            "Rows dropped due to invalid longitude and/or latitude values"
+        )
+        return None
+
+    in_range((lat, lon))
+
     if (c[1][1] <= lat <= c[1][3]) and (c[1][0] <= lon <= c[1][2]):
         return 1
     else:
         return 0
-
-
-f_point_in_country_approx = F.udf(point_in_country_approx, T.IntegerType())
