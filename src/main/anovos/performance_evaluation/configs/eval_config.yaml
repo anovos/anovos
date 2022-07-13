@@ -1,8 +1,8 @@
 input_dataset_name: "IEEE Fraud Detection Small"
-input_dataset:
-output_parent_path:
-dataframe_size_list: [1,5,10,15,20,40,60,80,100,150,200,220]
+input_dataset: "s3://mw.test/krish/anovos/ieee_fraud_detection/datasets/ieee/medium/csv"
+output_parent_path: "s3://mw.test/krish/anovos/performance_eval/take_1"
+dataframe_size_list: []
 column_type_ratio: 0.2 
-functions: ["correlation_matrix", "outlier_detection", "IG_calculation", "IV_calculation", "variable_clustering"]
+functions: ["correlation_matrix", "outlier_detection", "IG_calculation", "IV_calculation", "variable_clustering","cat_to_num_supervised","imputation_sklearn"]
 node_counts: [1,2,3,4,5]
 machine_type: "r5.2xlarge"

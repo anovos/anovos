@@ -1,4 +1,4 @@
-def get_report(spark, execution_time_list, dataset_name, column_ratio, machine_type, node_count, functions):
+def get_report(spark, execution_time_list, dataset_name, column_ratio, machine_type, node_count):
     '''
     Build a csv report from the data_path uploaded by the AnovosOperator to the EMR
     '''

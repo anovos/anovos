@@ -16,7 +16,6 @@ anovos_basic_report:
     skip_corr_matrix: False
     output_path: "s3://mw.test/krish/anovos/ieee_fraud_detection/ieee_small/anovos_test_5/report_stats"
 
-#if anovos_basic_report.basic_report is True, then all configs below are ignored.
 stats_generator:
   metric: [ 'global_summary','measures_of_counts','measures_of_centralTendency','measures_of_cardinality','measures_of_percentiles','measures_of_dispersion','measures_of_shape' ]
   metric_args:
@@ -113,32 +112,18 @@ association_evaluator:
     list_of_cols: all
     drop_cols: TransactionID|isFraud
 
+transformers:
+  categorical_encoding:
+    # cat_to_num_unsupervised:
+    #   list_of_cols: 'all'
+    #   drop_cols: ['ifa']
+    #   method_type: onehot_encoding
 
-report_preprocessing:
-  master_path: 's3://mw.test/krish/anovos/ieee_fraud_detection/ieee_small/anovos_test_5/report_stats'
-  charts_to_objects:
-    list_of_cols: all
-    drop_cols: TransactionID
-    label_col: isFraud
-    event_label: 1
-    bin_method: equal_frequency
-    bin_size: 10
-    drift_detector: True
-    outlier_charts: False
-    source_path: "NA"
-
-report_generation:
-  master_path: 's3://mw.test/krish/anovos/ieee_fraud_detection/ieee_small/anovos_test_5/report_stats'
-  id_col: 'TransactionID'
-  label_col: 'isFraud'
-  corr_threshold: 0.4
-  iv_threshold: 0.02
-  drift_threshold_model: 0.1
-  dataDict_path: 's3://mw.test/krish/anovos/ieee_fraud_detection/data_dictionary.csv'
-  metricDict_path: 's3://mw.test/krish/anovos/ieee_fraud_detection/metric_dictionary.csv'
-  final_report_path: 's3://mw.test/krish/anovos/ieee_fraud_detection/ieee_small/anovos_test_5/report_stats'
-
-
+    cat_to_num_supervised:
+      list_of_cols: all
+      drop_cols: ['TransactionID']
+      label_col: isFraud
+      event_label: 1
 
 write_intermediate:
   file_path: "s3://mw.test/krish/anovos/ieee_fraud_detection/ieee_small/anovos_test_5/intermediate_data"
