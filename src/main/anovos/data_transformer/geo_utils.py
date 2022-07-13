@@ -11,11 +11,11 @@ EARTH_RADIUS = 6371009
 UNIT_FACTOR = {"m": 1.0, "km": 1000.0}
 
 
-def in_range(loc_cols, loc_format="dd"):
+def in_range(loc, loc_format="dd"):
     if loc_format == "dd":
-        lat, lon = loc_cols
+        lat, lon = loc
     else:
-        lat, lon = to_latlon_decimal_degrees(loc_cols, loc_format)
+        lat, lon = to_latlon_decimal_degrees(loc, loc_format)
 
     if None not in [lat, lon]:
         if lat > 90 or lat < -90 or lon > 180 or lon < -180:
@@ -108,7 +108,7 @@ def to_latlon_decimal_degrees(loc, input_format, radius=EARTH_RADIUS):
             lat, lon = None, None
             warnings.warn("Rows dropped due to an invalid geohash entry")
 
-    in_range([lat, lon])
+    in_range((lat, lon))
 
     return [lat, lon]
 
@@ -241,8 +241,8 @@ def haversine_distance(loc1, loc2, loc_format, unit="m", radius=EARTH_RADIUS):
     except:
         return None
 
-    in_range([lat1, lon1], loc_format)
-    in_range([lat2, lon2], loc_format)
+    in_range((lat1, lon1), loc_format)
+    in_range((lat2, lon2), loc_format)
 
     if loc_format == "dd":
         lat1, lon1 = radians(lat1), radians(lon1)
@@ -357,6 +357,17 @@ def point_in_polygon(x, y, polygon):
     if (x is None) | (y is None):
         return None
 
+    try:
+        x = float(x)
+        y = float(y)
+    except:
+        warnings.warn(
+            "Rows dropped due to invalid longitude and/or latitude values"
+        )
+        return None
+
+    in_range((y, x))
+
     counter = 0
     for index, poly in enumerate(polygon):
         # Check whether x and y are numbers
@@ -368,7 +379,7 @@ def point_in_polygon(x, y, polygon):
             # Polygon from multipolygon have extra bracket - that need to be removed
             poly = poly[0]
             if any(
-                [not isinstance(i, numbers.Number) for point in poly for i in point]
+                    [not isinstance(i, numbers.Number) for point in poly for i in point]
             ):
                 raise TypeError("The polygon is invalid")
 
@@ -379,30 +390,26 @@ def point_in_polygon(x, y, polygon):
 
         # Check if point is on a boundary
         poly_length = len(poly)
-        for i in range(poly_length):
-            if i == 0:
-                p1 = poly[0]
-                p2 = poly[1]
-            else:
-                p1 = poly[i - 1]
-                p2 = poly[i]
+        for i in range(poly_length - 1):
+            p1 = poly[i]
+            p2 = poly[i + 1]
             if (
-                p1[1] == p2[1]
-                and p1[1] == y
-                and (min(p1[0], p2[0]) <= x <= max(p1[0], p2[0]))
+                    p1[1] == p2[1]
+                    and p1[1] == y
+                    and (min(p1[0], p2[0]) <= x <= max(p1[0], p2[0]))
             ):
                 return 1
             if (
-                p1[0] == p2[0]
-                and p1[0] == x
-                and (min(p1[1], p2[1]) <= y <= max(p1[1], p2[1]))
+                    p1[0] == p2[0]
+                    and p1[0] == x
+                    and (min(p1[1], p2[1]) <= y <= max(p1[1], p2[1]))
             ):
                 return 1
 
         # Check if the point is inside
-        p1x, p1y = poly[0]
-        for i in range(1, poly_length + 1):
-            p2x, p2y = poly[i % poly_length]
+        for i in range(poly_length):
+            p1x, p1y = poly[i]
+            p2x, p2y = poly[(i + 1) % poly_length]
             if y > min(p1y, p2y):
                 if y <= max(p1y, p2y):
                     if x <= max(p1x, p2x):
@@ -410,7 +417,6 @@ def point_in_polygon(x, y, polygon):
                             xints = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
                             if p1x == p2x or x <= xints:
                                 counter += 1
-            p1x, p1y = p2x, p2y
 
     if counter % 2 == 0:
         return 0
@@ -433,10 +439,10 @@ def point_in_polygons(x, y, polygon_list, south_west_loc=[], north_east_loc=[]):
         A list of polygon(s)
     south_west_loc
         The south-west point (x_sw, y_sw) of the bounding box of the polygons, if available.
-        0 will be directlt returned if x < x_sw or y < y_sw (Default value = [])
+        0 will be directly returned if x < x_sw or y < y_sw (Default value = [])
     north_east_loc
         The north-east point (x_ne, y_ne) of the bounding box of the polygons, if available. (Default value = [])
-        0 will be directlt returned if x > x_ne or y > y_ne (Default value = [])
+        0 will be directly returned if x > x_ne or y > y_ne (Default value = [])
 
     Returns
     -------
