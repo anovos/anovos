@@ -258,8 +258,9 @@ def correlation_matrix(
                 high_corr = True
                 col_need_treatment.append(col)
         if idf.count() <= 100000 and not high_corr:
-            return correlation_matrix_phik(
-                spark, idf, list_of_cols, drop_cols, stats_unique, print_impact
+            idf_all_num = cat_to_num_unsupervised(spark, idf)
+            return correlation_matrix_numerical(
+                spark, idf_all_num, list_of_cols, drop_cols, print_impact
             )
         elif idf.count() > 100000 and not high_corr:
             warnings.warn(
@@ -268,16 +269,18 @@ def correlation_matrix(
             idf_sample = data_sample(
                 idf, fraction=float(100000) / idf.count(), method_type="random"
             )
-            return correlation_matrix_phik(
-                spark, idf_sample, list_of_cols, drop_cols, stats_unique, print_impact
+            idf_all_num = cat_to_num_unsupervised(spark, idf_sample)
+            return correlation_matrix_numerical(
+                spark, idf_all_num, list_of_cols, drop_cols, print_impact
             )
         elif idf.count() <= 100000 and high_corr:
             warnings.warn(
                 "High cardinality column(s) are detected, and will go through cardinality treatments."
             )
             idf_treat = outlier_categories(spark, idf, list_of_cols=col_need_treatment)
-            return correlation_matrix_phik(
-                spark, idf_treat, list_of_cols, drop_cols, stats_unique, print_impact
+            idf_all_num = cat_to_num_unsupervised(spark, idf_treat)
+            return correlation_matrix_numerical(
+                spark, idf_all_num, list_of_cols, drop_cols, print_impact
             )
         else:
             warnings.warn(
@@ -292,8 +295,11 @@ def correlation_matrix(
             idf_treat = outlier_categories(
                 spark, idf_sample, list_of_cols=col_need_treatment
             )
-            return correlation_matrix_phik(
-                spark, idf_treat, list_of_cols, drop_cols, stats_unique, print_impact
+            idf_all_num = cat_to_num_unsupervised(
+                spark, idf_treat
+            )
+            return correlation_matrix_numerical(
+                spark, idf_all_num, list_of_cols, drop_cols, print_impact
             )
     else:
         return correlation_matrix_numerical(
