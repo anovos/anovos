@@ -1,3 +1,4 @@
+input_dataset_name: "IEEE Fraud Detection Small"
 input_dataset:
 output_parent_path:
 dataframe_size_list: [1,5,10,15,20,40,60,80,100,150,200,220]

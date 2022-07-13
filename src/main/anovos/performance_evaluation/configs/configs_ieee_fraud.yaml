@@ -1,0 +1,162 @@
+input_dataset:
+  read_dataset:
+    file_path: "eval config"
+    file_type: csv
+    file_configs:
+      header: True
+      delimiter: ","
+      inferSchema: True
+
+anovos_basic_report:
+  basic_report: False
+  report_args:
+    id_col: TransactionID
+    label_col: isFraud
+    event_label: 1
+    skip_corr_matrix: False
+    output_path: "s3://mw.test/krish/anovos/ieee_fraud_detection/ieee_small/anovos_test_5/report_stats"
+
+#if anovos_basic_report.basic_report is True, then all configs below are ignored.
+stats_generator:
+  metric: [ 'global_summary','measures_of_counts','measures_of_centralTendency','measures_of_cardinality','measures_of_percentiles','measures_of_dispersion','measures_of_shape' ]
+  metric_args:
+    list_of_cols: all
+    drop_cols: [ 'TransactionID' ]
+
+quality_checker:
+  duplicate_detection:
+    list_of_cols: all
+    drop_cols: [ 'TransactionID' ]
+    treatment: True
+
+  nullRows_detection:
+    list_of_cols: all
+    drop_cols: [ ]
+    treatment: True
+    treatment_threshold: 0.75
+
+  invalidEntries_detection:
+    list_of_cols: all
+    drop_cols: [ 'TransactionID' ]
+    treatment: True
+    output_mode: replace
+
+  IDness_detection:
+    list_of_cols: all
+    drop_cols: [ 'TransactionID' ]
+    treatment: True
+    treatment_threshold: 0.9
+
+  biasedness_detection:
+    list_of_cols: all
+    drop_cols: [ 'isFraud' ]
+    treatment: True
+    treatment_threshold: 0.98
+
+  outlier_detection:
+    list_of_cols: all
+    drop_cols: [ 'TransactionID','isFraud' ]
+    detection_side: upper
+    detection_configs:
+      pctile_lower: 0.05
+      pctile_upper: 0.90
+      stdev_lower: 3.0
+      stdev_upper: 3.0
+      IQR_lower: 1.5
+      IQR_upper: 1.5
+      min_validation: 2
+    treatment: True
+    treatment_method: value_replacement
+    pre_existing_model: False
+    model_path: NA
+    output_mode: replace
+
+  nullColumns_detection:
+    list_of_cols: all
+    drop_cols: [ 'TransactionID','isFraud' ]
+    treatment: True
+    treatment_method: MMM
+    treatment_configs:
+      method_type: median
+      pre_existing_model: False
+      model_path: NA
+      output_mode: replace
+
+
+association_evaluator:
+
+  correlation_matrix:
+    list_of_cols: all
+    drop_cols: [ 'TransactionID' ]
+
+  IV_calculation:
+    list_of_cols: all
+    drop_cols: TransactionID
+    label_col: isFraud
+    event_label: 1
+    encoding_configs:
+      bin_method: equal_frequency
+      bin_size: 10
+      monotonicity_check: 0
+
+  IG_calculation:
+    list_of_cols: all
+    drop_cols: TransactionID
+    label_col: isFraud
+    event_label: 1
+    encoding_configs:
+      bin_method: equal_frequency
+      bin_size: 10
+      monotonicity_check: 0
+
+  variable_clustering:
+    list_of_cols: all
+    drop_cols: TransactionID|isFraud
+
+
+report_preprocessing:
+  master_path: 's3://mw.test/krish/anovos/ieee_fraud_detection/ieee_small/anovos_test_5/report_stats'
+  charts_to_objects:
+    list_of_cols: all
+    drop_cols: TransactionID
+    label_col: isFraud
+    event_label: 1
+    bin_method: equal_frequency
+    bin_size: 10
+    drift_detector: True
+    outlier_charts: False
+    source_path: "NA"
+
+report_generation:
+  master_path: 's3://mw.test/krish/anovos/ieee_fraud_detection/ieee_small/anovos_test_5/report_stats'
+  id_col: 'TransactionID'
+  label_col: 'isFraud'
+  corr_threshold: 0.4
+  iv_threshold: 0.02
+  drift_threshold_model: 0.1
+  dataDict_path: 's3://mw.test/krish/anovos/ieee_fraud_detection/data_dictionary.csv'
+  metricDict_path: 's3://mw.test/krish/anovos/ieee_fraud_detection/metric_dictionary.csv'
+  final_report_path: 's3://mw.test/krish/anovos/ieee_fraud_detection/ieee_small/anovos_test_5/report_stats'
+
+
+
+write_intermediate:
+  file_path: "s3://mw.test/krish/anovos/ieee_fraud_detection/ieee_small/anovos_test_5/intermediate_data"
+  file_type: csv
+  file_configs:
+    mode: overwrite
+    header: True
+    delimiter: ","
+    inferSchema: True
+
+write_main:
+  file_path: "s3://mw.test/krish/anovos/ieee_fraud_detection/ieee_small/anovos_test_5/output"
+  file_type: parquet
+  file_configs:
+    mode: overwrite
+
+write_stats:
+  file_path: "s3://mw.test/krish/anovos/ieee_fraud_detection/ieee_small/anovos_test_5/stats"
+  file_type: parquet
+  file_configs:
+    mode: overwrite
