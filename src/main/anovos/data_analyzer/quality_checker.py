@@ -659,9 +659,10 @@ def outlier_detection(
     odf : DataFrame
         Dataframe with outliers treated if treatment is True, else original input dataframe.
     odf_print : DataFrame
-        schema [attribute, lower_outliers, upper_outliers].
-        lower_outliers is no. of outliers found in the lower spectrum of the attribute range, and
-        upper_outliers is outlier count in the upper spectrum.
+        schema [attribute, lower_outliers, upper_outliers, excluded_due_to_skewness].
+        lower_outliers is no. of outliers found in the lower spectrum of the attribute range,
+        upper_outliers is outlier count in the upper spectrum, and
+        excluded_due_to_skewness is 0 or 1 indicating whether an attribute is excluded from detection due to skewness.
 
     """
     column_order = idf.columns
