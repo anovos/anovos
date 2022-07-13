@@ -6,7 +6,7 @@ from .geo_utils import (
     vincenty_distance,
     euclidean_distance,
     f_point_in_polygons,
-    f_point_in_country_approx,
+    point_in_country_approx
 )
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
@@ -29,7 +29,6 @@ def geo_format_latlon(
 
     Parameters
     ----------
-
     idf
         Input Dataframe.
     list_of_lat
@@ -333,7 +332,6 @@ def location_distance(
     """
     Parameters
     ----------
-
     idf
         Input Dataframe.
     list_of_cols_loc1
@@ -515,7 +513,6 @@ def geohash_precision_control(
     """
     Parameters
     ----------
-
     idf
         Input Dataframe.
     list_of_geohash
@@ -590,7 +587,6 @@ def location_in_polygon(
 
     Parameters
     ----------
-
     idf
         Input Dataframe.
     list_of_lat
@@ -684,7 +680,6 @@ def location_in_country(
 
     Parameters
     ----------
-
     idf
         Input Dataframe.
     list_of_lat
@@ -744,6 +739,8 @@ def location_in_country(
         )
     if method_type not in ("approx", "exact"):
         raise TypeError("Invalid input for method_type.")
+
+    f_point_in_country_approx = F.udf(point_in_country_approx, T.IntegerType())
 
     if method_type == "exact":
         country_shapefile_path = "./country_polygons.geojson"

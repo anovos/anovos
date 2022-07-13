@@ -382,7 +382,7 @@ def point_in_polygon(x, y, polygon):
             # Polygon from multipolygon have extra bracket - that need to be removed
             poly = poly[0]
             if any(
-                    [not isinstance(i, numbers.Number) for point in poly for i in point]
+                [not isinstance(i, numbers.Number) for point in poly for i in point]
             ):
                 raise TypeError("The polygon is invalid")
 
@@ -397,15 +397,15 @@ def point_in_polygon(x, y, polygon):
             p1 = poly[i]
             p2 = poly[i + 1]
             if (
-                    p1[1] == p2[1]
-                    and p1[1] == y
-                    and (min(p1[0], p2[0]) <= x <= max(p1[0], p2[0]))
+                p1[1] == p2[1]
+                and p1[1] == y
+                and (min(p1[0], p2[0]) <= x <= max(p1[0], p2[0]))
             ):
                 return 1
             if (
-                    p1[0] == p2[0]
-                    and p1[0] == x
-                    and (min(p1[1], p2[1]) <= y <= max(p1[1], p2[1]))
+                p1[0] == p2[0]
+                and p1[0] == x
+                and (min(p1[1], p2[1]) <= y <= max(p1[1], p2[1]))
             ):
                 return 1
 
@@ -455,9 +455,7 @@ def point_in_polygons(x, y, polygon_list, south_west_loc=[], north_east_loc=[]):
         x = float(x)
         y = float(y)
     except:
-        warnings.warn(
-            "Rows dropped due to invalid longitude and/or latitude values"
-        )
+        warnings.warn("Rows dropped due to invalid longitude and/or latitude values")
         return None
 
     in_range((y, x))
@@ -782,9 +780,7 @@ def point_in_country_approx(lat, lon, country):
         lat = float(lat)
         lon = float(lon)
     except:
-        warnings.warn(
-            "Rows dropped due to invalid longitude and/or latitude values"
-        )
+        warnings.warn("Rows dropped due to invalid longitude and/or latitude values")
         return None
 
     in_range((lat, lon))
