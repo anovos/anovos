@@ -198,11 +198,11 @@ def correlation_matrix_numerical(
         raise TypeError("Invalid input for Column(s)")
 
     assembler = VectorAssembler(
-        inputCols=list_of_cols, outputCol="features", handleInvalid="keep"
+        inputCols=list_of_cols, outputCol="features", handleInvalid="skip"
     )
     idf_vector = assembler.transform(idf).select("features")
-    matrix = Correlation.corr(idf_vector, "features", "spearman")
-    result = matrix.collect()[0]["spearman(features)"].values
+    matrix = Correlation.corr(idf_vector, "features", "pearson")
+    result = matrix.collect()[0]["pearson(features)"].values
 
     odf_pd = pd.DataFrame(
         result.reshape(-1, len(list_of_cols)), columns=list_of_cols, index=list_of_cols
