@@ -71,7 +71,6 @@ def stats_args(all_configs, func):
         mainfunc_to_args = {
             "biasedness_detection": ["stats_mode"],
             "IDness_detection": ["stats_unique"],
-            "outlier_detection": ["stats_unique"],
             "correlation_matrix": ["stats_unique"],
             "nullColumns_detection": ["stats_unique", "stats_mode", "stats_missing"],
             "variable_clustering": ["stats_unique", "stats_mode"],
