@@ -17,6 +17,7 @@ def evaluate_functions(spark, all_anovos_configs, functions, idf, ncol="all", ru
     if f_name in functions:
         print(f"Start {f_name} execution time calculation(in secs) for {ncol} column(s)")
         start = timeit.default_timer()
+        print()
         odf = correlation_matrix(spark, idf=idf, list_of_cols=all_anovos_configs.get("association_evaluator").get("correlation_matrix").get(
             "list_of_cols"), drop_cols=all_anovos_configs.get("association_evaluator").get("correlation_matrix").get("drop_cols"))
         print(odf.head())
