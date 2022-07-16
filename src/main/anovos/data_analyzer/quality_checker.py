@@ -909,7 +909,6 @@ def outlier_detection(
         return inner
 
     odf = idf
-    odf.persist()
 
     list_odf = []
     for index, i in enumerate(list_of_cols):
@@ -918,11 +917,28 @@ def outlier_detection(
         )
         odf = odf.withColumn(i + "_outliered", f_composite_outlier(i))
 
-        list_odf.append(
-            odf.select(i + "_outliered")
-            .withColumnRenamed(i + "_outliered", "outliered")
-            .withColumn("attribute", F.lit(str(i)))
+        odf_agg_col = (
+            odf.select(i + "_outliered").groupby().pivot(i + "_outliered").count()
         )
+        odf_print_col = (
+            odf_agg_col.withColumn(
+                "lower_outliers",
+                F.col("-1") if "-1" in odf_agg_col.columns else F.lit(0),
+            )
+            .withColumn(
+                "upper_outliers", F.col("1") if "1" in odf_agg_col.columns else F.lit(0)
+            )
+            .withColumn("excluded_due_to_skewness", F.lit(0))
+            .withColumn("attribute", F.lit(str(i)))
+            .select(
+                "attribute",
+                "lower_outliers",
+                "upper_outliers",
+                "excluded_due_to_skewness",
+            )
+            .fillna(0)
+        )
+        list_odf.append(odf_print_col)
 
         if treatment & (treatment_method in ("value_replacement", "null_replacement")):
             replace_vals = {
@@ -949,21 +965,7 @@ def outlier_detection(
             first.sql_ctx._sc.union([df.rdd for df in dfs]), first.schema
         )
 
-    odf_union = unionAll(list_odf)
-    odf_agg = odf_union.groupby("attribute").pivot("outliered").count()
-    odf_print = (
-        odf_agg.withColumn(
-            "lower_outliers", F.col("-1") if "-1" in odf_agg.columns else F.lit(0)
-        )
-        .withColumn(
-            "upper_outliers", F.col("1") if "1" in odf_agg.columns else F.lit(0)
-        )
-        .withColumn("excluded_due_to_skewness", F.lit(0))
-        .select(
-            "attribute", "lower_outliers", "upper_outliers", "excluded_due_to_skewness"
-        )
-        .fillna(0)
-    )
+    odf_print = unionAll(list_odf)
 
     if skewed_cols:
         skewed_cols_print = [(i, 0, 0, 1) for i in skewed_cols]
