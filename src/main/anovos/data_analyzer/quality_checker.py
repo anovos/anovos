@@ -918,7 +918,7 @@ def outlier_detection(
         odf = odf.withColumn(i + "_outliered", f_composite_outlier(i))
 
         odf_agg_col = (
-            odf.select(i + "_outliered").groupby().pivot(i + "outliered").count()
+            odf.select(i + "_outliered").groupby().pivot(i + "_outliered").count()
         )
         odf_print_col = (
             odf_agg_col.withColumn(
