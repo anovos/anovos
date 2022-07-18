@@ -222,8 +222,9 @@ def correlation_matrix_numerical(
 
 
 def correlation_matrix(
-    spark, idf, list_of_cols="all", drop_cols=[], stats_unique={}, print_impact=False
+    spark, idf, list_of_cols="all", drop_cols=[], stats_unique={}, print_impact=False, use_sampling=True
 ):
+    sample_size = 300000
     if list_of_cols == "all":
         num_cols, cat_cols, other_cols = attributeType_segregation(idf)
         list_of_cols = num_cols + cat_cols
@@ -257,54 +258,48 @@ def correlation_matrix(
             if idf.select(col).distinct().count() > 50 and col in list_of_cols:
                 high_corr = True
                 col_need_treatment.append(col)
-        if idf.count() <= 100000 and not high_corr:
-            idf_all_num = cat_to_num_unsupervised(spark, idf)
-            return correlation_matrix_numerical(
-                spark, idf_all_num, list_of_cols, drop_cols, print_impact
-            )
-        elif idf.count() > 100000 and not high_corr:
-            warnings.warn(
-                "Data size is too big for computation. Only 100,000 random sampled rows are considered."
-            )
-            idf_sample = data_sample(
-                idf, fraction=float(100000) / idf.count(), method_type="random"
-            )
-            idf_all_num = cat_to_num_unsupervised(spark, idf_sample)
-            return correlation_matrix_numerical(
-                spark, idf_all_num, list_of_cols, drop_cols, print_impact
-            )
-        elif idf.count() <= 100000 and high_corr:
+        if idf.count() <= sample_size and not high_corr:
+            return correlation_matrix_cat_to_num(drop_cols, idf, list_of_cols, print_impact, spark)
+        elif idf.count() > sample_size and not high_corr:
+            idf_sample = use_sampled_data(idf, sample_size, use_sampling)
+            return correlation_matrix_cat_to_num(drop_cols, idf_sample, list_of_cols, print_impact, spark)
+        elif idf.count() <= sample_size and high_corr:
             warnings.warn(
                 "High cardinality column(s) are detected, and will go through cardinality treatments."
             )
             idf_treat = outlier_categories(spark, idf, list_of_cols=col_need_treatment)
-            idf_all_num = cat_to_num_unsupervised(spark, idf_treat)
-            return correlation_matrix_numerical(
-                spark, idf_all_num, list_of_cols, drop_cols, print_impact
-            )
+            return correlation_matrix_cat_to_num(drop_cols, idf_treat, list_of_cols, print_impact, spark)
         else:
-            warnings.warn(
-                "Data size is too big for computation. Only 100,000 random sampled rows are considered."
-            )
+            idf_sample = use_sampled_data(idf, sample_size, use_sampling)
             warnings.warn(
                 "High cardinality column(s) are detected, and will go through cardinality treatments."
             )
-            idf_sample = data_sample(
-                idf, fraction=float(100000) / idf.count(), method_type="random"
-            )
-            idf_treat = outlier_categories(
-                spark, idf_sample, list_of_cols=col_need_treatment
-            )
-            idf_all_num = cat_to_num_unsupervised(
-                spark, idf_treat
-            )
-            return correlation_matrix_numerical(
-                spark, idf_all_num, list_of_cols, drop_cols, print_impact
-            )
+            idf_treat = outlier_categories(spark, idf_sample, list_of_cols=col_need_treatment)
+            return correlation_matrix_cat_to_num(drop_cols, idf_treat, list_of_cols, print_impact, spark)
     else:
         return correlation_matrix_numerical(
             spark, idf, list_of_cols, drop_cols, print_impact
         )
+
+
+def correlation_matrix_cat_to_num(drop_cols, idf, list_of_cols, print_impact, spark):
+    idf_all_num = cat_to_num_unsupervised(spark, idf)
+    return correlation_matrix_numerical(
+        spark, idf_all_num, list_of_cols, drop_cols, print_impact
+    )
+
+
+def use_sampled_data(idf, sample_size, use_sampling):
+    if use_sampling:
+        warnings.warn(
+            "Data size is too big for computation. Only 1,000,000 random sampled rows are considered."
+        )
+        idf_sample = data_sample(
+            idf, fraction=float(sample_size) / idf.count(), method_type="random"
+        )
+    else:
+        idf_sample = idf
+    return idf_sample
 
 
 def variable_clustering(
