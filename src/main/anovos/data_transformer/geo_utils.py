@@ -320,6 +320,9 @@ def euclidean_distance(loc1, loc2, unit="m"):
         The first location. [x1, y1, z1] format is required.
     loc2
         The second location. [x2, y2, z2] format is required.
+    unit
+        "m", "km".
+        Unit of the result. (Default value = "m")
 
     Returns
     -------
@@ -330,14 +333,17 @@ def euclidean_distance(loc1, loc2, unit="m"):
     if None in loc1 + loc2:
         return None
 
+    try:
+        loc1 = [float(i) for i in loc1]
+        loc2 = [float(i) for i in loc2]
+    except:
+        return None
+
     in_range(loc1, "cartesian")
     in_range(loc2, "cartesian")
 
     # loc1 = [x1, y1, z1]; loc2 = [x2, y2, z2]
-    try:
-        euclidean_distance = spatial.distance.euclidean(loc1, loc2)
-    except:
-        return None
+    euclidean_distance = spatial.distance.euclidean(loc1, loc2)
 
     if unit == "km":
         euclidean_distance /= 1000
