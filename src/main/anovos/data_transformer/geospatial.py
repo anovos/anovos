@@ -82,7 +82,7 @@ def geo_format_latlon(
     -------
     DataFrame
     """
-    geohash_precision = int(optional_configs.get("geohash_precision"), 8)
+    geohash_precision = int(optional_configs.get("geohash_precision", 8))
     radius = optional_configs.get("radius", EARTH_RADIUS)
 
     if isinstance(list_of_lat, str):
@@ -228,7 +228,7 @@ def geo_format_cartesian(
     DataFrame
     """
 
-    geohash_precision = int(optional_configs.get("geohash_precision"))
+    geohash_precision = int(optional_configs.get("geohash_precision", 8))
     radius = optional_configs.get("radius", EARTH_RADIUS)
 
     if isinstance(list_of_x, str):
@@ -531,6 +531,7 @@ def location_distance(
                 input_format=loc_format,
                 output_format=format_required,
                 result_prefix=["temp_loc1", "temp_loc2"],
+                optional_configs={"radius": radius},
                 output_mode="append",
             )
 
@@ -544,6 +545,7 @@ def location_distance(
                 list_of_z=[list_of_cols_loc1[2], list_of_cols_loc2[2]],
                 output_format=format_required,
                 result_prefix=["temp_loc1", "temp_loc2"],
+                optional_configs={"radius": radius},
                 output_mode="append",
             )
 
@@ -555,7 +557,7 @@ def location_distance(
                 list_of_geohash=[list_of_cols_loc1[0], list_of_cols_loc2[0]],
                 output_format=format_required,
                 result_prefix=["temp_loc1", "temp_loc2"],
-                radius=radius,
+                optional_configs={"radius":radius},
                 output_mode="append",
             )
 
