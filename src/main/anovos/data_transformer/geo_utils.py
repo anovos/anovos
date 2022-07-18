@@ -308,7 +308,7 @@ def vincenty_distance(loc1, loc2, unit="m", ellipsoid="WGS-84"):
         return loc_distance.km
 
 
-def euclidean_distance(loc1, loc2):
+def euclidean_distance(loc1, loc2, unit="m"):
     """
     The Euclidean distance between 2 lists loc1 and loc2, is defined as
     .. math::
@@ -338,6 +338,9 @@ def euclidean_distance(loc1, loc2):
         euclidean_distance = spatial.distance.euclidean(loc1, loc2)
     except:
         return None
+
+    if unit == "km":
+        euclidean_distance /= 1000
 
     return euclidean_distance
 

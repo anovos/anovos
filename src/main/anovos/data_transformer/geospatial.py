@@ -6,7 +6,7 @@ from .geo_utils import (
     vincenty_distance,
     euclidean_distance,
     f_point_in_polygons,
-    point_in_country_approx
+    point_in_country_approx,
 )
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
@@ -514,7 +514,7 @@ def location_distance(
 
     # dd/radian/dms: [lat1, lon1, lat2, lon2]
     # cartesian: [x1, y1, z1, x2, y2, z2]
-    # geohasg: [gh1, gh2]
+    # geohash: [gh1, gh2]
 
     if loc_format != format_required:
         # format_required
@@ -597,7 +597,8 @@ def location_distance(
             x1, x2, "radian", unit, radius
         )
     else:
-        compute_distance = lambda x1, x2: euclidean_distance(x1, x2)
+        compute_distance = lambda x1, x2: euclidean_distance(
+            x1, x2, unit)
 
     f_compute_distance = F.udf(compute_distance, T.FloatType())
 
