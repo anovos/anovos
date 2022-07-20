@@ -548,7 +548,7 @@ def outlier_detection(
         "IQR_upper": 1.5,
         "min_validation": 2,
     },
-    treatment=False,
+    treatment=True,
     treatment_method="value_replacement",
     pre_existing_model=False,
     model_path="NA",
@@ -627,7 +627,8 @@ def outlier_detection(
         - If detection_configs={"pctile_lower": 0.05, "stdev_lower": 3.0}, since "min_validation" is not specified, 2 will be used
         because there are 2 methodologies specified. A value is considered as outlier if at both 2 methodologies categorize it as an outlier.
     treatment
-        Boolean argument – True or False. If True, outliers are treated as per treatment_method argument. (Default value = False)
+        Boolean argument - True or False. If True, outliers are treated as per treatment_method argument.
+        If treatment is False, print_impact should be True to perform detection without treatment. (Default value = True)
     treatment_method
         "null_replacement", "row_removal", "value_replacement".
         In "null_replacement", outlier values are replaced by null so that it can be imputed by a
@@ -652,33 +653,44 @@ def outlier_detection(
         column to the input dataset with a postfix "_outliered" e.g. column X is appended as X_outliered. (Default value = "replace")
     print_impact
         True, False
-        This argument is to print out the statistics and the impact of treatment (if applicable).(Default value = False)
+        This argument is to calculate and print out the impact of treatment (if applicable).
+        If treatment is False, print_impact should be True to perform detection without treatment. (Default value = False).
 
     Returns
     -------
-    odf : DataFrame
-        Dataframe with outliers treated if treatment is True, else original input dataframe.
-    odf_print : DataFrame
-        schema [attribute, lower_outliers, upper_outliers, excluded_due_to_skewness].
-        lower_outliers is no. of outliers found in the lower spectrum of the attribute range,
-        upper_outliers is outlier count in the upper spectrum, and
-        excluded_due_to_skewness is 0 or 1 indicating whether an attribute is excluded from detection due to skewness.
-
+    if print_impact is True:
+        odf : DataFrame
+            Dataframe with outliers treated if treatment is True, else original input dataframe.
+        odf_print : DataFrame
+            schema [attribute, lower_outliers, upper_outliers, excluded_due_to_skewness].
+            lower_outliers is no. of outliers found in the lower spectrum of the attribute range,
+            upper_outliers is outlier count in the upper spectrum, and
+            excluded_due_to_skewness is 0 or 1 indicating whether an attribute is excluded from detection due to skewness.
+    if print_impact is False:
+        odf : DataFrame
+            Dataframe with outliers treated if treatment is True, else original input dataframe.
     """
     column_order = idf.columns
     num_cols = attributeType_segregation(idf)[0]
     if len(num_cols) == 0:
         warnings.warn("No Outlier Check - No numerical column(s) to analyse")
         odf = idf
-        schema = T.StructType(
-            [
-                T.StructField("attribute", T.StringType(), True),
-                T.StructField("lower_outliers", T.StringType(), True),
-                T.StructField("upper_outliers", T.StringType(), True),
-            ]
-        )
-        odf_print = spark.sparkContext.emptyRDD().toDF(schema)
-        return odf, odf_print
+        if print_impact:
+            schema = T.StructType(
+                [
+                    T.StructField("attribute", T.StringType(), True),
+                    T.StructField("lower_outliers", T.StringType(), True),
+                    T.StructField("upper_outliers", T.StringType(), True),
+                ]
+            )
+            odf_print = spark.sparkContext.emptyRDD().toDF(schema)
+            return odf, odf_print
+        else:
+            return odf
+
+    if not treatment and not print_impact:
+        warnings.warn("The original idf will be the only output. Set print_impact=True to perform detection without treatment")
+        return idf
     if list_of_cols == "all":
         list_of_cols = num_cols
     if isinstance(list_of_cols, str):
@@ -917,28 +929,29 @@ def outlier_detection(
         )
         odf = odf.withColumn(i + "_outliered", f_composite_outlier(i))
 
-        odf_agg_col = (
-            odf.select(i + "_outliered").groupby().pivot(i + "_outliered").count()
-        )
-        odf_print_col = (
-            odf_agg_col.withColumn(
-                "lower_outliers",
-                F.col("-1") if "-1" in odf_agg_col.columns else F.lit(0),
+        if print_impact:
+            odf_agg_col = (
+                odf.select(i + "_outliered").groupby().pivot(i + "_outliered").count()
             )
-            .withColumn(
-                "upper_outliers", F.col("1") if "1" in odf_agg_col.columns else F.lit(0)
+            odf_print_col = (
+                odf_agg_col.withColumn(
+                    "lower_outliers",
+                    F.col("-1") if "-1" in odf_agg_col.columns else F.lit(0),
+                )
+                .withColumn(
+                    "upper_outliers", F.col("1") if "1" in odf_agg_col.columns else F.lit(0)
+                )
+                .withColumn("excluded_due_to_skewness", F.lit(0))
+                .withColumn("attribute", F.lit(str(i)))
+                .select(
+                    "attribute",
+                    "lower_outliers",
+                    "upper_outliers",
+                    "excluded_due_to_skewness",
+                )
+                .fillna(0)
             )
-            .withColumn("excluded_due_to_skewness", F.lit(0))
-            .withColumn("attribute", F.lit(str(i)))
-            .select(
-                "attribute",
-                "lower_outliers",
-                "upper_outliers",
-                "excluded_due_to_skewness",
-            )
-            .fillna(0)
-        )
-        list_odf.append(odf_print_col)
+            list_odf.append(odf_print_col)
 
         if treatment & (treatment_method in ("value_replacement", "null_replacement")):
             replace_vals = {
@@ -959,20 +972,23 @@ def outlier_detection(
             if output_mode == "replace":
                 odf = odf.drop(i).withColumnRenamed(i + "_outliered", i)
 
-    def unionAll(dfs):
-        first, *_ = dfs
-        return first.sql_ctx.createDataFrame(
-            first.sql_ctx._sc.union([df.rdd for df in dfs]), first.schema
-        )
+    if print_impact:
+        def unionAll(dfs):
+            first, *_ = dfs
+            return first.sql_ctx.createDataFrame(
+                first.sql_ctx._sc.union([df.rdd for df in dfs]), first.schema
+            )
 
-    odf_print = unionAll(list_odf)
+        odf_print = unionAll(list_odf)
 
-    if skewed_cols:
-        skewed_cols_print = [(i, 0, 0, 1) for i in skewed_cols]
-        skewed_cols_odf_print = spark.createDataFrame(
-            skewed_cols_print, schema=odf_print.columns
-        )
-        odf_print = unionAll([odf_print, skewed_cols_odf_print])
+        if skewed_cols:
+            skewed_cols_print = [(i, 0, 0, 1) for i in skewed_cols]
+            skewed_cols_odf_print = spark.createDataFrame(
+                skewed_cols_print, schema=odf_print.columns
+            )
+            odf_print = unionAll([odf_print, skewed_cols_odf_print])
+
+        odf_print.show(len(list_of_cols) + len(skewed_cols), False)
 
     if treatment & (treatment_method == "row_removal"):
         conditions = [
@@ -991,9 +1007,10 @@ def outlier_detection(
         odf = idf
 
     if print_impact:
-        odf_print.show(len(list_of_cols) + len(skewed_cols), False)
+        return odf, odf_print
+    else:
+        return odf
 
-    return odf, odf_print
 
 
 def IDness_detection(
