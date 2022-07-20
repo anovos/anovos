@@ -672,21 +672,6 @@ def outlier_detection(
     """
     column_order = idf.columns
     num_cols = attributeType_segregation(idf)[0]
-    if len(num_cols) == 0:
-        warnings.warn("No Outlier Check - No numerical column(s) to analyse")
-        odf = idf
-        if print_impact:
-            schema = T.StructType(
-                [
-                    T.StructField("attribute", T.StringType(), True),
-                    T.StructField("lower_outliers", T.StringType(), True),
-                    T.StructField("upper_outliers", T.StringType(), True),
-                ]
-            )
-            odf_print = spark.sparkContext.emptyRDD().toDF(schema)
-            return odf, odf_print
-        else:
-            return odf
 
     if not treatment and not print_impact:
         if (not pre_existing_model and model_path == "NA") | pre_existing_model:
@@ -702,6 +687,23 @@ def outlier_detection(
         drop_cols = [x.strip() for x in drop_cols.split("|")]
 
     list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
+
+    schema = T.StructType(
+        [
+            T.StructField("attribute", T.StringType(), True),
+            T.StructField("lower_outliers", T.StringType(), True),
+            T.StructField("upper_outliers", T.StringType(), True),
+        ]
+    )
+    empty_odf_print = spark.sparkContext.emptyRDD().toDF(schema)
+
+    if not list_of_cols:
+        warnings.warn("No Outlier Check - No numerical column to analyze")
+        if print_impact:
+            empty_odf_print.show()
+            return idf, empty_odf_print
+        else:
+            return idf
 
     if any(x not in num_cols for x in list_of_cols):
         raise TypeError("Invalid input for Column(s)")
@@ -754,12 +756,20 @@ def outlier_detection(
         diff_cols = list(set(list_of_cols) - set(present_cols) - set(skewed_cols))
         if diff_cols:
             warnings.warn("Columns not found in model_path: " + ",".join(diff_cols))
-            list_of_cols = present_cols
         if skewed_cols:
             warnings.warn(
                 "Columns excluded from outlier detection due to highly skewed distribution: "
                 + ",".join(skewed_cols)
             )
+        list_of_cols = present_cols
+
+        if not list_of_cols:
+            warnings.warn("No Outlier Check - No numerical column to analyze")
+            if print_impact:
+                empty_odf_print.show()
+                return idf, empty_odf_print
+            else:
+                return idf
 
     else:
         check_dict = {
