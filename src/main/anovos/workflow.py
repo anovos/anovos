@@ -300,8 +300,7 @@ def main(all_configs, run_type, auth_key_val={}):
                         else:
                             extra_args["print_impact"] = False
 
-                        df, df_stats = f(
-                            spark, df, **value, **extra_args)
+                        df, df_stats = f(spark, df, **value, **extra_args)
                         df = save(
                             df,
                             write_intermediate,
