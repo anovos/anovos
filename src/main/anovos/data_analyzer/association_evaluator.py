@@ -259,33 +259,33 @@ def correlation_matrix(
                 high_corr = True
                 col_need_treatment.append(col)
         if idf.count() <= sample_size and not high_corr:
-            return correlation_matrix_cat_to_num(drop_cols, idf, list_of_cols, print_impact, spark)
+            return correlation_matrix_cat_to_num(spark, idf, list_of_cols, drop_cols, print_impact)
         elif idf.count() > sample_size and not high_corr:
             idf_sample = use_sampled_data(idf, sample_size, use_sampling)
-            return correlation_matrix_cat_to_num(drop_cols, idf_sample, list_of_cols, print_impact, spark)
+            return correlation_matrix_cat_to_num(spark, idf_sample, list_of_cols, drop_cols, print_impact)
         elif idf.count() <= sample_size and high_corr:
             warnings.warn(
                 "High cardinality column(s) are detected, and will go through cardinality treatments."
             )
             idf_treat = outlier_categories(spark, idf, list_of_cols=col_need_treatment)
-            return correlation_matrix_cat_to_num(drop_cols, idf_treat, list_of_cols, print_impact, spark)
+            return correlation_matrix_cat_to_num(spark, idf_treat, list_of_cols, drop_cols, print_impact)
         else:
             idf_sample = use_sampled_data(idf, sample_size, use_sampling)
             warnings.warn(
                 "High cardinality column(s) are detected, and will go through cardinality treatments."
             )
             idf_treat = outlier_categories(spark, idf_sample, list_of_cols=col_need_treatment)
-            return correlation_matrix_cat_to_num(drop_cols, idf_treat, list_of_cols, print_impact, spark)
+            return correlation_matrix_cat_to_num(spark, idf_treat, list_of_cols, drop_cols, print_impact)
     else:
         return correlation_matrix_numerical(
             spark, idf, list_of_cols, drop_cols, print_impact
         )
 
 
-def correlation_matrix_cat_to_num(drop_cols, idf, list_of_cols, print_impact, spark):
-    idf_all_num = cat_to_num_unsupervised(spark, idf)
+def correlation_matrix_cat_to_num(spark, idf, list_of_cols, drop_cols, print_impact):
+    idf_all_num = cat_to_num_unsupervised(spark, idf, method_type="onehot_encoding")
     return correlation_matrix_numerical(
-        spark, idf_all_num, list_of_cols, drop_cols, print_impact
+        spark, idf_all_num, "all", drop_cols, print_impact
     )
 
 
