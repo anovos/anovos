@@ -6,3 +6,11 @@ column_type_ratio: 0.2
 functions: ["imputation_sklearn"]
 node_counts: [1,2,3,4,5]
 machine_type: "r5.2xlarge"
+bootstrap_file: "s3://mw.test/krish/anovos/general/resources/bootstrapping/req_packages_anovos_3_8.sh"
+cluster_base_name: "anovos_function_evaluation"
+anovos_build_s3_location: "s3://mw.test/krish/anovos/performance_eval/zip/take3/anovos.zip"
+anovos_function_config: "s3://mw.test/krish/anovos/performance_eval/configs/configs_ieee_fraud.yaml"
+main_python_file_s3_location: "s3://mw.test/krish/anovos/performance_eval/main/RunPerformanceEvalWrapper.py"
+run_type: "emr"
+scripts_s3_loc: ""
+

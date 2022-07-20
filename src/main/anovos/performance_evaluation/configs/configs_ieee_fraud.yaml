@@ -1,6 +1,6 @@
 input_dataset:
   read_dataset:
-    file_path: "eval config"
+    file_path: "eval_config"
     file_type: csv
     file_configs:
       header: True
