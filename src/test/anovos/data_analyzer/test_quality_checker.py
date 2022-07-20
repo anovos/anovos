@@ -530,6 +530,7 @@ def test_that_outlier_detection_works_with_row_removal_treatment(
         drop_cols=["ifa", "label"],
         treatment=True,
         treatment_method="row_removal",
+        print_impact=True,
     )
 
     assert df_parquet.count() > odf.count()
@@ -563,6 +564,7 @@ def test_that_outlier_detection_works_with_value_replacement_treatment(
         detection_configs={"pctile_lower": 0.02, "pctile_upper": 0.98},
         treatment=True,
         output_mode="append",
+        print_impact=True,
     )
 
     assert df_parquet.count() == odf.count()
@@ -592,29 +594,16 @@ def test_that_outlier_detection_works_with_null_replacement_treatment_and_use_sa
     spark_session: SparkSession, df_parquet
 ):
     # save the model
-    odf, odf_print = outlier_detection(
+    odf = outlier_detection(
         spark_session,
         df_parquet,
         list_of_cols=["logfnl", "hours-per-week", "capital-loss"],
         detection_side="both",
-        treatment=True,
-        treatment_method="null_replacement",
+        treatment=False,
         model_path="unit_testing/models/",
     )
 
-    assert df_parquet.count() == odf.count()
-    assert df_parquet.dropna().count() > odf.dropna().count()
-    assert len(df_parquet.columns) == len(odf.columns)
-
-    odf_print = odf_print.toPandas()
-    odf_print.index = odf_print["attribute"]
-    odf_print = odf_print[
-        ["lower_outliers", "upper_outliers", "excluded_due_to_skewness"]
-    ]
-
-    assert odf_print.loc["hours-per-week", :].tolist() == [825, 515, 0]
-    assert odf_print.loc["logfnl", :].tolist() == [314, 15, 0]
-    assert odf_print.loc["capital-loss", :].tolist() == [0, 0, 1]
+    assert df_parquet == odf
 
     # use the saved model
     odf, odf_print = outlier_detection(
@@ -626,6 +615,7 @@ def test_that_outlier_detection_works_with_null_replacement_treatment_and_use_sa
         treatment_method="null_replacement",
         pre_existing_model=True,
         model_path="unit_testing/models/",
+        print_impact=True,
     )
 
     assert df_parquet.count() == odf.count()
@@ -643,3 +633,43 @@ def test_that_outlier_detection_works_with_null_replacement_treatment_and_use_sa
     assert odf_print.loc["hours-per-week", :].tolist() == [825, 0, 0]
     assert odf_print.loc["logfnl", :].tolist() == [314, 0, 0]
     assert odf_print.loc["capital-loss", :].tolist() == [0, 0, 1]
+
+
+def test_that_outlier_detection_raises_expected_error(
+    spark_session: SparkSession, df_parquet
+):
+    try:
+        odf = outlier_detection(
+            spark_session,
+            df_parquet,
+            list_of_cols=["capital-gain", "capital-loss"],
+            detection_side="both",
+            detection_configs={
+                "pctile_lower": 0.05,
+                "stdev_lower": 3.0,
+                "stdev_upper": 3.0,
+            },
+            treatment=True,
+        )
+        assert False
+
+    except TypeError:
+        assert True
+
+    try:
+        odf = outlier_detection(
+            spark_session,
+            df_parquet,
+            list_of_cols=["capital-gain", "capital-loss"],
+            detection_side="both",
+            detection_configs={
+                "stdev_lower": 3.0,
+                "stdev_upper": 3.0,
+                "min_validation": 3,
+            },
+            treatment=True,
+        )
+        assert False
+
+    except TypeError:
+        assert True
