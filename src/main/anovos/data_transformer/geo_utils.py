@@ -466,6 +466,9 @@ def point_in_polygons(x, y, polygon_list, south_west_loc=[], north_east_loc=[]):
     Integer
         1 if (x, y) is inside any polygon of polygon_list and 0 otherwise.
     """
+    if (x is None) | (y is None):
+        return None
+
     try:
         x = float(x)
         y = float(y)
