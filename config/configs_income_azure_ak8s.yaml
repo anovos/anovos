@@ -5,8 +5,8 @@
 #list_of_cols: list or string with multiple columns separated by | (refer doc string for further details)
 input_dataset:
   read_dataset:
-    file_path: "dbfs:/FileStore/tables/income_dataset/csv/"
-    file_type: csv
+    file_path: "wasbs://anovos@anovosasktest.blob.core.windows.net/datasrc/income_dataset/csv/*"
+    file_type: "csv"
     file_configs:
       header: True
       delimiter: ","
@@ -24,7 +24,7 @@ concatenate_dataset:
   method: name
   dataset1:
     read_dataset:
-      file_path: "dbfs:/FileStore/tables/income_dataset/parquet"
+      file_path: "wasbs://anovos@anovosasktest.blob.core.windows.net/datasrc/income_dataset/parquet"
       file_type: parquet
     delete_column: ['logfnl']
     select_column: null
@@ -37,7 +37,7 @@ concatenate_dataset:
     
   dataset2:
     read_dataset:
-      file_path: "dbfs:/FileStore/tables/income_dataset/parquet"
+      file_path: "wasbs://anovos@anovosasktest.blob.core.windows.net/datasrc/income_dataset/parquet"
       file_type: parquet
     delete_column: ['logfnl']
     select_column: null
@@ -53,7 +53,7 @@ join_dataset:
   join_type: inner
   dataset1:
     read_dataset:
-      file_path: "dbfs:/FileStore/tables/income_dataset/join"
+      file_path: "wasbs://anovos@anovosasktest.blob.core.windows.net/datasrc/income_dataset/join"
       file_type: avro
     delete_column: null
     select_column: null
@@ -76,8 +76,7 @@ anovos_basic_report:
     id_col: ifa
     label_col: income
     event_label: '>50K'
-    skip_corr_matrix: True
-    output_path: "dbfs:/FileStore/tables/report_stats"
+    output_path: "wasbs://anovos@anovosasktest.blob.core.windows.net/datasrc/report_stats"
 
 #if anovos_basic_report.basic_report is True, then all configs below are ignored.
 stats_generator:
@@ -182,17 +181,17 @@ drift_detector:
   drift_statistics:
     configs:
       list_of_cols: all
-      drop_cols: ['ifa','income']
+      drop_cols: ['ifa']
       method_type: all
       threshold: 0.1
       bin_method: equal_range
       bin_size: 10
       pre_existing_source: False
-      source_path: "dbfs:/FileStore/tables/NA"
+      source_path: "wasbs://anovos@anovosasktest.blob.core.windows.net/datasrc/NA"
 
     source_dataset:
       read_dataset:
-        file_path: "dbfs:/FileStore/tables/income_dataset/source/"
+        file_path: "wasbs://anovos@anovosasktest.blob.core.windows.net/datasrc/income_dataset/source/"
         file_type: csv
         file_configs:
           header: True
@@ -215,12 +214,12 @@ drift_detector:
         stddev: 0.3
         kurtosis: 0.2 
       existing_metric_path: ''
-      appended_metric_path: 'dbfs:/FileStore/tables/si_metrics'
+      appended_metric_path: "wasbs://anovos@anovosasktest.blob.core.windows.net/datasrc/si_metrics/"
       threshold: 2
 
     dataset1:
       read_dataset:
-        file_path: "dbfs:/FileStore/tables/income_dataset/stability_index/0"
+        file_path: "wasbs://anovos@anovosasktest.blob.core.windows.net/datasrc/income_dataset/stability_index/0"
         file_type: csv
         file_configs:
           header: True
@@ -229,79 +228,79 @@ drift_detector:
 
     dataset2:
       read_dataset:
-        file_path: "dbfs:/FileStore/tables/income_dataset/stability_index/1"
+        file_path: "wasbs://anovos@anovosasktest.blob.core.windows.net/datasrc/income_dataset/stability_index/1"
         file_type: csv
         file_configs:
           header: True
           delimiter: ","
           inferSchema: True
 
-    dataset3:
-      read_dataset:
-        file_path: "dbfs:/FileStore/tables/income_dataset/stability_index/2"
-        file_type: csv
-        file_configs:
-          header: True
-          delimiter: ","
-          inferSchema: True
+    # dataset3:
+    #   read_dataset:
+    #     file_path: "data/income_dataset/stability_index/2"
+    #     file_type: csv
+    #     file_configs:
+    #       header: True
+    #       delimiter: ","
+    #       inferSchema: True
 
-    dataset4:
-      read_dataset:
-        file_path: "dbfs:/FileStore/tables/income_dataset/stability_index/3"
-        file_type: csv
-        file_configs:
-          header: True
-          delimiter: ","
-          inferSchema: True
+    # dataset4:
+    #   read_dataset:
+    #     file_path: "data/income_dataset/stability_index/3"
+    #     file_type: csv
+    #     file_configs:
+    #       header: True
+    #       delimiter: ","
+    #       inferSchema: True
 
-    dataset5:
-      read_dataset:
-        file_path: "dbfs:/FileStore/tables/income_dataset/stability_index/4"
-        file_type: csv
-        file_configs:
-          header: True
-          delimiter: ","
-          inferSchema: True
+    # dataset5:
+    #   read_dataset:
+    #     file_path: "data/income_dataset/stability_index/4"
+    #     file_type: csv
+    #     file_configs:
+    #       header: True
+    #       delimiter: ","
+    #       inferSchema: True
 
-    dataset6:
-      read_dataset:
-        file_path: "dbfs:/FileStore/tables/income_dataset/stability_index/5"
-        file_type: csv
-        file_configs:
-          header: True
-          delimiter: ","
-          inferSchema: True
+    # dataset6:
+    #   read_dataset:
+    #     file_path: "data/income_dataset/stability_index/5"
+    #     file_type: csv
+    #     file_configs:
+    #       header: True
+    #       delimiter: ","
+    #       inferSchema: True
 
-    dataset7:
-      read_dataset:
-        file_path: "dbfs:/FileStore/tables/income_dataset/stability_index/6"
-        file_type: csv
-        file_configs:
-          header: True
-          delimiter: ","
-          inferSchema: True
+    # dataset7:
+    #   read_dataset:
+    #     file_path: "data/income_dataset/stability_index/6"
+    #     file_type: csv
+    #     file_configs:
+    #       header: True
+    #       delimiter: ","
+    #       inferSchema: True
 
-    dataset8:
-      read_dataset:
-        file_path: "dbfs:/FileStore/tables/income_dataset/stability_index/7"
-        file_type: csv
-        file_configs:
-          header: True
-          delimiter: ","
-          inferSchema: True
+    # dataset8:
+    #   read_dataset:
+    #     file_path: "data/income_dataset/stability_index/7"
+    #     file_type: csv
+    #     file_configs:
+    #       header: True
+    #       delimiter: ","
+    #       inferSchema: True
 
-    dataset9:
-      read_dataset:
-        file_path: "dbfs:/FileStore/tables/income_dataset/stability_index/8"
-        file_type: csv
-        file_configs:
-          header: True
-          delimiter: ","
-          inferSchema: True
+    # dataset9:
+    #   read_dataset:
+    #     file_path: "data/income_dataset/stability_index/8"
+    #     file_type: csv
+    #     file_configs:
+    #       header: True
+    #       delimiter: ","
+    #       inferSchema: True
 
         
 report_preprocessing:
-  master_path: 'dbfs:/FileStore/tables/report_stats'
+  master_path: "wasbs://anovos@anovosasktest.blob.core.windows.net/datasrc/report_stats/"
   charts_to_objects:
     list_of_cols: all
     drop_cols: ifa
@@ -311,18 +310,18 @@ report_preprocessing:
     bin_size: 10
     drift_detector: True
     outlier_charts: False
-    source_path: "dbfs:/FileStore/tables/NA"
+    source_path: "wasbs://anovos@anovosasktest.blob.core.windows.net/datasrc/NA/"
 
 report_generation:
-  master_path: 'dbfs:/FileStore/tables/report_stats'
+  master_path: "wasbs://anovos@anovosasktest.blob.core.windows.net/datasrc/report_stats/"
   id_col: 'ifa'
   label_col: 'income'
   corr_threshold: 0.4
   iv_threshold: 0.02
   drift_threshold_model: 0.1
-  dataDict_path: 'dbfs:/FileStore/tables/income_dataset/data_dictionary.csv'
-  metricDict_path: 'dbfs:/FileStore/tables/metric_dictionary.csv'
-  final_report_path: 'dbfs:/FileStore/tables/report_stats'
+  dataDict_path: "wasbs://anovos@anovosasktest.blob.core.windows.net/datasrc/data_dictionary.csv"
+  metricDict_path: "wasbs://anovos@anovosasktest.blob.core.windows.net/datasrc/metric_dictionary.csv"
+  final_report_path: "wasbs://anovos@anovosasktest.blob.core.windows.net/datasrc/report_stats/"
 
 transformers:
   numerical_mathops:
@@ -358,14 +357,14 @@ transformers:
     # cat_to_num_unsupervised:
     #   list_of_cols: 'all'
     #   drop_cols: ['ifa']
-    #   method_type: onehot_encoding
+    #   method_type: 0
 
     cat_to_num_supervised:
-      list_of_cols: all
+      list_of_cols: 'all'
       drop_cols: ['ifa']
       label_col: income
       event_label: '>50K'
-      model_path: "dbfs:/FileStore/tables/results/intermediate_data"
+      model_path: "wasbs://anovos@anovosasktest.blob.core.windows.net/datasrc/results_ts1/"
 
   numerical_rescaling:
     # normalization:
@@ -379,24 +378,24 @@ transformers:
 
    
   numerical_latentFeatures:
-  #   PCA_latentFeatures:
-  #     list_of_cols: all
-  #     explained_variance_cutoff: 0.95
-  #     standardization: False
-  #     imputation: True
-        # root_path: "dbfs:/FileStore/tables/results/intermediate_data"
-
-
-    autoencoder_latentFeatures:
+    PCA_latentFeatures:
       list_of_cols: all
-      reduction_params: 0.5
-      sample_size: 10000 
-      epochs: 25
-      batch_size: 256
-      root_path: "dbfs:/FileStore/tables/results/intermediate_data"
+      explained_variance_cutoff: 0.95
+      standardization: False
+      imputation: True
+      root_path: "wasbs://anovos@anovosasktest.blob.core.windows.net/datasrc/results_ts1/"
+
+
+    #   autoencoder_latentFeatures:
+    #     list_of_cols: all
+    #     reduction_params: 0.5
+    #     sample_size: 10000 
+    #     epochs: 20
+    #     batch_size: 256
+    #     root_path: "wasbs://anovos@anovosasktest.blob.core.windows.net/datasrc/results_ts1/"
 
 write_intermediate:
-  file_path: "dbfs:/FileStore/tables/results/intermediate_data"
+  file_path: "wasbs://anovos@anovosasktest.blob.core.windows.net/datasrc/results_ts1/"
   file_type: csv
   file_configs:
     mode: overwrite
@@ -405,13 +404,13 @@ write_intermediate:
     inferSchema: True
 
 write_main:
-  file_path: "dbfs:/FileStore/tables/results/output"
+  file_path: "wasbs://anovos@anovosasktest.blob.core.windows.net/datasrc/results_ts1/output/"
   file_type: parquet
   file_configs:
     mode: overwrite
     
 write_stats:
-  file_path: "dbfs:/FileStore/tables/results/stats"
+  file_path: "wasbs://anovos@anovosasktest.blob.core.windows.net/datasrc/results_ts1/stats/"
   file_type: parquet
   file_configs:
     mode: overwrite
