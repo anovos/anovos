@@ -35,9 +35,9 @@ def main(all_configs, all_anovos_configs, run_type, node_count, f_name):
                                file_configs={"header": "True", "delimiter": ",", "inferSchema": "True"})
 
         end = timeit.default_timer()
-        execution_time = round(end - start, 4)
+        data_read_time = round(end - start, 4)
         ncol = "all"
-        print(f"Read Dataset: execution time (in secs) for {ncol} column(s) = {execution_time}")
+        print(f"Read Dataset: execution time (in secs) for {ncol} column(s) = {data_read_time}")
         execution_time_dict = evaluate_functions(spark, all_anovos_configs, functions, main_df, ncol, run_type)
         execution_time_list.append(execution_time_dict)
         print(execution_time_list)
@@ -50,7 +50,7 @@ def main(all_configs, all_anovos_configs, run_type, node_count, f_name):
             execution_time_list.append(execution_time_dict)
             print(execution_time_list)
 
-    report_df = get_report(spark, execution_time_list, dataset_name, column_ratio, machine_type, node_count)
+    report_df = get_report(spark, execution_time_list, dataset_name, column_ratio, machine_type, node_count, data_read_time)
 
     print(report_df)
     for function in functions:
@@ -64,7 +64,7 @@ def main(all_configs, all_anovos_configs, run_type, node_count, f_name):
     # generate_visualisations(report_df, viz_path_name)
 
 
-def evaluate(eval_config_path, run_type, node_count, f_name):
+def evaluate(eval_config_path, node_count, f_name):
 
     bash_cmd_2 = "aws s3 cp " + eval_config_path + " eval_config.yaml"
     _ = subprocess.check_output(["bash", "-c", bash_cmd_2])

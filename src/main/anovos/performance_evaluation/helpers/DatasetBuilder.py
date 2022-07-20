@@ -9,6 +9,9 @@ def build_dataset(spark, idf_path,  ncol, column_ratio):
                   file_configs = {"header": "True", "delimiter": "," , "inferSchema": "True"})
     
     #TODO: Enable ncol based df building
-    return idf
+    if(ncol == "all"):
+        return idf
+    else:
+        return idf.select(idf.columns[:ncol])
 
     

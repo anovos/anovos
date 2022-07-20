@@ -13,4 +13,5 @@ anovos_function_config: "s3://mw.test/krish/anovos/performance_eval/configs/conf
 main_python_file_s3_location: "s3://mw.test/krish/anovos/performance_eval/main/RunPerformanceEvalWrapper.py"
 run_type: "emr"
 scripts_s3_loc: ""
+cluster_polling_interval: 120
 
