@@ -26,9 +26,15 @@ def in_range(loc, loc_format="dd"):
         "dd", "dms", "radian", "cartesian", "geohash". (Default value = "dd")
     """
     if loc_format == "dd":
-        lat, lon = loc
+        try:
+            lat, lon = [int(float(i)) for i in loc]
+        except:
+            lat, lon = None, None
     else:
-        lat, lon = to_latlon_decimal_degrees(loc, loc_format)
+        try:
+            lat, lon = [int(float(i)) for i in to_latlon_decimal_degrees(loc, loc_format)]
+        except:
+            lat, lon = None, None
 
     if None not in [lat, lon]:
         if lat > 90 or lat < -90 or lon > 180 or lon < -180:
