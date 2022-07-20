@@ -689,8 +689,11 @@ def outlier_detection(
             return odf
 
     if not treatment and not print_impact:
-        warnings.warn("The original idf will be the only output. Set print_impact=True to perform detection without treatment")
-        return idf
+        if (not pre_existing_model and model_path == "NA") | pre_existing_model:
+            warnings.warn(
+                "The original idf will be the only output. Set print_impact=True to perform detection without treatment"
+            )
+            return idf
     if list_of_cols == "all":
         list_of_cols = num_cols
     if isinstance(list_of_cols, str):
@@ -904,6 +907,9 @@ def outlier_detection(
                 model_path + "/outlier_numcols", mode="overwrite"
             )
 
+            if not treatment and not print_impact:
+                return idf
+
     def composite_outlier_pandas(col_param):
         def inner(v):
             if detection_side in ("lower", "both"):
@@ -939,7 +945,8 @@ def outlier_detection(
                     F.col("-1") if "-1" in odf_agg_col.columns else F.lit(0),
                 )
                 .withColumn(
-                    "upper_outliers", F.col("1") if "1" in odf_agg_col.columns else F.lit(0)
+                    "upper_outliers",
+                    F.col("1") if "1" in odf_agg_col.columns else F.lit(0),
                 )
                 .withColumn("excluded_due_to_skewness", F.lit(0))
                 .withColumn("attribute", F.lit(str(i)))
@@ -973,6 +980,7 @@ def outlier_detection(
                 odf = odf.drop(i).withColumnRenamed(i + "_outliered", i)
 
     if print_impact:
+
         def unionAll(dfs):
             first, *_ = dfs
             return first.sql_ctx.createDataFrame(
@@ -1010,7 +1018,6 @@ def outlier_detection(
         return odf, odf_print
     else:
         return odf
-
 
 
 def IDness_detection(
