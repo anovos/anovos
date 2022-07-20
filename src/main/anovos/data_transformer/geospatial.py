@@ -557,7 +557,7 @@ def location_distance(
                 list_of_geohash=[list_of_cols_loc1[0], list_of_cols_loc2[0]],
                 output_format=format_required,
                 result_prefix=["temp_loc1", "temp_loc2"],
-                optional_configs={"radius":radius},
+                optional_configs={"radius": radius},
                 output_mode="append",
             )
 
@@ -786,7 +786,7 @@ def location_in_country(
     list_of_lat,
     list_of_lon,
     country,
-    country_shapefile_path,
+    country_shapefile_path="",
     method_type="approx",
     result_prefix=[],
     output_mode="append",
