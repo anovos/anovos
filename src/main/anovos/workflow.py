@@ -294,9 +294,14 @@ def main(all_configs, run_type, auth_key_val={}):
                                         == "null_replacement"
                                     ):
                                         extra_args["stats_missing"] = {}
+
+                        if subkey == "outlier_detection":
+                            extra_args["print_impact"] = True
+                        else:
+                            extra_args["print_impact"] = False
+
                         df, df_stats = f(
-                            spark, df, **value, **extra_args, print_impact=False
-                        )
+                            spark, df, **value, **extra_args)
                         df = save(
                             df,
                             write_intermediate,
@@ -306,7 +311,7 @@ def main(all_configs, run_type, auth_key_val={}):
                             reread=True,
                         )
                         if report_input_path:
-                            save_stats(
+                            df_stats = save_stats(
                                 spark,
                                 df_stats,
                                 report_input_path,
@@ -314,14 +319,18 @@ def main(all_configs, run_type, auth_key_val={}):
                                 reread=True,
                                 run_type=run_type,
                                 auth_key=auth_key,
-                            ).show(100)
+                            )
                         else:
-                            save(
+                            df_stats = save(
                                 df_stats,
                                 write_stats,
                                 folder_name="data_analyzer/quality_checker/" + subkey,
                                 reread=True,
-                            ).show(100)
+                            )
+
+                        if subkey != "outlier_detection":
+                            df_stats.show(100)
+
                         end = timeit.default_timer()
                         logger.info(
                             f"{key}, {subkey}: execution time (in secs) ={round(end - start, 4)}"
