@@ -385,28 +385,29 @@ def mode_computation(spark, idf, list_of_cols="all", drop_cols=[], print_impact=
         odf = spark.sparkContext.emptyRDD().toDF(schema)
         return odf
 
-    mode = [
-        list(
-            idf.select(i)
-            .dropna()
-            .groupby(i)
+    list_df = []
+    for col in list_of_cols:
+        out_df = (
+            idf.select(col)
+            .groupby(col)
             .count()
             .orderBy("count", ascending=False)
-            .first()
-            or [None, None]
+            .limit(1)
+            .select(
+                F.lit(col).alias("attribute"),
+                F.col(col).alias("mode"),
+                F.col("count").alias("mode_rows"),
+            )
         )
-        for i in list_of_cols
-    ]
-    mode = [(str(i), str(j)) for i, j in mode]
+        list_df.append(out_df)
 
-    odf = spark.createDataFrame(
-        zip(list_of_cols, mode), schema=("attribute", "metric")
-    ).select(
-        "attribute",
-        (F.col("metric")["_1"]).alias("mode"),
-        (F.col("metric")["_2"]).cast("long").alias("mode_rows"),
-    )
+    def unionAll(dfs):
+        first, *_ = dfs
+        return first.sql_ctx.createDataFrame(
+            first.sql_ctx._sc.union([df.rdd for df in dfs]), first.schema
+        )
 
+    odf = unionAll(list_df)
     if print_impact:
         odf.show(len(list_of_cols))
     return odf
