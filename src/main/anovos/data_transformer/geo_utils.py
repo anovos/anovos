@@ -32,7 +32,9 @@ def in_range(loc, loc_format="dd"):
             lat, lon = None, None
     else:
         try:
-            lat, lon = [int(float(i)) for i in to_latlon_decimal_degrees(loc, loc_format)]
+            lat, lon = [
+                int(float(i)) for i in to_latlon_decimal_degrees(loc, loc_format)
+            ]
         except:
             lat, lon = None, None
 

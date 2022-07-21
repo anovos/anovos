@@ -599,8 +599,7 @@ def location_distance(
             x1, x2, "radian", unit, radius
         )
     else:
-        compute_distance = lambda x1, x2: euclidean_distance(
-            x1, x2, unit)
+        compute_distance = lambda x1, x2: euclidean_distance(x1, x2, unit)
 
     f_compute_distance = F.udf(compute_distance, T.FloatType())
 
