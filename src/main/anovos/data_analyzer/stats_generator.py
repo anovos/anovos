@@ -403,8 +403,15 @@ def mode_computation(spark, idf, list_of_cols="all", drop_cols=[], print_impact=
 
     def unionAll(dfs):
         first, *_ = dfs
+        schema = T.StructType(
+            [
+                T.StructField("attribute", T.StringType(), True),
+                T.StructField("mode", T.StringType(), True),
+                T.StructField("mode_rows", T.LongType(), True),
+            ]
+        )
         return first.sql_ctx.createDataFrame(
-            first.sql_ctx._sc.union([df.rdd for df in dfs]), first.schema
+            first.sql_ctx._sc.union([df.rdd for df in dfs]), schema
         )
 
     odf = unionAll(list_df)
