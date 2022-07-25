@@ -389,6 +389,7 @@ def mode_computation(spark, idf, list_of_cols="all", drop_cols=[], print_impact=
     for col in list_of_cols:
         out_df = (
             idf.select(col)
+            .dropna()
             .groupby(col)
             .count()
             .orderBy("count", ascending=False)
