@@ -88,7 +88,7 @@ write_feast_features:
   file_path: "../anovos_repo/"
   entity:
     name: "income"
-    description: "first attempt to generate an entity"
+    description: "income data"
     id_col: 'ifa'
   file_source:
     description: 'data source description'

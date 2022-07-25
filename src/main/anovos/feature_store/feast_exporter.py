@@ -24,7 +24,9 @@ def check_feast_configuration(feast_config: dict, repartition_count: int):
             "Please, set repartition parameter to 1 in write_main block in your config yml!"
         )
     if "file_path" not in feast_config:
-        raise ValueError("Please, provide a path to the anovos feast repository!")
+        raise ValueError(
+            "Please, provide a path to the anovos feature_store repository!"
+        )
     if "entity" not in feast_config:
         raise ValueError("Please, provide an entity definition in your config yml!")
     if "file_source" not in feast_config:
