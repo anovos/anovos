@@ -182,7 +182,10 @@ def test_that_missing_blocks_raise_exception_in_check_feast_configuration(tmp_pa
         check_feast_configuration(faulty_cfg, 1)
 
     assert e.type == ValueError
-    assert e.value.args[0] == "Please, provide a path to the anovos feast repository!"
+    assert (
+        e.value.args[0]
+        == "Please, provide a path to the anovos feature_store repository!"
+    )
 
 
 def test_that_faulty_repartition_count_raises_exception_in_check_feast_configuration(

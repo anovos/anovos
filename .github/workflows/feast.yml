@@ -8,7 +8,7 @@ on:
       - 'src/main/main.py'
       - 'src/main/anovos/workflow.py'
       - 'config/configs_feast.yaml'
-      - '.github/workflows/feast.yml'
+      - '.github/workflows/feature_store.yml'
 
 jobs:
   test:
