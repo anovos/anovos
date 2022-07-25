@@ -63,7 +63,6 @@ from pyspark.mllib.stat import Statistics
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
 from pyspark.sql.window import Window
-from pyspark.ml.feature import Bucketizer
 
 from anovos.data_analyzer.stats_generator import (
     missingCount_computation,

@@ -536,6 +536,8 @@ def IV_calculation(
             idf_encoded = attribute_binning(
                 spark, idf, num_cols, label_col, bin_method, bin_size
             )
+    else:
+        idf_encoded = idf
 
     list_df = []
     for col in list_of_cols:
