@@ -366,9 +366,6 @@ def mode_computation(spark, idf, list_of_cols="all", drop_cols=[], print_impact=
         drop_cols = [x.strip() for x in drop_cols.split("|")]
 
     list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
-    for i in idf.select(list_of_cols).dtypes:
-        if i[1] not in ("string", "int", "bigint", "long"):
-            list_of_cols.remove(i[0])
 
     if any(x not in idf.columns for x in list_of_cols):
         raise TypeError("Invalid input for Column(s)")
