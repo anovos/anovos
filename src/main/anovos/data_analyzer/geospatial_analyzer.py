@@ -28,6 +28,7 @@ import numpy as np
 from sklearn.cluster import MiniBatchKMeans
 from sklearn.metrics import silhouette_score
 from itertools import product
+from pathlib import Path
 
 # from branca.element import Figure
 # from folium.plugins import FastMarkerCluster, HeatMapWithTime
@@ -1256,15 +1257,15 @@ def geospatial_autodetection(
     """
 
     if run_type == "local":
-        master_path = master_path
+        local_path = master_path
     elif run_type == "databricks":
-        master_path = output_to_local(master_path)
+        local_path = output_to_local(master_path)
     elif run_type == "emr":
-        master_path = "report_stats"
+        local_path = "report_stats"
     else:
         raise ValueError("Invalid run_type")
 
-    # Path(master_path).mkdir(parents=True, exist_ok=True)
+    Path(local_path).mkdir(parents=True, exist_ok=True)
 
     lat_cols, long_cols, gh_cols = ll_gh_cols(df, max_records)
 
@@ -1287,7 +1288,7 @@ def geospatial_autodetection(
         df.persist()
 
         stats_gen_lat_long_geo(
-            df, lat_cols, long_cols, gh_cols, id_col, master_path, top_geo_records
+            df, lat_cols, long_cols, gh_cols, id_col, local_path, top_geo_records
         )
 
         geo_cluster_generator(
@@ -1298,7 +1299,7 @@ def geospatial_autodetection(
             max_cluster,
             eps,
             min_samples,
-            master_path,
+            local_path,
             global_map_box_val,
             max_records,
         )
@@ -1311,7 +1312,7 @@ def geospatial_autodetection(
             gh_cols,
             max_records,
             global_map_box_val,
-            master_path,
+            local_path,
         )
 
         return lat_cols, long_cols, gh_cols
@@ -1323,8 +1324,8 @@ def geospatial_autodetection(
     if run_type == "emr":
         bash_cmd = (
             "aws s3 cp --recursive "
-            + ends_with(master_path)
+            + ends_with(local_path)
             + " "
-            + ends_with("report_stats")
+            + ends_with(master_path)
         )
         output = subprocess.check_output(["bash", "-c", bash_cmd])
