@@ -16,24 +16,29 @@ import itertools
 import math
 
 import pyspark
+import pandas as pd
+import warnings
 from phik.phik import spark_phik_matrix_from_hist2d_dict
 from popmon.analysis.hist_numpy import get_2dgrid
 from pyspark.sql import Window
 from pyspark.sql import functions as F
 from varclushi import VarClusHi
-
+from pyspark.ml.feature import VectorAssembler
+from pyspark.ml.stat import Correlation
 from anovos.data_analyzer.stats_generator import uniqueCount_computation
 from anovos.data_ingest.data_ingest import read_dataset
+from anovos.data_ingest.data_sampling import data_sample
 from anovos.data_transformer.transformers import (
     attribute_binning,
     cat_to_num_unsupervised,
     imputation_MMM,
+    outlier_categories,
     monotonic_binning,
 )
 from anovos.shared.utils import attributeType_segregation
 
 
-def correlation_matrix(
+def correlation_matrix_phik(
     spark, idf, list_of_cols="all", drop_cols=[], stats_unique={}, print_impact=False
 ):
     """
@@ -139,6 +144,161 @@ def correlation_matrix(
         odf.show(odf.count())
 
     return odf
+
+
+def correlation_matrix_numerical(
+    spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
+):
+    """
+    This function calculates correlation coefficient statistical, which measures the strength of the relationship
+    between the relative movements of two attributes. Pearson’s correlation coefficient is a standard approach of
+    measuring correlation between two variables.
+    This function returns a correlation matrix dataframe of schema – attribute, <attribute_names>. Correlation
+    between attribute X and Y can be found at intersection of a) row with value X in ‘attribute’ column and b) column
+    ‘Y’ (or row with value Y in ‘attribute’ column and column ‘X’).
+    Parameters
+    ----------
+    spark
+        Spark Session
+    idf
+        Input Dataframe
+    list_of_cols
+        List of numerical columns to analyse e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        "all" can be passed to include numerical columns for analysis. This is super useful instead of specifying all column names manually.
+        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in drop_cols argument
+        is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
+    drop_cols
+        List of columns to be dropped e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
+        a few handful of them. (Default value = [])
+    print_impact
+        True, False
+        This argument is to print out the statistics.(Default value = False)
+    Returns
+    -------
+    DataFrame
+        [attribute,*attribute_names]
+    """
+    num_cols, cat_cols, other_cols = attributeType_segregation(idf)
+
+    if list_of_cols == "all":
+        list_of_cols = num_cols
+    if isinstance(list_of_cols, str):
+        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
+    if isinstance(drop_cols, str):
+        drop_cols = [x.strip() for x in drop_cols.split("|")]
+
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
+
+    if any(x not in num_cols for x in list_of_cols) | (len(list_of_cols) == 0):
+        raise TypeError("Invalid input for Column(s)")
+
+    assembler = VectorAssembler(
+        inputCols=list_of_cols, outputCol="features", handleInvalid="keep"
+    )
+    idf_vector = assembler.transform(idf).select("features")
+    matrix = Correlation.corr(idf_vector, "features", "spearman")
+    result = matrix.collect()[0]["spearman(features)"].values
+
+    odf_pd = pd.DataFrame(
+        result.reshape(-1, len(list_of_cols)), columns=list_of_cols, index=list_of_cols
+    )
+    odf_pd["attribute"] = odf_pd.index
+    list_of_cols.sort()
+    odf = (
+        spark.createDataFrame(odf_pd)
+        .select(["attribute"] + list_of_cols)
+        .orderBy("attribute")
+    )
+
+    if print_impact:
+        odf.show(odf.count())
+
+    return odf
+
+
+def correlation_matrix(
+    spark, idf, list_of_cols="all", drop_cols=[], stats_unique={}, print_impact=False
+):
+    if list_of_cols == "all":
+        num_cols, cat_cols, other_cols = attributeType_segregation(idf)
+        list_of_cols = num_cols + cat_cols
+    if isinstance(list_of_cols, str):
+        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
+    if isinstance(drop_cols, str):
+        drop_cols = [x.strip() for x in drop_cols.split("|")]
+
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
+
+    if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
+        raise TypeError("Invalid input for Column(s)")
+
+    cat_cols_select = attributeType_segregation(idf.select(list_of_cols))[1]
+    if cat_cols_select:
+        drop_null_col = []
+        for col in list_of_cols:
+            if idf.filter(F.col(col).isNull()).count() > 0.5 * idf.select(col).count():
+                drop_null_col.append(col)
+        if drop_null_col:
+            warnings.warn(
+                "Columns contains too much null values. Dropping "
+                + ", ".join(drop_null_col)
+            )
+            list_of_cols = list(
+                set([e for e in list_of_cols if e not in drop_null_col])
+            )
+        high_corr = False
+        col_need_treatment = []
+        for col in cat_cols_select:
+            if idf.select(col).distinct().count() > 50 and col in list_of_cols:
+                high_corr = True
+                col_need_treatment.append(col)
+        if idf.count() <= 100000 and not high_corr:
+            return correlation_matrix_phik(
+                spark, idf, list_of_cols, drop_cols, stats_unique, print_impact
+            )
+        elif idf.count() > 100000 and not high_corr:
+            warnings.warn(
+                "Data size is too big for computation. Only 100,000 random sampled rows are considered."
+            )
+            idf_sample = data_sample(
+                idf, fraction=float(100000) / idf.count(), method_type="random"
+            )
+            return correlation_matrix_phik(
+                spark, idf_sample, list_of_cols, drop_cols, stats_unique, print_impact
+            )
+        elif idf.count() <= 100000 and high_corr:
+            warnings.warn(
+                "High cardinality column(s) are detected, and will go through cardinality treatments."
+            )
+            idf_treat = outlier_categories(spark, idf, list_of_cols=col_need_treatment)
+            return correlation_matrix_phik(
+                spark, idf_treat, list_of_cols, drop_cols, stats_unique, print_impact
+            )
+        else:
+            warnings.warn(
+                "Data size is too big for computation. Only 100,000 random sampled rows are considered."
+            )
+            warnings.warn(
+                "High cardinality column(s) are detected, and will go through cardinality treatments."
+            )
+            idf_sample = data_sample(
+                idf, fraction=float(100000) / idf.count(), method_type="random"
+            )
+            idf_treat = outlier_categories(
+                spark, idf_sample, list_of_cols=col_need_treatment
+            )
+            return correlation_matrix_phik(
+                spark, idf_treat, list_of_cols, drop_cols, stats_unique, print_impact
+            )
+    else:
+        return correlation_matrix_numerical(
+            spark, idf, list_of_cols, drop_cols, print_impact
+        )
 
 
 def variable_clustering(
@@ -374,43 +534,65 @@ def IV_calculation(
             )
         else:
             idf_encoded = attribute_binning(
-                spark, idf, num_cols, [], bin_method, bin_size
+                spark, idf, num_cols, label_col, bin_method, bin_size
             )
-
-        idf_encoded.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
     else:
         idf_encoded = idf
 
-    output = []
+    list_df = []
     for col in list_of_cols:
-        df_iv = (
-            idf_encoded.groupBy(col, label_col)
-            .count()
-            .withColumn(
-                label_col, F.when(F.col(label_col) == event_label, 1).otherwise(0)
-            )
-            .groupBy(col)
-            .pivot(label_col)
-            .sum("count")
-            .fillna(0.5)
-            .withColumn("event_pct", F.col("1") / F.sum("1").over(Window.partitionBy()))
-            .withColumn(
-                "nonevent_pct", F.col("0") / F.sum("0").over(Window.partitionBy())
+        df_agg = (
+            idf_encoded.select(col, label_col)
+            .groupby(col)
+            .agg(
+                F.count(
+                    F.when(F.col(label_col) != event_label, F.col(label_col))
+                ).alias("label_0"),
+                F.count(
+                    F.when(F.col(label_col) == event_label, F.col(label_col))
+                ).alias("label_1"),
             )
             .withColumn(
-                "iv",
-                (F.col("nonevent_pct") - F.col("event_pct"))
-                * F.log(F.col("nonevent_pct") / F.col("event_pct")),
+                "label_0_total", F.sum(F.col("label_0")).over(Window.partitionBy())
+            )
+            .withColumn(
+                "label_1_total", F.sum(F.col("label_1")).over(Window.partitionBy())
             )
         )
-        iv_value = df_iv.select(F.sum("iv")).collect()[0][0]
-        output.append([col, iv_value])
 
-    odf = (
-        spark.createDataFrame(output, ["attribute", "iv"])
-        .withColumn("iv", F.round(F.col("iv"), 4))
-        .orderBy(F.desc("iv"))
-    )
+        out_df = (
+            df_agg.withColumn("event_pcr", F.col("label_1") / F.col("label_1_total"))
+            .withColumn("nonevent_pcr", F.col("label_0") / F.col("label_0_total"))
+            .withColumn("diff_event", F.col("nonevent_pcr") - F.col("event_pcr"))
+            .withColumn("const", F.lit(0.5))
+            .withColumn(
+                "woe",
+                F.when(
+                    (F.col("nonevent_pcr") != 0) & (F.col("event_pcr") != 0),
+                    F.log(F.col("nonevent_pcr") / F.col("event_pcr")),
+                ).otherwise(
+                    F.log(
+                        ((F.col("label_0") + F.col("const")) / F.col("label_0_total"))
+                        / ((F.col("label_1") + F.col("const")) / F.col("label_1_total"))
+                    )
+                ),
+            )
+            .withColumn("iv_single", F.col("woe") * F.col("diff_event"))
+            .withColumn("iv", F.sum(F.col("iv_single")).over(Window.partitionBy()))
+            .withColumn("attribute", F.lit(str(col)))
+            .select("attribute", "iv")
+            .distinct()
+        )
+
+        list_df.append(out_df)
+
+    def unionAll(dfs):
+        first, *_ = dfs
+        return first.sql_ctx.createDataFrame(
+            first.sql_ctx._sc.union([df.rdd for df in dfs]), first.schema
+        )
+
+    odf = unionAll(list_df)
     if print_impact:
         odf.show(odf.count())
 
@@ -518,9 +700,8 @@ def IG_calculation(
             )
         else:
             idf_encoded = attribute_binning(
-                spark, idf, num_cols, [], bin_method, bin_size
+                spark, idf, num_cols, label_col, bin_method, bin_size
             )
-        idf_encoded.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
     else:
         idf_encoded = idf
 
@@ -532,39 +713,46 @@ def IG_calculation(
     )
     for col in list_of_cols:
         idf_entropy = (
-            idf_encoded.withColumn(
-                label_col, F.when(F.col(label_col) == event_label, 1).otherwise(0)
+            (
+                idf_encoded.withColumn(
+                    label_col, F.when(F.col(label_col) == event_label, 1).otherwise(0)
+                )
+                .groupBy(col)
+                .agg(
+                    F.sum(F.col(label_col)).alias("event_count"),
+                    F.count(F.col(label_col)).alias("total_count"),
+                )
+                .withColumn("event_pct", F.col("event_count") / F.col("total_count"))
+                .withColumn(
+                    "segment_pct",
+                    F.col("total_count")
+                    / F.sum("total_count").over(Window.partitionBy()),
+                )
+                .withColumn(
+                    "entropy",
+                    -F.col("segment_pct")
+                    * (
+                        (F.col("event_pct") * F.log2(F.col("event_pct")))
+                        + ((1 - F.col("event_pct")) * F.log2((1 - F.col("event_pct"))))
+                    ),
+                )
             )
-            .groupBy(col)
-            .agg(
-                F.sum(F.col(label_col)).alias("event_count"),
-                F.count(F.col(label_col)).alias("total_count"),
-            )
-            .withColumn("event_pct", F.col("event_count") / F.col("total_count"))
-            .withColumn(
-                "segment_pct",
-                F.col("total_count") / F.sum("total_count").over(Window.partitionBy()),
-            )
-            .withColumn(
-                "entropy",
-                -F.col("segment_pct")
-                * (
-                    (F.col("event_pct") * F.log2(F.col("event_pct")))
-                    + ((1 - F.col("event_pct")) * F.log2((1 - F.col("event_pct"))))
-                ),
-            )
+            .groupBy()
+            .agg(F.sum(F.col("entropy")).alias("entropy_sum"))
+            .withColumn("attribute", F.lit(str(col)))
+            .withColumn("entropy_total", F.lit(float(total_entropy)))
+            .withColumn("ig", F.col("entropy_total") - F.col("entropy_sum"))
+            .select("attribute", "ig")
         )
-        entropy = (
-            idf_entropy.groupBy().sum("entropy").rdd.flatMap(lambda x: x).collect()[0]
-        )
-        ig_value = total_entropy - entropy if entropy else None
-        output.append([col, ig_value])
+        output.append(idf_entropy)
 
-    odf = (
-        spark.createDataFrame(output, ["attribute", "ig"])
-        .withColumn("ig", F.round(F.col("ig"), 4))
-        .orderBy(F.desc("ig"))
-    )
+    def unionAll(dfs):
+        first, *_ = dfs
+        return first.sql_ctx.createDataFrame(
+            first.sql_ctx._sc.union([df.rdd for df in dfs]), first.schema
+        )
+
+    odf = unionAll(output)
     if print_impact:
         odf.show(odf.count())
 
