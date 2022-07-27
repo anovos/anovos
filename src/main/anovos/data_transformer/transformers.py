@@ -3396,7 +3396,6 @@ def outlier_categories(
         Transformed Dataframe
 
     """
-
     cat_cols = attributeType_segregation(idf)[1]
     if list_of_cols == "all":
         list_of_cols = cat_cols
@@ -3422,6 +3421,8 @@ def outlier_categories(
     if output_mode not in ("replace", "append"):
         raise TypeError("Invalid input for output_mode")
 
+    idf = idf.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
+
     if pre_existing_model:
         df_model = spark.read.csv(
             model_path + "/outlier_categories", header=True, inferSchema=True
@@ -3430,39 +3431,46 @@ def outlier_categories(
         for index, i in enumerate(list_of_cols):
             window = Window.partitionBy().orderBy(F.desc("count_pct"))
             df_cats = (
-                idf.groupBy(i)
-                .count()
-                .dropna()
-                .withColumn(
-                    "count_pct",
-                    F.col("count") / F.sum("count").over(Window.partitionBy()),
-                )
-                .withColumn("rank", F.rank().over(window))
-                .withColumn(
-                    "cumu",
-                    F.sum("count_pct").over(
-                        window.rowsBetween(Window.unboundedPreceding, 0)
-                    ),
-                )
-                .withColumn("lag_cumu", F.lag("cumu").over(window))
-                .fillna(0)
-                .where(~((F.col("cumu") >= coverage) & (F.col("lag_cumu") >= coverage)))
-                .where(F.col("rank") <= (max_category - 1))
-                .select(F.lit(i).alias("attribute"), F.col(i).alias("parameters"))
+                idf.select(i).groupBy(i)
+                    .count()
+                    .dropna()
+                    .withColumn(
+                        "count_pct",
+                        F.col("count") / F.sum("count").over(Window.partitionBy()),
+                    )
+                    .withColumn("rank", F.rank().over(window))
+                    .withColumn(
+                        "cumu",
+                        F.sum("count_pct").over(
+                            window.rowsBetween(Window.unboundedPreceding, 0)
+                        ),
+                    )
+                    .withColumn("lag_cumu", F.lag("cumu").over(window))
+                    .fillna(0)
+                    .where(~((F.col("cumu") >= coverage) & (F.col("lag_cumu") >= coverage)))
+                    .where(F.col("rank") <= (max_category - 1))
+                    .select(F.lit(i).alias("attribute"), F.col(i).alias("parameters"))
             )
             if index == 0:
                 df_model = df_cats
             else:
                 df_model = df_model.union(df_cats)
 
+    df_params = df_model.rdd.groupByKey().mapValues(list).collect()
+    dict_params = dict(df_params)
+    broadcast_params = spark.sparkContext.broadcast(dict_params)
+
+    def get_params(key):
+        parameters = list()
+        dict_params = broadcast_params.value
+        params = dict_params.get(key)
+        if params:
+            parameters = params
+        return parameters
+
     odf = idf
     for i in list_of_cols:
-        parameters = (
-            df_model.where(F.col("attribute") == i)
-            .select("parameters")
-            .rdd.flatMap(lambda x: x)
-            .collect()
-        )
+        parameters = get_params(i)
         if output_mode == "replace":
             odf = odf.withColumn(
                 i,
@@ -3496,6 +3504,7 @@ def outlier_categories(
         ).show(len(list_of_cols), False)
 
     return odf
+
 
 
 def expression_parser(idf, list_of_expr, postfix="", print_impact=False):
