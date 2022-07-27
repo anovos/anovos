@@ -4,5 +4,5 @@ pylint==2.13.8
 pytest-cov==3.0.0
 isort==5.10.1
 flake8==4.0.1
-pre-commit==2.19.0
+pre-commit==2.20.0
 pytest-mock==3.7.0
