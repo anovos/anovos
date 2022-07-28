@@ -713,7 +713,7 @@ def test_monotonic_binning(spark_session, df):
 
 
 # categorical_to_numerical_transformation
-def test_cat_to_num_unsupervised(spark_session, df):
+def test_cat_to_num_unsupervised_with_label_encoding(spark_session, df):
     odf = cat_to_num_unsupervised(
         spark_session,
         df,
@@ -743,6 +743,8 @@ def test_cat_to_num_unsupervised(spark_session, df):
     assert odf.select("relationship").dtypes[0][1] == "int"
     assert odf.select("education").dtypes[0][1] == "string"
 
+
+def test_cat_to_num_unsupervised_with_empty_list_of_cols(spark_session, df):
     odf = cat_to_num_unsupervised(
         spark_session,
         df,
@@ -757,11 +759,12 @@ def test_cat_to_num_unsupervised(spark_session, df):
     assert odf.select("relationship").dtypes[0][1] == "string"
     assert odf.select("education").dtypes[0][1] == "string"
 
+
+def test_cat_to_num_unsupervised_with_appended_output(spark_session, df):
     odf = cat_to_num_unsupervised(
         spark_session,
         df,
         list_of_cols=["workclass", "relationship", "marital-status"],
-        drop_cols=["ifa"],
         method_type="label_encoding",
         index_order="frequencyDesc",
         cardinality_threshold=100,
@@ -769,6 +772,8 @@ def test_cat_to_num_unsupervised(spark_session, df):
     )
     assert len(odf.columns) == 20
 
+
+def test_cat_to_num_unsupervised_with_onehot_encoding_and_saving_model(spark_session, df):
     odf = cat_to_num_unsupervised(
         spark_session,
         df,
