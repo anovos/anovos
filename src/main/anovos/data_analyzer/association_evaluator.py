@@ -32,7 +32,6 @@ from anovos.data_transformer.transformers import (
     attribute_binning,
     cat_to_num_unsupervised,
     imputation_MMM,
-    outlier_categories,
     monotonic_binning,
 )
 from anovos.shared.utils import attributeType_segregation
