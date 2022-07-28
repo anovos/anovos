@@ -20,8 +20,7 @@ sudo docker build ./docker-stacks/pyspark-notebook -t anovos-notebook-"${MY_SPAR
   --build-arg spark_version="${MY_SPARK_VERSION}" \
   --build-arg spark_checksum="${MY_SPARK_CHECKSUM}" \
   --build-arg openjdk_version="${MY_JDK_VERSION}" \
-  --build-arg hadoop_version="${MY_HADOOP_VERSION}" \
-  --build-arg scala_version=""
+  --build-arg hadoop_version="${MY_HADOOP_VERSION}"
 
 # Spin up a container and check the versions
 sudo docker run -d --name anovos_notebook anovos-notebook-"${MY_SPARK_VERSION}"
