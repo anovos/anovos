@@ -6,8 +6,8 @@ on:
   push:
     paths:
       - 'examples/**'
-    branches:
-      - main
+#    branches:
+#      - main
 
 
 jobs:
