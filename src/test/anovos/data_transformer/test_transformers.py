@@ -27,6 +27,7 @@ from anovos.data_transformer.transformers import (
     z_standardization,
 )
 
+
 @pytest.fixture
 def df(spark_session: SparkSession):
     sample_parquet = "./data/test_dataset/part-00001-3eb0f7bb-05c2-46ec-8913-23ba231d2734-c000.snappy.parquet"
@@ -35,8 +36,7 @@ def df(spark_session: SparkSession):
 
 
 # binning
-def test_attribute_binning(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+def test_attribute_binning(spark_session, df):
     odf = attribute_binning(
         spark_session,
         df,
@@ -104,8 +104,7 @@ def test_attribute_binning(spark_session):
     assert len(odf.columns) == 20
 
 
-def test_monotonic_binning(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+def test_monotonic_binning(spark_session, df):
     odf = monotonic_binning(
         spark_session,
         df,
@@ -713,6 +712,7 @@ def test_outlier_categories(spark_session, df):
     )
     assert len(odf.columns) == 22
 
+
 # categorical_to_numerical_transformation
 def test_cat_to_num_unsupervised_with_label_encoding(spark_session, df):
     odf = cat_to_num_unsupervised(
@@ -774,7 +774,9 @@ def test_cat_to_num_unsupervised_with_appended_output(spark_session, df):
     assert len(odf.columns) == 20
 
 
-def test_cat_to_num_unsupervised_with_onehot_encoding_and_saving_model(spark_session, df):
+def test_cat_to_num_unsupervised_with_onehot_encoding_and_saving_model(
+    spark_session, df
+):
     odf = cat_to_num_unsupervised(
         spark_session,
         df,
