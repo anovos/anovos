@@ -5,9 +5,11 @@ from pyspark.sql import SparkSession
 from anovos.data_analyzer.association_evaluator import (
     IG_calculation,
     IV_calculation,
-    correlation_matrix,
+    correlation_matrix_numerical,
     variable_clustering,
 )
+
+from anovos.shared.utils import attributeType_segregation
 
 sample_parquet = "./data/test_dataset/part-00000-3eb0f7bb-05c2-46ec-8913-23ba231d2734-c000.snappy.parquet"
 sample_csv = (
@@ -289,33 +291,14 @@ def test_variable_clustering(spark_session: SparkSession):
     )
 
 
-def test_correlation_matrix(spark_session: SparkSession):
+def test_correlation_matrix_numerical(spark_session: SparkSession):
     test_df = spark_session.read.parquet(sample_parquet)
-    test_df = test_df.withColumn(
-        "label",
-        F.when(F.col("income") == "<=50K", F.lit(0.0)).when(
-            F.col("income") == ">50K", F.lit(1.0)
-        ),
-    ).drop("income")
-    assert test_df.where(F.col("ifa") == "4062a").count() == 1
-    assert (
-        test_df.where(F.col("ifa") == "4062a").toPandas().to_dict("list")["age"][0]
-        == 28
-    )
-    assert (
-        test_df.where(F.col("ifa") == "4062a").toPandas().to_dict("list")["sex"][0]
-        == "Male"
-    )
-    assert (
-        test_df.where(F.col("ifa") == "4062a")
-        .toPandas()
-        .to_dict("list")["education"][0]
-        == "11th"
-    )
 
-    result_df3 = correlation_matrix(spark_session, test_df, drop_cols=["ifa"])
+    num_cols, cat_cols, other_cols = attributeType_segregation(test_df)
 
-    assert result_df3.count() == 125
+    result_df3 = correlation_matrix_numerical(spark_session, test_df, list_of_cols=num_cols, drop_cols=[])
+
+    assert result_df3.count() == 7
     assert (
         result_df3.where(F.col("attribute") == "age")
         .toPandas()
@@ -325,162 +308,48 @@ def test_correlation_matrix(spark_session: SparkSession):
     assert (
         result_df3.where(F.col("attribute") == "age")
         .toPandas()
-        .to_dict("list")["native-country_0"][0]
+        .to_dict("list")["capital-gain"][0]
+        <= 0.1
+    )
+    assert (
+        result_df3.where(F.col("attribute") == "age")
+        .toPandas()
+        .to_dict("list")["capital-loss"][0]
+        <= 0.1
+    )
+    assert (
+        result_df3.where(F.col("attribute") == "age")
+        .toPandas()
+        .to_dict("list")["education-num"][0]
+        <= 0.1
+    )
+    assert (
+        result_df3.where(F.col("attribute") == "education-num")
+        .toPandas()
+        .to_dict("list")["capital-gain"][0]
         <= 0.2
     )
     assert (
-        result_df3.where(F.col("attribute") == "age")
-        .toPandas()
-        .to_dict("list")["capital-gain"][0]
-        <= 0.25
-    )
-    assert (
-        result_df3.where(F.col("attribute") == "age")
+        result_df3.where(F.col("attribute") == "education-num")
         .toPandas()
         .to_dict("list")["capital-loss"][0]
-        <= 0.25
+        <= 0.1
     )
     assert (
-        result_df3.where(F.col("attribute") == "age")
+        result_df3.where(F.col("attribute") == "fnlwgt")
         .toPandas()
-        .to_dict("list")["education_0"][0]
-        <= 0.4
+        .to_dict("list")["logfnl"][0]
+        <= 0.95
     )
     assert (
-        result_df3.where(F.col("attribute") == "age")
+        result_df3.where(F.col("attribute") == "hours-per-week")
         .toPandas()
         .to_dict("list")["education-num"][0]
-        <= 0.4
-    )
-    assert (
-        result_df3.where(F.col("attribute") == "age")
-        .toPandas()
-        .to_dict("list")["fnlwgt"][0]
-        <= 0.1
-    )
-    assert (
-        result_df3.where(F.col("attribute") == "capital-gain")
-        .toPandas()
-        .to_dict("list")["capital-gain"][0]
-        == 1.0
-    )
-    assert (
-        result_df3.where(F.col("attribute") == "capital-gain")
-        .toPandas()
-        .to_dict("list")["native-country_0"][0]
-        <= 0.1
-    )
-    assert (
-        result_df3.where(F.col("attribute") == "capital-gain")
-        .toPandas()
-        .to_dict("list")["age"][0]
         <= 0.2
     )
     assert (
-        result_df3.where(F.col("attribute") == "capital-gain")
-        .toPandas()
-        .to_dict("list")["capital-loss"][0]
-        <= 0.1
-    )
-    assert (
-        result_df3.where(F.col("attribute") == "capital-gain")
-        .toPandas()
-        .to_dict("list")["education_0"][0]
-        <= 0.3
-    )
-    assert (
-        result_df3.where(F.col("attribute") == "capital-gain")
+        result_df3.where(F.col("attribute") == "logfnl")
         .toPandas()
         .to_dict("list")["education-num"][0]
-        <= 0.4
-    )
-    assert (
-        result_df3.where(F.col("attribute") == "capital-gain")
-        .toPandas()
-        .to_dict("list")["fnlwgt"][0]
         <= 0.1
-    )
-    assert (
-        result_df3.where(F.col("attribute") == "education_0")
-        .toPandas()
-        .to_dict("list")["education_0"][0]
-        == 1.0
-    )
-    assert (
-        result_df3.where(F.col("attribute") == "education_0")
-        .toPandas()
-        .to_dict("list")["native-country_0"][0]
-        <= 0.07
-    )
-    assert (
-        result_df3.where(F.col("attribute") == "education_0")
-        .toPandas()
-        .to_dict("list")["age"][0]
-        <= 0.06
-    )
-    assert (
-        result_df3.where(F.col("attribute") == "education_0")
-        .toPandas()
-        .to_dict("list")["capital-loss"][0]
-        <= 0.01
-    )
-    assert (
-        result_df3.where(F.col("attribute") == "education_0")
-        .toPandas()
-        .to_dict("list")["capital-gain"][0]
-        <= 0.01
-    )
-    assert (
-        result_df3.where(F.col("attribute") == "education_0")
-        .toPandas()
-        .to_dict("list")["education-num"][0]
-        <= 0.01
-    )
-    assert (
-        result_df3.where(F.col("attribute") == "education_0")
-        .toPandas()
-        .to_dict("list")["fnlwgt"][0]
-        <= 0.01
-    )
-    assert (
-        result_df3.where(F.col("attribute") == "label")
-        .toPandas()
-        .to_dict("list")["label"][0]
-        == 1.0
-    )
-    assert (
-        result_df3.where(F.col("attribute") == "label")
-        .toPandas()
-        .to_dict("list")["native-country_0"][0]
-        <= 0.05
-    )
-    assert (
-        result_df3.where(F.col("attribute") == "label")
-        .toPandas()
-        .to_dict("list")["age"][0]
-        <= 0.3
-    )
-    assert (
-        result_df3.where(F.col("attribute") == "label")
-        .toPandas()
-        .to_dict("list")["capital-loss"][0]
-        <= 0.17
-    )
-    assert (
-        result_df3.where(F.col("attribute") == "label")
-        .toPandas()
-        .to_dict("list")["capital-gain"][0]
-        <= 0.23
-    )
-    assert (
-        result_df3.where(F.col("attribute") == "label")
-        .toPandas()
-        .to_dict("list")["education_0"][0]
-        <= 0.01
-    )
-    assert (
-        result_df3.where(F.col("attribute") == "label")
-        .toPandas()
-        .to_dict("list")["fnlwgt"][0]
-        <= 0.01
     )
