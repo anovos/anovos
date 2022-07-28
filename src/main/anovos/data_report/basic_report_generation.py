@@ -8,7 +8,7 @@ import plotly.express as px
 from anovos.data_analyzer.association_evaluator import (
     IG_calculation,
     IV_calculation,
-    correlation_matrix,
+    correlation_matrix_numerical,
     variable_clustering,
 )
 from anovos.data_analyzer.quality_checker import (
@@ -73,7 +73,6 @@ def stats_args(path, func):
         "biasedness_detection": ["stats_mode"],
         "IDness_detection": ["stats_unique"],
         "outlier_detection": ["stats_unique"],
-        "correlation_matrix": ["stats_unique"],
         "nullColumns_detection": ["stats_unique", "stats_mode", "stats_missing"],
         "variable_clustering": ["stats_unique", "stats_mode"],
     }
@@ -160,7 +159,7 @@ def anovos_basic_report(
     if skip_corr_matrix:
         AA_funcs = [variable_clustering]
     else:
-        AA_funcs = [correlation_matrix, variable_clustering]
+        AA_funcs = [correlation_matrix_numerical, variable_clustering]
     AT_funcs = [IV_calculation, IG_calculation]
     all_funcs = SG_funcs + QC_rows_funcs + QC_cols_funcs + AA_funcs + AT_funcs
 
@@ -431,7 +430,7 @@ def anovos_basic_report(
 
     AA_content = []
     for i in AA_funcs + AT_funcs:
-        if i.__name__ == "correlation_matrix":
+        if i.__name__ == "correlation_matrix_numerical":
             stats = pd.read_csv(ends_with(local_path) + str(i.__name__) + ".csv").round(
                 3
             )
