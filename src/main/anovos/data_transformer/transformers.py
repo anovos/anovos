@@ -500,9 +500,10 @@ def cat_to_num_unsupervised(
         "frequencyDesc", "frequencyAsc", "alphabetDesc", "alphabetAsc".
         Valid only for Label Encoding method_type. (Default value = "frequencyDesc")
     cardinality_threshold
-        Defines threshold to skip columns with higher cardinality values from encoding (Warning is issued). (Default value = 100)
+        Defines threshold to skip columns with higher cardinality values from onehot_encoding (Warning is issued).
+        This argument is ignored if method_type is label_encoding. (Default value = 100)
     pre_existing_model
-        Boolean argument – True or False. True if encoding model exists already, False Otherwise. (Default value = False)
+        Boolean argument - True or False. True if encoding model exists already, False Otherwise. (Default value = False)
     model_path
         If pre_existing_model is True, this argument is path for referring the pre-saved model.
         If pre_existing_model is False, this argument can be used for saving the model.
@@ -592,8 +593,8 @@ def cat_to_num_unsupervised(
     for i in list_of_cols:
         list_of_cols_vec.append(i + "_vec")
         list_of_cols_idx.append(i + "_index")
-    idf_id = idf.withColumn("tempID", F.monotonically_increasing_id())
-    idf_indexed = idf_id.select(["tempID"] + list_of_cols)
+
+    odf_indexed = idf
     if version.parse(pyspark.__version__) < version.parse("3.0.0"):
         for idx, i in enumerate(list_of_cols):
             if pre_existing_model:
@@ -614,9 +615,7 @@ def cat_to_num_unsupervised(
                         model_path + "/cat_to_num_unsupervised/indexer-model/" + i
                     )
 
-            idf_indexed = indexerModel.transform(idf_indexed)
-            if idx % 5 == 0:
-                idf_indexed.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
+            odf_indexed = indexerModel.transform(odf_indexed)
 
     else:
         if pre_existing_model:
@@ -630,17 +629,12 @@ def cat_to_num_unsupervised(
                 stringOrderType=index_order,
                 handleInvalid="keep",
             )
-            indexerModel = stringIndexer.fit(idf_indexed)
+            indexerModel = stringIndexer.fit(odf_indexed)
             if model_path != "NA":
                 indexerModel.write().overwrite().save(
                     model_path + "/cat_to_num_unsupervised/indexer"
                 )
-        idf_indexed = indexerModel.transform(idf_indexed)
-
-    odf_indexed = idf_id.join(
-        idf_indexed.drop(*list_of_cols), "tempID", "left_outer"
-    ).drop("tempID")
-    odf_indexed.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
+        odf_indexed = indexerModel.transform(odf_indexed)
 
     if method_type == "onehot_encoding":
         if pre_existing_model:
@@ -658,9 +652,7 @@ def cat_to_num_unsupervised(
                     model_path + "/cat_to_num_unsupervised/encoder"
                 )
 
-        odf_encoded = encoder.fit(odf_indexed).transform(odf_indexed)
-
-        odf = odf_encoded
+        odf = encoder.fit(odf_indexed).transform(odf_indexed)
 
         def vector_to_array(v):
             v = DenseVector(v)
@@ -669,6 +661,7 @@ def cat_to_num_unsupervised(
 
         f_vector_to_array = F.udf(vector_to_array, T.ArrayType(T.IntegerType()))
 
+        new_cols = []
         odf_sample = odf.take(1)
         for i in list_of_cols:
             uniq_cats = odf_sample[0].asDict()[i + "_vec"].size
@@ -680,6 +673,7 @@ def cat_to_num_unsupervised(
                 odf_schema = odf_schema.add(
                     T.StructField(i + "_" + str(j), T.IntegerType())
                 )
+                new_cols.append(i + "_" + str(j))
 
             odf = (
                 odf.withColumn("tmp", f_vector_to_array(i + "_vec"))
@@ -707,19 +701,23 @@ def cat_to_num_unsupervised(
             odf = odf.select(idf.columns)
 
     if print_impact and method_type == "label_encoding":
+        if output_mode == "append":
+            new_cols = [i + "_index" for i in list_of_cols]
+        else:
+            new_cols = list_of_cols
         print("Before")
-        idf.describe().where(F.col("summary").isin("count", "min", "max")).show(
-            3, False
-        )
+        idf.select(list_of_cols).summary("count", "min", "max").show(3, False)
         print("After")
-        odf.describe().where(F.col("summary").isin("count", "min", "max")).show(
-            3, False
-        )
+        odf.select(new_cols).summary("count", "min", "max").show(3, False)
+
     if print_impact and method_type == "onehot_encoding":
         print("Before")
-        idf.printSchema()
+        idf.select(list_of_cols).printSchema()
         print("After")
-        odf.printSchema()
+        if output_mode == "append":
+            odf.select(list_of_cols + new_cols).printSchema()
+        else:
+            odf.select(new_cols).printSchema()
 
     return odf
 
