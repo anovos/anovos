@@ -30,12 +30,12 @@ jobs:
             experimental: false
           - python: '3.10'
             spark: '3.2.2'
-            hadoop: '3.3'
+            hadoop: '3.2'
             java: '11'
             experimental: false
           - python: '3.10'
             spark: '3.3.0'
-            hadoop: '3.3'
+            hadoop: '3'
             java: '11'
             experimental: true
     steps:
