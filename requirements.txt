@@ -19,6 +19,7 @@ fsspec
 py4j
 popmon
 varclushi
+reverse_geocoder
 tensorflow
 soupsieve
 statsmodels==0.13.2
