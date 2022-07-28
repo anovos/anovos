@@ -3,7 +3,9 @@ import os
 import pytest
 import platform
 from pyspark.sql import functions as F
+from pyspark.sql import SparkSession
 from pytest import approx
+
 
 from anovos.data_ingest.data_ingest import read_dataset
 from anovos.data_transformer.transformers import (
@@ -25,12 +27,15 @@ from anovos.data_transformer.transformers import (
     z_standardization,
 )
 
-sample_parquet = "./data/test_dataset/part-00001-3eb0f7bb-05c2-46ec-8913-23ba231d2734-c000.snappy.parquet"
+@pytest.fixture
+def df(spark_session: SparkSession):
+    sample_parquet = "./data/test_dataset/part-00001-3eb0f7bb-05c2-46ec-8913-23ba231d2734-c000.snappy.parquet"
+    df = read_dataset(spark_session, sample_parquet, "parquet")
+    return df
 
 
 # scaling
-def test_z_standardization(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+def test_z_standardization(spark_session, df):
     odf = z_standardization(
         spark_session,
         df,
@@ -73,8 +78,7 @@ def test_z_standardization(spark_session):
     assert len(odf.columns) == 20
 
 
-def test_IQR_standardization(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+def test_IQR_standardization(spark_session, df):
     odf = IQR_standardization(
         spark_session,
         df,
@@ -117,8 +121,7 @@ def test_IQR_standardization(spark_session):
     assert len(odf.columns) == 20
 
 
-def test_normalization(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+def test_normalization(spark_session, df):
     odf = normalization(
         df,
         list_of_cols=["age", "fnlwgt", "hours-per-week"],
@@ -169,8 +172,7 @@ def test_normalization(spark_session):
 
 
 # imputation
-def test_imputation_sklearn(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+def test_imputation_sklearn(spark_session, df):
     odf = imputation_sklearn(
         spark_session,
         df,
@@ -214,8 +216,7 @@ def test_imputation_sklearn(spark_session):
     assert len(odf.columns) == 20
 
 
-def test_imputation_matrixFactorization(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet").limit(100)
+def test_imputation_matrixFactorization(spark_session, df):
     odf = imputation_matrixFactorization(
         spark_session,
         df,
@@ -240,8 +241,7 @@ def test_imputation_matrixFactorization(spark_session):
     )
 
 
-def test_imputation_matrixFactorization_with_empty_list_of_cols(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+def test_imputation_matrixFactorization_with_empty_list_of_cols(spark_session, df):
     odf = imputation_matrixFactorization(
         spark_session, df, list_of_cols=[], id_col="ifa"
     )
@@ -255,8 +255,7 @@ def test_imputation_matrixFactorization_with_empty_list_of_cols(spark_session):
     )
 
 
-def test_imputation_matrixFactorization_with_appended_output(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+def test_imputation_matrixFactorization_with_appended_output(spark_session, df):
     odf = imputation_matrixFactorization(
         spark_session,
         df,
@@ -283,8 +282,7 @@ def test_imputation_matrixFactorization_with_appended_output(spark_session):
     assert odf.where(F.col("hours-per-week_imputed").isNull()).count() == 0
 
 
-def test_imputation_MMM(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+def test_imputation_MMM(spark_session, df):
     odf = imputation_MMM(
         spark_session,
         df,
@@ -330,8 +328,7 @@ def test_imputation_MMM(spark_session):
     assert len(odf.columns) == 22
 
 
-def test_auto_imputation(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+def test_auto_imputation(spark_session, df):
     odf = auto_imputation(
         spark_session,
         df,
@@ -346,8 +343,7 @@ def test_auto_imputation(spark_session):
     assert odf.where(F.col("education").isNull()).count() == 254
 
 
-def test_auto_imputation_with_empty_list_of_cols(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+def test_auto_imputation_with_empty_list_of_cols(spark_session, df):
     odf = auto_imputation(spark_session, df, list_of_cols=[], id_col="ifa")
     assert odf.where(F.col("age").isNull()).count() == 30
     assert odf.where(F.col("fnlwgt").isNull()).count() == 8
@@ -355,8 +351,7 @@ def test_auto_imputation_with_empty_list_of_cols(spark_session):
     assert odf.where(F.col("relationship").isNull()).count() == 4
 
 
-def test_auto_imputation_with_appended_output(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+def test_auto_imputation_with_appended_output(spark_session, df):
     odf = auto_imputation(
         spark_session,
         df,
@@ -368,8 +363,7 @@ def test_auto_imputation_with_appended_output(spark_session):
 
 
 # latent_features
-def test_PCA_latentFeatures(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+def test_PCA_latentFeatures(spark_session, df):
     odf = PCA_latentFeatures(
         spark_session,
         df,
@@ -412,8 +406,7 @@ def test_PCA_latentFeatures(spark_session):
     assert odf.where(F.col("latent_0").isNull()).count() == 0
 
 
-def test_autoencoder_latentFeatures(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+def test_autoencoder_latentFeatures(spark_session, df):
     odf = autoencoder_latentFeatures(
         spark_session,
         df,
@@ -468,8 +461,7 @@ def test_autoencoder_latentFeatures(spark_session):
 
 
 # feature_transformation
-def test_feature_transformation(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+def test_feature_transformation(spark_session, df):
     odf = feature_transformation(df, list_of_cols=["age", "fnlwgt", "hours-per-week"])
     assert len(odf.columns) == 17
     odf_pd = odf.where(F.col("ifa") == "27520a").toPandas()
@@ -483,8 +475,7 @@ def test_feature_transformation(spark_session):
     assert len(odf.columns) == 20
 
 
-def test_boxcox_transformation(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+def test_boxcox_transformation(spark_session, df):
     odf = boxcox_transformation(
         df, list_of_cols=["age", "fnlwgt", "hours-per-week"], boxcox_lambda=0.5
     )
@@ -503,8 +494,7 @@ def test_boxcox_transformation(spark_session):
     assert len(odf.columns) == 20
 
 
-def test_outlier_categories(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+def test_outlier_categories(spark_session, df):
     odf = outlier_categories(
         spark_session,
         df,
@@ -585,8 +575,7 @@ def test_outlier_categories(spark_session):
 
 
 # binning
-def test_attribute_binning(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+def test_attribute_binning(spark_session, df):
     odf = attribute_binning(
         spark_session,
         df,
@@ -654,8 +643,7 @@ def test_attribute_binning(spark_session):
     assert len(odf.columns) == 20
 
 
-def test_monotonic_binning(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+def test_monotonic_binning(spark_session, df):
     odf = monotonic_binning(
         spark_session,
         df,
@@ -725,8 +713,7 @@ def test_monotonic_binning(spark_session):
 
 
 # categorical_to_numerical_transformation
-def test_cat_to_num_unsupervised(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+def test_cat_to_num_unsupervised(spark_session, df):
     odf = cat_to_num_unsupervised(
         spark_session,
         df,
@@ -825,8 +812,7 @@ def test_cat_to_num_unsupervised(spark_session):
     assert round(float(odf_max_dict["relationship_8"][0])) == 1
 
 
-def test_cat_to_num_supervised(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+def test_cat_to_num_supervised(spark_session, df):
     odf = cat_to_num_supervised(
         spark_session,
         df,
