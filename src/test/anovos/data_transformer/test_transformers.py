@@ -741,9 +741,16 @@ def test_cat_to_num_unsupervised(spark_session):
     odf_min_dict = (
         odf.describe().where(F.col("summary") == "min").toPandas().to_dict("list")
     )
+    odf_max_dict = (
+        odf.describe().where(F.col("summary") == "max").toPandas().to_dict("list")
+    )
+
     assert round(float(odf_min_dict["workclass"][0])) == 0
     assert round(float(odf_min_dict["marital-status"][0])) == 0
     assert round(float(odf_min_dict["relationship"][0])) == 0
+    assert round(float(odf_max_dict["workclass"][0])) == 8
+    assert round(float(odf_max_dict["marital-status"][0])) == 6
+    assert round(float(odf_max_dict["relationship"][0])) == 7
     assert odf.select("workclass").dtypes[0][1] == "int"
     assert odf.select("marital-status").dtypes[0][1] == "int"
     assert odf.select("relationship").dtypes[0][1] == "int"
@@ -778,9 +785,10 @@ def test_cat_to_num_unsupervised(spark_session):
     odf = cat_to_num_unsupervised(
         spark_session,
         df,
-        drop_cols=["ifa"],
+        list_of_cols=["marital-status", "relationship"],
         method_type="onehot_encoding",
         cardinality_threshold=100,
+        model_path="unit_testing/models/",
     )
     odf_min_dict = (
         odf.describe().where(F.col("summary") == "min").toPandas().to_dict("list")
@@ -788,16 +796,33 @@ def test_cat_to_num_unsupervised(spark_session):
     odf_max_dict = (
         odf.describe().where(F.col("summary") == "max").toPandas().to_dict("list")
     )
-    assert round(float(odf_min_dict["relationship_0"][0])) == 0
-    assert round(float(odf_min_dict["race_7"][0])) == 0
-    assert round(float(odf_min_dict["marital-status_1"][0])) == 0
-    assert round(float(odf_min_dict["sex_1"][0])) == 0
-    assert round(float(odf_min_dict["occupation_12"][0])) == 0
-    assert round(float(odf_max_dict["relationship_0"][0])) == 1
-    assert round(float(odf_max_dict["race_7"][0])) == 1
-    assert round(float(odf_max_dict["marital-status_1"][0])) == 1
-    assert round(float(odf_max_dict["sex_1"][0])) == 1
-    assert round(float(odf_max_dict["occupation_12"][0])) == 1
+    assert len(odf.columns) == 32
+    assert round(float(odf_min_dict["marital-status_7"][0])) == 0
+    assert round(float(odf_min_dict["relationship_8"][0])) == 0
+    assert round(float(odf_max_dict["marital-status_7"][0])) == 1
+    assert round(float(odf_max_dict["relationship_8"][0])) == 1
+
+    odf = cat_to_num_unsupervised(
+        spark_session,
+        df,
+        list_of_cols=["marital-status", "relationship"],
+        method_type="onehot_encoding",
+        cardinality_threshold=100,
+        pre_existing_model=True,
+        model_path="unit_testing/models/",
+    )
+    odf_min_dict = (
+        odf.describe().where(F.col("summary") == "min").toPandas().to_dict("list")
+    )
+    odf_max_dict = (
+        odf.describe().where(F.col("summary") == "max").toPandas().to_dict("list")
+    )
+
+    assert len(odf.columns) == 32
+    assert round(float(odf_min_dict["marital-status_7"][0])) == 0
+    assert round(float(odf_min_dict["relationship_8"][0])) == 0
+    assert round(float(odf_max_dict["marital-status_7"][0])) == 1
+    assert round(float(odf_max_dict["relationship_8"][0])) == 1
 
 
 def test_cat_to_num_supervised(spark_session):
