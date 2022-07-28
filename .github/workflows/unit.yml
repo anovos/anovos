@@ -29,10 +29,15 @@ jobs:
             java: '11'
             experimental: false
           - python: '3.10'
-            spark: '3.2.1'
-            hadoop: '3.2'
+            spark: '3.2.2'
+            hadoop: '3.3'
             java: '11'
             experimental: false
+          - python: '3.10'
+            spark: '3.3.0'
+            hadoop: '3.3'
+            java: '11'
+            experimental: true
     steps:
       - uses: actions/setup-python@v4
         with:
