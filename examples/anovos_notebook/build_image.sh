@@ -9,6 +9,12 @@ MY_HADOOP_VERSION="${HADOOP_VERSION:-2.7}"
 # Get the official Jupyter Dockerfiles
 rm -rf docker-stacks && git clone --depth 1 https://github.com/jupyter/docker-stacks.git
 
+# Workaround for https://github.com/jupyter/docker-stacks/issues/1756
+cd docker-stacks
+git fetch --depth 1 origin 666416b385e87ca2f77bcb2ef39458178a937196  # fetch the latest unaffected revision
+git checkout 666416b385e87ca2f77bcb2ef39458178a937196
+cd ..
+
 # Build the Jupyter base images with the specified Python version
 sudo docker build ./docker-stacks/base-notebook -t base-notebook:"${MY_PYTHON_VERSION}" --build-arg PYTHON_VERSION="${MY_PYTHON_VERSION}"
 sudo docker build ./docker-stacks/minimal-notebook -t minimal-notebook:"${MY_PYTHON_VERSION}" --build-arg BASE_CONTAINER=base-notebook:"${MY_PYTHON_VERSION}"

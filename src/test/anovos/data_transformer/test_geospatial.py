@@ -9,11 +9,18 @@ from anovos.data_transformer.geospatial import (
     geohash_precision_control,
     location_in_polygon,
     location_in_country,
+    centroid,
+    weighted_centroid,
+    rog_calculation,
+    reverse_geocoding,
 )
 
 path = "./data/test_dataset/geo_data/sample_geo_data_two_latlon.csv"
+path2 = "./data/test_dataset/geo_data/sample_geo_data.csv"
 path_null = "./data/test_dataset/geo_data/null_sample_geo_data_two_latlon.csv"
+path_null2 = "./data/test_dataset/geo_data/null_sample_geo_data.csv"
 path_invalid = "./data/test_dataset/geo_data/invalid_sample_geo_data_two_latlon.csv"
+path_invalid2 = "./data/test_dataset/geo_data/invalid_sample_geo_data.csv"
 path_dms = "./data/test_dataset/geo_data/sample_geo_data_two_latlon_dms.parquet"
 path_rad = "./data/test_dataset/geo_data/sample_geo_data_two_latlon_radian.csv"
 path_cart = "./data/test_dataset/geo_data/sample_geo_data_two_latlon_cartesian.csv"
@@ -28,6 +35,11 @@ def df(spark_session):
 
 
 @pytest.fixture
+def df2(spark_session):
+    return read_dataset(spark_session, path2, "csv", file_configs={"header": "True"})
+
+
+@pytest.fixture
 def null_df(spark_session):
     return read_dataset(
         spark_session, path_null, "csv", file_configs={"header": "True"}
@@ -35,9 +47,23 @@ def null_df(spark_session):
 
 
 @pytest.fixture
+def null_df2(spark_session):
+    return read_dataset(
+        spark_session, path_null2, "csv", file_configs={"header": "True"}
+    )
+
+
+@pytest.fixture
 def invalid_df(spark_session):
     return read_dataset(
         spark_session, path_invalid, "csv", file_configs={"header": "True"}
+    )
+
+
+@pytest.fixture
+def invalid_df2(spark_session):
+    return read_dataset(
+        spark_session, path_invalid2, "csv", file_configs={"header": "True"}
     )
 
 
@@ -1224,3 +1250,145 @@ def test_location_in_country(spark_session, df, null_df, invalid_df):
     assert int(invalid_odf4.collect()[0][0]) == 1
     assert int(invalid_odf4.collect()[0][1]) == 0
     assert int(invalid_odf4.collect()[0][2]) == 1
+
+
+def test_centroid(df2, null_df2, invalid_df2):
+    odf = centroid(df, id_col="id", lat_col="latitude", long_col="longitude")
+    null_odf = centroid(null_df, id_col="id", lat_col="latitude", long_col="longitude")
+    invalid_odf = centroid(
+        invalid_df, id_col="id", lat_col="latitude", long_col="longitude"
+    )
+
+    assert df.count() == 1000
+    assert null_df.count() == 1000
+    assert invalid_df.count() == 1000
+
+    assert int(df.collect()[0][0]) == 1
+    assert int(float(df.collect()[0][1])) == -82
+    assert int(float(df.collect()[0][2])) == -126
+    assert int(null_df.collect()[0][0]) == 1
+    assert int(float(null_df.collect()[0][1])) == -82
+    assert int(float(null_df.collect()[0][2])) == -126
+    assert int(invalid_df.collect()[0][0]) == 1
+    assert int(float(invalid_df.collect()[0][1])) == -82
+    assert int(float(invalid_df.collect()[0][2])) == -126
+
+    assert odf.count() == 1000
+    assert null_odf.count() == 811
+    assert invalid_odf.count() == 549
+
+    assert int(odf.collect()[0][0]) == 296
+    assert int(odf.collect()[0][1]) == -27
+    assert int(odf.collect()[0][2]) == -120
+    assert int(null_odf.collect()[0][0]) == 296
+    assert int(null_odf.collect()[0][1]) == -27
+    assert int(null_odf.collect()[0][2]) == -120
+    assert int(invalid_odf.collect()[0][0]) == 296
+    assert int(invalid_odf.collect()[0][1]) == -27
+    assert int(invalid_odf.collect()[0][2]) == -120
+
+
+def test_weighted_centroid(df2, null_df2, invalid_df2):
+    odf = weighted_centroid(df, id_col="id", lat_col="latitude", long_col="longitude")
+    null_odf = weighted_centroid(
+        null_df, id_col="id", lat_col="latitude", long_col="longitude"
+    )
+    invalid_odf = weighted_centroid(
+        invalid_df, id_col="id", lat_col="latitude", long_col="longitude"
+    )
+
+    assert df.count() == 1000
+    assert null_df.count() == 1000
+    assert invalid_df.count() == 1000
+
+    assert int(df.collect()[0][0]) == 1
+    assert int(float(df.collect()[0][1])) == -82
+    assert int(float(df.collect()[0][2])) == -126
+    assert int(null_df.collect()[0][0]) == 1
+    assert int(float(null_df.collect()[0][1])) == -82
+    assert int(float(null_df.collect()[0][2])) == -126
+    assert int(invalid_df.collect()[0][0]) == 1
+    assert int(float(invalid_df.collect()[0][1])) == -82
+    assert int(float(invalid_df.collect()[0][2])) == -126
+
+    assert odf.count() == 1000
+    assert null_odf.count() == 811
+    assert invalid_odf.count() == 549
+
+    assert int(odf.collect()[0][0]) == 296
+    assert int(odf.collect()[0][1]) == -54
+    assert int(odf.collect()[0][2]) == -113
+    assert int(null_odf.collect()[0][0]) == 296
+    assert int(null_odf.collect()[0][1]) == -34
+    assert int(null_odf.collect()[0][2]) == -109
+    assert int(invalid_odf.collect()[0][0]) == 296
+    assert int(invalid_odf.collect()[0][1]) == -15
+    assert int(invalid_odf.collect()[0][2]) == -139
+
+
+def test_rog_calculation(df2, null_df2, invalid_df2):
+    odf = rog_calculation(df, id_col="id", lat_col="latitude", long_col="longitude")
+    null_odf = rog_calculation(
+        null_df, id_col="id", lat_col="latitude", long_col="longitude"
+    )
+    invalid_odf = rog_calculation(
+        invalid_df, id_col="id", lat_col="latitude", long_col="longitude"
+    )
+
+    assert df.count() == 1000
+    assert null_df.count() == 1000
+    assert invalid_df.count() == 1000
+
+    assert int(df.collect()[0][0]) == 1
+    assert int(float(df.collect()[0][1])) == -82
+    assert int(float(df.collect()[0][2])) == -126
+    assert int(null_df.collect()[0][0]) == 1
+    assert int(float(null_df.collect()[0][1])) == -82
+    assert int(float(null_df.collect()[0][2])) == -126
+    assert int(invalid_df.collect()[0][0]) == 1
+    assert int(float(invalid_df.collect()[0][1])) == -82
+    assert int(float(invalid_df.collect()[0][2])) == -126
+
+    assert odf.count() == 1000
+    assert null_odf.count() == 811
+    assert invalid_odf.count() == 549
+
+    assert int(odf.collect()[0][0]) == 296
+    assert round(odf.collect()[0][1], 2) == 0.17
+    assert int(null_odf.collect()[0][0]) == 296
+    assert round(null_odf.collect()[0][1], 2) == 0.17
+    assert int(invalid_odf.collect()[0][0]) == 296
+    assert round(invalid_odf.collect()[0][1], 2) == 0.17
+
+
+def test_reverse_geocoding(df2, null_df2, invalid_df2):
+    odf = reverse_geocoding(df, lat_col="latitude", long_col="longitude")
+    null_odf = reverse_geocoding(null_df, lat_col="latitude", long_col="longitude")
+    invalid_odf = reverse_geocoding(
+        invalid_df, lat_col="latitude", long_col="longitude"
+    )
+
+    assert df.count() == 1000
+    assert null_df.count() == 1000
+    assert invalid_df.count() == 1000
+
+    assert int(df.collect()[0][0]) == 1
+    assert int(float(df.collect()[0][1])) == -82
+    assert int(float(df.collect()[0][2])) == -126
+    assert int(null_df.collect()[0][0]) == 1
+    assert int(float(null_df.collect()[0][1])) == -82
+    assert int(float(null_df.collect()[0][2])) == -126
+    assert int(invalid_df.collect()[0][0]) == 1
+    assert int(float(invalid_df.collect()[0][1])) == -82
+    assert int(float(invalid_df.collect()[0][2])) == -126
+
+    assert odf.count() == 1000
+    assert null_odf.count() == 811
+    assert invalid_odf.count() == 549
+
+    assert int(odf.collect()[0][0]) == -82
+    assert int(odf.collect()[0][1]) == -126
+    assert int(null_odf.collect()[0][0]) == -82
+    assert int(null_odf.collect()[0][1]) == -126
+    assert int(invalid_odf.collect()[0][0]) == -82
+    assert int(invalid_odf.collect()[0][1]) == -126
