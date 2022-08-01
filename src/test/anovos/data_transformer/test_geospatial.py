@@ -69,7 +69,9 @@ def invalid_df2(spark_session):
 
 @pytest.fixture
 def dms_df(spark_session):
-    return read_dataset(spark_session, path_dms, "parquet", file_configs={"header": "True"})
+    return read_dataset(
+        spark_session, path_dms, "parquet", file_configs={"header": "True"}
+    )
 
 
 @pytest.fixture
@@ -1253,6 +1255,10 @@ def test_location_in_country(spark_session, df, null_df, invalid_df):
 
 
 def test_centroid(df2, null_df2, invalid_df2):
+    df = df2
+    null_df = null_df2
+    invalid_df = invalid_df2
+
     odf = centroid(df, id_col="id", lat_col="latitude", long_col="longitude")
     null_odf = centroid(null_df, id_col="id", lat_col="latitude", long_col="longitude")
     invalid_odf = centroid(
@@ -1289,6 +1295,10 @@ def test_centroid(df2, null_df2, invalid_df2):
 
 
 def test_weighted_centroid(df2, null_df2, invalid_df2):
+    df = df2
+    null_df = null_df2
+    invalid_df = invalid_df2
+
     odf = weighted_centroid(df, id_col="id", lat_col="latitude", long_col="longitude")
     null_odf = weighted_centroid(
         null_df, id_col="id", lat_col="latitude", long_col="longitude"
@@ -1327,6 +1337,10 @@ def test_weighted_centroid(df2, null_df2, invalid_df2):
 
 
 def test_rog_calculation(df2, null_df2, invalid_df2):
+    df = df2
+    null_df = null_df2
+    invalid_df = invalid_df2
+
     odf = rog_calculation(df, id_col="id", lat_col="latitude", long_col="longitude")
     null_odf = rog_calculation(
         null_df, id_col="id", lat_col="latitude", long_col="longitude"
@@ -1362,6 +1376,10 @@ def test_rog_calculation(df2, null_df2, invalid_df2):
 
 
 def test_reverse_geocoding(df2, null_df2, invalid_df2):
+    df = df2
+    null_df = null_df2
+    invalid_df = invalid_df2
+
     odf = reverse_geocoding(df, lat_col="latitude", long_col="longitude")
     null_odf = reverse_geocoding(null_df, lat_col="latitude", long_col="longitude")
     invalid_odf = reverse_geocoding(

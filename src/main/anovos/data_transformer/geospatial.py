@@ -521,7 +521,13 @@ def location_distance(
     # geohash: [gh1, gh2]
 
     if loc_format != format_required:
+        # format_required
+        # dd: + cols [temp_loc1_lat_dd, temp_loc1_lon_dd, temp_loc2_lat_dd, temp_loc2_lon_dd]
+        # radian: + cols [temp_loc1_lat_radian, temp_loc1_lon_radian, temp_loc2_lat_radian, temp_loc2_lon_radian]
+        # cartesian: + cols [temp_loc1_x, temp_loc1_y, temp_loc1_z, temp_loc2_x, temp_loc2_y, temp_loc2_z]
         if loc_format in ["dd", "dms", "radian"]:
+            # list_of_cols_loc1 = [lat1, lon1]
+            # list_of_cols_loc2 = [lat2, lon2]
             idf = geo_format_latlon(
                 idf,
                 list_of_lat=[list_of_cols_loc1[0], list_of_cols_loc2[0]],
@@ -534,6 +540,8 @@ def location_distance(
             )
 
         elif loc_format == "cartesian":
+            # list_of_cols_loc1 = [x1, y1, z1]
+            # list_of_cols_loc2 = [x2, y2, z2]
             idf = geo_format_cartesian(
                 idf,
                 list_of_x=[list_of_cols_loc1[0], list_of_cols_loc2[0]],
@@ -546,6 +554,8 @@ def location_distance(
             )
 
         elif loc_format == "geohash":
+            # list_of_cols_loc1 = [gh1]
+            # list_of_cols_loc2 = [gh2]
             idf = geo_format_geohash(
                 idf,
                 list_of_geohash=[list_of_cols_loc1[0], list_of_cols_loc2[0]],
@@ -682,6 +692,8 @@ def geohash_precision_control(
         else:
             col_name = geohash + "_precision_" + str(output_precision)
         odf = odf.withColumn(col_name, F.substring(geohash, 1, output_precision))
+
+    return odf
 
 
 def location_in_polygon(
@@ -928,6 +940,8 @@ def location_in_country(
 
         if output_mode == "replace":
             odf = odf.drop(lat, lon)
+
+    return odf
 
 
 def centroid(idf, lat_col, long_col, id_col=None):
