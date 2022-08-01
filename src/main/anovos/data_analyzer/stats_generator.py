@@ -25,6 +25,7 @@ from pyspark.mllib.linalg import Vectors
 from pyspark.mllib.stat import Statistics
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
+import pyspark
 
 from anovos.shared.utils import attributeType_segregation, transpose_dataframe
 
@@ -382,6 +383,7 @@ def mode_computation(spark, idf, list_of_cols="all", drop_cols=[], print_impact=
         odf = spark.sparkContext.emptyRDD().toDF(schema)
         return odf
 
+    idf = idf.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
     list_df = []
     for col in list_of_cols:
         out_df = (
@@ -415,6 +417,7 @@ def mode_computation(spark, idf, list_of_cols="all", drop_cols=[], print_impact=
     odf = unionAll(list_df)
     if print_impact:
         odf.show(len(list_of_cols))
+    idf.unpersist()
     return odf
 
 
@@ -477,6 +480,8 @@ def measures_of_centralTendency(
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError("Invalid input for Column(s)")
 
+    df_mode_compute = mode_computation(spark, idf, list_of_cols)
+    idf = idf.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
     odf = (
         transpose_dataframe(
             idf.select(list_of_cols).summary("mean", "50%", "count"), "summary"
@@ -496,7 +501,7 @@ def measures_of_centralTendency(
             ).otherwise(None),
         )
         .withColumnRenamed("key", "attribute")
-        .join(mode_computation(spark, idf, list_of_cols), "attribute", "full_outer")
+        .join(df_mode_compute, "attribute", "full_outer")
         .withColumn(
             "mode_pct",
             F.round(F.col("mode_rows") / F.col("count").cast(T.DoubleType()), 4),
@@ -506,6 +511,7 @@ def measures_of_centralTendency(
 
     if print_impact:
         odf.show(len(list_of_cols))
+    idf.unpersist()
     return odf
 
 
