@@ -564,7 +564,7 @@ def uniqueCount_computation(
         return odf
 
     uniquevalue_count = idf.agg(
-        *(F.countDistinct(F.col(i)).alias(i) for i in list_of_cols)
+        *(F.approx_count_distinct(F.col(i)).alias(i) for i in list_of_cols)
     )
     odf = spark.createDataFrame(
         zip(list_of_cols, uniquevalue_count.rdd.map(list).collect()[0]),
