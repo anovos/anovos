@@ -430,7 +430,7 @@ def cat_to_num_unsupervised(
     drop_cols=[],
     method_type="label_encoding",
     index_order="frequencyDesc",
-    cardinality_threshold=100,
+    cardinality_threshold=50,
     pre_existing_model=False,
     model_path="NA",
     stats_unique={},
@@ -478,8 +478,7 @@ def cat_to_num_unsupervised(
         "frequencyDesc", "frequencyAsc", "alphabetDesc", "alphabetAsc".
         Valid only for Label Encoding method_type. (Default value = "frequencyDesc")
     cardinality_threshold
-        Defines threshold to skip columns with higher cardinality values from onehot_encoding (Warning is issued).
-        This argument is ignored if method_type is label_encoding. (Default value = 100)
+        Defines threshold to skip columns with higher cardinality values from encoding - a warning is issued. (Default value = 50)
     pre_existing_model
         Boolean argument - True or False. True if encoding model exists already, False Otherwise. (Default value = False)
     model_path
@@ -530,33 +529,31 @@ def cat_to_num_unsupervised(
     if output_mode not in ("replace", "append"):
         raise TypeError("Invalid input for output_mode")
 
-    skip_cols = []
-    if method_type == "onehot_encoding":
-        if stats_unique == {}:
-            skip_cols = (
-                uniqueCount_computation(spark, idf, list_of_cols)
-                .where(F.col("unique_values") > cardinality_threshold)
-                .select("attribute")
-                .rdd.flatMap(lambda x: x)
-                .collect()
-            )
-        else:
-            skip_cols = (
-                read_dataset(spark, **stats_unique)
-                .where(F.col("unique_values") > cardinality_threshold)
-                .select("attribute")
-                .rdd.flatMap(lambda x: x)
-                .collect()
-            )
-        skip_cols = list(
-            set([e for e in skip_cols if e in list_of_cols and e not in drop_cols])
+    if stats_unique == {}:
+        skip_cols = (
+            uniqueCount_computation(spark, idf, list_of_cols)
+            .where(F.col("unique_values") > cardinality_threshold)
+            .select("attribute")
+            .rdd.flatMap(lambda x: x)
+            .collect()
         )
+    else:
+        skip_cols = (
+            read_dataset(spark, **stats_unique)
+            .where(F.col("unique_values") > cardinality_threshold)
+            .select("attribute")
+            .rdd.flatMap(lambda x: x)
+            .collect()
+        )
+    skip_cols = list(
+        set([e for e in skip_cols if e in list_of_cols and e not in drop_cols])
+    )
 
-        if skip_cols:
-            warnings.warn(
-                "Columns dropped from one-hot encoding due to high cardinality: "
-                + ",".join(skip_cols)
-            )
+    if skip_cols:
+        warnings.warn(
+            "Columns dropped from encoding due to high cardinality: "
+            + ",".join(skip_cols)
+        )
 
     list_of_cols = list(
         set([e for e in list_of_cols if e not in drop_cols + skip_cols])
@@ -678,25 +675,30 @@ def cat_to_num_unsupervised(
                 odf = odf.drop(i).withColumnRenamed(i + "_index", i)
             odf = odf.select(idf.columns)
 
-    if print_impact and method_type == "label_encoding":
-        if output_mode == "append":
-            new_cols = [i + "_index" for i in list_of_cols]
-        else:
-            new_cols = list_of_cols
-        print("Before")
-        idf.select(list_of_cols).summary("count", "min", "max").show(3, False)
-        print("After")
-        odf.select(new_cols).summary("count", "min", "max").show(3, False)
+    if print_impact:
+        if method_type == "label_encoding":
+            if output_mode == "append":
+                new_cols = [i + "_index" for i in list_of_cols]
+            else:
+                new_cols = list_of_cols
+            print("Before")
+            idf.select(list_of_cols).summary("count", "min", "max").show(3, False)
+            print("After")
+            odf.select(new_cols).summary("count", "min", "max").show(3, False)
 
-    if print_impact and method_type == "onehot_encoding":
-        print("Before")
-        idf.select(list_of_cols).printSchema()
-        print("After")
-        if output_mode == "append":
-            odf.select(list_of_cols + new_cols).printSchema()
-        else:
-            odf.select(new_cols).printSchema()
-
+        if method_type == "onehot_encoding":
+            print("Before")
+            idf.select(list_of_cols).printSchema()
+            print("After")
+            if output_mode == "append":
+                odf.select(list_of_cols + new_cols).printSchema()
+            else:
+                odf.select(new_cols).printSchema()
+        if skip_cols:
+            print(
+                "Columns dropped from encoding due to high cardinality: "
+                + ",".join(skip_cols)
+            )
     return odf
 
 
