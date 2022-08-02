@@ -923,10 +923,17 @@ def measures_of_shape(spark, idf, list_of_cols="all", drop_cols=[], print_impact
         odf = spark.sparkContext.emptyRDD().toDF(schema)
         return odf
 
+    exprs = [f(F.col(c)) for f in [F.skewness, F.kurtosis] for c in list_of_cols]
+    list_result = idf.groupby().agg(*exprs).rdd.flatMap(lambda x: x).collect()
     shapes = []
-    for i in list_of_cols:
-        s, k = idf.select(F.skewness(i), F.kurtosis(i)).first()
-        shapes.append([i, s, k])
+    for i in range(int(len(list_result) / 2)):
+        shapes.append(
+            [
+                list_of_cols[i],
+                list_result[i],
+                list_result[i + int(len(list_result) / 2)],
+            ]
+        )
     odf = (
         spark.createDataFrame(shapes, schema=("attribute", "skewness", "kurtosis"))
         .withColumn("skewness", F.round(F.col("skewness"), 4))
