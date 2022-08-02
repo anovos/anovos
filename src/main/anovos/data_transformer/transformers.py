@@ -3433,25 +3433,26 @@ def outlier_categories(
         for index, i in enumerate(list_of_cols):
             window = Window.partitionBy().orderBy(F.desc("count_pct"))
             df_cats = (
-                idf.select(i).groupBy(i)
-                    .count()
-                    .dropna()
-                    .withColumn(
-                        "count_pct",
-                        F.col("count") / F.sum("count").over(Window.partitionBy()),
-                    )
-                    .withColumn("rank", F.rank().over(window))
-                    .withColumn(
-                        "cumu",
-                        F.sum("count_pct").over(
-                            window.rowsBetween(Window.unboundedPreceding, 0)
-                        ),
-                    )
-                    .withColumn("lag_cumu", F.lag("cumu").over(window))
-                    .fillna(0)
-                    .where(~((F.col("cumu") >= coverage) & (F.col("lag_cumu") >= coverage)))
-                    .where(F.col("rank") <= (max_category - 1))
-                    .select(F.lit(i).alias("attribute"), F.col(i).alias("parameters"))
+                idf.select(i)
+                .groupBy(i)
+                .count()
+                .dropna()
+                .withColumn(
+                    "count_pct",
+                    F.col("count") / F.sum("count").over(Window.partitionBy()),
+                )
+                .withColumn("rank", F.rank().over(window))
+                .withColumn(
+                    "cumu",
+                    F.sum("count_pct").over(
+                        window.rowsBetween(Window.unboundedPreceding, 0)
+                    ),
+                )
+                .withColumn("lag_cumu", F.lag("cumu").over(window))
+                .fillna(0)
+                .where(~((F.col("cumu") >= coverage) & (F.col("lag_cumu") >= coverage)))
+                .where(F.col("rank") <= (max_category - 1))
+                .select(F.lit(i).alias("attribute"), F.col(i).alias("parameters"))
             )
             if index == 0:
                 df_model = df_cats
@@ -3508,7 +3509,6 @@ def outlier_categories(
     idf.unpersist()
 
     return odf
-
 
 
 def expression_parser(idf, list_of_expr, postfix="", print_impact=False):
