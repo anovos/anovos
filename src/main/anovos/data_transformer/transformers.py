@@ -3503,6 +3503,8 @@ def outlier_categories(
             "attribute", F.col("unique_values").alias("uniqueValues_after")
         ).show(len(list_of_cols), False)
 
+    idf.unpersist()
+
     return odf
 
 
