@@ -564,6 +564,77 @@ def uniqueCount_computation(
         return odf
 
     uniquevalue_count = idf.agg(
+        *(F.countDistinct(F.col(i)).alias(i) for i in list_of_cols)
+    )
+    odf = spark.createDataFrame(
+        zip(list_of_cols, uniquevalue_count.rdd.map(list).collect()[0]),
+        schema=("attribute", "unique_values"),
+    )
+    if print_impact:
+        odf.show(len(list_of_cols))
+    return odf
+
+def approxUniqueCount_computation(
+        spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
+):
+    """
+
+    Parameters
+    ----------
+    spark
+        Spark Session
+    idf
+        Input Dataframe
+    list_of_cols
+        List of Discrete (Categorical + Integer) columns to analyse e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        "all" can be passed to include all discrete columns for analysis. This is super useful instead of specifying all column names manually.
+        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in drop_cols argument
+        is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
+    drop_cols
+        List of columns to be dropped e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
+        a few handful of them. (Default value = [])
+    print_impact
+        True, False
+        This argument is to print out the statistics.(Default value = False)
+
+    Returns
+    -------
+    DataFrame
+        [attribute, unique_values]
+
+    """
+    if list_of_cols == "all":
+        list_of_cols = []
+        for i in idf.dtypes:
+            if i[1] in ("string", "int", "bigint", "long"):
+                list_of_cols.append(i[0])
+    if isinstance(list_of_cols, str):
+        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
+    if isinstance(drop_cols, str):
+        drop_cols = [x.strip() for x in drop_cols.split("|")]
+
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
+
+    if any(x not in idf.columns for x in list_of_cols):
+        raise TypeError("Invalid input for Column(s)")
+
+    if len(list_of_cols) == 0:
+        warnings.warn("No Unique Count Computation - No discrete column(s) to analyze")
+        schema = T.StructType(
+            [
+                T.StructField("attribute", T.StringType(), True),
+                T.StructField("unique_values", T.StringType(), True),
+            ]
+        )
+        odf = spark.sparkContext.emptyRDD().toDF(schema)
+        return odf
+
+    uniquevalue_count = idf.agg(
         *(F.approx_count_distinct(F.col(i)).alias(i) for i in list_of_cols)
     )
     odf = spark.createDataFrame(
@@ -646,7 +717,7 @@ def measures_of_cardinality(
         return odf
 
     odf = (
-        uniqueCount_computation(spark, idf, list_of_cols)
+        approxUniqueCount_computation(spark, idf, list_of_cols)
         .join(
             missingCount_computation(spark, idf, list_of_cols),
             "attribute",
