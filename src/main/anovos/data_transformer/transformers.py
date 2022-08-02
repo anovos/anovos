@@ -3348,8 +3348,8 @@ def outlier_categories(
     there is a caveat that when multiple categories have same rank. Then, number of categorical values can be more than
     max_category defined by the user.
 
-    This function performs better when distinct values, in any column, are not more than 100. It's a recommendation to drop those
-    columns from the computation who has more than 100 distinct values, to get better performance out of this function.
+    This function performs better when distinct values, in any column, are not more than 100. It is recommended that to drop those
+    columns from the computation which has more than 100 distinct values, to get better performance out of this function.
 
     Parameters
     ----------
