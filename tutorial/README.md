@@ -1,6 +1,6 @@
 # Anovos Workshop
 
-To run the anovos tutorial docker image 
+To run the anovos tutorial docker image
 
 ```bash
 docker run -p 9999:9999 anovos/anovos-workshop:latest
