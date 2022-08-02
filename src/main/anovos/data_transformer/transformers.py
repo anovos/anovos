@@ -3341,13 +3341,15 @@ def outlier_categories(
     """
     This function replaces less frequently seen values (called as outlier values in the current context) in a
     categorical column by 'outlier_categories'. Outlier values can be defined in two ways –
-    a) Max N categories, where N is used defined value. In this method, top N-1 frequently seen categories are considered
+    a) Max N categories, where N is user defined value. In this method, top N-1 frequently seen categories are considered
     and rest are clubbed under single category 'outlier_categories'. or Alternatively,
     b) Coverage – top frequently seen categories are considered till it covers minimum N% of rows and rest lesser seen values
-    are mapped to mapped to 'outlier_categories'. Even if the Coverage is less, maximum category constraint is given priority. Further,
+    are mapped to 'outlier_categories'. Even if the Coverage is less, maximum category constraint is given priority. Further,
     there is a caveat that when multiple categories have same rank. Then, number of categorical values can be more than
     max_category defined by the user.
 
+    This function performs better when distinct values, in any column, are not more than 100. It's a recommendation to drop those
+    columns from the computation who has more than 100 distinct values, to get better performance out of this function.
 
     Parameters
     ----------
