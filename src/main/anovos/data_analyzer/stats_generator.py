@@ -611,7 +611,7 @@ def measures_of_cardinality(
     returns a Spark Dataframe with schema – attribute, unique_values, IDness.
 
     - Unique Value is defined as a distinct value count of a column. It relies on a supporting function uniqueCount_computation
-      for its computation and leverages the countDistinct functionality of Spark SQL.
+      for its computation and leverages the countDistinct/approx_count_distinct functionality of Spark SQL.
     - IDness is calculated as Unique Values divided by non-null values seen in a column. Non-null values count is used instead
       of total count because too many null values can give misleading results even if the column have all unique values
       (except null). It uses supporting functions - uniqueCount_computation and missingCount_computation.
