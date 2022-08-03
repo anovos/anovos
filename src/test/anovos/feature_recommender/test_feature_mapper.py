@@ -29,8 +29,8 @@ def test_feature_mapper(example_attr_1, example_attr_2):
     assert len(test_df) > 0
     assert "Usecase" in test_df.columns
     assert "Industry" in test_df.columns
-    assert "Recommended_Feature_Name" in test_df.columns
-    assert "Recommended_Feature_Description" in test_df.columns
+    assert "Matched_Feature_Name" in test_df.columns
+    assert "Matched_Feature_Description" in test_df.columns
     assert "Input_Attribute_Name" in test_df.columns
     assert "Input_Attribute_Description" in test_df.columns
     assert "Feature_Similarity_Score" in test_df.columns
@@ -46,8 +46,8 @@ def test_feature_mapper(example_attr_1, example_attr_2):
     assert len(test_df_2) > 0
     assert "Usecase" in test_df_2.columns
     assert "Industry" in test_df_2.columns
-    assert "Recommended_Feature_Name" in test_df_2.columns
-    assert "Recommended_Feature_Description" in test_df_2.columns
+    assert "Matched_Feature_Name" in test_df_2.columns
+    assert "Matched_Feature_Description" in test_df_2.columns
     assert "Input_Attribute_Name" not in test_df_2.columns
     assert "Input_Attribute_Description" in test_df_2.columns
     assert "Feature_Similarity_Score" in test_df_2.columns
@@ -70,8 +70,8 @@ def test_feature_mapper(example_attr_1, example_attr_2):
     assert len(test_df_3) > 0
     assert "Usecase" in test_df_3.columns
     assert "Industry" in test_df_3.columns
-    assert "Recommended_Feature_Name" in test_df_3.columns
-    assert "Recommended_Feature_Description" in test_df_3.columns
+    assert "Matched_Feature_Name" in test_df_3.columns
+    assert "Matched_Feature_Description" in test_df_3.columns
     assert "Input_Attribute_Name" in test_df_3.columns
     assert "Input_Attribute_Description" in test_df_3.columns
     assert "Feature_Similarity_Score" in test_df_3.columns
@@ -91,8 +91,8 @@ def test_feature_mapper(example_attr_1, example_attr_2):
     assert len(test_df_4) > 0
     assert "Usecase" in test_df_4.columns
     assert "Industry" in test_df_4.columns
-    assert "Recommended_Feature_Name" in test_df_4.columns
-    assert "Recommended_Feature_Description" in test_df_4.columns
+    assert "Matched_Feature_Name" in test_df_4.columns
+    assert "Matched_Feature_Description" in test_df_4.columns
     assert "Input_Attribute_Name" in test_df_4.columns
     assert "Input_Attribute_Description" not in test_df_4.columns
     assert "Feature_Similarity_Score" in test_df_4.columns

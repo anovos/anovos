@@ -72,7 +72,6 @@ def stats_args(path, func):
     mainfunc_to_args = {
         "biasedness_detection": ["stats_mode"],
         "IDness_detection": ["stats_unique"],
-        "outlier_detection": ["stats_unique"],
         "nullColumns_detection": ["stats_unique", "stats_mode", "stats_missing"],
         "variable_clustering": ["stats_unique", "stats_mode"],
     }
@@ -179,6 +178,8 @@ def anovos_basic_report(
             stats = func(spark, idf)
         elif func in (QC_rows_funcs + QC_cols_funcs):
             extra_args = stats_args(output_path, func.__name__)
+            if func.__name__ == "outlier_detection":
+                extra_args["print_impact"] = True
             stats = func(spark, idf, **extra_args)[1]
         elif func in AA_funcs:
             extra_args = stats_args(output_path, func.__name__)

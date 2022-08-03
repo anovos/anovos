@@ -365,43 +365,65 @@ def IV_calculation(
             )
         else:
             idf_encoded = attribute_binning(
-                spark, idf, num_cols, [], bin_method, bin_size
+                spark, idf, num_cols, label_col, bin_method, bin_size
             )
-
-        idf_encoded.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
     else:
         idf_encoded = idf
 
-    output = []
+    list_df = []
     for col in list_of_cols:
-        df_iv = (
-            idf_encoded.groupBy(col, label_col)
-            .count()
-            .withColumn(
-                label_col, F.when(F.col(label_col) == event_label, 1).otherwise(0)
-            )
-            .groupBy(col)
-            .pivot(label_col)
-            .sum("count")
-            .fillna(0.5)
-            .withColumn("event_pct", F.col("1") / F.sum("1").over(Window.partitionBy()))
-            .withColumn(
-                "nonevent_pct", F.col("0") / F.sum("0").over(Window.partitionBy())
+        df_agg = (
+            idf_encoded.select(col, label_col)
+            .groupby(col)
+            .agg(
+                F.count(
+                    F.when(F.col(label_col) != event_label, F.col(label_col))
+                ).alias("label_0"),
+                F.count(
+                    F.when(F.col(label_col) == event_label, F.col(label_col))
+                ).alias("label_1"),
             )
             .withColumn(
-                "iv",
-                (F.col("nonevent_pct") - F.col("event_pct"))
-                * F.log(F.col("nonevent_pct") / F.col("event_pct")),
+                "label_0_total", F.sum(F.col("label_0")).over(Window.partitionBy())
+            )
+            .withColumn(
+                "label_1_total", F.sum(F.col("label_1")).over(Window.partitionBy())
             )
         )
-        iv_value = df_iv.select(F.sum("iv")).collect()[0][0]
-        output.append([col, iv_value])
 
-    odf = (
-        spark.createDataFrame(output, ["attribute", "iv"])
-        .withColumn("iv", F.round(F.col("iv"), 4))
-        .orderBy(F.desc("iv"))
-    )
+        out_df = (
+            df_agg.withColumn("event_pcr", F.col("label_1") / F.col("label_1_total"))
+            .withColumn("nonevent_pcr", F.col("label_0") / F.col("label_0_total"))
+            .withColumn("diff_event", F.col("nonevent_pcr") - F.col("event_pcr"))
+            .withColumn("const", F.lit(0.5))
+            .withColumn(
+                "woe",
+                F.when(
+                    (F.col("nonevent_pcr") != 0) & (F.col("event_pcr") != 0),
+                    F.log(F.col("nonevent_pcr") / F.col("event_pcr")),
+                ).otherwise(
+                    F.log(
+                        ((F.col("label_0") + F.col("const")) / F.col("label_0_total"))
+                        / ((F.col("label_1") + F.col("const")) / F.col("label_1_total"))
+                    )
+                ),
+            )
+            .withColumn("iv_single", F.col("woe") * F.col("diff_event"))
+            .withColumn("iv", F.sum(F.col("iv_single")).over(Window.partitionBy()))
+            .withColumn("attribute", F.lit(str(col)))
+            .select("attribute", "iv")
+            .distinct()
+        )
+
+        list_df.append(out_df)
+
+    def unionAll(dfs):
+        first, *_ = dfs
+        return first.sql_ctx.createDataFrame(
+            first.sql_ctx._sc.union([df.rdd for df in dfs]), first.schema
+        )
+
+    odf = unionAll(list_df)
     if print_impact:
         odf.show(odf.count())
 
@@ -509,9 +531,8 @@ def IG_calculation(
             )
         else:
             idf_encoded = attribute_binning(
-                spark, idf, num_cols, [], bin_method, bin_size
+                spark, idf, num_cols, label_col, bin_method, bin_size
             )
-        idf_encoded.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
     else:
         idf_encoded = idf
 
@@ -523,39 +544,46 @@ def IG_calculation(
     )
     for col in list_of_cols:
         idf_entropy = (
-            idf_encoded.withColumn(
-                label_col, F.when(F.col(label_col) == event_label, 1).otherwise(0)
+            (
+                idf_encoded.withColumn(
+                    label_col, F.when(F.col(label_col) == event_label, 1).otherwise(0)
+                )
+                .groupBy(col)
+                .agg(
+                    F.sum(F.col(label_col)).alias("event_count"),
+                    F.count(F.col(label_col)).alias("total_count"),
+                )
+                .withColumn("event_pct", F.col("event_count") / F.col("total_count"))
+                .withColumn(
+                    "segment_pct",
+                    F.col("total_count")
+                    / F.sum("total_count").over(Window.partitionBy()),
+                )
+                .withColumn(
+                    "entropy",
+                    -F.col("segment_pct")
+                    * (
+                        (F.col("event_pct") * F.log2(F.col("event_pct")))
+                        + ((1 - F.col("event_pct")) * F.log2((1 - F.col("event_pct"))))
+                    ),
+                )
             )
-            .groupBy(col)
-            .agg(
-                F.sum(F.col(label_col)).alias("event_count"),
-                F.count(F.col(label_col)).alias("total_count"),
-            )
-            .withColumn("event_pct", F.col("event_count") / F.col("total_count"))
-            .withColumn(
-                "segment_pct",
-                F.col("total_count") / F.sum("total_count").over(Window.partitionBy()),
-            )
-            .withColumn(
-                "entropy",
-                -F.col("segment_pct")
-                * (
-                    (F.col("event_pct") * F.log2(F.col("event_pct")))
-                    + ((1 - F.col("event_pct")) * F.log2((1 - F.col("event_pct"))))
-                ),
-            )
+            .groupBy()
+            .agg(F.sum(F.col("entropy")).alias("entropy_sum"))
+            .withColumn("attribute", F.lit(str(col)))
+            .withColumn("entropy_total", F.lit(float(total_entropy)))
+            .withColumn("ig", F.col("entropy_total") - F.col("entropy_sum"))
+            .select("attribute", "ig")
         )
-        entropy = (
-            idf_entropy.groupBy().sum("entropy").rdd.flatMap(lambda x: x).collect()[0]
-        )
-        ig_value = total_entropy - entropy if entropy else None
-        output.append([col, ig_value])
+        output.append(idf_entropy)
 
-    odf = (
-        spark.createDataFrame(output, ["attribute", "ig"])
-        .withColumn("ig", F.round(F.col("ig"), 4))
-        .orderBy(F.desc("ig"))
-    )
+    def unionAll(dfs):
+        first, *_ = dfs
+        return first.sql_ctx.createDataFrame(
+            first.sql_ctx._sc.union([df.rdd for df in dfs]), first.schema
+        )
+
+    odf = unionAll(output)
     if print_impact:
         odf.show(odf.count())
 
