@@ -25,6 +25,7 @@ from pyspark.mllib.linalg import Vectors
 from pyspark.mllib.stat import Statistics
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
+import pyspark
 
 from anovos.shared.utils import attributeType_segregation, transpose_dataframe
 
@@ -366,9 +367,6 @@ def mode_computation(spark, idf, list_of_cols="all", drop_cols=[], print_impact=
         drop_cols = [x.strip() for x in drop_cols.split("|")]
 
     list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
-    for i in idf.select(list_of_cols).dtypes:
-        if i[1] not in ("string", "int", "bigint", "long"):
-            list_of_cols.remove(i[0])
 
     if any(x not in idf.columns for x in list_of_cols):
         raise TypeError("Invalid input for Column(s)")
@@ -385,30 +383,41 @@ def mode_computation(spark, idf, list_of_cols="all", drop_cols=[], print_impact=
         odf = spark.sparkContext.emptyRDD().toDF(schema)
         return odf
 
-    mode = [
-        list(
-            idf.select(i)
+    idf = idf.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
+    list_df = []
+    for col in list_of_cols:
+        out_df = (
+            idf.select(col)
             .dropna()
-            .groupby(i)
+            .groupby(col)
             .count()
             .orderBy("count", ascending=False)
-            .first()
-            or [None, None]
+            .limit(1)
+            .select(
+                F.lit(col).alias("attribute"),
+                F.col(col).alias("mode"),
+                F.col("count").alias("mode_rows"),
+            )
         )
-        for i in list_of_cols
-    ]
-    mode = [(str(i), str(j)) for i, j in mode]
+        list_df.append(out_df)
 
-    odf = spark.createDataFrame(
-        zip(list_of_cols, mode), schema=("attribute", "metric")
-    ).select(
-        "attribute",
-        (F.col("metric")["_1"]).alias("mode"),
-        (F.col("metric")["_2"]).cast("long").alias("mode_rows"),
-    )
+    def unionAll(dfs):
+        first, *_ = dfs
+        schema = T.StructType(
+            [
+                T.StructField("attribute", T.StringType(), True),
+                T.StructField("mode", T.StringType(), True),
+                T.StructField("mode_rows", T.LongType(), True),
+            ]
+        )
+        return first.sql_ctx.createDataFrame(
+            first.sql_ctx._sc.union([df.rdd for df in dfs]), schema
+        )
 
+    odf = unionAll(list_df)
     if print_impact:
         odf.show(len(list_of_cols))
+    idf.unpersist()
     return odf
 
 
@@ -471,6 +480,8 @@ def measures_of_centralTendency(
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError("Invalid input for Column(s)")
 
+    df_mode_compute = mode_computation(spark, idf, list_of_cols)
+    idf = idf.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
     odf = (
         transpose_dataframe(
             idf.select(list_of_cols).summary("mean", "50%", "count"), "summary"
@@ -490,7 +501,7 @@ def measures_of_centralTendency(
             ).otherwise(None),
         )
         .withColumnRenamed("key", "attribute")
-        .join(mode_computation(spark, idf, list_of_cols), "attribute", "full_outer")
+        .join(df_mode_compute, "attribute", "full_outer")
         .withColumn(
             "mode_pct",
             F.round(F.col("mode_rows") / F.col("count").cast(T.DoubleType()), 4),
@@ -500,6 +511,7 @@ def measures_of_centralTendency(
 
     if print_impact:
         odf.show(len(list_of_cols))
+    idf.unpersist()
     return odf
 
 
