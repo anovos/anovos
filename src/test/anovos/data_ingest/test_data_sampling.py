@@ -18,7 +18,10 @@ def test_sample():
 
 def test_data_sampling(test_sample):
     output_1 = data_sample(
-        test_sample, strata_cols="all", method_type="stratified", fraction=0.75,
+        test_sample,
+        strata_cols="all",
+        method_type="stratified",
+        fraction=0.75,
     )
     assert "gender" in output_1.columns
     assert "label_1" in output_1.columns

@@ -590,7 +590,7 @@ def main(all_configs, run_type, auth_key_val={}):
                     analysis_level = timeseries_analyzer.get("analysis_level", None)
                 else:
                     analysis_level = None
-                    
+
                 geospatial_analyzer = all_configs.get("geospatial_analyzer", None)
                 if geospatial_analyzer:
                     max_analysis_records = geospatial_analyzer.get(
