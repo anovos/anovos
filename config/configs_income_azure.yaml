@@ -324,15 +324,15 @@ report_preprocessing:
     source_path: "dbfs:/FileStore/tables/NA"
 
 report_generation:
-  master_path: '/dbfs/FileStore/tables/report_stats'
+  master_path: 'dbfs:/FileStore/tables/report_stats'
   id_col: 'ifa'
   label_col: 'income'
   corr_threshold: 0.4
   iv_threshold: 0.02
   drift_threshold_model: 0.1
-  dataDict_path: '/dbfs/FileStore/tables/income_dataset/data_dictionary.csv'
-  metricDict_path: '/dbfs/FileStore/tables/metric_dictionary.csv'
-  final_report_path: '/dbfs/FileStore/tables/report_stats'
+  dataDict_path: 'dbfs:/FileStore/tables/income_dataset/data_dictionary.csv'
+  metricDict_path: 'dbfs:/FileStore/tables/metric_dictionary.csv'
+  final_report_path: 'dbfs:/FileStore/tables/report_stats'
 
 transformers:
   numerical_mathops:
@@ -375,6 +375,7 @@ transformers:
       drop_cols: ['ifa']
       label_col: income
       event_label: '>50K'
+      model_path: "dbfs:/FileStore/tables/results/intermediate_data"
 
   numerical_rescaling:
     # normalization:
@@ -393,6 +394,7 @@ transformers:
   #     explained_variance_cutoff: 0.95
   #     standardization: False
   #     imputation: True
+        # root_path: "dbfs:/FileStore/tables/results/intermediate_data"
 
 
     autoencoder_latentFeatures:
@@ -401,6 +403,7 @@ transformers:
       sample_size: 10000 
       epochs: 25
       batch_size: 256
+      root_path: "dbfs:/FileStore/tables/results/intermediate_data"
 
 write_intermediate:
   file_path: "dbfs:/FileStore/tables/results/intermediate_data"

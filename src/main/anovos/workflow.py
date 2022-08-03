@@ -81,7 +81,6 @@ def stats_args(all_configs, func):
         mainfunc_to_args = {
             "biasedness_detection": ["stats_mode"],
             "IDness_detection": ["stats_unique"],
-            "outlier_detection": ["stats_unique"],
             "correlation_matrix": ["stats_unique"],
             "nullColumns_detection": ["stats_unique", "stats_mode", "stats_missing"],
             "variable_clustering": ["stats_unique", "stats_mode"],
@@ -125,7 +124,18 @@ def stats_args(all_configs, func):
     return result
 
 
-def main(all_configs, run_type):
+def main(all_configs, run_type, auth_key_val={}):
+    if run_type == "ak8s":
+        conf = spark.sparkContext._jsc.hadoopConfiguration()
+        conf.set("fs.wasbs.impl", "org.apache.hadoop.fs.azure.NativeAzureFileSystem")
+
+        # Set credentials using auth_key_val
+        for key, value in auth_key_val.items():
+            spark.conf.set(key, value)
+            auth_key = value
+    else:
+        auth_key = "NA"
+
     start_main = timeit.default_timer()
     df = ETL(all_configs.get("input_dataset"))
 
@@ -197,6 +207,7 @@ def main(all_configs, run_type):
                     output_path=report_input_path,
                     tz_offset=tz_val,
                     run_type=run_type,
+                    auth_key=auth_key,
                 )
                 end = timeit.default_timer()
                 logger.info(
@@ -214,6 +225,7 @@ def main(all_configs, run_type):
                     output_type=analysis_level,
                     tz_offset=tz_val,
                     run_type=run_type,
+                    auth_key=auth_key,
                 )
                 end = timeit.default_timer()
                 logger.info(
@@ -273,6 +285,7 @@ def main(all_configs, run_type):
                 df,
                 **args.get("report_args", {}),
                 run_type=run_type,
+                auth_key=auth_key,
             )
             end = timeit.default_timer()
             logger.info(
@@ -295,6 +308,7 @@ def main(all_configs, run_type):
                             m,
                             reread=True,
                             run_type=run_type,
+                            auth_key=auth_key,
                         ).show(100)
                     else:
                         save(
@@ -331,9 +345,13 @@ def main(all_configs, run_type):
                                         == "null_replacement"
                                     ):
                                         extra_args["stats_missing"] = {}
-                        df, df_stats = f(
-                            spark, df, **value, **extra_args, print_impact=False
-                        )
+
+                        if subkey == "outlier_detection":
+                            extra_args["print_impact"] = True
+                        else:
+                            extra_args["print_impact"] = False
+
+                        df, df_stats = f(spark, df, **value, **extra_args)
                         df = save(
                             df,
                             write_intermediate,
@@ -343,21 +361,26 @@ def main(all_configs, run_type):
                             reread=True,
                         )
                         if report_input_path:
-                            save_stats(
+                            df_stats = save_stats(
                                 spark,
                                 df_stats,
                                 report_input_path,
                                 subkey,
                                 reread=True,
                                 run_type=run_type,
-                            ).show(100)
+                                auth_key=auth_key,
+                            )
                         else:
-                            save(
+                            df_stats = save(
                                 df_stats,
                                 write_stats,
                                 folder_name="data_analyzer/quality_checker/" + subkey,
                                 reread=True,
-                            ).show(100)
+                            )
+
+                        if subkey != "outlier_detection":
+                            df_stats.show(100)
+
                         end = timeit.default_timer()
                         logger.info(
                             f"{key}, {subkey}: execution time (in secs) ={round(end - start, 4)}"
@@ -381,6 +404,7 @@ def main(all_configs, run_type):
                                 subkey,
                                 reread=True,
                                 run_type=run_type,
+                                auth_key=auth_key,
                             ).show(100)
                         else:
                             save(
@@ -424,6 +448,7 @@ def main(all_configs, run_type):
                                 subkey,
                                 reread=True,
                                 run_type=run_type,
+                                auth_key=auth_key,
                             ).show(100)
                         else:
                             save(
@@ -454,6 +479,7 @@ def main(all_configs, run_type):
                                 subkey,
                                 reread=True,
                                 run_type=run_type,
+                                auth_key=auth_key,
                             ).show(100)
                             appended_metric_path = value["configs"].get(
                                 "appended_metric_path", ""
@@ -472,6 +498,7 @@ def main(all_configs, run_type):
                                     "stabilityIndex_metrics",
                                     reread=True,
                                     run_type=run_type,
+                                    auth_key=auth_key,
                                 ).show(100)
                         else:
                             save(
@@ -506,6 +533,7 @@ def main(all_configs, run_type):
                                     "PCA_latentFeatures",
                                 ):
                                     extra_args["run_type"] = run_type
+                                    extra_args["auth_key"] = auth_key
                                 if subkey2 in (
                                     "normalization",
                                     "feature_transformation",
@@ -548,6 +576,7 @@ def main(all_configs, run_type):
                             **extra_args,
                             master_path=report_input_path,
                             run_type=run_type,
+                            auth_key=auth_key,
                         )
                         end = timeit.default_timer()
                         logger.info(
@@ -561,7 +590,7 @@ def main(all_configs, run_type):
                     analysis_level = timeseries_analyzer.get("analysis_level", None)
                 else:
                     analysis_level = None
-
+                    
                 geospatial_analyzer = all_configs.get("geospatial_analyzer", None)
                 if geospatial_analyzer:
                     max_analysis_records = geospatial_analyzer.get(
@@ -578,6 +607,7 @@ def main(all_configs, run_type):
                     gh_cols=gh_cols,
                     max_records=max_analysis_records,
                     top_geo_records=top_geo_records,
+                    auth_key=auth_key,
                 )
                 end = timeit.default_timer()
                 logger.info(
@@ -587,8 +617,8 @@ def main(all_configs, run_type):
     save(df, write_main, folder_name="final_dataset", reread=False)
 
 
-def run(config_path, run_type):
-    if run_type in ("local", "databricks"):
+def run(config_path, run_type, auth_key_val={}):
+    if run_type in ("local", "databricks", "ak8s"):
         config_file = config_path
     elif run_type == "emr":
         bash_cmd = "aws s3 cp " + config_path + " config.yaml"
@@ -597,7 +627,10 @@ def run(config_path, run_type):
     else:
         raise ValueError("Invalid run_type")
 
+    if run_type == "ak8s" and auth_key_val == {}:
+        raise ValueError("Invalid auth key for run_type")
+
     with open(config_file, "r") as f:
         all_configs = yaml.load(f, yaml.SafeLoader)
 
-    main(all_configs, run_type)
+    main(all_configs, run_type, auth_key_val)

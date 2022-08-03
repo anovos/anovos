@@ -50,10 +50,9 @@ import plotly.tools as tls
 from loguru import logger
 from plotly.subplots import make_subplots
 from sklearn.preprocessing import PowerTransformer
+from anovos.shared.utils import ends_with, path_ak8s_modify, output_to_local
 from statsmodels.tsa.seasonal import seasonal_decompose
 from statsmodels.tsa.stattools import adfuller, kpss
-
-from anovos.shared.utils import ends_with
 
 warnings.filterwarnings("ignore")
 
@@ -4028,6 +4027,7 @@ def anovos_report(
     gh_cols=None,
     max_records=100000,
     top_geo_records=100,
+    auth_key="NA",
 ):
     """
 
@@ -4052,7 +4052,9 @@ def anovos_report(
     metricDict_path
         Metric dictionary path. Default value is kept as None.
     run_type
-        local or emr or databricks option. Default is kept as local
+        local or emr or databricks or ak8s option. Default is kept as local
+    auth_key
+        Option to pass an authorization key to write to filesystems. Currently applicable only for ak8s run_type.
     final_report_path
         Path where the report will be saved. (Default value = ".")
     output_type
@@ -4080,6 +4082,25 @@ def anovos_report(
             + ends_with(master_path)
             + " "
             + ends_with("report_stats")
+        )
+        master_path = "report_stats"
+        subprocess.check_output(["bash", "-c", bash_cmd])
+
+    if run_type == "databricks":
+        master_path = output_to_local(master_path)
+        dataDict_path = output_to_local(dataDict_path)
+        metricDict_path = output_to_local(metricDict_path)
+        final_report_path = output_to_local(final_report_path)
+
+    if run_type == "ak8s":
+        output_path_mod = path_ak8s_modify(master_path)
+        bash_cmd = (
+            'azcopy cp "'
+            + ends_with(output_path_mod)
+            + str(auth_key)
+            + '" "'
+            + ends_with("report_stats")
+            + '" --recursive=true'
         )
         master_path = "report_stats"
         subprocess.check_output(["bash", "-c", bash_cmd])
@@ -4394,6 +4415,18 @@ def anovos_report(
             dp.Select(blocks=final_tabs_list, type=dp.SelectType.TABS),
         ).save("ml_anovos_report.html", open=True)
         bash_cmd = "aws s3 cp ml_anovos_report.html " + ends_with(final_report_path)
+        subprocess.check_output(["bash", "-c", bash_cmd])
+    elif run_type == "ak8s":
+        dp.Report(
+            default_template[0],
+            default_template[1],
+            dp.Select(blocks=final_tabs_list, type=dp.SelectType.TABS),
+        ).save("ml_anovos_report.html", open=True)
+        bash_cmd = (
+            'azcopy cp "ml_anovos_report.html" '
+            + ends_with(path_ak8s_modify(final_report_path))
+            + str(auth_key)
+        )
         subprocess.check_output(["bash", "-c", bash_cmd])
     else:
         raise ValueError("Invalid run_type")
