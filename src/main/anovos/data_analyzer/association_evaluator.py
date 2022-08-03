@@ -4,7 +4,7 @@ This submodule focuses on understanding the interaction between different attrib
 between an attribute & the binary target variable.
 
 Association between attributes is measured by:
-- correlation_matrix
+- correlation_matrix_numerical
 - variable_clustering
 
 Association between an attribute and binary target is measured by:
