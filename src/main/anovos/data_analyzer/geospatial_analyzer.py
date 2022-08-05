@@ -20,7 +20,7 @@ Respective functions have sections containing the detailed definition of the par
 
 from anovos.data_ingest.data_ingest import read_dataset
 from anovos.shared.spark import spark
-from anovos.shared.utils import ends_with, output_to_local
+from anovos.shared.utils import ends_with, output_to_local, path_ak8s_modify
 from anovos.data_ingest import data_sampling
 from anovos.data_ingest.geo_auto_detection import ll_gh_cols, geo_to_latlong
 import pandas as pd
@@ -1221,6 +1221,7 @@ def geospatial_autodetection(
     min_samples,
     global_map_box_val,
     run_type,
+    auth_key,
 ):
 
     """
@@ -1249,7 +1250,9 @@ def geospatial_autodetection(
     global_map_box_val
         Geospatial Chart Theme Index
     run_type
-        Option to choose between run type "Local" or "EMR" or "Azure" basis the user flexibility. Default option is set as "Local"
+        Option to choose between run type "Local" or "EMR" or "Azure" or "ak8s" basis the user flexibility. Default option is set as "Local"
+    auth_key
+        Option to pass an authorization key to write to filesystems. Currently applicable only for ak8s run_type. Default value is kept as "NA"
 
     Returns
     -------
@@ -1260,7 +1263,7 @@ def geospatial_autodetection(
         local_path = master_path
     elif run_type == "databricks":
         local_path = output_to_local(master_path)
-    elif run_type == "emr":
+    elif run_type in ("emr", "ak8s"):
         local_path = "report_stats"
     else:
         raise ValueError("Invalid run_type")
@@ -1327,5 +1330,17 @@ def geospatial_autodetection(
             + ends_with(local_path)
             + " "
             + ends_with(master_path)
+        )
+        output = subprocess.check_output(["bash", "-c", bash_cmd])
+
+    if run_type == "ak8s":
+        output_path_mod = path_ak8s_modify(master_path)
+        bash_cmd = (
+            'azcopy cp "'
+            + ends_with(local_path)
+            + '" "'
+            + ends_with(output_path_mod)
+            + str(auth_key)
+            + '" --recursive=true '
         )
         output = subprocess.check_output(["bash", "-c", bash_cmd])

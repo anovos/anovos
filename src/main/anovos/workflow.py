@@ -265,6 +265,7 @@ def main(all_configs, run_type, auth_key_val={}):
                     min_samples,
                     global_map_box_val,
                     run_type,
+                    auth_key,
                 )
 
                 end = timeit.default_timer()
