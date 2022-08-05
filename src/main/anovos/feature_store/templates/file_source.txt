@@ -1,0 +1,7 @@
+{{source_name}} = FileSource(
+    path="{{filename}}",
+    timestamp_field="{{ts_column}}",
+    created_timestamp_column="{{create_ts_column}}",
+    description="{{source_description}}",
+    owner="{{owner}}",
+)
