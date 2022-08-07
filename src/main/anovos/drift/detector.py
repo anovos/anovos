@@ -15,8 +15,6 @@ from scipy.stats import variation
 from anovos.data_ingest.data_ingest import concatenate_dataset
 from anovos.data_transformer.transformers import attribute_binning
 from anovos.shared.utils import attributeType_segregation
-
-from ..shared.utils import platform_root_path
 from .distances import hellinger, js_divergence, ks, psi
 from .validations import check_distance_method, check_list_of_columns
 
@@ -148,13 +146,8 @@ def statistics(
     drop_cols = drop_cols or []
     num_cols = attributeType_segregation(idf_target.select(list_of_cols))[0]
 
-    if run_type in list(platform_root_path.keys()):
-        root_path = platform_root_path[run_type]
-    else:
-        root_path = ""
-
     if source_path == "NA":
-        source_path = root_path + "intermediate_data"
+        source_path = "intermediate_data"
 
     if not pre_existing_source:
         source_bin = attribute_binning(

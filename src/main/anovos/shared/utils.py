@@ -2,8 +2,6 @@ from itertools import chain
 
 from pyspark.sql import functions as F
 
-platform_root_path = {"databricks": "dbfs:/"}
-
 
 def flatten_dataframe(idf, fixed_cols):
     """
@@ -154,3 +152,28 @@ def output_to_local(output_path):
             local_path = output_path.replace(x, "")
             local_path = "/" + local_path
     return local_path
+
+
+def path_ak8s_modify(output_path):
+    """
+
+    Parameters
+    ----------
+    output_path :
+        input_path. e.g. "wasbs://anovos@anovosasktest.blob.core.windows.net/datasrc/report_stats_ts1"
+
+    Returns
+    -------
+    type
+        path after converting . e.g. "https://anovosasktest.blob.core.windows.net/anovos/datasrc/report_stats_ts1"
+
+    """
+    container_name = output_path.split("//")[1].split("@")[0]
+    url = (
+        "https://"
+        + output_path.split("//")[1].split("@")[1].split("windows.net/")[0]
+        + "windows.net"
+    )
+    file_path_name = output_path.split("//")[1].split("@")[1].split("windows.net/")[1]
+    final_path = url + "/" + container_name + "/" + file_path_name
+    return str(final_path)

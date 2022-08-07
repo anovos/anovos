@@ -28,7 +28,7 @@ jobs:
             hadoop: '3.2'
             java: '11'
           - python: '3.10'
-            spark: '3.2.1'
+            spark: '3.2.2'
             checksum: '145ADACF189FECF05FBA3A69841D2804DD66546B11D14FC181AC49D89F3CB5E4FECD9B25F56F0AF767155419CD430838FB651992AEB37D3A6F91E7E009D1F9AE'
             hadoop: '3.2'
             java: '11'

@@ -19,9 +19,12 @@ from anovos.data_transformer.transformers import (
     imputation_MMM,
     outlier_categories,
 )
-from anovos.shared.utils import attributeType_segregation, ends_with
-
-from ..shared.utils import platform_root_path
+from anovos.shared.utils import (
+    attributeType_segregation,
+    ends_with,
+    output_to_local,
+    path_ak8s_modify,
+)
 
 warnings.filterwarnings("ignore")
 
@@ -33,16 +36,15 @@ num_cols = []
 cat_cols = []
 
 
-def master_to_local(master_path):
-    punctuations = ":"
-    for x in master_path:
-        if x in punctuations:
-            local_path = master_path.replace(x, "")
-            local_path = "/" + local_path
-    return local_path
-
-
-def save_stats(spark, idf, master_path, function_name, reread=False, run_type="local"):
+def save_stats(
+    spark,
+    idf,
+    master_path,
+    function_name,
+    reread=False,
+    run_type="local",
+    auth_key="NA",
+):
     """
 
     Parameters
@@ -58,7 +60,9 @@ def save_stats(spark, idf, master_path, function_name, reread=False, run_type="l
     reread
         option to reread. Default value is kept as False
     run_type
-        local or emr or databricks based on the mode of execution. Default value is kept as local
+        local or emr or databricks or ak8s based on the mode of execution. Default value is kept as local
+    auth_key
+        Option to pass an authorization key to write to filesystems. Currently applicable only for ak8s run_type. Default value is kept as "NA"
 
     Returns
     -------
@@ -67,8 +71,8 @@ def save_stats(spark, idf, master_path, function_name, reread=False, run_type="l
     if run_type == "local":
         local_path = master_path
     elif run_type == "databricks":
-        local_path = master_to_local(master_path)
-    elif run_type == "emr":
+        local_path = output_to_local(master_path)
+    elif run_type in ("emr", "ak8s"):
         local_path = "report_stats"
     else:
         raise ValueError("Invalid run_type")
@@ -86,6 +90,19 @@ def save_stats(spark, idf, master_path, function_name, reread=False, run_type="l
             + ends_with(master_path)
         )
 
+        subprocess.check_output(["bash", "-c", bash_cmd])
+
+    if run_type == "ak8s":
+        output_path_mod = path_ak8s_modify(master_path)
+        bash_cmd = (
+            'azcopy cp "'
+            + ends_with(local_path)
+            + function_name
+            + '.csv" "'
+            + ends_with(output_path_mod)
+            + str(auth_key)
+            + '"'
+        )
         subprocess.check_output(["bash", "-c", bash_cmd])
 
     if reread:
@@ -452,6 +469,7 @@ def charts_to_objects(
     master_path=".",
     stats_unique={},
     run_type="local",
+    auth_key="NA",
 ):
     """
 
@@ -486,7 +504,9 @@ def charts_to_objects(
         to read pre-saved statistics on unique value count i.e. if measures_of_cardinality or
         uniqueCount_computation (data_analyzer.stats_generator module) has been computed & saved before. (Default value = {})
     run_type
-        local or emr or databricks run type. Default value is kept as local
+        local or emr or databricks or ak8s run type. Default value is kept as local
+    auth_key
+        Option to pass an authorization key to write to filesystems. Currently applicable only for ak8s run_type. Default value is kept as "NA"
 
     Returns
     -------
@@ -537,13 +557,8 @@ def charts_to_objects(
     else:
         idf_cleaned = idf
 
-    if run_type in list(platform_root_path.keys()):
-        root_path = platform_root_path[run_type]
-    else:
-        root_path = ""
-
     if source_path == "NA":
-        source_path = root_path + "intermediate_data"
+        source_path = "intermediate_data"
 
     if drift_detector:
         encoding_model_exists = True
@@ -595,8 +610,8 @@ def charts_to_objects(
     if run_type == "local":
         local_path = master_path
     elif run_type == "databricks":
-        local_path = master_to_local(master_path)
-    elif run_type == "emr":
+        local_path = output_to_local(master_path)
+    elif run_type in ("emr", "ak8s"):
         local_path = "report_stats"
     else:
         raise ValueError("Invalid run_type")
@@ -692,5 +707,16 @@ def charts_to_objects(
             + " "
             + ends_with(master_path)
         )
+        subprocess.check_output(["bash", "-c", bash_cmd])
 
+    if run_type == "ak8s":
+        output_path_mod = path_ak8s_modify(master_path)
+        bash_cmd = (
+            'azcopy cp "'
+            + ends_with(local_path)
+            + '" "'
+            + ends_with(output_path_mod)
+            + str(auth_key)
+            + '" --recursive=true'
+        )
         subprocess.check_output(["bash", "-c", bash_cmd])
