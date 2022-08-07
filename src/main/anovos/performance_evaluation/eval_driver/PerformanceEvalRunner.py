@@ -9,6 +9,7 @@ import glob
 import time
 import math
 
+
 def ends_with(string, end_str="/"):
     string = str(string)
     if string.endswith(end_str):
@@ -35,11 +36,9 @@ def launchFunctionEvaluation(eval_config_s3_path):
     bootstrap_file = all_configs.get("bootstrap_file")
     c_base_name = all_configs.get("cluster_base_name")
     zipLocation = all_configs.get("anovos_build_s3_location")
-    anovosConfigFile = all_configs.get("anovos_function_config")
     mainFileLoc = all_configs.get("main_python_file_s3_location")
-    run_type = all_configs.get("run_type")
     scripts_s3_loc = all_configs.get("scripts_s3_loc")
-    polling_interval= all_configs.get("cluster_polling_interval")
+    polling_interval = all_configs.get("cluster_polling_interval")
 
     if not os.path.exists('scripts'):
         os.makedirs('scripts')
@@ -48,7 +47,6 @@ def launchFunctionEvaluation(eval_config_s3_path):
     _ = subprocess.check_output(["bash", "-c", bash_cmd])
     create_cluster_script = "./scripts/create_cluster.sh"
     function_evaluation_step_script = "./scripts/add_steps.sh"
-
 
     clusters_launched_list = []
     for node in nodes:
@@ -64,7 +62,6 @@ def launchFunctionEvaluation(eval_config_s3_path):
             _ = subprocess.check_output(["bash", "-c", bash_cmd])
     print(f"Clusters launched: {clusters_launched_list}")
 
-
     time.sleep(polling_interval*math.log2(polling_interval))
     jobs_finished = false
     while not jobs_finished:
@@ -79,7 +76,6 @@ def launchFunctionEvaluation(eval_config_s3_path):
         else:
             time.sleep(polling_interval)
 
-
     report_path_name = ends_with(output_parent_path) + "execution_time_reports"
     all_files = glob.glob(report_path_name + "/*.csv")
     csv_files = []
@@ -91,7 +87,8 @@ def launchFunctionEvaluation(eval_config_s3_path):
     final_report_path_name = ends_with(output_parent_path) + "final_report/"
     final_df = pd.concat(csv_files)
     final_df.to_csv(report_name, index=False)
-    bash_cmd = "aws s3 cp " + report_name + " " + report_path_name
+    bash_cmd = "aws s3 cp " + report_name + " " + final_report_path_name
     _ = subprocess.check_output(["bash", "-c", bash_cmd])
 
-launchFunctionEvaluation(eval_config_s3_path = sys.argv[1])
+
+launchFunctionEvaluation(eval_config_s3_path=sys.argv[1])
