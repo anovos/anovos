@@ -36,8 +36,15 @@ from anovos.data_transformer.transformers import (
 )
 from anovos.shared.utils import attributeType_segregation
 
+
 def correlation_matrix_numerical(
-    spark, idf, list_of_cols="all", drop_cols=[], use_sampling=False, sample_size=1000000, print_impact=False
+    spark,
+    idf,
+    list_of_cols="all",
+    drop_cols=[],
+    use_sampling=False,
+    sample_size=1000000,
+    print_impact=False,
 ):
     """
     This function calculates correlation coefficient statistical, which measures the strength of the relationship
@@ -102,7 +109,9 @@ def correlation_matrix_numerical(
     if use_sampling:
         if idf.count() > sample_size:
             warnings.warn(
-                "Using sampling. Only "+ str(sample_size) +" random sampled rows are considered."
+                "Using sampling. Only "
+                + str(sample_size)
+                + " random sampled rows are considered."
             )
             idf = data_sample(
                 idf, fraction=float(sample_size) / idf.count(), method_type="random"
