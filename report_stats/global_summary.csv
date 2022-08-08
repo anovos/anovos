@@ -1,9 +1,0 @@
-metric,value
-rows_count,32561
-columns_count,19
-numcols_count,6
-numcols_name,"age, education_num, capital-gain, fnlwgt, hours-per-week, capital-loss"
-catcols_count,13
-catcols_name,"empty, marital_status, relationship, dt_2, occupation, dt_1, ifa, native-country, income, workclass, race, education, sex"
-othercols_count,0
-othercols_name,
