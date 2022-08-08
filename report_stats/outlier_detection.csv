@@ -1,0 +1,7 @@
+attribute,lower_outliers,upper_outliers,excluded_due_to_skewness
+age,0,118,0
+capital-gain,0,1908,0
+fnlwgt,0,1100,0
+education_num,0,0,0
+hours-per-week,0,1005,0
+capital-loss,0,0,1

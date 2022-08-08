@@ -101,5 +101,3 @@ write_feast_features:
     ttl_in_seconds: 3600000
     create_timestamps: True
   service_name: 'income_feature_service'
-  file_configs:
-    mode: overwrite
