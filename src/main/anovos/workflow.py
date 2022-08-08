@@ -65,13 +65,11 @@ def stats_args(all_configs, func):
             raise TypeError("Master path missing for saving report statistics")
         else:
             report_input_path = report_configs.get("master_path")
-
     result = {}
     if stats_configs:
         mainfunc_to_args = {
             "biasedness_detection": ["stats_mode"],
             "IDness_detection": ["stats_unique"],
-            "correlation_matrix": ["stats_unique"],
             "nullColumns_detection": ["stats_unique", "stats_mode", "stats_missing"],
             "variable_clustering": ["stats_unique", "stats_mode"],
             "charts_to_objects": ["stats_unique"],
