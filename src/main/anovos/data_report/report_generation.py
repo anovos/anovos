@@ -301,7 +301,7 @@ def data_analyzer_output(master_path, avl_recs_tab, tab_name):
                 )
         elif tab_name == "association_evaluator":
             for j in avl_recs_tab:
-                if j == "correlation_matrix":
+                if j == "correlation_matrix_numerical":
                     df_list_ = pd.read_csv(
                         ends_with(master_path) + str(j) + ".csv"
                     ).round(3)
@@ -688,7 +688,9 @@ def executive_summary_gen(
         logger.error(f"processing failed, error {e}")
         x8_1 = ["Outliers", None]
     try:
-        corr_matrx = pd.read_csv(ends_with(master_path) + "correlation_matrix.csv")
+        corr_matrx = pd.read_csv(
+            ends_with(master_path) + "correlation_matrix_numerical.csv"
+        )
         corr_matrx = corr_matrx[list(corr_matrx.attribute.values)]
         corr_matrx = corr_matrx.where(
             np.triu(np.ones(corr_matrx.shape), k=1).astype(np.bool)
@@ -3290,7 +3292,7 @@ def anovos_report(
         "outlier_detection",
     ]
     AE_tabs = [
-        "correlation_matrix",
+        "correlation_matrix_numerical",
         "IV_calculation",
         "IG_calculation",
         "variable_clustering",
