@@ -149,7 +149,7 @@ quality_checker:
 
 association_evaluator:
 
-  correlation_matrix:
+  correlation_matrix_numerical:
     list_of_cols: all
     drop_cols: ['ifa']
 
