@@ -360,7 +360,9 @@ def test_correlation_matrix_numerical(spark_session: SparkSession):
 
     num_cols, cat_cols, other_cols = attributeType_segregation(test_df)
 
-    result_df3 = correlation_matrix_numerical(spark_session, test_df, list_of_cols=num_cols, drop_cols=[])
+    result_df3 = correlation_matrix_numerical(
+        spark_session, test_df, list_of_cols=num_cols, drop_cols=[]
+    )
 
     assert result_df3.count() == 7
     assert (
