@@ -540,6 +540,7 @@ def IV_calculation(
         idf_encoded = idf
 
     list_df = []
+    idf_encoded = idf_encoded.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
     for col in list_of_cols:
         df_agg = (
             idf_encoded.select(col, label_col)
@@ -595,6 +596,7 @@ def IV_calculation(
     odf = unionAll(list_df)
     if print_impact:
         odf.show(odf.count())
+    idf_encoded.unpersist()
 
     return odf
 
@@ -711,6 +713,7 @@ def IG_calculation(
         total_event * math.log2(total_event)
         + ((1 - total_event) * math.log2((1 - total_event)))
     )
+    idf_encoded = idf_encoded.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
     for col in list_of_cols:
         idf_entropy = (
             (
@@ -755,5 +758,6 @@ def IG_calculation(
     odf = unionAll(output)
     if print_impact:
         odf.show(odf.count())
+    idf_encoded.unpersist()
 
     return odf

@@ -54,7 +54,7 @@ Currently, we officially support the following combinations:
 
 - Apache Spark 2.4.x on Java 8 with Python 3.7.x
 - Apache Spark 3.1.x on Java 11 with Python 3.9.x
-- Apache Spark 3.2.x on Java 11 with Python 3.9.x
+- Apache Spark 3.2.x on Java 11 with Python 3.10.x
 
 To see what we're currently testing, see
 [this configuration](https://github.com/anovos/anovos/blob/main/.github/workflows/full-demo.yml#L21).
