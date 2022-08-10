@@ -1,0 +1,3 @@
+{{feature_service_name}} = FeatureService(
+    name="{{feature_service_name}}", features=[{{view_name}}]
+)

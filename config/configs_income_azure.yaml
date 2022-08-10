@@ -34,7 +34,7 @@ concatenate_dataset:
     recast_column:
       list_of_cols: ['age','education_num']
       list_of_dtypes: ['float','float']
-    
+
   dataset2:
     read_dataset:
       file_path: "dbfs:/FileStore/tables/income_dataset/parquet"
@@ -47,7 +47,7 @@ concatenate_dataset:
     recast_column:
       list_of_cols: ['age','education_num']
       list_of_dtypes: ['float','float']
-    
+
 join_dataset:
   join_cols: ifa
   join_type: inner
@@ -102,25 +102,25 @@ quality_checker:
     list_of_cols: all
     drop_cols: ['ifa']
     treatment: True
-  
+
   nullRows_detection:
     list_of_cols: all
     drop_cols: []
     treatment: True
     treatment_threshold: 0.75
-  
+
   invalidEntries_detection:
     list_of_cols: all
     drop_cols: ['ifa']
     treatment: True
     output_mode: replace
-  
+
   IDness_detection:
     list_of_cols: all
     drop_cols: ['ifa']
     treatment: True
     treatment_threshold: 0.9
-  
+
   biasedness_detection:
     list_of_cols: all
     drop_cols: ['income']
@@ -162,7 +162,7 @@ association_evaluator:
   correlation_matrix:
     list_of_cols: all
     drop_cols: ['ifa']
-  
+
   IV_calculation:
     list_of_cols: all
     drop_cols: ifa
@@ -182,7 +182,7 @@ association_evaluator:
       bin_method: equal_frequency
       bin_size: 10
       monotonicity_check: 0
-  
+
   variable_clustering:
     list_of_cols: all
     drop_cols: ifa|income
@@ -223,7 +223,7 @@ drift_detector:
       metric_weightages:
         mean: 0.5
         stddev: 0.3
-        kurtosis: 0.2 
+        kurtosis: 0.2
       existing_metric_path: ''
       appended_metric_path: 'dbfs:/FileStore/tables/si_metrics'
       threshold: 2
@@ -309,7 +309,7 @@ drift_detector:
           delimiter: ","
           inferSchema: True
 
-        
+
 report_preprocessing:
   master_path: 'dbfs:/FileStore/tables/report_stats'
   charts_to_objects:
@@ -387,7 +387,7 @@ transformers:
     # IQR_standardization:
     #   list_of_cols: all
 
-   
+
   numerical_latentFeatures:
   #   PCA_latentFeatures:
   #     list_of_cols: all
@@ -400,7 +400,7 @@ transformers:
     autoencoder_latentFeatures:
       list_of_cols: all
       reduction_params: 0.5
-      sample_size: 10000 
+      sample_size: 10000
       epochs: 25
       batch_size: 256
       root_path: "dbfs:/FileStore/tables/results/intermediate_data"
@@ -419,7 +419,7 @@ write_main:
   file_type: parquet
   file_configs:
     mode: overwrite
-    
+
 write_stats:
   file_path: "dbfs:/FileStore/tables/results/stats"
   file_type: parquet
