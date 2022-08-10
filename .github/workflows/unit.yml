@@ -29,10 +29,15 @@ jobs:
             java: '11'
             experimental: false
           - python: '3.10'
-            spark: '3.2.1'
+            spark: '3.2.2'
             hadoop: '3.2'
             java: '11'
             experimental: false
+          - python: '3.10'
+            spark: '3.3.0'
+            hadoop: '3'
+            java: '11'
+            experimental: true
     steps:
       - uses: actions/setup-python@v4
         with:
@@ -52,7 +57,7 @@ jobs:
         uses: actions/checkout@master
 
       - name: Load PIP cache
-        uses: actions/cache@v3.0.5
+        uses: actions/cache@v3.0.6
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ matrix.python}}-${{ hashFiles('./requirements.txt') }}
@@ -63,7 +68,7 @@ jobs:
       - name: Install Python requirements
         run: |
           python -m pip install --upgrade pip
-          pip install pytest pytest-cov wheel
+          pip install pytest pytest-cov pytest-mock wheel
           pip install -r requirements.txt
 
       - name: Check SPARK_HOME
@@ -72,7 +77,7 @@ jobs:
           ls $SPARK_HOME
 
       - name: Load sentence_transformer cache
-        uses: actions/cache@v3.0.5
+        uses: actions/cache@v3.0.6
         with:
           path: ~/.cache/sentence-transformers_all-mpnet-base-v2
           key: ${{ runner.os }}-sentence_transformers-${{ matrix.python}}-${{ hashFiles('./requirements.txt') }}
