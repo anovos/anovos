@@ -71,7 +71,7 @@ def evaluate_functions(spark, all_anovos_configs, functions, idf, ncol="all", ru
     if f_name in functions:
         print(f"Start {f_name} execution time calculation(in secs) for {ncol} column(s)")
         start = timeit.default_timer()
-        odf, _ = outlier_detection(spark, idf)
+        odf = outlier_detection(spark, idf)
         print(odf.head())
         end = timeit.default_timer()
         execution_time = round(end - start, 4)

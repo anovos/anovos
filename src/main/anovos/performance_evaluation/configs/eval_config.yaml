@@ -1,8 +1,8 @@
-dataset_name: "IEEE_Fraud_Detection_Medium"
-dataset_path: "s3://mw.test/krish/anovos/ieee_fraud_detection/datasets/ieee/medium/csv"
-output_parent_path: "s3://mw.test/krish/anovos/performance_eval/n7"
+dataset_name: "IEEE_Fraud_Detection_Large"
+dataset_path: "s3://mw.test/krish/anovos/ieee_fraud_detection/datasets/ieee/large/csv"
+output_parent_path: "s3://mw.test/krish/anovos/performance_eval/new_large_1"
 dataframe_size_list: []
 column_type_ratio: 0.2 
-functions: ["imputation_sklearn"]
+functions: ["correlation_matrix"]
 node_counts: [1,2,3,4,5]
 machine_type: "r5.2xlarge"

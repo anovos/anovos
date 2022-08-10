@@ -8,7 +8,6 @@ RUN add-apt-repository ppa:deadsnakes/ppa \
 RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.6 1 \
     && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.7 2
 
-<<<<<<< HEAD
 RUN wget "https://downloads.apache.org/spark/spark-2.4.8/spark-2.4.8-bin-hadoop2.7.tgz" \
     && tar -xzvf spark-2.4.8-bin-hadoop2.7.tgz \
     && rm spark-2.4.8-bin-hadoop2.7.tgz
@@ -33,6 +32,3 @@ COPY data/metric_dictionary.csv ./data/metric_dictionary.csv
 COPY bin/spark-submit_docker.sh .
 
 CMD ["./spark-submit_docker.sh"]
-=======
-RUN pip install -r requirements.txt && pip install -r dev_requirements.txt
->>>>>>> 8ca7b8161d5eb751c74261a7892f4f00d560c6c3

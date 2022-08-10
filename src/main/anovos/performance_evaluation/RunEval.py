@@ -4,7 +4,6 @@ import copy
 import subprocess
 import timeit
 
-from anovos.workflow import ETL
 from anovos.performance_evaluation.helpers.DatasetBuilder import build_dataset
 from anovos.performance_evaluation.helpers.AnovosFunctionOperator import evaluate_functions
 from anovos.performance_evaluation.reports.ReportBuilder import get_report
