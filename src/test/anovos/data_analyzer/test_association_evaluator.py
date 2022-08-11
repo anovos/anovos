@@ -5,7 +5,7 @@ from pyspark.sql import SparkSession
 from anovos.data_analyzer.association_evaluator import (
     IG_calculation,
     IV_calculation,
-    correlation_matrix_numerical,
+    correlation_matrix,
     variable_clustering,
 )
 
@@ -355,12 +355,12 @@ def test_variable_clustering(spark_session: SparkSession):
     )
 
 
-def test_correlation_matrix_numerical(spark_session: SparkSession):
+def test_correlation_matrix(spark_session: SparkSession):
     test_df = spark_session.read.parquet(sample_parquet)
 
     num_cols, cat_cols, other_cols = attributeType_segregation(test_df)
 
-    result_df3 = correlation_matrix_numerical(
+    result_df3 = correlation_matrix(
         spark_session, test_df, list_of_cols=num_cols, drop_cols=[]
     )
 
