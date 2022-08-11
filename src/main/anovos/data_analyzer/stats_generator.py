@@ -516,7 +516,13 @@ def measures_of_centralTendency(
 
 
 def uniqueCount_computation(
-    spark, idf, list_of_cols="all", drop_cols=[], compute_approx_unique_count=False, rsd=0.05, print_impact=False
+    spark,
+    idf,
+    list_of_cols="all",
+    drop_cols=[],
+    compute_approx_unique_count=False,
+    rsd=0.05,
+    print_impact=False,
 ):
     """
 
@@ -603,7 +609,13 @@ def uniqueCount_computation(
 
 
 def measures_of_cardinality(
-    spark, idf, list_of_cols="all", drop_cols=[], use_approx_unique_count=True, rsd=0.05, print_impact=False
+    spark,
+    idf,
+    list_of_cols="all",
+    drop_cols=[],
+    use_approx_unique_count=True,
+    rsd=0.05,
+    print_impact=False,
 ):
     """
     The Measures of Cardinality function provides statistics that are related to unique values seen in an
@@ -682,7 +694,13 @@ def measures_of_cardinality(
         return odf
 
     odf = (
-        uniqueCount_computation(spark, idf, list_of_cols, compute_approx_unique_count=use_approx_unique_count, rsd=rsd)
+        uniqueCount_computation(
+            spark,
+            idf,
+            list_of_cols,
+            compute_approx_unique_count=use_approx_unique_count,
+            rsd=rsd,
+        )
         .join(
             missingCount_computation(spark, idf, list_of_cols),
             "attribute",
