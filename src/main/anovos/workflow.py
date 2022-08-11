@@ -338,11 +338,28 @@ def main(all_configs, run_type, auth_key_val={}):
                     if value is not None:
                         start = timeit.default_timer()
                         print("\n" + subkey + ": \n")
-                        f = getattr(association_evaluator, subkey)
-                        extra_args = stats_args(all_configs, subkey)
-                        df_stats = f(
-                            spark, df, **value, **extra_args, print_impact=False
-                        )
+                        if subkey == "correlation_matrix":
+                            f = getattr(association_evaluator, subkey)
+                            extra_args = stats_args(all_configs, subkey)
+                            cat_to_num_trans_params = all_configs.get(
+                                "cat_to_num_transformer", None
+                            )
+                            df_trans_corr = transformers.cat_to_num_transformer(
+                                spark, df, **cat_to_num_trans_params
+                            )
+                            df_stats = f(
+                                spark,
+                                df_trans_corr,
+                                **value,
+                                **extra_args,
+                                print_impact=False,
+                            )
+                        else:
+                            f = getattr(association_evaluator, subkey)
+                            extra_args = stats_args(all_configs, subkey)
+                            df_stats = f(
+                                spark, df, **value, **extra_args, print_impact=False
+                            )
                         if report_input_path:
                             save_stats(
                                 spark,
