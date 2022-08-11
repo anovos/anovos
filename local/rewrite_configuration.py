@@ -16,11 +16,14 @@ with open(config_file, "r") as f:
 
 
 def validate_config(sub_config):
-    for k, v in sub_config.items():
-        if k in UNSUPPORTED_FEATURES:
-            raise ValueError(f"{k} is not supported in Docker execution mode.")
-        if isinstance(v, dict):
-            validate_config(v)
+    try:
+        for k, v in sub_config.items():
+            if k in UNSUPPORTED_FEATURES:
+                raise ValueError(f"{k} is not supported in Docker execution mode.")
+            if isinstance(v, dict):
+                validate_config(v)
+    except AttributeError:
+        print(sub_config)
 
 
 validate_config(full_config)
