@@ -4,7 +4,7 @@ This submodule focuses on understanding the interaction between different attrib
 between an attribute & the binary target variable.
 
 Association between attributes is measured by:
-- correlation_matrix_numerical
+- correlation_matrix
 - variable_clustering
 
 Association between an attribute and binary target is measured by:
@@ -37,7 +37,7 @@ from anovos.data_transformer.transformers import (
 from anovos.shared.utils import attributeType_segregation
 
 
-def correlation_matrix_numerical(
+def correlation_matrix(
     spark,
     idf,
     list_of_cols="all",
@@ -55,7 +55,7 @@ def correlation_matrix_numerical(
     into numerical columns. Functions cat_to_num_supervised and cat_to_num_unsupervised can be used for this. Some data
     cleaning treatment can also be done on categorical columns before converting them to numerical columns.
     Few functions to help in columns treatment are outlier_categories, measure_of_cardinality, IDness_detection etc.
-    This correlation_matrix_numerical function returns a correlation matrix dataframe of schema –
+    This correlation_matrix function returns a correlation matrix dataframe of schema –
     attribute, <attribute_names>. Correlation between attribute X and Y can be found at intersection of a) row with
     value X in ‘attribute’ column and b) column‘Y’ (or row with value Y in ‘attribute’ column and column ‘X’).
     Parameters
