@@ -431,7 +431,7 @@ def cat_to_num_transformer(
     drop_cols=[],
     label_col="label",
     event_label=1,
-    method_type="label_encoding",
+    unsupervised_method_type="label_encoding",
 ):
 
     """
@@ -460,7 +460,7 @@ def cat_to_num_transformer(
         Label/Target column (Default value = "label")
     event_label
         Value of (positive) event (i.e label 1) (Default value = 1)
-    method_type
+    unsupervised_method_type
         "label_encoding" or "onehot_encoding"
         In label encoding, each categorical value is assigned a unique integer based on alphabetical
         or frequency ordering (both ascending & descending options are available that can be selected by index_order argument).
@@ -490,7 +490,10 @@ def cat_to_num_transformer(
             )
         else:
             odf = cat_to_num_unsupervised(
-                spark, idf, method_type=method_type, index_order="frequencyDesc"
+                spark,
+                idf,
+                method_type=unsupervised_method_type,
+                index_order="frequencyDesc",
             )
 
         return odf
