@@ -1,12 +1,11 @@
-from os import path
-
 import platform
+from os import path
 
 from setuptools import setup
 
 DIR = path.dirname(path.abspath(__file__))
 
-if 'arm64' not in platform.version().lower():
+if "arm64" not in platform.version().lower():
     INSTALL_PACKAGES = open(path.join(DIR, "requirements.txt")).read().splitlines()
 else:
     INSTALL_PACKAGES = open(path.join(DIR, "requirements_m1.txt")).read().splitlines()
@@ -26,6 +25,7 @@ setup(
         "anovos.drift",
         "anovos.data_report",
         "anovos.feature_recommender",
+        "anovos.feature_store",
     ],
     package_data={"anovos.feature_recommender": ["data/*.csv"]},
     description="An Open Source tool for Feature Engineering in Machine Learning",
