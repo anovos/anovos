@@ -14,4 +14,4 @@ RUN pip install "pyspark==${spark_version}"
 
 RUN pip install "anovos==${anovos_version}"
 
-ENTRYPOINT ["python", "-m", "anovos", "/config.yanl", "local"]
+ENTRYPOINT ["python", "-m", "anovos", "/config.yaml", "local"]
