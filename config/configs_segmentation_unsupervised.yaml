@@ -91,9 +91,9 @@ quality_checker:
 cat_to_num_transformer:
   list_of_cols: all
   drop_cols: 'ifa'
-  method_type: label_encoding
-  label_col: income
-  event_label: '>50K'
+  unsupervised_method_type: label_encoding
+  label_col:
+  event_label:
 
 association_evaluator:
 
