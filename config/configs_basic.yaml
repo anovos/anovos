@@ -172,7 +172,7 @@ drift_detector:
         list_of_cols: ['marital-status','education-num']
         list_of_newcols: ['marital_status','education_num']
       recast_column:
-        list_of_cols: ['age','education_num']
+        list_of_cols: ['age','education-num']
         list_of_dtypes: ['float','float']
 
   stability_index:
