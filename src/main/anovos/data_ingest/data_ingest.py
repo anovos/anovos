@@ -57,6 +57,8 @@ def read_dataset(
         which is created using SparkSession.read. (Default value = {})
     parquet_conversion
         This boolean flag provides an option to whether convert the file type to parquet or not.
+        Schema treatment is highly recommended when using this method, as the schema when converted will
+        be kept the same as the original file, thus might defeat the purpose of converting to parquet.
         (Default value = False)
     intermediate_path
         This argument is passed as an intermediate path to write out parquet file, if parquet_conversion

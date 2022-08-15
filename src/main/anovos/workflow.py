@@ -25,10 +25,7 @@ def ETL(args):
     f = getattr(data_ingest, "read_dataset")
     read_args = args.get("read_dataset", None)
     if read_args:
-        start = timeit.default_timer()
         df = f(spark, **read_args)
-        end = timeit.default_timer()
-        logger.info(f"read_dataset: execution time (in secs) ={round(end - start, 4)}")
     else:
         raise TypeError("Invalid input for reading dataset")
 
