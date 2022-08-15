@@ -64,7 +64,8 @@ def read_dataset(
         This argument is passed as an intermediate path to write out parquet file, if parquet_conversion
         is set to True. (Default value = '')
     treatment
-        This boolean flag provides an option to whether treat the dataframe schema or not.
+        This boolean flag provides an option to whether treat the dataframe schema or not. It might not
+        work on parquet filetype, as parquet has its own strict Schema.
         (Default value = False)
     id_cols
         This argument is a list contains all the identifier columns, such as ID, Number, Code, etc
@@ -110,14 +111,6 @@ def read_dataset(
         ):
             raise TypeError("Invalid input for threshold_string")
         list_of_cols = list(c for c in odf.columns if c not in id_cols)
-    if parquet_conversion:
-        file_path = intermediate_path
-        file_type = "parquet"
-        odf.write.format(file_type).options(**file_configs).save(
-            file_path, mode="overwrite"
-        )
-        odf = spark.read.format(file_type).options(**file_configs).load(file_path)
-    if treatment:
         odf = odf.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
         odf_recast = odf.select(
             [F.col(c).cast(T.DoubleType()).alias(c) for c in list_of_cols]
@@ -176,6 +169,13 @@ def read_dataset(
             .schema(full_schema)
             .load(file_path)
         )
+    if parquet_conversion:
+        file_path = intermediate_path
+        file_type = "parquet"
+        odf.write.format(file_type).options(**file_configs).save(
+            file_path, mode="overwrite"
+        )
+        odf = spark.read.format(file_type).options(**file_configs).load(file_path)
     return odf
 
 
