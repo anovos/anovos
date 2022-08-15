@@ -714,6 +714,7 @@ def cat_to_num_supervised(
     output_mode="replace",
     run_type="local",
     auth_key="NA",
+    intermediate_data_caching=False,
     print_impact=False,
 ):
     """
@@ -769,6 +770,11 @@ def cat_to_num_supervised(
         "local", "emr", "databricks", "ak8s" (Default value = "local")
     auth_key
         Option to pass an authorization key to write to filesystems. Currently applicable only for ak8s run_type. Default value is kept as "NA"
+    intermediate_data_caching
+        Boolean argument - True or False. This parameter is for optimization purpose. If Ture, repeatedly used dataframe
+        will be cached (StorageLevel MEMORY_AND_DISK). We recommend setting this parameter as True if at least one of
+        the following criteria is True: (1) The underlying data source is in csv format (2) The transformation will be
+        applicable to most columns.
     print_impact
         True, False (Default value = False)
         This argument is to print out the descriptive statistics of encoded columns.
@@ -798,9 +804,14 @@ def cat_to_num_supervised(
     if label_col not in idf.columns:
         raise TypeError("Invalid input for Label Column")
 
-    idf_id = idf.withColumn("tempID", F.monotonically_increasing_id())
-    odf_partial = idf_id.select(["tempID"] + list_of_cols)
-
+    odf = idf
+    label_col_bool = label_col + "_cat_to_num_sup_temp"
+    idf = idf.withColumn(
+        label_col_bool,
+        F.when(F.col(label_col) == event_label, "1").otherwise("0"),
+    )
+    if intermediate_data_caching:
+        idf = idf.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
     for index, i in enumerate(list_of_cols):
         if pre_existing_model:
             df_tmp = spark.read.csv(
@@ -810,12 +821,9 @@ def cat_to_num_supervised(
             )
         else:
             df_tmp = (
-                idf.withColumn(
-                    label_col,
-                    F.when(F.col(label_col) == event_label, "1").otherwise("0"),
-                )
+                idf.select(i, label_col_bool)
                 .groupBy(i)
-                .pivot(label_col)
+                .pivot(label_col_bool)
                 .count()
                 .fillna(0)
                 .withColumn(
@@ -839,18 +847,14 @@ def cat_to_num_supervised(
             )
 
         if df_tmp.count() > 1:
-            odf_partial = odf_partial.join(df_tmp, i, "left_outer")
+            odf = odf.join(F.broadcast(df_tmp), i, "left_outer")
         else:
-            odf_partial = odf_partial.crossJoin(df_tmp)
-
-    odf = idf_id.join(odf_partial.drop(*list_of_cols), "tempID", "left_outer").drop(
-        "tempID"
-    )
+            odf = odf.crossJoin(F.broadcast(df_tmp))
 
     if output_mode == "replace":
         for i in list_of_cols:
             odf = odf.drop(i).withColumnRenamed(i + "_encoded", i)
-        odf = odf.select(idf.columns)
+        odf = odf.select([i for i in idf.columns if i != label_col_bool])
 
     if print_impact:
         if output_mode == "replace":
@@ -858,14 +862,12 @@ def cat_to_num_supervised(
         else:
             output_cols = [(i + "_encoded") for i in list_of_cols]
         print("Before: ")
-        idf.select(list_of_cols).describe().where(
-            F.col("summary").isin("count", "min", "max")
-        ).show(3, False)
+        idf.select(list_of_cols).summary("count", "min", "max").show(3, False)
         print("After: ")
-        odf.select(output_cols).describe().where(
-            F.col("summary").isin("count", "min", "max")
-        ).show(3, False)
+        odf.select(output_cols).summary("count", "min", "max").show(3, False)
 
+    if intermediate_data_caching:
+        idf.unpersist()
     return odf
 
 
