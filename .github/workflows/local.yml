@@ -18,7 +18,10 @@ jobs:
 
     - name: Prepare the demo
       run: |
-        mv ./examples/data ./data
+        rm -rf ./data
+        mkdir data
+        mv ./examples/data/income_dataset ./data
+        find ./data
         chmod +x ./local/run_workload.sh
 
     - name: Build the anovos-worker image
