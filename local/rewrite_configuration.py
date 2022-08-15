@@ -98,7 +98,7 @@ OrderPreservingDumper.add_representer(dict, OrderPreservingDumper.represent_dict
     
 
 with open(_NEW_CONFIG_NAME, "wt") as f:
-    yaml.dump(full_config, f, dumper=OrderPreservingDumper)
+    yaml.dump(full_config, f, Dumper=OrderPreservingDumper)
 
 with open("data_directory.tmp", "wt") as f:
     f.write(str(data_directory.absolute()))
@@ -108,8 +108,7 @@ def diff_config(a, b, tree=None):
     tree = tree or ["(root)"]
     for k, v in a.items():
         if isinstance(v, dict):
-            tree.append(k)
-            diff_config(a[k], b[k], tree)
+            diff_config(a[k], b[k], tree + ["k"])
         else:
             if v != b[k]:
                 print(f"{'.'.join(tree)}: {v} -> {b[k]}")
