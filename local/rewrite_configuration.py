@@ -108,7 +108,7 @@ def diff_config(a, b, tree=None):
     tree = tree or ["(root)"]
     for k, v in a.items():
         if isinstance(v, dict):
-            diff_config(a[k], b[k], tree + ["k"])
+            diff_config(a[k], b[k], tree + [k])
         else:
             if v != b[k]:
                 print(f"{'.'.join(tree)}: {v} -> {b[k]}")
