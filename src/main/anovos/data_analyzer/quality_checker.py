@@ -114,22 +114,24 @@ def duplicate_detection(
     odf_tmp = idf.drop_duplicates(subset=list_of_cols)
     odf = odf_tmp if treatment else idf
 
+    idf_count = idf.count()
+    odf_tmp_count = odf_tmp.count()
     odf_print = spark.createDataFrame(
         [
-            ["rows_count", float(idf.count())],
-            ["unique_rows_count", float(odf_tmp.count())],
-            ["duplicate_rows", float(idf.count() - odf_tmp.count())],
-            ["duplicate_pct", round((idf.count() - odf_tmp.count()) / idf.count(), 4)],
+            ["rows_count", float(idf_count)],
+            ["unique_rows_count", float(odf_tmp_count)],
+            ["duplicate_rows", float(idf_count - odf_tmp_count)],
+            ["duplicate_pct", round((idf_count - odf_tmp_count) / idf_count, 4)],
         ],
         schema=["metric", "value"],
     )
     if print_impact:
-        print("No. of Rows: " + str(idf.count()))
-        print("No. of UNIQUE Rows: " + str(odf_tmp.count()))
-        print("No. of Duplicate Rows: " + str(idf.count() - odf_tmp.count()))
+        print("No. of Rows: " + str(idf_count))
+        print("No. of UNIQUE Rows: " + str(odf_tmp_count))
+        print("No. of Duplicate Rows: " + str(idf_count - odf_tmp_count))
         print(
             "Percentage of Duplicate Rows: "
-            + str(round((idf.count() - odf_tmp.count()) / idf.count(), 4))
+            + str(round((idf_count - odf_tmp_count) / idf_count, 4))
         )
 
     return odf, odf_print
