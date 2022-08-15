@@ -71,7 +71,7 @@ timeseries_analyzer:
   max_days: 3600
 
 anovos_basic_report:
-  basic_report: True
+  basic_report: False
   report_args:
     id_col: ifa
     label_col: income
@@ -144,37 +144,6 @@ quality_checker:
       pre_existing_model: False
       model_path: NA
       output_mode: replace
-
-
-association_evaluator:
-
-  correlation_matrix:
-    list_of_cols: all
-    drop_cols: ['ifa']
-
-  IV_calculation:
-    list_of_cols: all
-    drop_cols: ifa
-    label_col: income
-    event_label: '>50K'
-    encoding_configs:
-      bin_method: equal_frequency
-      bin_size: 10
-      monotonicity_check: 0
-
-  IG_calculation:
-    list_of_cols: all
-    drop_cols: ifa
-    label_col: income
-    event_label: '>50K'
-    encoding_configs:
-      bin_method: equal_frequency
-      bin_size: 10
-      monotonicity_check: 0
-
-  variable_clustering:
-    list_of_cols: all
-    drop_cols: ifa|income
 
 
 drift_detector:
@@ -297,31 +266,6 @@ drift_detector:
           header: True
           delimiter: ","
           inferSchema: True
-
-
-report_preprocessing:
-  master_path: 'report_stats'
-  charts_to_objects:
-    list_of_cols: all
-    drop_cols: ifa
-    label_col: income
-    event_label: '>50K'
-    bin_method: equal_frequency
-    bin_size: 10
-    drift_detector: True
-    outlier_charts: False
-    source_path: "NA"
-
-report_generation:
-  master_path: 'report_stats'
-  id_col: 'ifa'
-  label_col: 'income'
-  corr_threshold: 0.4
-  iv_threshold: 0.02
-  drift_threshold_model: 0.1
-  dataDict_path: 'data/income_dataset/data_dictionary.csv'
-  metricDict_path: 'data/metric_dictionary.csv'
-  final_report_path: 'report_stats'
 
 transformers:
   numerical_mathops:
