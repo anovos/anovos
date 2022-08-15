@@ -94,7 +94,7 @@ class OrderPreservingDumper(yaml.Dumper):
         return self.represent_dict(data.items())    
 
 
-OrderPreservingDumper.add_representer(dict, CustomDumper.represent_dict_preserve_order)
+OrderPreservingDumper.add_representer(dict, OrderPreservingDumper.represent_dict_preserve_order)
     
 
 with open(_NEW_CONFIG_NAME, "wt") as f:
