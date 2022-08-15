@@ -27,7 +27,7 @@ def read_dataset(
     file_type,
     file_configs={},
     parquet_conversion=False,
-    intermediate_path="",
+    parquet_output_path="",
     treatment=False,
     id_cols=[],
     threshold_num=50,
@@ -60,8 +60,8 @@ def read_dataset(
         Schema treatment is highly recommended when using this method, as the schema when converted will
         be kept the same as the original file, thus might defeat the purpose of converting to parquet.
         (Default value = False)
-    intermediate_path
-        This argument is passed as an intermediate path to write out parquet file, if parquet_conversion
+    parquet_output_path
+        This argument is passed as output path to write out parquet file, if parquet_conversion
         is set to True. (Default value = '')
     treatment
         This boolean flag provides an option to whether treat the dataframe schema or not. It might not
@@ -93,8 +93,10 @@ def read_dataset(
     """
     odf = spark.read.format(file_type).options(**file_configs).load(file_path)
     if parquet_conversion:
-        if not intermediate_path:
-            raise TypeError("intermediate_path cannot be blank for parquet conversion")
+        if not parquet_output_path:
+            raise TypeError(
+                "parquet_output_path cannot be blank for parquet conversion"
+            )
     if treatment:
         if id_cols:
             for col in id_cols:
@@ -170,7 +172,7 @@ def read_dataset(
             .load(file_path)
         )
     if parquet_conversion:
-        file_path = intermediate_path
+        file_path = parquet_output_path
         file_type = "parquet"
         odf.write.format(file_type).options(**file_configs).save(
             file_path, mode="overwrite"
