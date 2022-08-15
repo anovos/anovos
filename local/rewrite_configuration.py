@@ -103,15 +103,15 @@ with open(_NEW_CONFIG_NAME, "wt") as f:
 with open("data_directory.tmp", "wt") as f:
     f.write(str(data_directory.absolute()))
 
-    
+
 def diff_config(a, b, tree=None):
-    tree = tree or ["(root)"]
+    tree = tree or []
     for k, v in a.items():
         if isinstance(v, dict):
             diff_config(a[k], b[k], tree + [k])
         else:
             if v != b[k]:
-                print(f"{'.'.join(tree)}: {v} -> {b[k]}")
+                print(f"{'.'.join(tree + [k])}: {v} -> {b[k]}")
     
     
 with open(config_file, "rt") as f:
@@ -119,5 +119,6 @@ with open(config_file, "rt") as f:
     
 with open(_NEW_CONFIG_NAME, "rt") as f:
     new_config = yaml.load(f, yaml.SafeLoader)
-    
+
+print("Adapted configuration for execution inside an anovos-worker container:")
 diff_config(old_config, new_config)
