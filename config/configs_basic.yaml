@@ -312,17 +312,6 @@ report_preprocessing:
     outlier_charts: False
     source_path: "NA"
 
-report_generation:
-  master_path: 'report_stats'
-  id_col: 'ifa'
-  label_col: 'income'
-  corr_threshold: 0.4
-  iv_threshold: 0.02
-  drift_threshold_model: 0.1
-  dataDict_path: 'data/income_dataset/data_dictionary.csv'
-  metricDict_path: 'data/metric_dictionary.csv'
-  final_report_path: 'report_stats'
-
 transformers:
   numerical_mathops:
     feature_transformation:
