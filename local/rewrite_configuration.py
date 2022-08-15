@@ -6,12 +6,13 @@ import yaml
 
 UNSUPPORTED_FEATURES = ["write_feast_features"]
 
+_NEW_CONFIG_NAME = "config.yaml.tmp"
 _DATA_DIR = pathlib.Path("/data")
 _OUTPUT_DIR = pathlib.Path("/output")
 
 config_file = sys.argv[1]
 
-with open(config_file, "r") as f:
+with open(config_file, "rt") as f:
     full_config = yaml.load(f, yaml.SafeLoader)
 
 
@@ -96,8 +97,28 @@ class OrderPreservingDumper(yaml.Dumper):
 OrderPreservingDumper.add_representer(dict, CustomDumper.represent_dict_preserve_order)
     
 
-with open("config.yaml.tmp", "wt") as f:
+with open(_NEW_CONFIG_NAME, "wt") as f:
     yaml.dump(full_config, f, dumper=OrderPreservingDumper)
 
 with open("data_directory.tmp", "wt") as f:
     f.write(str(data_directory.absolute()))
+
+    
+def diff_config(a, b, tree=None):
+    tree = tree or ["(root)"]
+    for k, v in a.items():
+        if isinstance(v, dict):
+            tree.append(k)
+            diff_config(a[k], b[k], tree)
+        else:
+            if v != b[k]:
+                print(f"{'.'.join(tree)}: {v} -> {b[k]}")
+    
+    
+with open(config_file, "rt") as f:
+    old_config = yaml.load(f, yaml.SafeLoader)
+    
+with open(_NEW_CONFIG_NAME, "rt") as f:
+    new_config = yaml.load(f, yaml.SafeLoader)
+    
+diff_config(old_config, new_config)
