@@ -1,0 +1,33 @@
+name: Local execution
+
+on:
+  workflow_dispatch:
+  workflow_call:
+  push:
+    paths:
+      - '.github/workflows/local.yml'
+      - 'config/configs_basic.yaml'
+      - 'local/**'
+
+jobs:
+  run-local-demo:
+    runs-on: 'ubuntu-latest'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@master
+        
+      - name: Prepare the demo
+        run: |
+          mv ./examples/data ./data
+          chmod +x ./local/run_workload.sh
+
+      - name: Build the anovos-worker image
+        run: |
+          cd local
+          docker build . -t anovos-worker
+   
+       - name: Run the demo as a local workload
+         run: |
+          ./local/run_workload.sh config/configs_basic.yaml
+          find ./output
+        
