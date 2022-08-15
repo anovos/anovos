@@ -86,8 +86,18 @@ for write_key in ["write_intermediate", "write_main", "write_stats"]:
     else:
         full_config[write_key]["file_path"] = str(_OUTPUT_DIR / pathlib.Path(old_path))
 
+        
+class OrderPreservingDumper(yaml.Dumper):
+    """cf. https://stackoverflow.com/a/52621703"""
+    def represent_dict_preserve_order(self, data):
+        return self.represent_dict(data.items())    
+
+
+OrderPreservingDumper.add_representer(dict, CustomDumper.represent_dict_preserve_order)
+    
+
 with open("config.yaml.tmp", "wt") as f:
-    yaml.dump(full_config, f)
+    yaml.dump(full_config, f, dumper=OrderPreservingDumper)
 
 with open("data_directory.tmp", "wt") as f:
     f.write(str(data_directory.absolute()))
