@@ -137,12 +137,10 @@ def main(all_configs, run_type, auth_key_val={}):
     write_stats = all_configs.get("write_stats", None)
     write_feast_features = all_configs.get("write_feast_features", None)
 
-    if write_intermediate:
-        default_model_path = write_intermediate.get("file_path", None)
-        if default_model_path:
-            default_model_path = default_model_path + "/intermediate_model"
+    if write_intermediate and run_type == "ak8s":
+        default_root_path = write_intermediate.get("file_path", None)
     else:
-        default_model_path = None
+        default_root_path = None
 
     if write_feast_features is not None:
         repartition_count = (
@@ -507,9 +505,9 @@ def main(all_configs, run_type, auth_key_val={}):
                                 if subkey2 == "cat_to_num_supervised":
                                     if (
                                         "model_path" not in value2.keys()
-                                        and default_model_path
+                                        and default_root_path
                                     ):
-                                        extra_args["model_path"] = default_model_path
+                                        extra_args["model_path"] = default_root_path + "/intermediate_model"
                                 if subkey2 in (
                                     "normalization",
                                     "feature_transformation",
