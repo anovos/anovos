@@ -629,37 +629,23 @@ def cat_to_num_unsupervised(
 
         odf = encoder.fit(odf_indexed).transform(odf_indexed)
 
-        def vector_to_array(v):
-            v = DenseVector(v)
-            new_array = list([int(x) for x in v])
-            return new_array
-
-        f_vector_to_array = F.udf(vector_to_array, T.ArrayType(T.IntegerType()))
-
         new_cols = []
         odf_sample = odf.take(1)
         for i in list_of_cols:
+            odf_schema = odf.schema
             uniq_cats = odf_sample[0].asDict()[i + "_vec"].size
-            odf_schema = odf.schema.add(
-                T.StructField("tmp", T.ArrayType(T.IntegerType()))
-            )
-
             for j in range(0, uniq_cats):
                 odf_schema = odf_schema.add(
                     T.StructField(i + "_" + str(j), T.IntegerType())
                 )
                 new_cols.append(i + "_" + str(j))
 
-            odf = (
-                odf.withColumn("tmp", f_vector_to_array(i + "_vec"))
-                .rdd.map(lambda x: (*x, *x["tmp"]))
-                .toDF(schema=odf_schema)
-            )
+            odf = odf.rdd.map(lambda x: (*x, *(DenseVector(x[i + "_vec"]).toArray().astype(int).tolist()))).toDF(schema=odf_schema)
 
             if output_mode == "replace":
-                odf = odf.drop(i, i + "_vec", i + "_index", "tmp")
+                odf = odf.drop(i, i + "_vec", i + "_index")
             else:
-                odf = odf.drop(i + "_vec", i + "_index", "tmp")
+                odf = odf.drop(i + "_vec", i + "_index")
 
     else:
         odf = odf_indexed
