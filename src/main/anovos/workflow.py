@@ -505,7 +505,10 @@ def main(all_configs, run_type, auth_key_val={}):
                                     extra_args["run_type"] = run_type
                                     extra_args["auth_key"] = auth_key
                                 if subkey2 == "cat_to_num_supervised":
-                                    if "model_path" not in value2.keys() and default_model_path:
+                                    if (
+                                        "model_path" not in value2.keys()
+                                        and default_model_path
+                                    ):
                                         extra_args["model_path"] = default_model_path
                                 if subkey2 in (
                                     "normalization",
