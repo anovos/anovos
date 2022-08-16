@@ -78,19 +78,22 @@ def duplicate_detection(
         It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
         a few handful of them. (Default value = [])
     treatment
-        Boolean argument – True or False. If True, duplicate rows are removed from the input dataframe. (Default value = False)
+        Boolean argument – True or False. If True, duplicate rows are removed from the input dataframe. (Default value = True)
     print_impact
         True, False
         This argument is to print out the statistics.(Default value = False)
 
     Returns
     -------
-    odf : DataFrame
-        de-duplicated dataframe if treated, else original input dataframe.
-    odf_print : DataFrame
-        schema [metric, value] and contains metrics - number of rows, number of unique rows,
-        number of duplicate rows and percentage of duplicate rows in total.
-
+    if print_impact is True:
+        odf : DataFrame
+            de-duplicated dataframe if treated, else original input dataframe.
+        odf_print : DataFrame
+            schema [metric, value] and contains metrics - number of rows, number of unique rows,
+            number of duplicate rows and percentage of duplicate rows in total.
+    if print_impact is False:
+        odf : DataFrame
+            de-duplicated dataframe if treated, else original input dataframe.
     """
     if not treatment and not print_impact:
         warnings.warn(
