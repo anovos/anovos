@@ -47,7 +47,7 @@ from anovos.shared.utils import (
 
 
 def duplicate_detection(
-    spark, idf, list_of_cols="all", drop_cols=[], treatment=False, print_impact=False
+    spark, idf, list_of_cols="all", drop_cols=[], treatment=True, print_impact=False
 ):
     """
     As the name implies, this function detects duplication in the input dataset. This means, for a pair of
@@ -92,6 +92,11 @@ def duplicate_detection(
         number of duplicate rows and percentage of duplicate rows in total.
 
     """
+    if not treatment and not print_impact:
+        warnings.warn(
+            "The original idf will be the only output. Set print_impact=True to perform detection without treatment"
+        )
+        return idf
     if list_of_cols == "all":
         num_cols, cat_cols, other_cols = attributeType_segregation(idf)
         list_of_cols = num_cols + cat_cols
@@ -114,18 +119,19 @@ def duplicate_detection(
     odf_tmp = idf.drop_duplicates(subset=list_of_cols)
     odf = odf_tmp if treatment else idf
 
-    idf_count = idf.count()
-    odf_tmp_count = odf_tmp.count()
-    odf_print = spark.createDataFrame(
-        [
-            ["rows_count", float(idf_count)],
-            ["unique_rows_count", float(odf_tmp_count)],
-            ["duplicate_rows", float(idf_count - odf_tmp_count)],
-            ["duplicate_pct", round((idf_count - odf_tmp_count) / idf_count, 4)],
-        ],
-        schema=["metric", "value"],
-    )
     if print_impact:
+        idf_count = idf.count()
+        odf_tmp_count = odf_tmp.count()
+        odf_print = spark.createDataFrame(
+            [
+                ["rows_count", float(idf_count)],
+                ["unique_rows_count", float(odf_tmp_count)],
+                ["duplicate_rows", float(idf_count - odf_tmp_count)],
+                ["duplicate_pct", round((idf_count - odf_tmp_count) / idf_count, 4)],
+            ],
+            schema=["metric", "value"],
+        )
+
         print("No. of Rows: " + str(idf_count))
         print("No. of UNIQUE Rows: " + str(odf_tmp_count))
         print("No. of Duplicate Rows: " + str(idf_count - odf_tmp_count))
@@ -134,7 +140,10 @@ def duplicate_detection(
             + str(round((idf_count - odf_tmp_count) / idf_count, 4))
         )
 
-    return odf, odf_print
+    if print_impact:
+        return odf, odf_print
+    else:
+        return odf
 
 
 def nullRows_detection(
