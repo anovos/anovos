@@ -135,8 +135,14 @@ def main(all_configs, run_type, auth_key_val={}):
     write_main = all_configs.get("write_main", None)
     write_intermediate = all_configs.get("write_intermediate", None)
     write_stats = all_configs.get("write_stats", None)
-
     write_feast_features = all_configs.get("write_feast_features", None)
+
+    if write_intermediate:
+        default_model_path = write_intermediate.get("file_path", None)
+        if default_model_path:
+            default_model_path = default_model_path + "/intermediate_model"
+    else:
+        default_model_path = None
 
     if write_feast_features is not None:
         repartition_count = (
@@ -498,6 +504,9 @@ def main(all_configs, run_type, auth_key_val={}):
                                 ):
                                     extra_args["run_type"] = run_type
                                     extra_args["auth_key"] = auth_key
+                                if subkey2 == "cat_to_num_supervised":
+                                    if "model_path" not in value2.keys() and default_model_path:
+                                        extra_args["model_path"] = default_model_path
                                 if subkey2 in (
                                     "normalization",
                                     "feature_transformation",
