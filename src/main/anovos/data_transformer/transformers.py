@@ -844,6 +844,8 @@ def cat_to_num_supervised(
                         model_path + "/cat_to_num_supervised/" + i,
                         header=True,
                         mode="overwrite",
+                        ignoreLeadingWhiteSpace=False,
+                        ignoreTrailingWhiteSpace=False,
                     )
                     df_tmp = spark.read.csv(
                         model_path + "/cat_to_num_supervised/" + i,
