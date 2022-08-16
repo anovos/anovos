@@ -9,9 +9,6 @@ ARG anovos_version
 WORKDIR /
 USER root
 
-# TODO: Why is there no PySpark in the image?
-RUN pip install "pyspark==${spark_version}"
-
-RUN pip install "anovos==${anovos_version}"
+RUN pip install "pyspark==${spark_version}" "anovos==${anovos_version}"
 
 ENTRYPOINT ["python", "-m", "anovos", "/config.yaml", "local"]
