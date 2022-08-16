@@ -712,8 +712,6 @@ def cat_to_num_supervised(
     pre_existing_model=False,
     model_path="NA",
     output_mode="replace",
-    run_type="local",
-    auth_key="NA",
     intermediate_data_caching=False,
     print_impact=False,
 ):

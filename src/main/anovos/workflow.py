@@ -491,7 +491,6 @@ def main(all_configs, run_type, auth_key_val={}):
                                 f = getattr(transformers, subkey2)
                                 extra_args = stats_args(all_configs, subkey2)
                                 if subkey2 in (
-                                    "cat_to_num_supervised",
                                     "imputation_sklearn",
                                     "autoencoder_latentFeatures",
                                     "auto_imputation",
