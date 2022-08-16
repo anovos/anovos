@@ -810,6 +810,14 @@ def cat_to_num_supervised(
         label_col_bool,
         F.when(F.col(label_col) == event_label, "1").otherwise("0"),
     )
+
+    if model_path == "NA":
+        skip_if_error = True
+        model_path = "intermediate_data"
+    else:
+        skip_if_error = False
+    save_model = True
+
     if intermediate_data_caching:
         idf = idf.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
     for index, i in enumerate(list_of_cols):
@@ -832,19 +840,30 @@ def cat_to_num_supervised(
                 .drop(*["1", "0"])
             )
 
-            if model_path == "NA":
-                model_path = "intermediate_data"
-
-            df_tmp.coalesce(1).write.csv(
-                model_path + "/cat_to_num_supervised/" + i,
-                header=True,
-                mode="overwrite",
-            )
-            df_tmp = spark.read.csv(
-                model_path + "/cat_to_num_supervised/" + i,
-                header=True,
-                inferSchema=True,
-            )
+            if save_model:
+                try:
+                    df_tmp.coalesce(1).write.csv(
+                        model_path + "/cat_to_num_supervised/" + i,
+                        header=True,
+                        mode="overwrite",
+                    )
+                    df_tmp = spark.read.csv(
+                        model_path + "/cat_to_num_supervised/" + i,
+                        header=True,
+                        inferSchema=True,
+                    )
+                except Exception as error:
+                    if skip_if_error:
+                        warnings.warn(
+                            "For optimization purpose, we recommend specifying a valid model_path value to save the intermediate data. Saving to the default path - '"
+                            + model_path
+                            + "/cat_to_num_supervised/"
+                            + i
+                            + "' faced an error."
+                        )
+                        save_model = False
+                    else:
+                        raise error
 
         if df_tmp.count() > 1:
             odf = odf.join(F.broadcast(df_tmp), i, "left_outer")
