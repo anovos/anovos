@@ -425,13 +425,7 @@ def monotonic_binning(
 
 
 def cat_to_num_transformer(
-    spark,
-    idf,
-    list_of_cols="all",
-    drop_cols=[],
-    label_col="label",
-    event_label=1,
-    unsupervised_method_type="label_encoding",
+    spark, idf, list_of_cols, drop_cols, method_type, encoding, label_col, event_label
 ):
 
     """
@@ -449,22 +443,24 @@ def cat_to_num_transformer(
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
         "all" can be passed to include all categorical columns for analysis. This is super useful instead of specifying all column names manually.
         Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
-        drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
+        drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
     drop_cols
         List of columns to be dropped e.g., ["col1","col2"].
         Alternatively, columns can be specified in a string format,
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
         It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
-        a few handful of them. (Default value = [])
-    label_col
-        Label/Target column (Default value = "label")
-    event_label
-        Value of (positive) event (i.e label 1) (Default value = 1)
-    unsupervised_method_type
+        a few handful of them.
+    method_type
+        Depending upon the use case the method type can be either Supervised or Unsupervised. For Supervised use case, label_col is mandatory.
+    encoding
         "label_encoding" or "onehot_encoding"
         In label encoding, each categorical value is assigned a unique integer based on alphabetical
         or frequency ordering (both ascending & descending options are available that can be selected by index_order argument).
-        In one-hot encoding, every unique value in the column will be added in a form of dummy/binary column. (Default value = 1)
+        In one-hot encoding, every unique value in the column will be added in a form of dummy/binary column.
+    label_col
+        Label/Target column
+    event_label
+        Value of (positive) event
     """
 
     num_cols, cat_cols, other_cols = attributeType_segregation(idf)
@@ -480,7 +476,8 @@ def cat_to_num_transformer(
         if any(x not in cat_cols for x in list_of_cols):
             raise TypeError("Invalid input for Column(s)")
 
-        if label_col:
+        if (method_type == "supervised") & (label_col is not None):
+
             odf = cat_to_num_supervised(
                 spark, idf, label_col=label_col, event_label=event_label
             )
@@ -488,17 +485,20 @@ def cat_to_num_transformer(
                 label_col,
                 F.when(F.col(label_col) == event_label, F.lit(1)).otherwise(F.lit(0)),
             )
-        else:
+
+            return odf
+
+        elif (method_type == "unsupervised") & (label_col is None):
             odf = cat_to_num_unsupervised(
                 spark,
                 idf,
-                method_type=unsupervised_method_type,
+                method_type=encoding,
                 index_order="frequencyDesc",
             )
 
-        return odf
-
+            return odf
     else:
+
         return idf
 
 
