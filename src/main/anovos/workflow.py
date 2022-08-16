@@ -311,7 +311,7 @@ def main(all_configs, run_type, auth_key_val={}):
                                     ):
                                         extra_args["stats_missing"] = {}
 
-                        if subkey == "outlier_detection":
+                        if subkey in ["outlier_detection", "duplicate_detection"]:
                             extra_args["print_impact"] = True
                         else:
                             extra_args["print_impact"] = False
