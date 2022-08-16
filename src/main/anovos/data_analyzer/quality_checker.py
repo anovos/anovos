@@ -119,7 +119,7 @@ def duplicate_detection(
     else:
         raise TypeError("Non-Boolean input for treatment")
 
-    odf_tmp = idf.drop_duplicates(subset=list_of_cols)
+    odf_tmp = idf.groupby(list_of_cols).count().drop("count")
     odf = odf_tmp if treatment else idf
 
     if print_impact:
