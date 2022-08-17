@@ -178,7 +178,7 @@ def anovos_basic_report(
             stats = func(spark, idf)
         elif func in (QC_rows_funcs + QC_cols_funcs):
             extra_args = stats_args(output_path, func.__name__)
-            if func.__name__ == "outlier_detection":
+            if func.__name__ in ["outlier_detection", "duplicate_detection"]:
                 extra_args["print_impact"] = True
             stats = func(spark, idf, **extra_args)[1]
         elif func in AA_funcs:
