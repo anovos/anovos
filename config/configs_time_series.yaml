@@ -91,6 +91,14 @@ quality_checker:
       output_mode: replace
 
 
+cat_to_num_transformer:
+  list_of_cols: all
+  drop_cols: 'STATE'
+  method_type: unsupervised
+  encoding: label_encoding
+  label_col: 
+  event_label:
+
 association_evaluator:
 
   correlation_matrix:

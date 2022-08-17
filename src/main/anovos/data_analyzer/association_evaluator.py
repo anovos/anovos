@@ -32,130 +32,32 @@ from anovos.data_transformer.transformers import (
     attribute_binning,
     cat_to_num_unsupervised,
     imputation_MMM,
-    outlier_categories,
     monotonic_binning,
 )
 from anovos.shared.utils import attributeType_segregation
 
 
-def correlation_matrix_phik(
-    spark, idf, list_of_cols="all", drop_cols=[], stats_unique={}, print_impact=False
-):
-    """
-    This function calculates correlation coefficient statistical, which measures the strength of the relationship
-    between the relative movements of two attributes. Pearson’s correlation coefficient is a standard approach of
-    measuring correlation between two variables. However, it has some drawbacks: a) It works only with continuous
-    variables, b) It only accounts for a linear relationship between variables, and c) It is sensitive to outliers.
-    To avoid these issues, we are computing Phik (𝜙k), which is a new and practical correlation coefficient that
-    works consistently between categorical, ordinal and interval variables, captures non-linear dependency and
-    reverts to the Pearson correlation coefficient in case of a bivariate normal input distribution. The correlation
-    coefficient is calculated for every pair of attributes and its value lies between 0 and 1, where 0 means there is
-    no correlation between the two attributes and 1 means strong correlation. However, this methodology have
-    drawbacks of its own as it is found to be more computational expensive especially when number of columns in the
-    input dataset is on higher side (number of pairs to analyse increases exponentially with number of columns).
-    Further, there is no indication of the direction of the relationship. More detail can be referred from the [
-    source paper] [1].
-
-    [1]: https://arxiv.org/abs/1811.11440/     "source paper"
-
-    This function returns a correlation matrix dataframe of schema – attribute, <attribute_names>. Correlation
-    between attribute X and Y can be found at intersection of a) row with value X in ‘attribute’ column and b) column
-    ‘Y’ (or row with value Y in ‘attribute’ column and column ‘X’).
-
-    Parameters
-    ----------
-    spark
-        Spark Session
-    idf
-        Input Dataframe
-    list_of_cols
-        List of columns to analyse e.g., ["col1","col2"].
-        Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-        "all" can be passed to include all columns for analysis. This is super useful instead of specifying all column names manually.
-        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in drop_cols argument
-        is not considered for analysis even if it is mentioned in list_of_cols. (Default value = "all")
-    drop_cols
-        List of columns to be dropped e.g., ["col1","col2"].
-        Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
-        It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
-        a few handful of them. (Default value = [])
-    stats_unique
-        Takes arguments for read_dataset (data_ingest module) function in a dictionary format
-        to read pre-saved statistics on unique value count i.e. if measures_of_cardinality or
-        uniqueCount_computation (data_analyzer.stats_generator module) has been computed & saved before. (Default value = {})
-    print_impact
-        True, False
-        This argument is to print out the statistics.(Default value = False)
-
-    Returns
-    -------
-    DataFrame
-        [attribute,*attribute_names]
-
-    """
-
-    if list_of_cols == "all":
-        num_cols, cat_cols, other_cols = attributeType_segregation(idf)
-        list_of_cols = num_cols + cat_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
-
-    if stats_unique == {}:
-        remove_cols = (
-            uniqueCount_computation(spark, idf, list_of_cols)
-            .where(F.col("unique_values") < 2)
-            .select("attribute")
-            .rdd.flatMap(lambda x: x)
-            .collect()
-        )
-    else:
-        remove_cols = (
-            read_dataset(spark, **stats_unique)
-            .where(F.col("unique_values") < 2)
-            .select("attribute")
-            .rdd.flatMap(lambda x: x)
-            .collect()
-        )
-
-    list_of_cols = list(
-        set([e for e in list_of_cols if e not in (drop_cols + remove_cols)])
-    )
-
-    if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
-        raise TypeError("Invalid input for Column(s)")
-
-    combis = [list(c) for c in itertools.combinations_with_replacement(list_of_cols, 2)]
-    hists = idf.select(list_of_cols).pm_make_histograms(combis)
-    grids = {k: get_2dgrid(h) for k, h in hists.items()}
-    odf_pd = spark_phik_matrix_from_hist2d_dict(spark.sparkContext, grids)
-    odf_pd["attribute"] = odf_pd.index
-    list_of_cols.sort()
-    odf = (
-        spark.createDataFrame(odf_pd)
-        .select(["attribute"] + list_of_cols)
-        .orderBy("attribute")
-    )
-
-    if print_impact:
-        odf.show(odf.count())
-
-    return odf
-
-
-def correlation_matrix_numerical(
-    spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
+def correlation_matrix(
+    spark,
+    idf,
+    list_of_cols="all",
+    drop_cols=[],
+    use_sampling=False,
+    sample_size=1000000,
+    print_impact=False,
 ):
     """
     This function calculates correlation coefficient statistical, which measures the strength of the relationship
     between the relative movements of two attributes. Pearson’s correlation coefficient is a standard approach of
     measuring correlation between two variables.
-    This function returns a correlation matrix dataframe of schema – attribute, <attribute_names>. Correlation
-    between attribute X and Y can be found at intersection of a) row with value X in ‘attribute’ column and b) column
-    ‘Y’ (or row with value Y in ‘attribute’ column and column ‘X’).
+    This function supports numerical columns only. If Dataframe contains categorical columns also then those columns
+    must be first converted to numerical columns. Anovos has multiple functions to help convert categorical columns
+    into numerical columns. Functions cat_to_num_supervised and cat_to_num_unsupervised can be used for this. Some data
+    cleaning treatment can also be done on categorical columns before converting them to numerical columns.
+    Few functions to help in columns treatment are outlier_categories, measure_of_cardinality, IDness_detection etc.
+    This correlation_matrix function returns a correlation matrix dataframe of schema –
+    attribute, <attribute_names>. Correlation between attribute X and Y can be found at intersection of a) row with
+    value X in ‘attribute’ column and b) column‘Y’ (or row with value Y in ‘attribute’ column and column ‘X’).
     Parameters
     ----------
     spark
@@ -175,6 +77,13 @@ def correlation_matrix_numerical(
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
         It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
         a few handful of them. (Default value = [])
+    use_sampling
+        True, False
+        This argument is to tell function whether to compute correlation matrix on full dataframe or only on small sample
+        of dataframe, sample size is decided by another argument called sample_size.(Default value = False)
+    sample_size
+        int
+        If use_sampling is True then sample size is decided by this argument.(Default value = 1000000)
     print_impact
         True, False
         This argument is to print out the statistics.(Default value = False)
@@ -197,12 +106,23 @@ def correlation_matrix_numerical(
     if any(x not in num_cols for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError("Invalid input for Column(s)")
 
+    if use_sampling:
+        if idf.count() > sample_size:
+            warnings.warn(
+                "Using sampling. Only "
+                + str(sample_size)
+                + " random sampled rows are considered."
+            )
+            idf = data_sample(
+                idf, fraction=float(sample_size) / idf.count(), method_type="random"
+            )
+
     assembler = VectorAssembler(
-        inputCols=list_of_cols, outputCol="features", handleInvalid="keep"
+        inputCols=list_of_cols, outputCol="features", handleInvalid="skip"
     )
     idf_vector = assembler.transform(idf).select("features")
-    matrix = Correlation.corr(idf_vector, "features", "spearman")
-    result = matrix.collect()[0]["spearman(features)"].values
+    matrix = Correlation.corr(idf_vector, "features", "pearson")
+    result = matrix.collect()[0]["pearson(features)"].values
 
     odf_pd = pd.DataFrame(
         result.reshape(-1, len(list_of_cols)), columns=list_of_cols, index=list_of_cols
@@ -219,86 +139,6 @@ def correlation_matrix_numerical(
         odf.show(odf.count())
 
     return odf
-
-
-def correlation_matrix(
-    spark, idf, list_of_cols="all", drop_cols=[], stats_unique={}, print_impact=False
-):
-    if list_of_cols == "all":
-        num_cols, cat_cols, other_cols = attributeType_segregation(idf)
-        list_of_cols = num_cols + cat_cols
-    if isinstance(list_of_cols, str):
-        list_of_cols = [x.strip() for x in list_of_cols.split("|")]
-    if isinstance(drop_cols, str):
-        drop_cols = [x.strip() for x in drop_cols.split("|")]
-
-    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
-
-    if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
-        raise TypeError("Invalid input for Column(s)")
-
-    cat_cols_select = attributeType_segregation(idf.select(list_of_cols))[1]
-    if cat_cols_select:
-        drop_null_col = []
-        for col in list_of_cols:
-            if idf.filter(F.col(col).isNull()).count() > 0.5 * idf.select(col).count():
-                drop_null_col.append(col)
-        if drop_null_col:
-            warnings.warn(
-                "Columns contains too much null values. Dropping "
-                + ", ".join(drop_null_col)
-            )
-            list_of_cols = list(
-                set([e for e in list_of_cols if e not in drop_null_col])
-            )
-        high_corr = False
-        col_need_treatment = []
-        for col in cat_cols_select:
-            if idf.select(col).distinct().count() > 50 and col in list_of_cols:
-                high_corr = True
-                col_need_treatment.append(col)
-        if idf.count() <= 100000 and not high_corr:
-            return correlation_matrix_phik(
-                spark, idf, list_of_cols, drop_cols, stats_unique, print_impact
-            )
-        elif idf.count() > 100000 and not high_corr:
-            warnings.warn(
-                "Data size is too big for computation. Only 100,000 random sampled rows are considered."
-            )
-            idf_sample = data_sample(
-                idf, fraction=float(100000) / idf.count(), method_type="random"
-            )
-            return correlation_matrix_phik(
-                spark, idf_sample, list_of_cols, drop_cols, stats_unique, print_impact
-            )
-        elif idf.count() <= 100000 and high_corr:
-            warnings.warn(
-                "High cardinality column(s) are detected, and will go through cardinality treatments."
-            )
-            idf_treat = outlier_categories(spark, idf, list_of_cols=col_need_treatment)
-            return correlation_matrix_phik(
-                spark, idf_treat, list_of_cols, drop_cols, stats_unique, print_impact
-            )
-        else:
-            warnings.warn(
-                "Data size is too big for computation. Only 100,000 random sampled rows are considered."
-            )
-            warnings.warn(
-                "High cardinality column(s) are detected, and will go through cardinality treatments."
-            )
-            idf_sample = data_sample(
-                idf, fraction=float(100000) / idf.count(), method_type="random"
-            )
-            idf_treat = outlier_categories(
-                spark, idf_sample, list_of_cols=col_need_treatment
-            )
-            return correlation_matrix_phik(
-                spark, idf_treat, list_of_cols, drop_cols, stats_unique, print_impact
-            )
-    else:
-        return correlation_matrix_numerical(
-            spark, idf, list_of_cols, drop_cols, print_impact
-        )
 
 
 def variable_clustering(
