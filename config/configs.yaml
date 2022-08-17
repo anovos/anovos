@@ -146,6 +146,13 @@ quality_checker:
       model_path: NA
       output_mode: replace
 
+cat_to_num_transformer:
+  list_of_cols: all
+  drop_cols: 'ifa'
+  method_type: supervised
+  encoding:
+  label_col: income
+  event_label: '>50K'
 
 association_evaluator:
 
