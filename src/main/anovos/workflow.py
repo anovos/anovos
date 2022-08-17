@@ -68,13 +68,11 @@ def stats_args(all_configs, func):
             raise TypeError("Master path missing for saving report statistics")
         else:
             report_input_path = report_configs.get("master_path")
-
     result = {}
     if stats_configs:
         mainfunc_to_args = {
             "biasedness_detection": ["stats_mode"],
             "IDness_detection": ["stats_unique"],
-            "correlation_matrix": ["stats_unique"],
             "nullColumns_detection": ["stats_unique", "stats_mode", "stats_missing"],
             "variable_clustering": ["stats_unique", "stats_mode"],
             "charts_to_objects": ["stats_unique"],
@@ -356,11 +354,28 @@ def main(all_configs, run_type, auth_key_val={}):
                     if value is not None:
                         start = timeit.default_timer()
                         print("\n" + subkey + ": \n")
-                        f = getattr(association_evaluator, subkey)
-                        extra_args = stats_args(all_configs, subkey)
-                        df_stats = f(
-                            spark, df, **value, **extra_args, print_impact=False
-                        )
+                        if subkey == "correlation_matrix":
+                            f = getattr(association_evaluator, subkey)
+                            extra_args = stats_args(all_configs, subkey)
+                            cat_to_num_trans_params = all_configs.get(
+                                "cat_to_num_transformer", None
+                            )
+                            df_trans_corr = transformers.cat_to_num_transformer(
+                                spark, df, **cat_to_num_trans_params
+                            )
+                            df_stats = f(
+                                spark,
+                                df_trans_corr,
+                                **value,
+                                **extra_args,
+                                print_impact=False,
+                            )
+                        else:
+                            f = getattr(association_evaluator, subkey)
+                            extra_args = stats_args(all_configs, subkey)
+                            df_stats = f(
+                                spark, df, **value, **extra_args, print_impact=False
+                            )
                         if report_input_path:
                             save_stats(
                                 spark,

@@ -6,6 +6,7 @@ supported through this modules are listed below:
 
 - attribute_binning
 - monotonic_binning
+- cat_to_num_transformer
 - cat_to_num_unsupervised
 - cat_to_num_supervised
 - z_standardization
@@ -421,6 +422,84 @@ def monotonic_binning(
             )
 
     return odf
+
+
+def cat_to_num_transformer(
+    spark, idf, list_of_cols, drop_cols, method_type, encoding, label_col, event_label
+):
+
+    """
+    This is method which helps converting a categorical attribute into numerical attribute(s) based on the analysis dataset. If there's a presence of label column then the relevant processing would happen through cat_to_num_supervised. However, for unsupervised scenario, the processing would happen through cat_to_num_unsupervised. Computation details can be referred from the respective functions.
+
+    Parameters
+    ----------
+    spark
+        Spark Session
+    idf
+        Input Dataframe
+    list_of_cols
+        List of categorical columns to transform e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        "all" can be passed to include all categorical columns for analysis. This is super useful instead of specifying all column names manually.
+        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
+        drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
+    drop_cols
+        List of columns to be dropped e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
+        a few handful of them.
+    method_type
+        Depending upon the use case the method type can be either Supervised or Unsupervised. For Supervised use case, label_col is mandatory.
+    encoding
+        "label_encoding" or "onehot_encoding"
+        In label encoding, each categorical value is assigned a unique integer based on alphabetical
+        or frequency ordering (both ascending & descending options are available that can be selected by index_order argument).
+        In one-hot encoding, every unique value in the column will be added in a form of dummy/binary column.
+    label_col
+        Label/Target column
+    event_label
+        Value of (positive) event
+    """
+
+    num_cols, cat_cols, other_cols = attributeType_segregation(idf)
+
+    if len(cat_cols) > 0:
+        if list_of_cols == "all":
+            list_of_cols = cat_cols
+        if isinstance(list_of_cols, str):
+            list_of_cols = [x.strip() for x in list_of_cols.split("|")]
+        if isinstance(drop_cols, str):
+            drop_cols = [x.strip() for x in drop_cols.split("|")]
+
+        if any(x not in cat_cols for x in list_of_cols):
+            raise TypeError("Invalid input for Column(s)")
+
+        if (method_type == "supervised") & (label_col is not None):
+
+            odf = cat_to_num_supervised(
+                spark, idf, label_col=label_col, event_label=event_label
+            )
+            odf = odf.withColumn(
+                label_col,
+                F.when(F.col(label_col) == event_label, F.lit(1)).otherwise(F.lit(0)),
+            )
+
+            return odf
+
+        elif (method_type == "unsupervised") & (label_col is None):
+            odf = cat_to_num_unsupervised(
+                spark,
+                idf,
+                method_type=encoding,
+                index_order="frequencyDesc",
+            )
+
+            return odf
+    else:
+
+        return idf
 
 
 def cat_to_num_unsupervised(
