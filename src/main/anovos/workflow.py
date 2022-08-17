@@ -507,7 +507,9 @@ def main(all_configs, run_type, auth_key_val={}):
                                         "model_path" not in value2.keys()
                                         and default_root_path
                                     ):
-                                        extra_args["model_path"] = default_root_path + "/intermediate_model"
+                                        extra_args["model_path"] = (
+                                            default_root_path + "/intermediate_model"
+                                        )
                                 if subkey2 in (
                                     "normalization",
                                     "feature_transformation",
