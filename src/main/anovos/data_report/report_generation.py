@@ -1,7 +1,7 @@
 # coding=utf-8
 
 """This module generates the final report output specific to the intermediate data generated across each of the modules. The final report, however, can be proccessed through the config.yaml file or by generating it through the respective functions.
-
+ 
 Below are some of the functions used to process the final output.
 
 - line_chart_gen_stability
@@ -23,6 +23,12 @@ Below are some of the functions used to process the final output.
 - ts_landscape
 - ts_stats
 - ts_viz_generate
+- overall_stats_gen
+- loc_field_stats
+- read_stats_ll_geo
+- read_cluster_stats_ll_geo
+- read_loc_charts
+- loc_report_gen
 - anovos_report
 
 However, each of the functions have been detailed in the respective sections across the parameters used.
@@ -758,7 +764,7 @@ def executive_summary_gen(
             ]
         ]
     )
-    x = x[~x["Attribute"].isnull()]
+    x = x[~((x["Attribute"].isnull()) | (x.Attribute.values == "NA"))]
     if ds_ind[0] == 1 and ds_ind[1] >= 0.5:
         a5 = "Data Health based on Drift Metrics & Stability Index : "
         report = dp.Group(
@@ -2758,23 +2764,32 @@ def ts_viz_3_1(base_path, x_col, y_col):
 
     for metric_col in ["mean", "median", "min", "max"]:
 
-        adf_test = (
-            round(adfuller(df[metric_col])[0], 3),
-            round(adfuller(df[metric_col])[1], 3),
-        )
-        kpss_test = (
-            round(kpss(df[metric_col], regression="ct")[0], 3),
-            round(kpss(df[metric_col], regression="ct")[1], 3),
-        )
-
-        if adf_test[1] < 0.05:
-            adf_flag = True
-        else:
+        try:
+            adf_test = (
+                round(adfuller(df[metric_col])[0], 3),
+                round(adfuller(df[metric_col])[1], 3),
+            )
+            if adf_test[1] < 0.05:
+                adf_flag = True
+            else:
+                adf_flag = False
+        except:
+            adf_test = ("nan", "nan")
             adf_flag = False
-        if kpss_test[1] < 0.05:
-            kpss_flag = True
-        else:
+
+        try:
+            kpss_test = (
+                round(kpss(df[metric_col], regression="ct")[0], 3),
+                round(kpss(df[metric_col], regression="ct")[1], 3),
+            )
+            if kpss_test[1] < 0.05:
+                kpss_flag = True
+            else:
+                kpss_flag = False
+        except:
+            kpss_test = ("nan", "nan")
             kpss_flag = False
+
         #         df[metric_col] = df[metric_col].apply(lambda x: boxcox1p(x,0.25))
         #         lambda_box_cox = round(boxcox(df[metric_col])[1],5)
         fit = PowerTransformer(method="yeo-johnson")
@@ -3163,10 +3178,842 @@ def ts_viz_generate(master_path, id_col, print_report=False, output_type=None):
     return report
 
 
+def overall_stats_gen(lat_col_list, long_col_list, geohash_col_list):
+
+    """
+
+    This function helps to produce a basic summary of all the geospatial fields auto-detected in a dictionary along with the length of lat-lon & geohash cols identified.
+
+    Parameters
+    ----------
+    lat_col_list
+        List of latitude columns identified
+    long_col_list
+        List of longitude columns identified
+    geohash_col_list
+        List of geohash columns identified
+
+    Returns
+    -------
+    Dictionary,Integer,Integer
+    """
+
+    d = {}
+    ll = []
+
+    col_list = ["Latitude Col", "Longitude Col", "Geohash Col"]
+    #     for idx,i in enumerate([lat_col_list,long_col_list,geohash_col_list,polygon_col_list]):
+    for idx, i in enumerate([lat_col_list, long_col_list, geohash_col_list]):
+        if i is None:
+            ll = None
+        elif i is not None:
+            ll = []
+            for j in i:
+                ll.append(j)
+        d[col_list[idx]] = ",".join(ll)
+
+    l1 = len(lat_col_list)
+    l2 = len(geohash_col_list)
+
+    return d, l1, l2
+
+
+def loc_field_stats(lat_col_list, long_col_list, geohash_col_list, max_records):
+
+    """
+
+    This function helps to produce a basic summary of all the geospatial fields auto-detected
+
+    Parameters
+    ----------
+    lat_col_list
+        List of latitude columns identified
+    long_col_list
+        List of longitude columns identified
+    geohash_col_list
+        List of geohash columns identified
+    max_records
+        Maximum geospatial points analyzed
+
+    Returns
+    -------
+    DatapaneObject
+    """
+
+    loc_cnt = (
+        overall_stats_gen(lat_col_list, long_col_list, geohash_col_list)[1] * 2
+    ) + (overall_stats_gen(lat_col_list, long_col_list, geohash_col_list)[2])
+    loc_var_stats = overall_stats_gen(lat_col_list, long_col_list, geohash_col_list)[0]
+
+    x = "#"
+
+    t0 = dp.Text(x)
+    t1 = dp.Text(
+        "There are **"
+        + str(loc_cnt)
+        + "** location fields captured in the data containing "
+        + str(overall_stats_gen(lat_col_list, long_col_list, geohash_col_list)[1])
+        + " pair(s) of **Lat,Long** & "
+        + str(overall_stats_gen(lat_col_list, long_col_list, geohash_col_list)[2])
+        + " **Geohash** field(s)"
+    )
+    t2 = dp.DataTable(
+        pd.DataFrame(pd.Series(loc_var_stats, index=loc_var_stats.keys())).rename(
+            columns={0: ""}
+        )
+    )
+
+    return dp.Group(t0, t1, t2)
+
+
+def read_stats_ll_geo(lat_col, long_col, geohash_col, master_path, top_geo_records):
+
+    """
+
+    This function helps to read all the basis stats output for the lat-lon & geohash field produced from the analyzer module
+
+    Parameters
+    ----------
+    lat_col
+        Latitude column identified
+    long_col
+        Longitude column identified
+    geohash_col
+        Geohash column identified
+    master_path
+        Master path where the aggregated data resides
+    top_geo_records
+        Top geospatial records displayed
+
+    Returns
+    -------
+    DatapaneObject
+
+    """
+
+    try:
+        len_lat_col = len(lat_col)
+
+    except:
+
+        len_lat_col = 0
+
+    try:
+        len_geohash_col = len(geohash_col)
+    except:
+        len_geohash_col = 0
+
+    ll_stats, geohash_stats = [], []
+
+    if len_lat_col > 0:
+
+        if len_lat_col == 1:
+            for idx, i in enumerate(lat_col):
+                ll_stats.append(
+                    dp.Group(
+                        dp.Select(
+                            blocks=[
+                                dp.DataTable(
+                                    pd.read_csv(
+                                        ends_with(master_path)
+                                        + "Overall_Summary_1_"
+                                        + lat_col[idx]
+                                        + "_"
+                                        + long_col[idx]
+                                        + ".csv"
+                                    ),
+                                    label="Overall Summary",
+                                ),
+                                # dp.DataTable(
+                                #     pd.read_csv(
+                                #         ends_with(master_path)
+                                #         + "Top_"
+                                #         + str(top_geo_records)
+                                #         + "_Lat_1_"
+                                #         + lat_col[idx]
+                                #         + "_"
+                                #         + long_col[idx]
+                                #         + ".csv"
+                                #     ),
+                                #     label="Top " + str(top_geo_records) + "  Lat",
+                                # ),
+                                # dp.DataTable(
+                                #     pd.read_csv(
+                                #         ends_with(master_path)
+                                #         + "Top_"
+                                #         + str(top_geo_records)
+                                #         + "_Long_1_"
+                                #         + lat_col[idx]
+                                #         + "_"
+                                #         + long_col[idx]
+                                #         + ".csv"
+                                #     ),
+                                #     label="Top " + str(top_geo_records) + " Long",
+                                # ),
+                                dp.DataTable(
+                                    pd.read_csv(
+                                        ends_with(master_path)
+                                        + "Top_"
+                                        + str(top_geo_records)
+                                        + "_Lat_Long_1_"
+                                        + lat_col[idx]
+                                        + "_"
+                                        + long_col[idx]
+                                        + ".csv"
+                                    ),
+                                    label="Top " + str(top_geo_records) + " Lat Long",
+                                ),
+                            ],
+                            type=dp.SelectType.TABS,
+                        ),
+                        label=lat_col[idx] + "_" + long_col[idx],
+                    )
+                )
+                ll_stats.append(
+                    dp.Group(
+                        dp.DataTable(
+                            pd.DataFrame(columns=[" "], index=range(1)), label=" "
+                        ),
+                        label=" ",
+                    )
+                )
+
+        elif len_lat_col > 1:
+            for idx, i in enumerate(lat_col):
+                ll_stats.append(
+                    dp.Group(
+                        dp.Select(
+                            blocks=[
+                                dp.DataTable(
+                                    pd.read_csv(
+                                        ends_with(master_path)
+                                        + "Overall_Summary_1_"
+                                        + lat_col[idx]
+                                        + "_"
+                                        + long_col[idx]
+                                        + ".csv"
+                                    ),
+                                    label="Overall Summary",
+                                ),
+                                # dp.DataTable(
+                                #     pd.read_csv(
+                                #         ends_with(master_path)
+                                #         + "Top_"
+                                #         + str(top_geo_records)
+                                #         + "_Lat_1_"
+                                #         + lat_col[idx]
+                                #         + "_"
+                                #         + long_col[idx]
+                                #         + ".csv"
+                                #     ),
+                                #     label="Top " + str(top_geo_records) + "  Lat",
+                                # ),
+                                # dp.DataTable(
+                                #     pd.read_csv(
+                                #         ends_with(master_path)
+                                #         + "Top_"
+                                #         + str(top_geo_records)
+                                #         + "_Long_1_"
+                                #         + lat_col[idx]
+                                #         + "_"
+                                #         + long_col[idx]
+                                #         + ".csv"
+                                #     ),
+                                #     label="Top " + str(top_geo_records) + " Long",
+                                # ),
+                                dp.DataTable(
+                                    pd.read_csv(
+                                        ends_with(master_path)
+                                        + "Top_"
+                                        + str(top_geo_records)
+                                        + "_Lat_Long_1_"
+                                        + lat_col[idx]
+                                        + "_"
+                                        + long_col[idx]
+                                        + ".csv"
+                                    ),
+                                    label="Top " + str(top_geo_records) + " Lat Long",
+                                ),
+                            ],
+                            type=dp.SelectType.TABS,
+                        ),
+                        label=lat_col[idx] + "_" + long_col[idx],
+                    )
+                )
+
+        ll_stats = dp.Select(blocks=ll_stats, type=dp.SelectType.DROPDOWN)
+
+    if len_geohash_col > 0:
+
+        if len_geohash_col == 1:
+            for idx, i in enumerate(geohash_col):
+                geohash_stats.append(
+                    dp.Group(
+                        dp.Select(
+                            blocks=[
+                                dp.DataTable(
+                                    pd.read_csv(
+                                        ends_with(master_path)
+                                        + "Overall_Summary_2_"
+                                        + geohash_col[idx]
+                                        + ".csv"
+                                    ),
+                                    label="Overall Summary",
+                                ),
+                                dp.DataTable(
+                                    pd.read_csv(
+                                        ends_with(master_path)
+                                        + "Top_"
+                                        + str(top_geo_records)
+                                        + "_Geohash_Distribution_2_"
+                                        + geohash_col[idx]
+                                        + ".csv"
+                                    ),
+                                    label="Top "
+                                    + str(top_geo_records)
+                                    + "  Geohash Distribution",
+                                ),
+                            ],
+                            type=dp.SelectType.TABS,
+                        ),
+                        label=geohash_col[idx],
+                    )
+                )
+                geohash_stats.append(
+                    dp.Group(
+                        dp.DataTable(
+                            pd.DataFrame(columns=[" "], index=range(1)), label=" "
+                        ),
+                        label=" ",
+                    )
+                )
+
+        elif len_geohash_col > 1:
+            for idx, i in enumerate(geohash_col):
+                geohash_stats.append(
+                    dp.Group(
+                        dp.Select(
+                            blocks=[
+                                dp.DataTable(
+                                    pd.read_csv(
+                                        ends_with(master_path)
+                                        + "Overall_Summary_2_"
+                                        + geohash_col[idx]
+                                        + ".csv"
+                                    ),
+                                    label="Overall Summary",
+                                ),
+                                dp.DataTable(
+                                    pd.read_csv(
+                                        ends_with(master_path)
+                                        + "Top_"
+                                        + str(top_geo_records)
+                                        + "_Geohash_Distribution_2_"
+                                        + geohash_col[idx]
+                                        + ".csv"
+                                    ),
+                                    label="Top "
+                                    + str(top_geo_records)
+                                    + "  Geohash Distribution",
+                                ),
+                            ],
+                            type=dp.SelectType.TABS,
+                        ),
+                        label=geohash_col[idx],
+                    )
+                )
+
+        geohash_stats = dp.Select(blocks=geohash_stats, type=dp.SelectType.DROPDOWN)
+
+    if (len_lat_col + len_geohash_col) == 1:
+
+        if len_lat_col == 0:
+
+            return geohash_stats
+
+        else:
+            return ll_stats
+
+    elif (len_lat_col + len_geohash_col) > 1:
+
+        if (len_lat_col > 1) and (len_geohash_col == 0):
+
+            return ll_stats
+
+        elif (len_lat_col == 0) and (len_geohash_col > 1):
+
+            return geohash_stats
+
+        elif (len_lat_col >= 1) and (len_geohash_col >= 1):
+
+            return dp.Select(
+                blocks=[
+                    dp.Group(ll_stats, label="Lat-Long-Stats"),
+                    dp.Group(geohash_stats, label="Geohash-Stats"),
+                ],
+                type=dp.SelectType.TABS,
+            )
+
+
+def read_cluster_stats_ll_geo(lat_col, long_col, geohash_col, master_path):
+
+    """
+
+    This function helps to read all the cluster analysis output for the lat-lon & geohash field produced from the analyzer module
+
+    Parameters
+    ----------
+    lat_col
+        Latitude column identified
+    long_col
+        Longitude column identified
+    geohash_col
+        Geohash column identified
+    master_path
+        Master path where the aggregated data resides
+
+    Returns
+    -------
+    DatapaneObject
+    """
+
+    ll_col, plot_ll, all_geo_cols = [], [], []
+
+    try:
+        len_lat_col = len(lat_col)
+
+    except:
+
+        len_lat_col = 0
+
+    try:
+        len_geohash_col = len(geohash_col)
+    except:
+        len_geohash_col = 0
+
+    if (len_lat_col > 0) or (len_geohash_col > 0):
+
+        try:
+            for idx, i in enumerate(lat_col):
+
+                ll_col.append(lat_col[idx] + "_" + long_col[idx])
+        except:
+            pass
+        all_geo_cols = ll_col + geohash_col
+
+    if len(all_geo_cols) > 0:
+
+        for i in all_geo_cols:
+
+            if len(all_geo_cols) == 1:
+
+                p1 = dp.Group(
+                    dp.Plot(
+                        go.Figure(
+                            json.load(
+                                open(
+                                    ends_with(master_path) + "cluster_plot_1_elbow_" + i
+                                )
+                            )
+                        )
+                    ),
+                    dp.Plot(
+                        go.Figure(
+                            json.load(
+                                open(
+                                    ends_with(master_path)
+                                    + "cluster_plot_1_silhoutte_"
+                                    + i
+                                )
+                            )
+                        )
+                    ),
+                    label="Cluster Identification",
+                )
+
+                p2 = dp.Group(
+                    dp.Plot(
+                        go.Figure(
+                            json.load(
+                                open(
+                                    ends_with(master_path)
+                                    + "cluster_plot_2_kmeans_"
+                                    + i
+                                )
+                            )
+                        )
+                    ),
+                    dp.Plot(
+                        go.Figure(
+                            json.load(
+                                open(
+                                    ends_with(master_path)
+                                    + "cluster_plot_2_dbscan_"
+                                    + i
+                                )
+                            )
+                        )
+                    ),
+                    label="Cluster Distribution",
+                )
+
+                p3 = dp.Group(
+                    dp.Plot(
+                        go.Figure(
+                            json.load(
+                                open(
+                                    ends_with(master_path)
+                                    + "cluster_plot_3_kmeans_"
+                                    + i
+                                )
+                            )
+                        )
+                    ),
+                    dp.Plot(
+                        go.Figure(
+                            json.load(
+                                open(
+                                    ends_with(master_path)
+                                    + "cluster_plot_3_dbscan_"
+                                    + i
+                                )
+                            )
+                        )
+                    ),
+                    label="Visualization",
+                )
+
+                p4 = dp.Group(
+                    dp.Plot(
+                        go.Figure(
+                            json.load(
+                                open(
+                                    ends_with(master_path)
+                                    + "cluster_plot_4_dbscan_1_"
+                                    + i
+                                )
+                            )
+                        )
+                    ),
+                    dp.Plot(
+                        go.Figure(
+                            json.load(
+                                open(
+                                    ends_with(master_path)
+                                    + "cluster_plot_4_dbscan_2_"
+                                    + i
+                                )
+                            )
+                        )
+                    ),
+                    label="Outlier Points",
+                )
+
+                plot_ll.append(
+                    dp.Group(
+                        dp.Select(blocks=[p1, p2, p3, p4], type=dp.SelectType.TABS),
+                        label=i,
+                    )
+                )
+
+                plot_ll.append(dp.Plot(blank_chart))
+
+            elif len(all_geo_cols) > 1:
+
+                p1 = dp.Group(
+                    dp.Plot(
+                        go.Figure(
+                            json.load(
+                                open(
+                                    ends_with(master_path) + "cluster_plot_1_elbow_" + i
+                                )
+                            )
+                        )
+                    ),
+                    dp.Plot(
+                        go.Figure(
+                            json.load(
+                                open(
+                                    ends_with(master_path)
+                                    + "cluster_plot_1_silhoutte_"
+                                    + i
+                                )
+                            )
+                        )
+                    ),
+                    label="Cluster Identification",
+                )
+
+                p2 = dp.Group(
+                    dp.Plot(
+                        go.Figure(
+                            json.load(
+                                open(
+                                    ends_with(master_path)
+                                    + "cluster_plot_2_kmeans_"
+                                    + i
+                                )
+                            )
+                        )
+                    ),
+                    dp.Plot(
+                        go.Figure(
+                            json.load(
+                                open(
+                                    ends_with(master_path)
+                                    + "cluster_plot_2_dbscan_"
+                                    + i
+                                )
+                            )
+                        )
+                    ),
+                    label="Cluster Distribution",
+                )
+
+                p3 = dp.Group(
+                    dp.Plot(
+                        go.Figure(
+                            json.load(
+                                open(
+                                    ends_with(master_path)
+                                    + "cluster_plot_3_kmeans_"
+                                    + i
+                                )
+                            )
+                        )
+                    ),
+                    dp.Plot(
+                        go.Figure(
+                            json.load(
+                                open(
+                                    ends_with(master_path)
+                                    + "cluster_plot_3_dbscan_"
+                                    + i
+                                )
+                            )
+                        )
+                    ),
+                    label="Visualization",
+                )
+
+                p4 = dp.Group(
+                    dp.Plot(
+                        go.Figure(
+                            json.load(
+                                open(
+                                    ends_with(master_path)
+                                    + "cluster_plot_4_dbscan_1_"
+                                    + i
+                                )
+                            )
+                        )
+                    ),
+                    dp.Plot(
+                        go.Figure(
+                            json.load(
+                                open(
+                                    ends_with(master_path)
+                                    + "cluster_plot_4_dbscan_2_"
+                                    + i
+                                )
+                            )
+                        )
+                    ),
+                    label="Outlier Points",
+                )
+
+                plot_ll.append(
+                    dp.Group(
+                        dp.Select(blocks=[p1, p2, p3, p4], type=dp.SelectType.TABS),
+                        label=i,
+                    )
+                )
+
+        return dp.Select(blocks=plot_ll, type=dp.SelectType.DROPDOWN)
+
+
+def read_loc_charts(master_path):
+
+    """
+
+    This function helps to read all the geospatial charts from the master path and populate in the report
+
+    Parameters
+    ----------
+
+    master_path
+        Master path where the aggregated data resides
+
+    Returns
+    -------
+    DatapaneObject
+    """
+
+    ll_charts_nm = [x for x in os.listdir(master_path) if "loc_charts_ll" in x]
+    geo_charts_nm = [x for x in os.listdir(master_path) if "loc_charts_gh" in x]
+
+    ll_col_charts, geo_col_charts = [], []
+
+    if len(ll_charts_nm) > 0:
+
+        if len(ll_charts_nm) == 1:
+            for i1 in ll_charts_nm:
+                col_name = i1.replace("loc_charts_ll_", "")
+                ll_col_charts.append(
+                    dp.Plot(
+                        go.Figure(json.load(open(ends_with(master_path) + i1))),
+                        label=col_name,
+                    )
+                )
+                ll_col_charts.append(dp.Plot(blank_chart, label=" "))
+        elif len(ll_charts_nm) > 1:
+            for i1 in ll_charts_nm:
+                col_name = i1.replace("loc_charts_ll_", "")
+                ll_col_charts.append(
+                    dp.Plot(
+                        go.Figure(json.load(open(ends_with(master_path) + i1))),
+                        label=col_name,
+                    )
+                )
+
+        ll_col_charts = dp.Select(blocks=ll_col_charts, type=dp.SelectType.DROPDOWN)
+
+    if len(geo_charts_nm) > 0:
+
+        if len(geo_charts_nm) == 1:
+            for i2 in geo_charts_nm:
+                col_name = i2.replace("loc_charts_gh_", "")
+                geo_col_charts.append(
+                    dp.Plot(
+                        go.Figure(json.load(open(ends_with(master_path) + i2))),
+                        label=col_name,
+                    )
+                )
+                geo_col_charts.append(dp.Plot(blank_chart, label=" "))
+
+        elif len(geo_charts_nm) > 1:
+            for i2 in geo_charts_nm:
+                col_name = i2.replace("loc_charts_gh_", "")
+                geo_col_charts.append(
+                    dp.Plot(
+                        go.Figure(json.load(open(ends_with(master_path) + i2))),
+                        label=col_name,
+                    )
+                )
+
+        geo_col_charts = dp.Select(blocks=geo_col_charts, type=dp.SelectType.DROPDOWN)
+
+    if (len(ll_charts_nm) > 0) and (len(geo_charts_nm) == 0):
+
+        return ll_col_charts
+
+    elif (len(ll_charts_nm) == 0) and (len(geo_charts_nm) > 0):
+
+        return geo_col_charts
+
+    elif (len(ll_charts_nm) > 0) and (len(geo_charts_nm) > 0):
+
+        return dp.Select(
+            blocks=[
+                dp.Group(ll_col_charts, label="Lat-Long-Plot"),
+                dp.Group(geo_col_charts, label="Geohash-Plot"),
+            ],
+            type=dp.SelectType.TABS,
+        )
+
+
+def loc_report_gen(
+    lat_cols,
+    long_cols,
+    geohash_cols,
+    master_path,
+    max_records,
+    top_geo_records,
+    print_report=False,
+):
+
+    """
+
+    This function helps to read all the lat,long & geohash columns as input alongside few input parameters to produce the geospatial analysis report tab
+
+    Parameters
+    ----------
+    lat_cols
+        Latitude columns identified in the data
+    long_cols
+        Longitude columns identified in the data
+    geohash_cols
+        Geohash columns identified in the data
+    master_path
+        Master path where the aggregated data resides
+    max_records
+        Maximum geospatial points analyzed
+    top_geo_records
+        Top geospatial records displayed
+    print_report
+        Option to specify whether the Report needs to be saved or not. True / False can be used to specify the needful
+
+    Returns
+    -------
+    DatapaneObject
+    """
+
+    _ = dp.Text("#")
+    dp1 = dp.Group(
+        _,
+        dp.Text(
+            "*This section summarizes the information about the geospatial features identified in the data and their landscaping view*"
+        ),
+        loc_field_stats(lat_cols, long_cols, geohash_cols, max_records),
+    )
+
+    if (len(lat_cols) + len(geohash_cols)) > 0:
+
+        dp2 = dp.Group(
+            _,
+            dp.Text("## Descriptive Analysis by Location Attributes"),
+            read_stats_ll_geo(
+                lat_cols, long_cols, geohash_cols, master_path, top_geo_records
+            ),
+            _,
+        )
+        dp3 = dp.Group(
+            _,
+            dp.Text("## Clustering Geospatial Field"),
+            read_cluster_stats_ll_geo(lat_cols, long_cols, geohash_cols, master_path),
+            _,
+        )
+        dp4 = dp.Group(
+            _,
+            dp.Text("## Visualization by Geospatial Fields"),
+            read_loc_charts(master_path),
+            _,
+        )
+
+        report = dp.Group(dp1, dp2, dp3, dp4, label="Geospatial Analyzer")
+
+    elif (len(lat_cols) + len(geohash_cols)) == 0:
+
+        dp2 = dp.Group(
+            dp.Text("#"),
+            dp.Text(
+                "*No further geospatial based analysis could be done owing to the unavailability of any geospatial field*"
+            ),
+        )
+        report = dp.Group(dp1, dp2, label="Geospatial Analyzer")
+
+    if print_report:
+        dp.Report(default_template[0], default_template[1], report).save(
+            ends_with(master_path) + "geospatial_analyzer.html", open=True
+        )
+
+    return report
+
+
 def anovos_report(
     master_path,
-    id_col="",
-    label_col="",
+    id_col=None,
+    label_col=None,
     corr_threshold=0.4,
     iv_threshold=0.02,
     drift_threshold_model=0.1,
@@ -3175,6 +4022,11 @@ def anovos_report(
     run_type="local",
     final_report_path=".",
     output_type=None,
+    lat_cols=None,
+    long_cols=None,
+    gh_cols=None,
+    max_records=100000,
+    top_geo_records=100,
     auth_key="NA",
 ):
     """
@@ -3207,6 +4059,17 @@ def anovos_report(
         Path where the report will be saved. (Default value = ".")
     output_type
         Time category of analysis which can be between "Daily", "Hourly", "Weekly"
+    lat_cols
+        Latitude columns identified in the data
+    long_cols
+        Longitude columns identified in the data
+    gh_cols
+        Geohash columns identified in the data
+    max_records
+        Maximum geospatial points analyzed
+    top_geo_records
+        Top geospatial records displayed
+
 
     Returns
     -------
@@ -3528,8 +4391,13 @@ def anovos_report(
     )
 
     tab7 = ts_viz_generate(master_path, id_col, False, output_type)
+
+    tab8 = loc_report_gen(
+        lat_cols, long_cols, gh_cols, master_path, max_records, top_geo_records, False
+    )
+
     final_tabs_list = []
-    for i in [tab1, tab2, tab3, tab4, tab5, tab6, tab7]:
+    for i in [tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8]:
         if i == "null_report":
             pass
         else:
