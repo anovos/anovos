@@ -516,7 +516,13 @@ def measures_of_centralTendency(
 
 
 def uniqueCount_computation(
-    spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
+    spark,
+    idf,
+    list_of_cols="all",
+    drop_cols=[],
+    compute_approx_unique_count=False,
+    rsd=0.05,
+    print_impact=False,
 ):
     """
 
@@ -539,6 +545,15 @@ def uniqueCount_computation(
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
         It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
         a few handful of them. (Default value = [])
+    compute_approx_unique_count
+        boolean, optional
+        This flag tells the function whether to compute approximate unique count or exact unique count
+        (Default value = False)
+    rsd
+        float, optional
+        This is used when compute_approx_unique_count is True.
+        This is the maximum relative standard deviation allowed (default = 0.05).
+        For rsd < 0.01, it is more efficient to use :func:`countDistinct`
     print_impact
         True, False
         This argument is to print out the statistics.(Default value = False)
@@ -575,9 +590,15 @@ def uniqueCount_computation(
         odf = spark.sparkContext.emptyRDD().toDF(schema)
         return odf
 
-    uniquevalue_count = idf.agg(
-        *(F.countDistinct(F.col(i)).alias(i) for i in list_of_cols)
-    )
+    if compute_approx_unique_count:
+        uniquevalue_count = idf.agg(
+            *(F.approx_count_distinct(F.col(i), rsd).alias(i) for i in list_of_cols)
+        )
+    else:
+        uniquevalue_count = idf.agg(
+            *(F.countDistinct(F.col(i)).alias(i) for i in list_of_cols)
+        )
+
     odf = spark.createDataFrame(
         zip(list_of_cols, uniquevalue_count.rdd.map(list).collect()[0]),
         schema=("attribute", "unique_values"),
@@ -588,7 +609,13 @@ def uniqueCount_computation(
 
 
 def measures_of_cardinality(
-    spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
+    spark,
+    idf,
+    list_of_cols="all",
+    drop_cols=[],
+    use_approx_unique_count=True,
+    rsd=0.05,
+    print_impact=False,
 ):
     """
     The Measures of Cardinality function provides statistics that are related to unique values seen in an
@@ -596,7 +623,7 @@ def measures_of_cardinality(
     returns a Spark Dataframe with schema – attribute, unique_values, IDness.
 
     - Unique Value is defined as a distinct value count of a column. It relies on a supporting function uniqueCount_computation
-      for its computation and leverages the countDistinct functionality of Spark SQL.
+      for its computation and leverages the countDistinct/approx_count_distinct functionality of Spark SQL.
     - IDness is calculated as Unique Values divided by non-null values seen in a column. Non-null values count is used instead
       of total count because too many null values can give misleading results even if the column have all unique values
       (except null). It uses supporting functions - uniqueCount_computation and missingCount_computation.
@@ -620,6 +647,15 @@ def measures_of_cardinality(
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
         It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
         a few handful of them. (Default value = [])
+    use_approx_unique_count
+        boolean, optional
+        This flag tells the function whether to use approximate unique count to compute the IDness or use exact unique count
+        (Default value = True)
+    rsd
+        float, optional
+        This is used when use_approx_unique_count is True.
+        This is the maximum relative standard deviation allowed (default = 0.05).
+        For rsd < 0.01, it is more efficient to set use_approx_unique_count as False
     print_impact
         True, False
         This argument is to print out the statistics.(Default value = False)
@@ -658,7 +694,13 @@ def measures_of_cardinality(
         return odf
 
     odf = (
-        uniqueCount_computation(spark, idf, list_of_cols)
+        uniqueCount_computation(
+            spark,
+            idf,
+            list_of_cols,
+            compute_approx_unique_count=use_approx_unique_count,
+            rsd=rsd,
+        )
         .join(
             missingCount_computation(spark, idf, list_of_cols),
             "attribute",
