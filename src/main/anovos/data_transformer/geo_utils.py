@@ -3,6 +3,7 @@ import pygeohash as pgh
 from geopy import distance
 from scipy import spatial
 import numbers
+import warnings
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
 
@@ -10,11 +11,45 @@ EARTH_RADIUS = 6371009
 UNIT_FACTOR = {"m": 1.0, "km": 1000.0}
 
 
+def in_range(loc, loc_format="dd"):
+    """
+    Parameters
+    ----------
+    loc
+        Location to check if in range.
+        If loc_format is "dd", [lat, lon] format is required.
+        If loc_format is "dms", [[d1,m1,s1], [d2,m2,s2]] format is required.
+        If loc_format is "radian", [lat_radian, lon_radian] format is required.
+        If loc_format is "cartesian", [x, y, z] format is required.
+        If loc_format is "geohash", string format is required.
+    loc_format
+        "dd", "dms", "radian", "cartesian", "geohash". (Default value = "dd")
+    """
+    if loc_format == "dd":
+        try:
+            lat, lon = [int(float(i)) for i in loc]
+        except:
+            lat, lon = None, None
+    else:
+        try:
+            lat, lon = [
+                int(float(i)) for i in to_latlon_decimal_degrees(loc, loc_format)
+            ]
+        except:
+            lat, lon = None, None
+
+    if None not in [lat, lon]:
+        if lat > 90 or lat < -90 or lon > 180 or lon < -180:
+            warnings.warn(
+                "Rows may contain unintended values due to longitude and/or latitude values being out of the "
+                "valid range"
+            )
+
+
 def to_latlon_decimal_degrees(loc, input_format, radius=EARTH_RADIUS):
     """
     Parameters
     ----------
-
     loc
         Location to format.
         If input_format is "dd", [lat, lon] format is required.
@@ -43,29 +78,57 @@ def to_latlon_decimal_degrees(loc, input_format, radius=EARTH_RADIUS):
 
     if input_format == "dd":
         # loc = [lat, lon]
-        return [float(loc[0]), float(loc[1])]
+        try:
+            lat = float(loc[0])
+            lon = float(loc[1])
+        except:
+            lat, lon = None, None
+            warnings.warn(
+                "Rows dropped due to invalid longitude and/or latitude values"
+            )
 
     elif input_format == "dms":
         # loc = [[d1,m1,s1], [d2,m2,s2]]
-        d1, m1, s1, d2, m2, s2 = loc[0] + loc[1]
-        lat = d1 + float(m1) / 60 + float(s1) / 3600
-        lon = d2 + float(m2) / 60 + float(s2) / 3600
+        try:
+            d1, m1, s1, d2, m2, s2 = [float(i) for i in (loc[0] + loc[1])]
+            lat = d1 + m1 / 60 + s1 / 3600
+            lon = d2 + m2 / 60 + s2 / 3600
+        except:
+            lat, lon = None, None
+            warnings.warn(
+                "Rows dropped due to invalid longitude and/or latitude values"
+            )
 
     elif input_format == "radian":
         # loc = [lat_radian, lon_radian]
-        lat_rad, lon_rad = loc
-        lat = degrees(float(lat_rad))
-        lon = degrees(float(lon_rad))
+        try:
+            lat = degrees(float(loc[0]))
+            lon = degrees(float(loc[1]))
+        except:
+            lat, lon = None, None
+            warnings.warn(
+                "Rows dropped due to invalid longitude and/or latitude values"
+            )
 
     elif input_format == "cartesian":
         # loc = [x, y, z]
-        x, y, z = loc
-        lat = degrees(float(asin(z / radius)))
-        lon = degrees(float(atan2(y, x)))
+        try:
+            x, y, z = [float(i) for i in loc]
+            lat = degrees(float(asin(z / radius)))
+            lon = degrees(float(atan2(y, x)))
+        except:
+            lat, lon = None, None
+            warnings.warn("Rows dropped due to invalid cartesian values")
 
     elif input_format == "geohash":
         # loc = geohash
-        lat, lon = list(pgh.decode(loc))
+        try:
+            lat, lon = list(pgh.decode(loc))
+        except:
+            lat, lon = None, None
+            warnings.warn("Rows dropped due to an invalid geohash entry")
+
+    in_range((lat, lon))
 
     return [lat, lon]
 
@@ -74,7 +137,6 @@ def decimal_degrees_to_degrees_minutes_seconds(dd):
     """
     Parameters
     ----------
-
     dd
         Float value in decimal degree.
 
@@ -95,11 +157,9 @@ def decimal_degrees_to_degrees_minutes_seconds(dd):
 def from_latlon_decimal_degrees(
     loc, output_format, radius=EARTH_RADIUS, geohash_precision=8
 ):
-
     """
     Parameters
     ----------
-
     loc
         Location to format with format [lat, lon].
     output_format
@@ -161,11 +221,9 @@ def from_latlon_decimal_degrees(
 
 
 def haversine_distance(loc1, loc2, loc_format, unit="m", radius=EARTH_RADIUS):
-
     """
     Parameters
     ----------
-
     loc1
         The first location.
         If loc_format is "dd", [lat, lon] format is required.
@@ -194,8 +252,14 @@ def haversine_distance(loc1, loc2, loc_format, unit="m", radius=EARTH_RADIUS):
     if loc_format not in ["dd", "radian"]:
         raise TypeError("Invalid input for loc_format")
 
-    lat1, lon1 = float(loc1[0]), float(loc1[1])
-    lat2, lon2 = float(loc2[0]), float(loc2[1])
+    try:
+        lat1, lon1 = float(loc1[0]), float(loc1[1])
+        lat2, lon2 = float(loc2[0]), float(loc2[1])
+    except:
+        return None
+
+    in_range((lat1, lon1), loc_format)
+    in_range((lat2, lon2), loc_format)
 
     if loc_format == "dd":
         lat1, lon1 = radians(lat1), radians(lon1)
@@ -217,7 +281,6 @@ def vincenty_distance(loc1, loc2, unit="m", ellipsoid="WGS-84"):
 
     Parameters
     ----------
-
     loc1
         The first location. [lat, lon] format is required.
     loc2
@@ -234,13 +297,18 @@ def vincenty_distance(loc1, loc2, unit="m", ellipsoid="WGS-84"):
     -------
     Float
     """
-
     if None in [loc1, loc2]:
         return None
     if None in loc1 + loc2:
         return None
 
-    loc_distance = distance.distance(loc1, loc2, ellipsoid=ellipsoid)
+    in_range(loc1)
+    in_range(loc2)
+
+    try:
+        loc_distance = distance.distance(loc1, loc2, ellipsoid=ellipsoid)
+    except:
+        return None
 
     if unit == "m":
         return loc_distance.m
@@ -248,7 +316,7 @@ def vincenty_distance(loc1, loc2, unit="m", ellipsoid="WGS-84"):
         return loc_distance.km
 
 
-def euclidean_distance(loc1, loc2):
+def euclidean_distance(loc1, loc2, unit="m"):
     """
     The Euclidean distance between 2 lists loc1 and loc2, is defined as
     .. math::
@@ -256,11 +324,13 @@ def euclidean_distance(loc1, loc2):
 
     Parameters
     ----------
-
     loc1
         The first location. [x1, y1, z1] format is required.
     loc2
         The second location. [x2, y2, z2] format is required.
+    unit
+        "m", "km".
+        Unit of the result. (Default value = "m")
 
     Returns
     -------
@@ -271,8 +341,21 @@ def euclidean_distance(loc1, loc2):
     if None in loc1 + loc2:
         return None
 
+    try:
+        loc1 = [float(i) for i in loc1]
+        loc2 = [float(i) for i in loc2]
+    except:
+        return None
+
+    in_range(loc1, "cartesian")
+    in_range(loc2, "cartesian")
+
     # loc1 = [x1, y1, z1]; loc2 = [x2, y2, z2]
     euclidean_distance = spatial.distance.euclidean(loc1, loc2)
+
+    if unit == "km":
+        euclidean_distance /= 1000
+
     return euclidean_distance
 
 
@@ -282,7 +365,6 @@ def point_in_polygon(x, y, polygon):
 
     Parameters
     ----------
-
     x
         x coordinate/longitude
     y
@@ -297,6 +379,14 @@ def point_in_polygon(x, y, polygon):
     """
     if (x is None) | (y is None):
         return None
+
+    try:
+        x = float(x)
+        y = float(y)
+    except:
+        return None
+
+    in_range((y, x))
 
     counter = 0
     for index, poly in enumerate(polygon):
@@ -320,13 +410,9 @@ def point_in_polygon(x, y, polygon):
 
         # Check if point is on a boundary
         poly_length = len(poly)
-        for i in range(poly_length):
-            if i == 0:
-                p1 = poly[0]
-                p2 = poly[1]
-            else:
-                p1 = poly[i - 1]
-                p2 = poly[i]
+        for i in range(poly_length - 1):
+            p1 = poly[i]
+            p2 = poly[i + 1]
             if (
                 p1[1] == p2[1]
                 and p1[1] == y
@@ -341,9 +427,9 @@ def point_in_polygon(x, y, polygon):
                 return 1
 
         # Check if the point is inside
-        p1x, p1y = poly[0]
-        for i in range(1, poly_length + 1):
-            p2x, p2y = poly[i % poly_length]
+        for i in range(poly_length):
+            p1x, p1y = poly[i]
+            p2x, p2y = poly[(i + 1) % poly_length]
             if y > min(p1y, p2y):
                 if y <= max(p1y, p2y):
                     if x <= max(p1x, p2x):
@@ -351,7 +437,6 @@ def point_in_polygon(x, y, polygon):
                             xints = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
                             if p1x == p2x or x <= xints:
                                 counter += 1
-            p1x, p1y = p2x, p2y
 
     if counter % 2 == 0:
         return 0
@@ -365,7 +450,6 @@ def point_in_polygons(x, y, polygon_list, south_west_loc=[], north_east_loc=[]):
 
     Parameters
     ----------
-
     x
         x coordinate/longitude
     y
@@ -374,16 +458,28 @@ def point_in_polygons(x, y, polygon_list, south_west_loc=[], north_east_loc=[]):
         A list of polygon(s)
     south_west_loc
         The south-west point (x_sw, y_sw) of the bounding box of the polygons, if available.
-        0 will be directlt returned if x < x_sw or y < y_sw (Default value = [])
+        0 will be directly returned if x < x_sw or y < y_sw (Default value = [])
     north_east_loc
         The north-east point (x_ne, y_ne) of the bounding box of the polygons, if available. (Default value = [])
-        0 will be directlt returned if x > x_ne or y > y_ne (Default value = [])
+        0 will be directly returned if x > x_ne or y > y_ne (Default value = [])
 
     Returns
     -------
     Integer
         1 if (x, y) is inside any polygon of polygon_list and 0 otherwise.
     """
+    if (x is None) | (y is None):
+        return None
+
+    try:
+        x = float(x)
+        y = float(y)
+    except:
+        warnings.warn("Rows dropped due to invalid longitude and/or latitude values")
+        return None
+
+    in_range((y, x))
+
     if south_west_loc:
         if (x < south_west_loc[0]) or (y < south_west_loc[1]):
             return 0
@@ -700,10 +796,16 @@ def point_in_country_approx(lat, lon, country):
     if (lat is None) | (lon is None):
         return None
 
+    try:
+        lat = float(lat)
+        lon = float(lon)
+    except:
+        warnings.warn("Rows dropped due to invalid longitude and/or latitude values")
+        return None
+
+    in_range((lat, lon))
+
     if (c[1][1] <= lat <= c[1][3]) and (c[1][0] <= lon <= c[1][2]):
         return 1
     else:
         return 0
-
-
-f_point_in_country_approx = F.udf(point_in_country_approx, T.IntegerType())
