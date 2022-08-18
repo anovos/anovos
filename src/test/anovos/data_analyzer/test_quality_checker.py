@@ -154,7 +154,9 @@ def test_duplicate_detection(spark_session: SparkSession):
         == "HS-grad"
     )
 
-    result_df1 = duplicate_detection(spark_session, test_df1, treatment=True)
+    result_df1 = duplicate_detection(
+        spark_session, test_df1, treatment=True, print_impact=True
+    )
 
     assert result_df1[0].count() == 4
     assert (

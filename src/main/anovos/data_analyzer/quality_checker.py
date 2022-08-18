@@ -47,7 +47,7 @@ from anovos.shared.utils import (
 
 
 def duplicate_detection(
-    spark, idf, list_of_cols="all", drop_cols=[], treatment=False, print_impact=False
+    spark, idf, list_of_cols="all", drop_cols=[], treatment=True, print_impact=False
 ):
     """
     As the name implies, this function detects duplication in the input dataset. This means, for a pair of
@@ -78,20 +78,28 @@ def duplicate_detection(
         It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
         a few handful of them. (Default value = [])
     treatment
-        Boolean argument – True or False. If True, duplicate rows are removed from the input dataframe. (Default value = False)
+        Boolean argument – True or False. If True, duplicate rows are removed from the input dataframe. (Default value = True)
     print_impact
         True, False
         This argument is to print out the statistics.(Default value = False)
 
     Returns
     -------
-    odf : DataFrame
-        de-duplicated dataframe if treated, else original input dataframe.
-    odf_print : DataFrame
-        schema [metric, value] and contains metrics - number of rows, number of unique rows,
-        number of duplicate rows and percentage of duplicate rows in total.
-
+    if print_impact is True:
+        odf : DataFrame
+            de-duplicated dataframe if treated, else original input dataframe.
+        odf_print : DataFrame
+            schema [metric, value] and contains metrics - number of rows, number of unique rows,
+            number of duplicate rows and percentage of duplicate rows in total.
+    if print_impact is False:
+        odf : DataFrame
+            de-duplicated dataframe if treated, else original input dataframe.
     """
+    if not treatment and not print_impact:
+        warnings.warn(
+            "The original idf will be the only output. Set print_impact=True to perform detection without treatment"
+        )
+        return idf
     if list_of_cols == "all":
         num_cols, cat_cols, other_cols = attributeType_segregation(idf)
         list_of_cols = num_cols + cat_cols
@@ -111,28 +119,34 @@ def duplicate_detection(
     else:
         raise TypeError("Non-Boolean input for treatment")
 
-    odf_tmp = idf.drop_duplicates(subset=list_of_cols)
+    odf_tmp = idf.groupby(list_of_cols).count().drop("count")
     odf = odf_tmp if treatment else idf
 
-    odf_print = spark.createDataFrame(
-        [
-            ["rows_count", float(idf.count())],
-            ["unique_rows_count", float(odf_tmp.count())],
-            ["duplicate_rows", float(idf.count() - odf_tmp.count())],
-            ["duplicate_pct", round((idf.count() - odf_tmp.count()) / idf.count(), 4)],
-        ],
-        schema=["metric", "value"],
-    )
     if print_impact:
-        print("No. of Rows: " + str(idf.count()))
-        print("No. of UNIQUE Rows: " + str(odf_tmp.count()))
-        print("No. of Duplicate Rows: " + str(idf.count() - odf_tmp.count()))
-        print(
-            "Percentage of Duplicate Rows: "
-            + str(round((idf.count() - odf_tmp.count()) / idf.count(), 4))
+        idf_count = idf.count()
+        odf_tmp_count = odf_tmp.count()
+        odf_print = spark.createDataFrame(
+            [
+                ["rows_count", float(idf_count)],
+                ["unique_rows_count", float(odf_tmp_count)],
+                ["duplicate_rows", float(idf_count - odf_tmp_count)],
+                ["duplicate_pct", round((idf_count - odf_tmp_count) / idf_count, 4)],
+            ],
+            schema=["metric", "value"],
         )
 
-    return odf, odf_print
+        print("No. of Rows: " + str(idf_count))
+        print("No. of UNIQUE Rows: " + str(odf_tmp_count))
+        print("No. of Duplicate Rows: " + str(idf_count - odf_tmp_count))
+        print(
+            "Percentage of Duplicate Rows: "
+            + str(round((idf_count - odf_tmp_count) / idf_count, 4))
+        )
+
+    if print_impact:
+        return odf, odf_print
+    else:
+        return odf
 
 
 def nullRows_detection(
