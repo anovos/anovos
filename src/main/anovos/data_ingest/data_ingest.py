@@ -27,7 +27,7 @@ def read_dataset(
     file_type,
     file_configs={},
     persist_use=True,
-    persist_option="MEMORY_AND_DISK",
+    persist_option=pyspark.StorageLevel.MEMORY_AND_DISK,
     parquet_conversion=False,
     parquet_output_path="",
     treatment=False,
@@ -63,11 +63,13 @@ def read_dataset(
         (Default value = True)
     persist_option
         This argument is passed as the StorageLevel option when persist_use is set to True. Possible values are
-        'DISK_ONLY', 'DISK_ONLY_2', 'MEMORY_AND_DISK', 'MEMORY_AND_DISK_2', 'MEMORY_AND_DISK_SER',
-        'MEMORY_AND_DISK_SER_2', 'MEMORY_ONLY', 'MEMORY_ONLY_SER', 'MEMORY_ONLY_SER_2', 'OFF_HEAP'.
+        pyspark.StorageLevel.DISK_ONLY, pyspark.StorageLevel.DISK_ONLY_2, pyspark.StorageLevel.MEMORY_AND_DISK,
+        pyspark.StorageLevel.MEMORY_AND_DISK_2, pyspark.StorageLevel.MEMORY_AND_DISK_SER,
+        pyspark.StorageLevel.MEMORY_AND_DISK_SER_2, pyspark.StorageLevel.MEMORY_ONLY,
+        pyspark.StorageLevel.MEMORY_ONLY_SER, pyspark.StorageLevel.MEMORY_ONLY_SER_2, pyspark.StorageLevel.OFF_HEAP.
         For further explanation, please visit pyspark.StorageLevel official documentation
         (https://spark.apache.org/docs/latest/api/python/reference/api/pyspark.StorageLevel.html).
-        (Default value = 'MEMORY_AND_DISK')
+        (Default value = pyspark.StorageLevel.MEMORY_AND_DISK)
     parquet_conversion
         This boolean flag provides an option to whether convert the file type to parquet or not.
         Schema treatment is highly recommended when using this method, as the schema when converted will
@@ -132,27 +134,9 @@ def read_dataset(
         if not isinstance(persist_use, bool):
             raise TypeError("persist_use must be boolean")
         if persist_use:
-            if persist_option == "DISK_ONLY":
-                odf = odf.persist(pyspark.StorageLevel.DISK_ONLY)
-            elif persist_option == "DISK_ONLY_2":
-                odf = odf.persist(pyspark.StorageLevel.DISK_ONLY_2)
-            elif persist_option == "MEMORY_AND_DISK":
-                odf = odf.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
-            elif persist_option == "MEMORY_AND_DISK_2":
-                odf = odf.persist(pyspark.StorageLevel.MEMORY_AND_DISK_2)
-            elif persist_option == "MEMORY_AND_DISK_SER":
-                odf = odf.persist(pyspark.StorageLevel.MEMORY_AND_DISK_SER)
-            elif persist_option == "MEMORY_AND_DISK_SER_2":
-                odf = odf.persist(pyspark.StorageLevel.MEMORY_AND_DISK_SER_2)
-            elif persist_option == "MEMORY_ONLY":
-                odf = odf.persist(pyspark.StorageLevel.MEMORY_ONLY_2)
-            elif persist_option == "MEMORY_ONLY_SER":
-                odf = odf.persist(pyspark.StorageLevel.MEMORY_ONLY_SER)
-            elif persist_option == "MEMORY_ONLY_SER_2":
-                odf = odf.persist(pyspark.StorageLevel.MEMORY_ONLY_SER_2)
-            elif persist_option == "OFF_HEAP":
-                odf = odf.persist(pyspark.StorageLevel.OFF_HEAP)
-            else:
+            try:
+                odf = odf.persist(persist_option)
+            except Exception:
                 raise TypeError(
                     "Input persist_option does not exist in Spark StorageLevel"
                 )
