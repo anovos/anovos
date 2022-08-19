@@ -26,3 +26,4 @@ statsmodels==0.13.2
 sentence_transformers
 geopy
 pygeohash
+geojson

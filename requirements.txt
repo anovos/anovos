@@ -30,3 +30,4 @@ sentence_transformers
 geopy
 pygeohash
 geohash2
+geojson
