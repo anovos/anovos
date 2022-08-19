@@ -7,8 +7,7 @@ ARG spark_version
 ARG anovos_version
 
 WORKDIR /
-USER root
 
-RUN pip install "pyspark==${spark_version}" "anovos==${anovos_version}"
+RUN pip install --no-cache-dir "pyspark==${spark_version}" "anovos==${anovos_version}"
 
 ENTRYPOINT ["python", "-m", "anovos", "/config.yaml", "local"]
