@@ -5,7 +5,7 @@ from pyspark.sql import types as T
 import reverse_geocoder as rg
 import warnings
 from anovos.data_ingest.data_ingest import recast_column
-from .geo_utils import (
+from anovos.data_transformer.geo_utils import (
     EARTH_RADIUS,
     from_latlon_decimal_degrees,
     to_latlon_decimal_degrees,
