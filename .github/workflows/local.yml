@@ -12,6 +12,13 @@ on:
 jobs:
   run-local-demo:
     runs-on: 'ubuntu-latest'
+    environment: DOCKER_HUB_CREDENTIALS
+    strategy:
+      matrix:
+        include:
+          - spark: '2.4.8'
+          - spark: '3.1.3'
+          - spark: '3.2.1'
     steps:
     - name: Checkout code
       uses: actions/checkout@master
@@ -26,11 +33,41 @@ jobs:
 
     - name: Build the anovos-worker image
       run: |
+        export ANOVOS_VERSION=`cat src/main/anovos/version.py | cut -d'"' -f 2`
         cd local
-        docker build . -t anovos-worker
+        docker build --build-arg spark_version=${{ matrix.spark }} --build-arg anovos_version=${ANOVOS_VERSION} . -t anovos-worker-${{ matrix.spark }}
 
     - name: Run the demo as a local workload
       run: |
-       ./local/run_workload.sh config/configs_basic.yaml
+       ./local/run_workload.sh config/configs_basic.yaml ${{ matrix.spark }}
        find ./output
 
+    - name: Docker meta
+      id: meta
+      uses: docker/metadata-action@v4
+      with:
+        images: anovos/anovos-worker-${{ matrix.spark }}
+        tags: |
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+
+    - name: Tag image
+      if: startsWith(github.ref, 'refs/tags')
+      run: |
+        echo "${{ steps.meta.outputs.tags }}" | xargs -n 1 docker tag anovos-worker-${{ matrix.spark }}
+
+    - name: Log in to Docker Hub
+      if: startsWith(github.ref, 'refs/tags')
+      uses: docker/login-action@v2.0.0
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Push to Docker Hub
+      if: startsWith(github.ref, 'refs/tags')
+      id: push-to-docker
+      uses: redhat-actions/push-to-registry@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        tags: ${{ steps.meta.outputs.tags }}
