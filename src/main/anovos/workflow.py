@@ -630,8 +630,14 @@ def main(all_configs, run_type, auth_key_val={}):
                     )
                     top_geo_records = geospatial_analyzer.get("top_geo_records", None)
                 else:
-                    lat_cols,long_cols,gh_cols,max_analysis_records,top_geo_records = [],[],[],100000,100
-                    
+                    (
+                        lat_cols,
+                        long_cols,
+                        gh_cols,
+                        max_analysis_records,
+                        top_geo_records,
+                    ) = ([], [], [], 100000, 100)
+
                 anovos_report(
                     **args,
                     run_type=run_type,
