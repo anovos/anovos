@@ -383,7 +383,6 @@ def mode_computation(spark, idf, list_of_cols="all", drop_cols=[], print_impact=
         odf = spark.sparkContext.emptyRDD().toDF(schema)
         return odf
 
-    idf = idf.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
     list_df = []
     for col in list_of_cols:
         out_df = (
@@ -415,9 +414,11 @@ def mode_computation(spark, idf, list_of_cols="all", drop_cols=[], print_impact=
         )
 
     odf = unionAll(list_df)
+
     if print_impact:
+        odf.persist()
         odf.show(len(list_of_cols))
-    idf.unpersist()
+
     return odf
 
 
@@ -481,12 +482,22 @@ def measures_of_centralTendency(
         raise TypeError("Invalid input for Column(s)")
 
     df_mode_compute = mode_computation(spark, idf, list_of_cols)
-    idf = idf.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
-    odf = (
-        transpose_dataframe(
-            idf.select(list_of_cols).summary("mean", "50%", "count"), "summary"
+    summary_lst = []
+    for col in list_of_cols:
+        summary_col = (
+            idf.select(col)
+            .summary("mean", "50%", "count")
+            .rdd.map(lambda x: x[1])
+            .collect()
         )
-        .withColumn(
+        summary_col.insert(0, col)
+        summary_lst.append(summary_col)
+    summary_df = spark.createDataFrame(
+        summary_lst,
+        schema=("key", "mean", "50%", "count"),
+    )
+    odf = (
+        summary_df.withColumn(
             "mean",
             F.when(
                 F.col("key").isin(num_cols),
@@ -510,8 +521,9 @@ def measures_of_centralTendency(
     )
 
     if print_impact:
+        odf.persist()
         odf.show(len(list_of_cols))
-    idf.unpersist()
+
     return odf
 
 
