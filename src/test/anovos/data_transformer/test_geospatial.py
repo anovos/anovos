@@ -30,33 +30,14 @@ countries = "./data/country_polygons.geojson"
 
 
 @pytest.fixture
-def df_data(spark_session):
-    return read_dataset(spark_session, path, "csv", file_configs={"header": "True"})
-
-
-@pytest.fixture
 def df2(spark_session):
     return read_dataset(spark_session, path2, "csv", file_configs={"header": "True"})
-
-
-@pytest.fixture
-def null_df_data(spark_session):
-    return read_dataset(
-        spark_session, path_null, "csv", file_configs={"header": "True"}
-    )
 
 
 @pytest.fixture
 def null_df2(spark_session):
     return read_dataset(
         spark_session, path_null2, "csv", file_configs={"header": "True"}
-    )
-
-
-@pytest.fixture
-def invalid_df_data(spark_session):
-    return read_dataset(
-        spark_session, path_invalid, "csv", file_configs={"header": "True"}
     )
 
 
@@ -68,43 +49,23 @@ def invalid_df2(spark_session):
 
 
 @pytest.fixture
-def dms_df_data(spark_session):
-    return read_dataset(
-        spark_session, path_dms, "parquet", file_configs={"header": "True"}
-    )
-
-
-@pytest.fixture
-def rad_df_data(spark_session):
-    return read_dataset(spark_session, path_rad, "csv", file_configs={"header": "True"})
-
-
-@pytest.fixture
-def cart_df_data(spark_session):
-    return read_dataset(
-        spark_session, path_cart, "csv", file_configs={"header": "True"}
-    )
-
-
-@pytest.fixture
-def hash_df_data(spark_session):
-    return read_dataset(
-        spark_session, path_hash, "csv", file_configs={"header": "True"}
-    )
-
-
-@pytest.fixture
 def africa_data():
     with open(path_africa) as f:
         return geojson.load(f)
 
 
-def test_geo_format_latlon(df_data, null_df_data, invalid_df_data, dms_df_data, rad_df_data):
-    df = df_data
-    null_df = null_df_data
-    invalid_df = invalid_df_data
-    dms_df = dms_df_data
-    rad_df = rad_df_data
+def test_geo_format_latlon(spark_session):
+    df = read_dataset(spark_session, path, "csv", file_configs={"header": "True"})
+    null_df = read_dataset(
+        spark_session, path_null, "csv", file_configs={"header": "True"}
+    )
+    invalid_df = read_dataset(
+        spark_session, path_invalid, "csv", file_configs={"header": "True"}
+    )
+    dms_df = read_dataset(
+        spark_session, path_dms, "parquet", file_configs={"header": "True"}
+    )
+    rad_df = read_dataset(spark_session, path_rad, "csv", file_configs={"header": "True"})
     odf1 = geo_format_latlon(
         df, ["lat1", "lat2"], ["lon1", "lon2"], "dd", "dms", output_mode="replace"
     )
@@ -399,8 +360,10 @@ def test_geo_format_latlon(df_data, null_df_data, invalid_df_data, dms_df_data, 
     assert rad_odf4.collect()[0][2] == "y74g025n"
 
 
-def test_geoformat_cartesian(cart_df_data):
-    cart_df = cart_df_data
+def test_geoformat_cartesian(spark_session):
+    cart_df = read_dataset(
+        spark_session, path_cart, "csv", file_configs={"header": "True"}
+    )
     odf1 = geo_format_cartesian(
         cart_df, ["x1", "x2"], ["y1", "y2"], ["z1", "z2"], "dd", output_mode="replace"
     )
@@ -455,8 +418,10 @@ def test_geoformat_cartesian(cart_df_data):
     assert odf4.collect()[0][2] == "y74g025n"
 
 
-def test_geoformat_geohash(hash_df_data):
-    hash_df = hash_df_data
+def test_geoformat_geohash(spark_session):
+    hash_df = read_dataset(
+        spark_session, path_hash, "csv", file_configs={"header": "True"}
+    )
     odf1 = geo_format_geohash(
         hash_df, ["geohash1", "geohash2"], "dd", output_mode="replace"
     )
@@ -505,14 +470,24 @@ def test_geoformat_geohash(hash_df_data):
     assert int(odf4.collect()[0][6]) == 5646165
 
 
-def test_location_distance(df_data, null_df_data, invalid_df_data, dms_df_data, rad_df_data, cart_df_data, hash_df_data):
-    df = df_data
-    null_df = null_df_data
-    invalid_df = invalid_df_data
-    dms_df = dms_df_data
-    rad_df = rad_df_data
-    cart_df = cart_df_data
-    hash_df = hash_df_data
+def test_location_distance(spark_session):
+    df = read_dataset(spark_session, path, "csv", file_configs={"header": "True"})
+    null_df = read_dataset(
+        spark_session, path_null, "csv", file_configs={"header": "True"}
+    )
+    invalid_df = read_dataset(
+        spark_session, path_invalid, "csv", file_configs={"header": "True"}
+    )
+    dms_df = read_dataset(
+        spark_session, path_dms, "parquet", file_configs={"header": "True"}
+    )
+    rad_df = read_dataset(spark_session, path_rad, "csv", file_configs={"header": "True"})
+    cart_df = read_dataset(
+        spark_session, path_cart, "csv", file_configs={"header": "True"}
+    )
+    hash_df = read_dataset(
+        spark_session, path_hash, "csv", file_configs={"header": "True"}
+    )
     odf1 = location_distance(
         df,
         ["lat1", "lon1"],
@@ -1027,8 +1002,10 @@ def test_location_distance(df_data, null_df_data, invalid_df_data, dms_df_data, 
     assert int(hash_odf6.collect()[0][1]) == 12473
 
 
-def test_geohash_precision_control(hash_df_data):
-    hash_df = hash_df_data
+def test_geohash_precision_control(spark_session):
+    hash_df = read_dataset(
+        spark_session, path_hash, "csv", file_configs={"header": "True"}
+    )
     odf1 = geohash_precision_control(
         hash_df, ["geohash1", "geohash2"], 8, output_mode="replace"
     )
@@ -1080,10 +1057,14 @@ def test_geohash_precision_control(hash_df_data):
     assert odf8.collect()[0][2] == "y"
 
 
-def test_location_in_polygon(df_data, null_df_data, invalid_df_data, africa_data):
-    df = df_data
-    null_df = null_df_data
-    invalid_df = invalid_df_data
+def test_location_in_polygon(spark_session, africa_data):
+    df = read_dataset(spark_session, path, "csv", file_configs={"header": "True"})
+    null_df = read_dataset(
+        spark_session, path_null, "csv", file_configs={"header": "True"}
+    )
+    invalid_df = read_dataset(
+        spark_session, path_invalid, "csv", file_configs={"header": "True"}
+    )
     africa = africa_data
     odf = location_in_polygon(
         df, ["lat1", "lat2"], ["lon1", "lon2"], africa, output_mode="replace"
@@ -1115,10 +1096,14 @@ def test_location_in_polygon(df_data, null_df_data, invalid_df_data, africa_data
     assert int(invalid_odf.collect()[4][2]) == 0
 
 
-def test_location_in_country(spark_session, df_data, null_df_data, invalid_df_data):
-    df = df_data
-    null_df = null_df_data
-    invalid_df = invalid_df_data
+def test_location_in_country(spark_session):
+    df = read_dataset(spark_session, path, "csv", file_configs={"header": "True"})
+    null_df = read_dataset(
+        spark_session, path_null, "csv", file_configs={"header": "True"}
+    )
+    invalid_df = read_dataset(
+        spark_session, path_invalid, "csv", file_configs={"header": "True"}
+    )
     odf1 = location_in_country(
         spark_session,
         df,
