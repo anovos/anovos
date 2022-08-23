@@ -1,0 +1,78 @@
+platforms:
+  EMR: true
+  AKS: false
+  Databricks: false
+dataset_configs:
+  name: "IEEE_Fraud_Detection_Medium"
+  aws_path: 's3://mw.test/krish/anovos/ieee_fraud_detection/datasets/ieee/medium/csv'
+  azure_path: null
+  databricks_path: null
+  aws_output_parent_path: 's3://mw.test/krish/anovos/performance_eval/n1'
+  azure_output_parent_path: null
+  databricks_output_parent_path: null
+  dataset_column_coverage_pct:
+    - 10
+    - 20
+    - 30
+    - 50
+    - 80
+    - 100
+  categorical_column_count_factor: 0.2
+function_config:
+  - function_1:
+      name: "correlation_matrix"
+      class_path: "anovos.data_analyzer.association_evaluator"
+      args_list:
+        - args1:
+            source: "string"
+            value: "some_value"
+        - args2:
+            source: "functions_config"
+            value: "anovos_config.association_evaluator.correlation_matrix.getProperty"
+      dependent_modules:
+        - mod1: null
+        - mod2: null
+        - mod3: null
+  - function_2:
+      name: "outlier_detection"
+      class_path: "anovos.data_analyzer.quality_checker"
+      args_list:
+        - args1:
+            source: "string"
+            value: "some_value"
+        - args2:
+            source: "functions_config"
+            value: "anovos_config.quality_checker.outlier_detection.getProperty"
+      dependent_modules:
+        - mod1: null
+        - mod2: null
+        - mod3: null
+emr_configs:
+  node_counts:
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+  machine_type: "r5.2xlarge"
+  master_instance_type: null
+  executor_instance_type: null
+  executor_instance_count: null
+  ebs_volume_size: null
+  bootstrap_file: >-
+    "s3://mw.test/krish/anovos/general/resources/bootstrapping/req_packages_anovos_3_8.sh"
+  cluster_base_name: "anovos_function_evaluation"
+  anovos_build_s3_location: 's3://mw.test/krish/anovos/performance_eval/zip/take3/anovos.zip'
+  anovos_function_config: 's3://mw.test/krish/anovos/performance_eval/configs/configs_ieee_fraud.yaml'
+  main_python_file_s3_location: 's3://mw.test/krish/anovos/performance_eval/main/RunPerformanceEvalWrapper.py'
+  cluster_polling_interval: 120
+aks_configs:
+  - config1: null
+  - config2: null
+  - config3: null
+  - config4: null
+databricks_configs:
+  - config1: null
+  - config2: null
+  - config3: null
+  - config4: null
