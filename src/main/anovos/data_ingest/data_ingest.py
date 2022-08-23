@@ -17,7 +17,7 @@ import pyspark.sql.functions as F
 from pyspark.sql import DataFrame
 from pyspark.sql import types as T
 
-from anovos.shared.utils import attributeType_segregation, pairwise_reduce
+from ..shared.utils import attributeType_segregation, pairwise_reduce
 
 
 def read_dataset(spark, file_path, file_type, file_configs={}):
