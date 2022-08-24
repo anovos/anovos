@@ -416,7 +416,6 @@ def mode_computation(spark, idf, list_of_cols="all", drop_cols=[], print_impact=
     odf = unionAll(list_df)
 
     if print_impact:
-        odf.persist()
         odf.show(len(list_of_cols))
 
     return odf
@@ -521,7 +520,6 @@ def measures_of_centralTendency(
     )
 
     if print_impact:
-        odf.persist()
         odf.show(len(list_of_cols))
 
     return odf
