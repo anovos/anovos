@@ -640,7 +640,12 @@ def cat_to_num_unsupervised(
                 )
                 new_cols.append(i + "_" + str(j))
 
-            odf = odf.rdd.map(lambda x: (*x, *(DenseVector(x[i + "_vec"]).toArray().astype(int).tolist()))).toDF(schema=odf_schema)
+            odf = odf.rdd.map(
+                lambda x: (
+                    *x,
+                    *(DenseVector(x[i + "_vec"]).toArray().astype(int).tolist()),
+                )
+            ).toDF(schema=odf_schema)
 
             if output_mode == "replace":
                 odf = odf.drop(i, i + "_vec", i + "_index")
