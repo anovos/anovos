@@ -712,7 +712,8 @@ def cat_to_num_supervised(
     pre_existing_model=False,
     model_path="NA",
     output_mode="replace",
-    intermediate_data_caching=False,
+    persist=False,
+    persist_option=pyspark.StorageLevel.MEMORY_AND_DISK,
     print_impact=False,
 ):
     """
@@ -764,15 +765,15 @@ def cat_to_num_supervised(
         "replace", "append".
         “replace” option replaces original columns with transformed column. “append” option append transformed
         column to the input dataset with a postfix "_encoded" e.g. column X is appended as X_encoded. (Default value = "replace")
-    run_type
-        "local", "emr", "databricks", "ak8s" (Default value = "local")
-    auth_key
-        Option to pass an authorization key to write to filesystems. Currently applicable only for ak8s run_type. Default value is kept as "NA"
-    intermediate_data_caching
-        Boolean argument - True or False. This parameter is for optimization purpose. If Ture, repeatedly used dataframe
-        will be cached (StorageLevel MEMORY_AND_DISK). We recommend setting this parameter as True if at least one of
-        the following criteria is True: (1) The underlying data source is in csv format (2) The transformation will be
-        applicable to most columns.
+    persist
+        Boolean argument - True or False. This parameter is for optimization purpose. If True, repeatedly used dataframe
+        will be persisted (StorageLevel can be specified in persist_option). We recommend setting this parameter as True
+        if at least one of the following criteria is True:
+        (1) The underlying data source is in csv format
+        (2) The transformation will be applicable to most columns. (Default value = False)
+    persist_option
+        A pyspark.StorageLevel instance. This parameter is useful only when persist is True.
+        (Default value = pyspark.StorageLevel.MEMORY_AND_DISK)
     print_impact
         True, False (Default value = False)
         This argument is to print out the descriptive statistics of encoded columns.
@@ -816,8 +817,8 @@ def cat_to_num_supervised(
         skip_if_error = False
     save_model = True
 
-    if intermediate_data_caching:
-        idf = idf.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
+    if persist:
+        idf = idf.persist(persist_option)
     for index, i in enumerate(list_of_cols):
         if pre_existing_model:
             df_tmp = spark.read.csv(
@@ -866,9 +867,9 @@ def cat_to_num_supervised(
                         raise error
 
         if df_tmp.count() > 1:
-            odf = odf.join(F.broadcast(df_tmp), i, "left_outer")
+            odf = odf.join(df_tmp, i, "left_outer")
         else:
-            odf = odf.crossJoin(F.broadcast(df_tmp))
+            odf = odf.crossJoin(df_tmp)
 
     if output_mode == "replace":
         for i in list_of_cols:
@@ -885,7 +886,7 @@ def cat_to_num_supervised(
         print("After: ")
         odf.select(output_cols).summary("count", "min", "max").show(3, False)
 
-    if intermediate_data_caching:
+    if persist:
         idf.unpersist()
     return odf
 
