@@ -936,6 +936,7 @@ def outlier_detection(
 
     def composite_outlier_pandas(col_param):
         def inner(v):
+            v = v.astype(float, errors="raise")
             if detection_side in ("lower", "both"):
                 lower_v = ((v - col_param[0]) < 0).replace(True, -1).replace(False, 0)
             if detection_side in ("upper", "both"):
