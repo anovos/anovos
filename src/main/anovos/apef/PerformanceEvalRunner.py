@@ -28,7 +28,7 @@ def ends_with(string, end_str="/"):
     return string + end_str
 
 
-def launchFunctionEvaluation(eval_config_s3_path):
+def launchFunctionEvaluationEMR(eval_config_s3_path):
     '''
     Launch EMR instances from remote server with specifications drawn from the evaluation_config_file.
     '''
@@ -39,17 +39,22 @@ def launchFunctionEvaluation(eval_config_s3_path):
     with open(eval_config_file, "r") as f1:
         all_configs = yaml.load(f1, yaml.SafeLoader)
 
-    dataset_name = all_configs.get("dataset_name").replace(" ", "_")
-    output_parent_path = all_configs.get("output_parent_path")
+    run_type = "emr"
+    dataset_name = all_configs.get("dataset_configs").get("name").replace(" ", "_")
+    output_parent_path = all_configs.get("dataset_configs").get("aws_output_parent_path")
     functions = all_configs.get("functions")
-    nodes = all_configs.get("node_counts")
-    machine_type = all_configs.get("machine_type")
-    bootstrap_file = all_configs.get("bootstrap_file")
-    c_base_name = all_configs.get("cluster_base_name")
-    zipLocation = all_configs.get("anovos_build_s3_location")
-    mainFileLoc = all_configs.get("main_python_file_s3_location")
-    scripts_s3_loc = all_configs.get("scripts_s3_loc")
-    polling_interval = all_configs.get("cluster_polling_interval")
+    nodes = all_configs.get("emr_configs").get("node_counts")
+    master_instance_type = all_configs.get("emr_configs").get("master_instance_type")
+    executor_instance_type = all_configs.get("emr_configs").get("executor_instance_type")
+    ebs_volume_size_in_GB = all_configs.get("emr_configs").get("ebs_volume_size_in_GB")
+
+    bootstrap_file = all_configs.get("emr_configs").get("bootstrap_file")
+    c_base_name = all_configs.get("emr_configs").get("cluster_base_name")
+    zipLocation = all_configs.get("emr_configs").get("anovos_build_s3_location")
+    mainFileLoc = all_configs.get("emr_configs").get("main_python_file_s3_location")
+    polling_interval = all_configs.get("emr_configs").get("cluster_polling_interval")
+    scripts_s3_loc = all_configs.get("emr_configs").get("scripts_s3_loc")
+
 
     if not os.path.exists('scripts'):
         os.makedirs('scripts')
@@ -63,13 +68,13 @@ def launchFunctionEvaluation(eval_config_s3_path):
     for node in nodes:
         # launch emr cluster with the mentioned node count
         c_name = f"{c_base_name}_{dataset_name}_for_{node}_nodes"
-        bash_cmd = f"bash {create_cluster_script} {machine_type} {node} {bootstrap_file} {c_name}"
+        bash_cmd = f"bash {create_cluster_script} {master_instance_type} {executor_instance_type} {node} {bootstrap_file} {c_name} {ebs_volume_size_in_GB}"
         cluster_id = subprocess.check_output(["bash", "-c", bash_cmd])
         clusters_launched_list.append(cluster_id)
         for f_name in functions:
             # add each function performance evaluation as a step in the cluster that is launched in the outerloop
             stepName = f"anovos_{f_name}_evaluation"
-            bash_cmd = f"bash {function_evaluation_step_script} {cluster_id} {zipLocation} {stepName} {mainFileLoc} {eval_config_s3_path} {node} {f_name}"
+            bash_cmd = f"bash {function_evaluation_step_script} {cluster_id} {zipLocation} {stepName} {mainFileLoc} {eval_config_s3_path} {run_type} {node} {f_name}"
             _ = subprocess.check_output(["bash", "-c", bash_cmd])
     print(f"Clusters launched: {clusters_launched_list}")
 
@@ -103,4 +108,4 @@ def launchFunctionEvaluation(eval_config_s3_path):
     _ = subprocess.check_output(["bash", "-c", bash_cmd])
 
 
-launchFunctionEvaluation(eval_config_s3_path=sys.argv[1])
+launchFunctionEvaluationEMR(eval_config_s3_path=sys.argv[1])
