@@ -37,11 +37,11 @@ def geo_format_latlon(
     list_of_lat
         List of columns representing latitude e.g., ["lat1","lat2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "lat1|lat2".
+        where different column names are separated by pipe delimiter "|" e.g., "lat1|lat2".
     list_of_lon
         List of columns representing longitude e.g., ["lon1","lon2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "lon1|lon2".
+        where different column names are separated by pipe delimiter "|" e.g., "lon1|lon2".
         list_of_lon must have the same length as list_of_lat such that i-th element of
         list_of_lat and i-th element of list_of_lon form a lat-lon pair to format.
     input_format
@@ -56,7 +56,7 @@ def geo_format_latlon(
     result_prefix
         List of prefixes for the newly generated column names.
         Alternatively, prefixes can be specified in a string format,
-        where different prefixes are separated by pipe delimiter “|” e.g., "pf1|pf2".
+        where different prefixes are separated by pipe delimiter "|" e.g., "pf1|pf2".
         result_prefix must have the same length as list_of_lat and list_of_lon.
         If it is empty, <lat>_<lon> will be used for each lat-lon pair.
         For example, list_of_lat is "lat1|lat2", list_of_lon is "L1|L2".
@@ -68,7 +68,7 @@ def geo_format_latlon(
             If output_format is "geohash", new columns will be named as
             L1_geohash and L2_geohash.
         Case 2: result_prefix = [].
-            The "L1" and "L2" in above column names will be replaced by "lat1_lon1" and "lat2_lon2".
+            Prefixes "L1" and "L2" in above column names will be replaced by "lat1_lon1" and "lat2_lon2".
         (Default value = [])
     optional_configs
         The following keys can be used:
@@ -182,15 +182,15 @@ def geo_format_cartesian(
     list_of_x
         List of columns representing x axis values e.g., ["x1","x2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "x1|x2".
+        where different column names are separated by pipe delimiter "|" e.g., "x1|x2".
     list_of_y
         List of columns representing y axis values e.g., ["y1","y2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "y1|y2".
+        where different column names are separated by pipe delimiter "|" e.g., "y1|y2".
     list_of_z
         List of columns representing z axis values e.g., ["z1","z2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "z1|z2".
+        where different column names are separated by pipe delimiter "|" e.g., "z1|z2".
         list_of_x, list_of_y and list_of_z must have the same length such that the
         i-th element of 3 lists form an x-y-z pair to format.
     output_format
@@ -202,19 +202,17 @@ def geo_format_cartesian(
     result_prefix
         List of prefixes for the newly generated column names.
         Alternatively, prefixes can be specified in a string format,
-        where different prefixes are separated by pipe delimiter “|” e.g., "pf1|pf2".
-        result_prefix must have the same length as list_of_lat and list_of_lon.
-        If it is empty, <lat>_<lon> will be used for each lat-lon pair.
-        For example, list_of_lat is "lat1|lat2", list_of_lon is "L1|L2".
+        where different prefixes are separated by pipe delimiter "|" e.g., "pf1|pf2".
+        result_prefix must have the same length as list_of_x, list_of_y and list_of_z.
+        If it is empty, <x>_<y>_<z> will be used for each x-y-z pair.
+        For example, list_of_x is "x1|x2", list_of_y is "y1|y2" and list_of_z is "z1|z2"
         Case 1: result_prefix = "L1|L2".
             If output_format is "dd", "dms" or "radian", new columns will be named as
             L1_lat_<output_format>, L1_lon_<output_format>, L2_lat_<output_format>, L2_lon_<output_format>.
-            If output_format is "cartesian", new columns will be named as
-            L1_x, L1_y, L1_z, L2_x, L2_y, L2_z.
             If output_format is "geohash", new columns will be named as
             L1_geohash and L2_geohash.
         Case 2: result_prefix = [].
-            The "L1" and "L2" in above column names will be replaced by "lat1_lon1" and "lat2_lon2".
+            Prefixes "L1" and "L2" in above column names will be replaced by "x1_y1_z1" and "x2_y2_z2".
         (Default value = [])
     optional_configs
         The following keys can be used:
@@ -320,7 +318,7 @@ def geo_format_geohash(
     list_of_geohash
         List of columns representing geohash e.g., ["gh1","gh2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "gh1|gh2".
+        where different column names are separated by pipe delimiter "|" e.g., "gh1|gh2".
     output_format
         "dd", "dms", "radian", "cartesian"
         "dd" represents latitude and longitude in decimal degrees.
@@ -330,19 +328,17 @@ def geo_format_geohash(
     result_prefix
         List of prefixes for the newly generated column names.
         Alternatively, prefixes can be specified in a string format,
-        where different prefixes are separated by pipe delimiter “|” e.g., "pf1|pf2".
-        result_prefix must have the same length as list_of_lat and list_of_lon.
-        If it is empty, <lat>_<lon> will be used for each lat-lon pair.
-        For example, list_of_lat is "lat1|lat2", list_of_lon is "L1|L2".
+        where different prefixes are separated by pipe delimiter "|" e.g., "pf1|pf2".
+        result_prefix must have the same length as list_of_geohash.
+        If it is empty, <geohash column name> will be used as the prefix for transformed columns.
+        For example, list_of_geohash is "gh1|gh2".
         Case 1: result_prefix = "L1|L2".
             If output_format is "dd", "dms" or "radian", new columns will be named as
             L1_lat_<output_format>, L1_lon_<output_format>, L2_lat_<output_format>, L2_lon_<output_format>.
             If output_format is "cartesian", new columns will be named as
             L1_x, L1_y, L1_z, L2_x, L2_y, L2_z.
-            If output_format is "geohash", new columns will be named as
-            L1_geohash and L2_geohash.
         Case 2: result_prefix = [].
-            The "L1" and "L2" in above column names will be replaced by "lat1_lon1" and "lat2_lon2".
+            Prefixes "L1" and "L2" in above column names will be replaced by "gh1" and "gh2".
         (Default value = [])
     optional_configs
         The following key can be used:
@@ -447,18 +443,18 @@ def location_distance(
     list_of_cols_loc1
         List of columns to express the first location e.g., ["lat1","lon1"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "lat1|lon1".
+        where different column names are separated by pipe delimiter "|" e.g., "lat1|lon1".
     list_of_cols_loc2
         List of columns to express the second location e.g., ["lat2","lon2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "lat2|lon2".
+        where different column names are separated by pipe delimiter "|" e.g., "lat2|lon2".
     loc_format
         "dd", "dms", "radian", "cartesian", "geohash". (Default value = "dd")
     result_prefix
         Prefix for the newly generated column. It must be a string or a list with one element.
         If it is empty, <list_of_cols_loc1 joined by '_'>_<list_of_cols_loc2 joined by '_'>
         will be used as the prefix.
-        For example, list_of_cols_loc1 is "lat1|lon1", list_of_lon is "lat2|lon2".
+        For example, list_of_cols_loc1 is "lat1|lon1", list_of_cols_loc2 is "lat2|lon2".
         Case 1: result_prefix = "L1_L2": the new column will be named as L1_L2_distance.
         Case 2: result_prefix = []: the new column will be named as lat1_lon1_lat2_lon2_distance.
         (Default value = '')
@@ -635,7 +631,7 @@ def geohash_precision_control(
     list_of_geohash
         List of columns in geohash format e.g., ["gh1","gh2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "gh1|gh2".
+        where different column names are separated by pipe delimiter "|" e.g., "gh1|gh2".
     output_precision
         Precision of the transformed geohash in the output dataframe. (Default value = 8)
     km_max_error
@@ -710,11 +706,11 @@ def location_in_polygon(
     list_of_lat
         List of columns representing latitude e.g., ["lat1","lat2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "lat1|lat2".
+        where different column names are separated by pipe delimiter "|" e.g., "lat1|lat2".
     list_of_lon
         List of columns representing longitude e.g., ["lon1","lon2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "lon1|lon2".
+        where different column names are separated by pipe delimiter "|" e.g., "lon1|lon2".
         list_of_lon must have the same length as list_of_lat such that i-th element of
         list_of_lat and i-th element of list_of_lon form a lat-lon pair to format.
     polygon
@@ -722,7 +718,7 @@ def location_in_polygon(
     result_prefix
         List of prefixes for the newly generated column names.
         Alternatively, prefixes can be specified in a string format,
-        where different prefixes are separated by pipe delimiter “|” e.g., "pf1|pf2".
+        where different prefixes are separated by pipe delimiter "|" e.g., "pf1|pf2".
         result_prefix must have the same length as list_of_lat and list_of_lon.
         If it is empty, <lat>_<lon> will be used for each lat-lon pair.
         For example, list_of_lat is "lat1|lat2", list_of_lon is "lon1|lon2".
@@ -807,11 +803,11 @@ def location_in_country(
     list_of_lat
         List of columns representing latitude e.g., ["lat1","lat2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "lat1|lat2".
+        where different column names are separated by pipe delimiter "|" e.g., "lat1|lat2".
     list_of_lon
         List of columns representing longitude e.g., ["lon1","lon2"].
         Alternatively, columns can be specified in a string format,
-        where different column names are separated by pipe delimiter “|” e.g., "lon1|lon2".
+        where different column names are separated by pipe delimiter "|" e.g., "lon1|lon2".
         list_of_lon must have the same length as list_of_lat such that i-th element of
         list_of_lat and i-th element of list_of_lon form a lat-lon pair to format.
     country
@@ -827,7 +823,7 @@ def location_in_country(
     result_prefix
         List of prefixes for the newly generated column names.
         Alternatively, prefixes can be specified in a string format,
-        where different prefixes are separated by pipe delimiter “|” e.g., "pf1|pf2".
+        where different prefixes are separated by pipe delimiter "|" e.g., "pf1|pf2".
         result_prefix must have the same length as list_of_lat and list_of_lon.
         If it is empty, <lat>_<lon> will be used for each lat-lon pair.
         For example, list_of_lat is "lat1|lat2", list_of_lon is "lon1|lon2".
