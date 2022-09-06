@@ -125,3 +125,9 @@ jobs:
           push: ${{ startsWith(github.ref, 'refs/tags') }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+  local:
+    name: "Anovos worker images"
+    needs:
+      - notebooks
+    uses: ./.github/workflows/local.yml
