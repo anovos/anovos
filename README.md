@@ -30,7 +30,7 @@ on your local machine.
 
 ```bash
 # Launch an anovos-examples Docker container
-sudo docker run -p 8888:8888 anovos/anovos-examples-3.2.1:latest
+sudo docker run -p 8888:8888 anovos/anovos-examples-3.2.2:latest
 ```
 
 To reach the Jupyter environment, open the link to `http://127.0.0.1:8888/?token...`
