@@ -260,13 +260,11 @@ def data_analyzer_output(master_path, avl_recs_tab, tab_name):
                     ].value.values
                     * 100.0
                 )
-                unique_rows_count = f" No. Of Unique Rows: ** {_unique_rows_count}, **"
+                unique_rows_count = f" No. Of Unique Rows: **{_unique_rows_count}**"
                 # @FIXME: variable names exists in outer scope
-                rows_count = f" No. of Rows: ** {_rows_count}, **"
-                duplicate_rows = (
-                    f" No. of Duplicate Rows: ** {_duplicate_rows_count}, **"
-                )
-                duplicate_pct = f" Percentage of Duplicate Rows: ** {_duplicate_pct}%**"
+                rows_count = f" No. of Rows: **{_rows_count}**"
+                duplicate_rows = f" No. of Duplicate Rows: **{_duplicate_rows_count}**"
+                duplicate_pct = f" Percentage of Duplicate Rows: **{_duplicate_pct}%**"
                 df_list.append(
                     [
                         dp.Text("### " + str(remove_u_score(i))),
@@ -764,7 +762,13 @@ def executive_summary_gen(
             ]
         ]
     )
-    x = x[~((x["Attribute"].isnull()) | (x.Attribute.values == "NA"))]
+    x = x[
+        ~(
+            (x["Attribute"].isnull())
+            | (x.Attribute.values == "NA")
+            | (x["Attribute"] == " ")
+        )
+    ]
     if ds_ind[0] == 1 and ds_ind[1] >= 0.5:
         a5 = "Data Health based on Drift Metrics & Stability Index : "
         report = dp.Group(
@@ -3716,7 +3720,7 @@ def read_cluster_stats_ll_geo(lat_col, long_col, geohash_col, master_path):
                     )
                 )
 
-                plot_ll.append(dp.Plot(blank_chart))
+                plot_ll.append(dp.Plot(blank_chart, label=" "))
 
             elif len(all_geo_cols) > 1:
 
