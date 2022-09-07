@@ -238,10 +238,13 @@ def ll_gh_cols(df, max_records):
                 p = 0
             else:
                 p = prec_val
-
-            if (
+            if "latitude" in i[0].lower():
+                lat_cols.append(i[0])
+            elif "longitude" in i[0].lower():
+                long_cols.append(i[0])
+            elif (
                 (int(p) > 0)
-                & ((max_val > 1) & (max_val <= 180))
+                & (max_val <= 180)
                 & (stddev_val >= 1)
                 & (float(stddev_val) / float(mean_val) < 1)
             ):
