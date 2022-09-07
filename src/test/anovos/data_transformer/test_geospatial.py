@@ -65,7 +65,9 @@ def test_geo_format_latlon(spark_session):
     dms_df = read_dataset(
         spark_session, path_dms, "parquet", file_configs={"header": "True"}
     )
-    rad_df = read_dataset(spark_session, path_rad, "csv", file_configs={"header": "True"})
+    rad_df = read_dataset(
+        spark_session, path_rad, "csv", file_configs={"header": "True"}
+    )
     odf1 = geo_format_latlon(
         df, ["lat1", "lat2"], ["lon1", "lon2"], "dd", "dms", output_mode="replace"
     )
@@ -481,7 +483,9 @@ def test_location_distance(spark_session):
     dms_df = read_dataset(
         spark_session, path_dms, "parquet", file_configs={"header": "True"}
     )
-    rad_df = read_dataset(spark_session, path_rad, "csv", file_configs={"header": "True"})
+    rad_df = read_dataset(
+        spark_session, path_rad, "csv", file_configs={"header": "True"}
+    )
     cart_df = read_dataset(
         spark_session, path_cart, "csv", file_configs={"header": "True"}
     )
