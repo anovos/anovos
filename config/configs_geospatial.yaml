@@ -15,7 +15,7 @@ input_dataset:
   select_column: null
 
 
-geospatial:
+geospatial_controller:
   geospatial_analyzer:
     auto_detection_analyzer: True
     id_col: 'userId'
@@ -26,21 +26,27 @@ geospatial:
     min_samples: '500,1100,100'
     global_map_box_val: 'open-street-map'
 
-  location_in_country_detection:
+  geo_transformations:
+    geo_format_conversion: True
+    location_in_country_detection: True
+    centroid_calculation: True
+    rog_calculation: True
+    id_col: 'userId'
     list_of_lat: ["latitude"]
     list_of_lon: ["longitude"]
+    list_of_geohash: []
     country: 'US'
     country_shapefile_path: ""
     method_type: "approx"
-    result_prefix: ["lat_long"]
+    result_prefix_lat_lon: ["lat_long"]
+    result_prefix_geo: ["L1"]
+    loc_input_format: "dd"
+    loc_output_format: "geohash"
+    
+    
+    
+    
 
-  geo_format_conversion:
-    geo_format_latlon_conversion:
-      list_of_lat: ["latitude"]
-      list_of_lon: ["longitude"]
-      input_format: "dd"
-      output_format: "geohash"
-      result_prefix: ["L1"]
 
     # geo_format_geohash_conversion:
     #  list_of_geohash: ["cel_geohash","cdl_geohash"]
@@ -49,15 +55,6 @@ geospatial:
      # appended columns: ["cel_lat_dd", "cel_lon_dd", "cdl_lat_dd", "cdl_lon_dd"]
      # if result_prefix = [], appended columns would be ["cel_geohash_lat_dd", "cel_geohash_lon_dd", "cdl_geohash_lat_dd", "cdl_geohash_lon_dd"
 
-  centroid_calculation:
-    id_col: 'userId'
-    lat_col: 'latitude'
-    long_col: 'longitude'
-
-  rog_calculation:
-    id_col: 'userId'
-    lat_col: 'latitude'
-    long_col: 'longitude'
 
   # location_distance_calculation:
   #  list_of_cols_loc1: ["cel_lat_dd", "cel_lon_dd"] # should be the appended column from geohash conversion
