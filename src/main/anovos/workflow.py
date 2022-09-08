@@ -133,8 +133,12 @@ def main(all_configs, run_type, auth_key_val={}):
     write_main = all_configs.get("write_main", None)
     write_intermediate = all_configs.get("write_intermediate", None)
     write_stats = all_configs.get("write_stats", None)
-
     write_feast_features = all_configs.get("write_feast_features", None)
+
+    if write_intermediate and run_type == "ak8s":
+        default_root_path = write_intermediate.get("file_path", None)
+    else:
+        default_root_path = None
 
     if write_feast_features is not None:
         repartition_count = (
@@ -506,7 +510,6 @@ def main(all_configs, run_type, auth_key_val={}):
                                 f = getattr(transformers, subkey2)
                                 extra_args = stats_args(all_configs, subkey2)
                                 if subkey2 in (
-                                    "cat_to_num_supervised",
                                     "imputation_sklearn",
                                     "autoencoder_latentFeatures",
                                     "auto_imputation",
@@ -514,6 +517,14 @@ def main(all_configs, run_type, auth_key_val={}):
                                 ):
                                     extra_args["run_type"] = run_type
                                     extra_args["auth_key"] = auth_key
+                                if subkey2 == "cat_to_num_supervised":
+                                    if (
+                                        "model_path" not in value2.keys()
+                                        and default_root_path
+                                    ):
+                                        extra_args["model_path"] = (
+                                            default_root_path + "/intermediate_model"
+                                        )
                                 if subkey2 in (
                                     "normalization",
                                     "feature_transformation",
