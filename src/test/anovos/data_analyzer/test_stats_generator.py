@@ -102,49 +102,55 @@ def test_uniqueCount_computation(spark_session):
         == 4
     )
 
-    result_df1_2 = uniqueCount_computation(spark_session, test_df1, compute_approx_unique_count=True)
+    result_df1_2 = uniqueCount_computation(
+        spark_session, test_df1, compute_approx_unique_count=True
+    )
     assert result_df1_2.count() == 3
     assert (
-            result_df1_2.where(F.col("attribute") == "education")
-            .toPandas()
-            .to_dict("list")["unique_values"][0]
-            == 2
+        result_df1_2.where(F.col("attribute") == "education")
+        .toPandas()
+        .to_dict("list")["unique_values"][0]
+        == 2
     )
     assert (
-            result_df1_2.where(F.col("attribute") == "age")
-            .toPandas()
-            .to_dict("list")["unique_values"][0]
-            == 4
+        result_df1_2.where(F.col("attribute") == "age")
+        .toPandas()
+        .to_dict("list")["unique_values"][0]
+        == 4
     )
 
-    result_df1_3 = uniqueCount_computation(spark_session, test_df1, compute_approx_unique_count=True, rsd=0.05)
+    result_df1_3 = uniqueCount_computation(
+        spark_session, test_df1, compute_approx_unique_count=True, rsd=0.05
+    )
     assert result_df1_3.count() == 3
     assert (
-            result_df1_3.where(F.col("attribute") == "education")
-            .toPandas()
-            .to_dict("list")["unique_values"][0]
-            == 2
+        result_df1_3.where(F.col("attribute") == "education")
+        .toPandas()
+        .to_dict("list")["unique_values"][0]
+        == 2
     )
     assert (
-            result_df1_3.where(F.col("attribute") == "age")
-            .toPandas()
-            .to_dict("list")["unique_values"][0]
-            == 4
+        result_df1_3.where(F.col("attribute") == "age")
+        .toPandas()
+        .to_dict("list")["unique_values"][0]
+        == 4
     )
 
-    result_df1_4 = uniqueCount_computation(spark_session, test_df1, compute_approx_unique_count=True, rsd=0.2)
+    result_df1_4 = uniqueCount_computation(
+        spark_session, test_df1, compute_approx_unique_count=True, rsd=0.2
+    )
     assert result_df1_4.count() == 3
     assert (
-            result_df1_4.where(F.col("attribute") == "education")
-            .toPandas()
-            .to_dict("list")["unique_values"][0]
-            == 2
+        result_df1_4.where(F.col("attribute") == "education")
+        .toPandas()
+        .to_dict("list")["unique_values"][0]
+        == 2
     )
     assert (
-            result_df1_4.where(F.col("attribute") == "age")
-            .toPandas()
-            .to_dict("list")["unique_values"][0]
-            == 4
+        result_df1_4.where(F.col("attribute") == "age")
+        .toPandas()
+        .to_dict("list")["unique_values"][0]
+        == 4
     )
 
 
@@ -352,31 +358,33 @@ def test_measures_of_cardinality(spark_session):
         == 0.6667
     )
 
-    result_df5_2 = measures_of_cardinality(spark_session, test_df5, use_approx_unique_count=False)
+    result_df5_2 = measures_of_cardinality(
+        spark_session, test_df5, use_approx_unique_count=False
+    )
     assert result_df5_2.count() == 3
     assert (
-            result_df5_2.where(F.col("attribute") == "education")
-            .toPandas()
-            .to_dict("list")["unique_values"][0]
-            == 2
+        result_df5_2.where(F.col("attribute") == "education")
+        .toPandas()
+        .to_dict("list")["unique_values"][0]
+        == 2
     )
     assert (
-            result_df5_2.where(F.col("attribute") == "age")
-            .toPandas()
-            .to_dict("list")["unique_values"][0]
-            == 4
+        result_df5_2.where(F.col("attribute") == "age")
+        .toPandas()
+        .to_dict("list")["unique_values"][0]
+        == 4
     )
     assert (
-            result_df5_2.where(F.col("attribute") == "age")
-            .toPandas()
-            .to_dict("list")["IDness"][0]
-            == 1.0
+        result_df5_2.where(F.col("attribute") == "age")
+        .toPandas()
+        .to_dict("list")["IDness"][0]
+        == 1.0
     )
     assert (
-            result_df5_2.where(F.col("attribute") == "education")
-            .toPandas()
-            .to_dict("list")["IDness"][0]
-            == 0.6667
+        result_df5_2.where(F.col("attribute") == "education")
+        .toPandas()
+        .to_dict("list")["IDness"][0]
+        == 0.6667
     )
 
 
