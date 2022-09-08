@@ -531,7 +531,7 @@ def uniqueCount_computation(
     list_of_cols="all",
     drop_cols=[],
     compute_approx_unique_count=False,
-    rsd=0.05,
+    rsd=None,
     print_impact=False,
 ):
     """
@@ -624,7 +624,7 @@ def measures_of_cardinality(
     list_of_cols="all",
     drop_cols=[],
     use_approx_unique_count=True,
-    rsd=0.05,
+    rsd=None,
     print_impact=False,
 ):
     """
