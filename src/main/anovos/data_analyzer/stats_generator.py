@@ -493,7 +493,14 @@ def measures_of_centralTendency(
         summary_lst.append(summary_col)
     summary_df = spark.createDataFrame(
         summary_lst,
-        schema=("key", "mean", "50%", "count"),
+        schema = T.StructType(
+            [
+                T.StructField("key", T.StringType(), True),
+                T.StructField("mean", T.DoubleType(), True),
+                T.StructField("50%", T.DoubleType(), True),
+                T.StructField("count", T.LongType(), True),
+            ]
+        ),
     )
     odf = (
         summary_df.withColumn(
