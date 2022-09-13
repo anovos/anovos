@@ -489,12 +489,18 @@ def measures_of_centralTendency(
             .rdd.map(lambda x: x[1])
             .collect()
         )
-        summary_col = [str(i) for i in summary_col if type(i) != str]
         summary_col.insert(0, col)
         summary_lst.append(summary_col)
     summary_df = spark.createDataFrame(
         summary_lst,
-        schema=("key", "mean", "50%", "count"),
+        schema = T.StructType(
+            [
+                T.StructField("key", T.StringType(), True),
+                T.StructField("mean", T.DoubleType(), True),
+                T.StructField("50%", T.DoubleType(), True),
+                T.StructField("count", T.LongType(), True),
+            ]
+        ),
     )
     odf = (
         summary_df.withColumn(
