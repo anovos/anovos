@@ -489,6 +489,7 @@ def measures_of_centralTendency(
             .rdd.map(lambda x: x[1])
             .collect()
         )
+        summary_col = [str(i) for i in summary_col if type(i) != "str"]
         summary_col.insert(0, col)
         summary_lst.append(summary_col)
     summary_df = spark.createDataFrame(
