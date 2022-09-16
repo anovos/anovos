@@ -8,7 +8,7 @@ on:
       - 'src/main/main.py'
       - 'src/main/anovos/workflow.py'
       - 'config/configs_feast.yaml'
-      - '.github/workflows/feature_store.yml'
+      - '.github/workflows/feast.yml'
 
 jobs:
   test:
@@ -78,7 +78,7 @@ jobs:
 
       - name: Set up Feast
         run: |
-          pip install feast
+          pip install feast==0.22
           feast init anovos_repo
           cd anovos_repo
           feast apply
