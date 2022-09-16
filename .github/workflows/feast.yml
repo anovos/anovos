@@ -78,8 +78,8 @@ jobs:
 
       - name: Set up Feast
         run: |
-          pip install feast
-          feast init -m anovos_repo
+          pip install feast==0.22
+          feast init anovos_repo
           cd anovos_repo
           feast apply
           pwd
