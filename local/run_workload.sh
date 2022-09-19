@@ -14,9 +14,9 @@ if [ -z "${2}" ]; then
   IMAGE_NAME="anovos-worker"
 else
   if [ -z "${3}" ]; then
-    IMAGE_NAME="anovos-worker-${2}"
+    IMAGE_NAME="anovos/anovos-worker-${2}:latest"
   else
-    IMAGE_NAME="anovos-worker-${2}:${3}"
+    IMAGE_NAME="anovos/anovos-worker-${2}:${3}"
   fi
 fi
 
