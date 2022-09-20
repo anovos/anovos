@@ -64,6 +64,7 @@ from pyspark.mllib.stat import Statistics
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
 from pyspark.sql.window import Window
+from pyspark.sql import SQLContext, DataFrame
 
 from anovos.data_analyzer.stats_generator import (
     missingCount_computation,
@@ -648,127 +649,19 @@ def cat_to_num_unsupervised(
         list_of_cols_vec.append(i + "_vec")
         list_of_cols_idx.append(i + "_index")
 
-    odf_indexed = idf
-    if version.parse(pyspark.__version__) < version.parse("3.0.0"):
-        for idx, i in enumerate(list_of_cols):
-            if pre_existing_model:
-                indexerModel = StringIndexerModel.load(
-                    model_path + "/cat_to_num_unsupervised/indexer-model/" + i
-                )
-            else:
-                stringIndexer = StringIndexer(
-                    inputCol=i,
-                    outputCol=i + "_index",
-                    stringOrderType=index_order,
-                    handleInvalid="keep",
-                )
-                indexerModel = stringIndexer.fit(idf.select(i))
+    sc = spark.sparkContext
+    sc.setLogLevel("ERROR")
+    sqlContext = SQLContext(spark)
 
-                if model_path != "NA":
-                    indexerModel.write().overwrite().save(
-                        model_path + "/cat_to_num_unsupervised/indexer-model/" + i
-                    )
+    jdf = idf._jdf
+    jvm = sc._jvm
+    ssqlContext = sqlContext._ssql_ctx
+    catToNumUnsupervisedObject = jvm.anovos.data.transformer.CatToNumUnsupervised(ssqlContext, jdf)
+    odf = DataFrame(catToNumUnsupervisedObject.apply(method_type, list_of_cols, list_of_cols_idx, list_of_cols_vec), ssqlContext)
+    odf.show()
+    odf.sql_ctx._sc = sc
+    odf.sql_ctx._conf = idf.sql_ctx._conf
 
-            odf_indexed = indexerModel.transform(odf_indexed)
-
-    else:
-        if pre_existing_model:
-            indexerModel = StringIndexerModel.load(
-                model_path + "/cat_to_num_unsupervised/indexer"
-            )
-        else:
-            stringIndexer = StringIndexer(
-                inputCols=list_of_cols,
-                outputCols=list_of_cols_idx,
-                stringOrderType=index_order,
-                handleInvalid="keep",
-            )
-            indexerModel = stringIndexer.fit(odf_indexed)
-            if model_path != "NA":
-                indexerModel.write().overwrite().save(
-                    model_path + "/cat_to_num_unsupervised/indexer"
-                )
-        odf_indexed = indexerModel.transform(odf_indexed)
-
-    if method_type == "onehot_encoding":
-        if pre_existing_model:
-            encoder = OneHotEncoder.load(
-                model_path + "/cat_to_num_unsupervised/encoder"
-            )
-        else:
-            encoder = OneHotEncoder(
-                inputCols=list_of_cols_idx,
-                outputCols=list_of_cols_vec,
-                handleInvalid="keep",
-            )
-            if model_path != "NA":
-                encoder.write().overwrite().save(
-                    model_path + "/cat_to_num_unsupervised/encoder"
-                )
-
-        odf = encoder.fit(odf_indexed).transform(odf_indexed)
-
-        new_cols = []
-        odf_sample = odf.take(1)
-        for i in list_of_cols:
-            odf_schema = odf.schema
-            uniq_cats = odf_sample[0].asDict()[i + "_vec"].size
-            for j in range(0, uniq_cats):
-                odf_schema = odf_schema.add(
-                    T.StructField(i + "_" + str(j), T.IntegerType())
-                )
-                new_cols.append(i + "_" + str(j))
-
-            odf = odf.rdd.map(
-                lambda x: (
-                    *x,
-                    *(DenseVector(x[i + "_vec"]).toArray().astype(int).tolist()),
-                )
-            ).toDF(schema=odf_schema)
-
-            if output_mode == "replace":
-                odf = odf.drop(i, i + "_vec", i + "_index")
-            else:
-                odf = odf.drop(i + "_vec", i + "_index")
-
-    else:
-        odf = odf_indexed
-        for i in list_of_cols:
-            odf = odf.withColumn(
-                i + "_index",
-                F.when(F.col(i).isNull(), None).otherwise(
-                    F.col(i + "_index").cast(T.IntegerType())
-                ),
-            )
-        if output_mode == "replace":
-            for i in list_of_cols:
-                odf = odf.drop(i).withColumnRenamed(i + "_index", i)
-            odf = odf.select(idf.columns)
-
-    if print_impact:
-        if method_type == "label_encoding":
-            if output_mode == "append":
-                new_cols = [i + "_index" for i in list_of_cols]
-            else:
-                new_cols = list_of_cols
-            print("Before")
-            idf.select(list_of_cols).summary("count", "min", "max").show(3, False)
-            print("After")
-            odf.select(new_cols).summary("count", "min", "max").show(3, False)
-
-        if method_type == "onehot_encoding":
-            print("Before")
-            idf.select(list_of_cols).printSchema()
-            print("After")
-            if output_mode == "append":
-                odf.select(list_of_cols + new_cols).printSchema()
-            else:
-                odf.select(new_cols).printSchema()
-        if skip_cols:
-            print(
-                "Columns dropped from encoding due to high cardinality: "
-                + ",".join(skip_cols)
-            )
     return odf
 
 
