@@ -131,3 +131,6 @@ jobs:
     needs:
       - notebooks
     uses: ./.github/workflows/local.yml
+    secrets:
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}

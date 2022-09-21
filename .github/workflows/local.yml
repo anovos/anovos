@@ -3,6 +3,11 @@ name: Local execution
 on:
   workflow_dispatch:
   workflow_call:
+    secrets:
+      DOCKER_USERNAME:
+        required: true
+      DOCKER_PASSWORD:
+        required: true
   push:
     paths:
       - '.github/workflows/local.yml'
