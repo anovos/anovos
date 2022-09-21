@@ -590,6 +590,9 @@ def uniqueCount_computation(
     if any(x not in idf.columns for x in list_of_cols):
         raise TypeError("Invalid input for Column(s)")
 
+    if rsd < 0:
+        raise ValueError("rsd value can not be less than 0 (default value is 0.05)")
+
     if len(list_of_cols) == 0:
         warnings.warn("No Unique Count Computation - No discrete column(s) to analyze")
         schema = T.StructType(
@@ -691,6 +694,9 @@ def measures_of_cardinality(
 
     if any(x not in idf.columns for x in list_of_cols):
         raise TypeError("Invalid input for Column(s)")
+
+    if rsd < 0:
+        raise ValueError("rsd value can not be less than 0 (default value is 0.05)")
 
     if len(list_of_cols) == 0:
         warnings.warn("No Cardinality Computation - No discrete column(s) to analyze")
