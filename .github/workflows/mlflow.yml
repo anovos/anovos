@@ -4,7 +4,6 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - 'src/main/main.py'
       - 'src/main/anovos/workflow.py'
       - 'config/configs_mlflow.yaml'
       - '.github/workflows/mlflow.yml'
@@ -29,7 +28,7 @@ jobs:
             java: '11'
             experimental: false
           - python: '3.10'
-            spark: '3.2.1'
+            spark: '3.2.2'
             hadoop: '3.2'
             java: '11'
             experimental: false
@@ -79,12 +78,14 @@ jobs:
         run: |
           mlflow server --backend-store-uri ./mlflow-artifacts --host 127.0.0.1 --port 8889 &
 
-      - name: Run the demo and read the results
+      - name: Run the demo
         run: |
           cp config/configs_mlflow.yaml dist/configs.yaml
           cd dist/
-          pwd
           ./spark-submit.sh
+
+      - name: Inspect the results
+        run: |
           mlflow runs list --experiment-id 1
           cd ./mlflow-artifacts
           tree
