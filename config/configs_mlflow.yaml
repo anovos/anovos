@@ -61,7 +61,6 @@ transformers:
     IQR_standardization:
       list_of_cols: all
 
-
   numerical_latentFeatures:
     PCA_latentFeatures:
       list_of_cols: all
@@ -88,7 +87,7 @@ write_intermediate:
     inferSchema: True
 
 write_main:
-  file_path: "output"
+  file_path: "../anovos_repo/data/output/"
   file_type: parquet
   file_configs:
     mode: overwrite
@@ -96,26 +95,6 @@ write_main:
 write_stats:
   file_path: "stats"
   file_type: parquet
-  file_configs:
-    mode: overwrite
-
-write_feast_features:
-  file_path: "/Users/matzep/Workspaces/inlinity/mobilewalla/feast-demo/anovos_repo/"
-  entity:
-    name: "income"
-    description: "first attempt to generate an entity"
-    id_col: 'ifa'
-  file_source:
-    description: 'data source description'
-    owner: "me@business.com"
-    timestamp_col: 'event_time'
-    create_timestamp_col: 'create_time_col'
-  feature_view:
-    name: 'income_view'
-    owner: 'view@owner.com'
-    ttl_in_seconds: 36000000
-    create_timestamps: True
-  service_name: 'income_feature_service'
   file_configs:
     mode: overwrite
 
