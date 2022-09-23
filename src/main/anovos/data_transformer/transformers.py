@@ -6,6 +6,7 @@ supported through this modules are listed below:
 
 - attribute_binning
 - monotonic_binning
+- cat_to_num_transformer
 - cat_to_num_unsupervised
 - cat_to_num_supervised
 - z_standardization
@@ -69,7 +70,7 @@ from anovos.data_analyzer.stats_generator import (
     uniqueCount_computation,
 )
 from anovos.data_ingest.data_ingest import read_dataset, recast_column
-from anovos.shared.utils import attributeType_segregation, get_dtype
+from anovos.shared.utils import ends_with, attributeType_segregation, get_dtype
 
 # enable_iterative_imputer is prequisite for importing IterativeImputer
 # check the following issue for more details https://github.com/scikit-learn/scikit-learn/issues/16833
@@ -80,8 +81,6 @@ if "arm64" not in platform.version().lower():
     import tensorflow
     from tensorflow.keras.models import load_model, Model
     from tensorflow.keras.layers import Dense, Input, BatchNormalization, LeakyReLU
-
-from ..shared.utils import platform_root_path
 
 
 def attribute_binning(
@@ -213,36 +212,31 @@ def attribute_binning(
             for j in range(1, bin_size):
                 pctile_cutoff.append(j * pctile_width)
             bin_cutoffs = idf.approxQuantile(list_of_cols, pctile_cutoff, 0.01)
-
         else:
+            funs = [F.max, F.min]
+            exprs = [f(F.col(c)) for f in funs for c in list_of_cols]
+            list_result = idf.groupby().agg(*exprs).rdd.flatMap(lambda x: x).collect()
             bin_cutoffs = []
-            for i in list_of_cols:
-                max_val = (
-                    idf.select(F.col(i))
-                    .groupBy()
-                    .max()
-                    .rdd.flatMap(lambda x: x)
-                    .collect()
-                    + [None]
-                )[0]
-
-                min_val = (
-                    idf.select(F.col(i))
-                    .groupBy()
-                    .min()
-                    .rdd.flatMap(lambda x: x)
-                    .collect()
-                    + [None]
-                )[0]
-
+            drop_col_process = []
+            for i in range(int(len(list_result) / 2)):
                 bin_cutoff = []
-
-                if max_val is not None:
-                    bin_width = (max_val - min_val) / bin_size
-                    for j in range(1, bin_size):
-                        bin_cutoff.append(min_val + j * bin_width)
+                max_val = list_result[i]
+                min_val = list_result[i + int(len(list_result) / 2)]
+                if not max_val and max_val != 0:
+                    drop_col_process.append(list_of_cols[i])
+                    continue
+                bin_width = (max_val - min_val) / bin_size
+                for j in range(1, bin_size):
+                    bin_cutoff.append(min_val + j * bin_width)
                 bin_cutoffs.append(bin_cutoff)
-
+            if drop_col_process:
+                warnings.warn(
+                    "Columns contains too much null values. Dropping "
+                    + ", ".join(drop_col_process)
+                )
+                list_of_cols = list(
+                    set([e for e in list_of_cols if e not in drop_col_process])
+                )
         if model_path != "NA":
             df_model = spark.createDataFrame(
                 zip(list_of_cols, bin_cutoffs), schema=["attribute", "parameters"]
@@ -284,13 +278,9 @@ def attribute_binning(
     for idx, i in enumerate(list_of_cols):
         odf = odf.withColumn(i + "_binned", f_bucket_label(F.col(i), F.lit(idx)))
 
-        if idx % 5 == 0:
-            odf.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
-
     if output_mode == "replace":
         for col in list_of_cols:
             odf = odf.drop(col).withColumnRenamed(col + "_binned", col)
-
     if print_impact:
         if output_mode == "replace":
             output_cols = list_of_cols
@@ -379,19 +369,6 @@ def monotonic_binning(
     if any(x not in num_cols for x in list_of_cols):
         raise TypeError("Invalid input for Column(s)")
 
-    attribute_binning(
-        spark,
-        idf,
-        list_of_cols="all",
-        drop_cols=[],
-        method_type="equal_range",
-        bin_size=10,
-        pre_existing_model=False,
-        model_path="NA",
-        output_mode="replace",
-        print_impact=False,
-    )
-
     odf = idf
     for col in list_of_cols:
         n = 20
@@ -447,6 +424,84 @@ def monotonic_binning(
     return odf
 
 
+def cat_to_num_transformer(
+    spark, idf, list_of_cols, drop_cols, method_type, encoding, label_col, event_label
+):
+
+    """
+    This is method which helps converting a categorical attribute into numerical attribute(s) based on the analysis dataset. If there's a presence of label column then the relevant processing would happen through cat_to_num_supervised. However, for unsupervised scenario, the processing would happen through cat_to_num_unsupervised. Computation details can be referred from the respective functions.
+
+    Parameters
+    ----------
+    spark
+        Spark Session
+    idf
+        Input Dataframe
+    list_of_cols
+        List of categorical columns to transform e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        "all" can be passed to include all categorical columns for analysis. This is super useful instead of specifying all column names manually.
+        Please note that this argument is used in conjunction with drop_cols i.e. a column mentioned in
+        drop_cols argument is not considered for analysis even if it is mentioned in list_of_cols.
+    drop_cols
+        List of columns to be dropped e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format,
+        where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
+        It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
+        a few handful of them.
+    method_type
+        Depending upon the use case the method type can be either Supervised or Unsupervised. For Supervised use case, label_col is mandatory.
+    encoding
+        "label_encoding" or "onehot_encoding"
+        In label encoding, each categorical value is assigned a unique integer based on alphabetical
+        or frequency ordering (both ascending & descending options are available that can be selected by index_order argument).
+        In one-hot encoding, every unique value in the column will be added in a form of dummy/binary column.
+    label_col
+        Label/Target column
+    event_label
+        Value of (positive) event
+    """
+
+    num_cols, cat_cols, other_cols = attributeType_segregation(idf)
+
+    if len(cat_cols) > 0:
+        if list_of_cols == "all":
+            list_of_cols = cat_cols
+        if isinstance(list_of_cols, str):
+            list_of_cols = [x.strip() for x in list_of_cols.split("|")]
+        if isinstance(drop_cols, str):
+            drop_cols = [x.strip() for x in drop_cols.split("|")]
+
+        if any(x not in cat_cols for x in list_of_cols):
+            raise TypeError("Invalid input for Column(s)")
+
+        if (method_type == "supervised") & (label_col is not None):
+
+            odf = cat_to_num_supervised(
+                spark, idf, label_col=label_col, event_label=event_label
+            )
+            odf = odf.withColumn(
+                label_col,
+                F.when(F.col(label_col) == event_label, F.lit(1)).otherwise(F.lit(0)),
+            )
+
+            return odf
+
+        elif (method_type == "unsupervised") & (label_col is None):
+            odf = cat_to_num_unsupervised(
+                spark,
+                idf,
+                method_type=encoding,
+                index_order="frequencyDesc",
+            )
+
+            return odf
+    else:
+
+        return idf
+
+
 def cat_to_num_unsupervised(
     spark,
     idf,
@@ -454,7 +509,7 @@ def cat_to_num_unsupervised(
     drop_cols=[],
     method_type="label_encoding",
     index_order="frequencyDesc",
-    cardinality_threshold=100,
+    cardinality_threshold=50,
     pre_existing_model=False,
     model_path="NA",
     stats_unique={},
@@ -502,9 +557,9 @@ def cat_to_num_unsupervised(
         "frequencyDesc", "frequencyAsc", "alphabetDesc", "alphabetAsc".
         Valid only for Label Encoding method_type. (Default value = "frequencyDesc")
     cardinality_threshold
-        Defines threshold to skip columns with higher cardinality values from encoding (Warning is issued). (Default value = 100)
+        Defines threshold to skip columns with higher cardinality values from encoding - a warning is issued. (Default value = 50)
     pre_existing_model
-        Boolean argument – True or False. True if encoding model exists already, False Otherwise. (Default value = False)
+        Boolean argument - True or False. True if encoding model exists already, False Otherwise. (Default value = False)
     model_path
         If pre_existing_model is True, this argument is path for referring the pre-saved model.
         If pre_existing_model is False, this argument can be used for saving the model.
@@ -553,33 +608,31 @@ def cat_to_num_unsupervised(
     if output_mode not in ("replace", "append"):
         raise TypeError("Invalid input for output_mode")
 
-    skip_cols = []
-    if method_type == "onehot_encoding":
-        if stats_unique == {}:
-            skip_cols = (
-                uniqueCount_computation(spark, idf, list_of_cols)
-                .where(F.col("unique_values") > cardinality_threshold)
-                .select("attribute")
-                .rdd.flatMap(lambda x: x)
-                .collect()
-            )
-        else:
-            skip_cols = (
-                read_dataset(spark, **stats_unique)
-                .where(F.col("unique_values") > cardinality_threshold)
-                .select("attribute")
-                .rdd.flatMap(lambda x: x)
-                .collect()
-            )
-        skip_cols = list(
-            set([e for e in skip_cols if e in list_of_cols and e not in drop_cols])
+    if stats_unique == {}:
+        skip_cols = (
+            uniqueCount_computation(spark, idf, list_of_cols)
+            .where(F.col("unique_values") > cardinality_threshold)
+            .select("attribute")
+            .rdd.flatMap(lambda x: x)
+            .collect()
         )
+    else:
+        skip_cols = (
+            read_dataset(spark, **stats_unique)
+            .where(F.col("unique_values") > cardinality_threshold)
+            .select("attribute")
+            .rdd.flatMap(lambda x: x)
+            .collect()
+        )
+    skip_cols = list(
+        set([e for e in skip_cols if e in list_of_cols and e not in drop_cols])
+    )
 
-        if skip_cols:
-            warnings.warn(
-                "Columns dropped from one-hot encoding due to high cardinality: "
-                + ",".join(skip_cols)
-            )
+    if skip_cols:
+        warnings.warn(
+            "Columns dropped from encoding due to high cardinality: "
+            + ",".join(skip_cols)
+        )
 
     list_of_cols = list(
         set([e for e in list_of_cols if e not in drop_cols + skip_cols])
@@ -594,8 +647,8 @@ def cat_to_num_unsupervised(
     for i in list_of_cols:
         list_of_cols_vec.append(i + "_vec")
         list_of_cols_idx.append(i + "_index")
-    idf_id = idf.withColumn("tempID", F.monotonically_increasing_id())
-    idf_indexed = idf_id.select(["tempID"] + list_of_cols)
+
+    odf_indexed = idf
     if version.parse(pyspark.__version__) < version.parse("3.0.0"):
         for idx, i in enumerate(list_of_cols):
             if pre_existing_model:
@@ -616,9 +669,7 @@ def cat_to_num_unsupervised(
                         model_path + "/cat_to_num_unsupervised/indexer-model/" + i
                     )
 
-            idf_indexed = indexerModel.transform(idf_indexed)
-            if idx % 5 == 0:
-                idf_indexed.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
+            odf_indexed = indexerModel.transform(odf_indexed)
 
     else:
         if pre_existing_model:
@@ -632,17 +683,12 @@ def cat_to_num_unsupervised(
                 stringOrderType=index_order,
                 handleInvalid="keep",
             )
-            indexerModel = stringIndexer.fit(idf_indexed)
+            indexerModel = stringIndexer.fit(odf_indexed)
             if model_path != "NA":
                 indexerModel.write().overwrite().save(
                     model_path + "/cat_to_num_unsupervised/indexer"
                 )
-        idf_indexed = indexerModel.transform(idf_indexed)
-
-    odf_indexed = idf_id.join(
-        idf_indexed.drop(*list_of_cols), "tempID", "left_outer"
-    ).drop("tempID")
-    odf_indexed.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
+        odf_indexed = indexerModel.transform(odf_indexed)
 
     if method_type == "onehot_encoding":
         if pre_existing_model:
@@ -660,39 +706,30 @@ def cat_to_num_unsupervised(
                     model_path + "/cat_to_num_unsupervised/encoder"
                 )
 
-        odf_encoded = encoder.fit(odf_indexed).transform(odf_indexed)
+        odf = encoder.fit(odf_indexed).transform(odf_indexed)
 
-        odf = odf_encoded
-
-        def vector_to_array(v):
-            v = DenseVector(v)
-            new_array = list([int(x) for x in v])
-            return new_array
-
-        f_vector_to_array = F.udf(vector_to_array, T.ArrayType(T.IntegerType()))
-
+        new_cols = []
         odf_sample = odf.take(1)
         for i in list_of_cols:
+            odf_schema = odf.schema
             uniq_cats = odf_sample[0].asDict()[i + "_vec"].size
-            odf_schema = odf.schema.add(
-                T.StructField("tmp", T.ArrayType(T.IntegerType()))
-            )
-
             for j in range(0, uniq_cats):
                 odf_schema = odf_schema.add(
                     T.StructField(i + "_" + str(j), T.IntegerType())
                 )
+                new_cols.append(i + "_" + str(j))
 
-            odf = (
-                odf.withColumn("tmp", f_vector_to_array(i + "_vec"))
-                .rdd.map(lambda x: (*x, *x["tmp"]))
-                .toDF(schema=odf_schema)
-            )
+            odf = odf.rdd.map(
+                lambda x: (
+                    *x,
+                    *(DenseVector(x[i + "_vec"]).toArray().astype(int).tolist()),
+                )
+            ).toDF(schema=odf_schema)
 
             if output_mode == "replace":
-                odf = odf.drop(i, i + "_vec", i + "_index", "tmp")
+                odf = odf.drop(i, i + "_vec", i + "_index")
             else:
-                odf = odf.drop(i + "_vec", i + "_index", "tmp")
+                odf = odf.drop(i + "_vec", i + "_index")
 
     else:
         odf = odf_indexed
@@ -708,21 +745,30 @@ def cat_to_num_unsupervised(
                 odf = odf.drop(i).withColumnRenamed(i + "_index", i)
             odf = odf.select(idf.columns)
 
-    if print_impact and method_type == "label_encoding":
-        print("Before")
-        idf.describe().where(F.col("summary").isin("count", "min", "max")).show(
-            3, False
-        )
-        print("After")
-        odf.describe().where(F.col("summary").isin("count", "min", "max")).show(
-            3, False
-        )
-    if print_impact and method_type == "onehot_encoding":
-        print("Before")
-        idf.printSchema()
-        print("After")
-        odf.printSchema()
+    if print_impact:
+        if method_type == "label_encoding":
+            if output_mode == "append":
+                new_cols = [i + "_index" for i in list_of_cols]
+            else:
+                new_cols = list_of_cols
+            print("Before")
+            idf.select(list_of_cols).summary("count", "min", "max").show(3, False)
+            print("After")
+            odf.select(new_cols).summary("count", "min", "max").show(3, False)
 
+        if method_type == "onehot_encoding":
+            print("Before")
+            idf.select(list_of_cols).printSchema()
+            print("After")
+            if output_mode == "append":
+                odf.select(list_of_cols + new_cols).printSchema()
+            else:
+                odf.select(new_cols).printSchema()
+        if skip_cols:
+            print(
+                "Columns dropped from encoding due to high cardinality: "
+                + ",".join(skip_cols)
+            )
     return odf
 
 
@@ -736,7 +782,8 @@ def cat_to_num_supervised(
     pre_existing_model=False,
     model_path="NA",
     output_mode="replace",
-    run_type="local",
+    persist=False,
+    persist_option=pyspark.StorageLevel.MEMORY_AND_DISK,
     print_impact=False,
 ):
     """
@@ -788,8 +835,15 @@ def cat_to_num_supervised(
         "replace", "append".
         “replace” option replaces original columns with transformed column. “append” option append transformed
         column to the input dataset with a postfix "_encoded" e.g. column X is appended as X_encoded. (Default value = "replace")
-    run_type
-        "local", "emr", "databricks" (Default value = "local")
+    persist
+        Boolean argument - True or False. This parameter is for optimization purpose. If True, repeatedly used dataframe
+        will be persisted (StorageLevel can be specified in persist_option). We recommend setting this parameter as True
+        if at least one of the following criteria is True:
+        (1) The underlying data source is in csv format
+        (2) The transformation will be applicable to most columns. (Default value = False)
+    persist_option
+        A pyspark.StorageLevel instance. This parameter is useful only when persist is True.
+        (Default value = pyspark.StorageLevel.MEMORY_AND_DISK)
     print_impact
         True, False (Default value = False)
         This argument is to print out the descriptive statistics of encoded columns.
@@ -819,9 +873,22 @@ def cat_to_num_supervised(
     if label_col not in idf.columns:
         raise TypeError("Invalid input for Label Column")
 
-    idf_id = idf.withColumn("tempID", F.monotonically_increasing_id())
-    odf_partial = idf_id.select(["tempID"] + list_of_cols)
+    odf = idf
+    label_col_bool = label_col + "_cat_to_num_sup_temp"
+    idf = idf.withColumn(
+        label_col_bool,
+        F.when(F.col(label_col) == event_label, "1").otherwise("0"),
+    )
 
+    if model_path == "NA":
+        skip_if_error = True
+        model_path = "intermediate_data"
+    else:
+        skip_if_error = False
+    save_model = True
+
+    if persist:
+        idf = idf.persist(persist_option)
     for index, i in enumerate(list_of_cols):
         if pre_existing_model:
             df_tmp = spark.read.csv(
@@ -831,12 +898,9 @@ def cat_to_num_supervised(
             )
         else:
             df_tmp = (
-                idf.withColumn(
-                    label_col,
-                    F.when(F.col(label_col) == event_label, "1").otherwise("0"),
-                )
+                idf.select(i, label_col_bool)
                 .groupBy(i)
-                .pivot(label_col)
+                .pivot(label_col_bool)
                 .count()
                 .fillna(0)
                 .withColumn(
@@ -845,38 +909,42 @@ def cat_to_num_supervised(
                 .drop(*["1", "0"])
             )
 
-            if run_type in list(platform_root_path.keys()):
-                root_path = platform_root_path[run_type]
-            else:
-                root_path = ""
-
-            if model_path == "NA":
-                model_path = root_path + "intermediate_data"
-
-            df_tmp.coalesce(1).write.csv(
-                model_path + "/cat_to_num_supervised/" + i,
-                header=True,
-                mode="overwrite",
-            )
-            df_tmp = spark.read.csv(
-                model_path + "/cat_to_num_supervised/" + i,
-                header=True,
-                inferSchema=True,
-            )
+            if save_model:
+                try:
+                    df_tmp.coalesce(1).write.csv(
+                        model_path + "/cat_to_num_supervised/" + i,
+                        header=True,
+                        mode="overwrite",
+                        ignoreLeadingWhiteSpace=False,
+                        ignoreTrailingWhiteSpace=False,
+                    )
+                    df_tmp = spark.read.csv(
+                        model_path + "/cat_to_num_supervised/" + i,
+                        header=True,
+                        inferSchema=True,
+                    )
+                except Exception as error:
+                    if skip_if_error:
+                        warnings.warn(
+                            "For optimization purpose, we recommend specifying a valid model_path value to save the intermediate data. Saving to the default path - '"
+                            + model_path
+                            + "/cat_to_num_supervised/"
+                            + i
+                            + "' faced an error."
+                        )
+                        save_model = False
+                    else:
+                        raise error
 
         if df_tmp.count() > 1:
-            odf_partial = odf_partial.join(df_tmp, i, "left_outer")
+            odf = odf.join(df_tmp, i, "left_outer")
         else:
-            odf_partial = odf_partial.crossJoin(df_tmp)
-
-    odf = idf_id.join(odf_partial.drop(*list_of_cols), "tempID", "left_outer").drop(
-        "tempID"
-    )
+            odf = odf.crossJoin(df_tmp)
 
     if output_mode == "replace":
         for i in list_of_cols:
             odf = odf.drop(i).withColumnRenamed(i + "_encoded", i)
-        odf = odf.select(idf.columns)
+        odf = odf.select([i for i in idf.columns if i != label_col_bool])
 
     if print_impact:
         if output_mode == "replace":
@@ -884,14 +952,12 @@ def cat_to_num_supervised(
         else:
             output_cols = [(i + "_encoded") for i in list_of_cols]
         print("Before: ")
-        idf.select(list_of_cols).describe().where(
-            F.col("summary").isin("count", "min", "max")
-        ).show(3, False)
+        idf.select(list_of_cols).summary("count", "min", "max").show(3, False)
         print("After: ")
-        odf.select(output_cols).describe().where(
-            F.col("summary").isin("count", "min", "max")
-        ).show(3, False)
+        odf.select(output_cols).summary("count", "min", "max").show(3, False)
 
+    if persist:
+        idf.unpersist()
     return odf
 
 
@@ -1619,6 +1685,7 @@ def imputation_sklearn(
     output_mode="replace",
     stats_missing={},
     run_type="local",
+    auth_key="NA",
     print_impact=False,
 ):
     """
@@ -1682,7 +1749,9 @@ def imputation_sklearn(
         to read pre-saved statistics on missing count/pct i.e. if measures_of_counts or
         missingCount_computation (data_analyzer.stats_generator module) has been computed & saved before. (Default value = {})
     run_type
-        "local", "emr", "databricks" (Default value = "local")
+        "local", "emr", "databricks", "ak8s" (Default value = "local")
+    auth_key
+        Option to pass an authorization key to write to filesystems. Currently applicable only for ak8s run_type. Default value is kept as "NA"
     print_impact
         True, False (Default value = False)
         This argument is to print out before and after missing counts of imputed columns.
@@ -1770,6 +1839,16 @@ def imputation_sklearn(
             bash_cmd = "aws s3 cp " + model_path + "/imputation_sklearn.sav ."
             output = subprocess.check_output(["bash", "-c", bash_cmd])
             imputer = pickle.load(open("imputation_sklearn.sav", "rb"))
+        elif run_type == "ak8s":
+            bash_cmd = (
+                'azcopy cp "'
+                + model_path
+                + "/imputation_sklearn.sav"
+                + str(auth_key)
+                + '" .'
+            )
+            output = subprocess.check_output(["bash", "-c", bash_cmd])
+            imputer = pickle.load(open("imputation_sklearn.sav", "rb"))
         else:
             imputer = pickle.load(open(model_path + "/imputation_sklearn.sav", "rb"))
         idf_rest = idf
@@ -1793,6 +1872,17 @@ def imputation_sklearn(
                     "aws s3 cp imputation_sklearn.sav "
                     + model_path
                     + "/imputation_sklearn.sav"
+                )
+                output = subprocess.check_output(["bash", "-c", bash_cmd])
+                imputer = pickle.load(open("imputation_sklearn.sav", "rb"))
+            elif run_type == "ak8s":
+                pickle.dump(imputer, open("imputation_sklearn.sav", "wb"))
+                bash_cmd = (
+                    'azcopy cp "imputation_sklearn.sav" "'
+                    + ends_with(model_path)
+                    + "imputation_sklearn.sav"
+                    + str(auth_key)
+                    + '"'
                 )
                 output = subprocess.check_output(["bash", "-c", bash_cmd])
                 imputer = pickle.load(open("imputation_sklearn.sav", "rb"))
@@ -2109,6 +2199,8 @@ def auto_imputation(
     stats_missing={},
     output_mode="replace",
     run_type="local",
+    root_path="",
+    auth_key="NA",
     print_impact=True,
 ):
     """
@@ -2164,7 +2256,11 @@ def auto_imputation(
         “replace” option replaces original columns with transformed column. “append” option append transformed
         column to the input dataset with a postfix "_imputed" e.g. column X is appended as X_imputed. (Default value = "replace")
     run_type
-        "local", "emr", "databricks" (Default value = "local")
+        "local", "emr", "databricks", "ak8s" (Default value = "local")
+    root_path
+        This argument takes in a base folder path for writing out intermediate_data/ folder to. Default value is ""
+    auth_key
+        Option to pass an authorization key to write to filesystems. Currently applicable only for ak8s run_type. Default value is kept as "NA"
     print_impact
         True, False (Default value = False)
         This argument is to print out before and after missing counts of imputed columns. It also print the name of best
@@ -2176,11 +2272,6 @@ def auto_imputation(
         Imputed Dataframe
 
     """
-
-    if run_type in list(platform_root_path.keys()):
-        root_path = platform_root_path[run_type]
-    else:
-        root_path = ""
 
     if stats_missing == {}:
         missing_df = missingCount_computation(spark, idf)
@@ -2299,6 +2390,7 @@ def auto_imputation(
             method_type="KNN",
             stats_missing=stats_missing,
             output_mode=output_mode,
+            auth_key=auth_key,
         )
         method4 = imputation_sklearn(
             spark,
@@ -2307,6 +2399,7 @@ def auto_imputation(
             method_type="regression",
             stats_missing=stats_missing,
             output_mode=output_mode,
+            auth_key=auth_key,
         )
         method5 = imputation_matrixFactorization(
             spark,
@@ -2378,6 +2471,8 @@ def autoencoder_latentFeatures(
     stats_missing={},
     output_mode="replace",
     run_type="local",
+    root_path="",
+    auth_key="NA",
     print_impact=False,
 ):
     """
@@ -2458,7 +2553,11 @@ def autoencoder_latentFeatures(
         “append” option append transformed columns with format latent_<col_index> to the input dataset,
         e.g. latent_0, latent_1 will be appended if reduction_params=2. (Default value = "replace")
     run_type
-        "local", "emr", "databricks" (Default value = "local")
+        "local", "emr", "databricks", "ak8s" (Default value = "local")
+    root_path
+        This argument takes in a base folder path for writing out intermediate_data/ folder to. Default value is ""
+    auth_key
+        Option to pass an authorization key to write to filesystems. Currently applicable only for ak8s run_type. Default value is kept as "NA"
     print_impact
         True, False
         This argument is to print descriptive statistics of the latest features (Default value = False)
@@ -2489,11 +2588,6 @@ def autoencoder_latentFeatures(
     if len(list_of_cols) == 0:
         warnings.warn("No Latent Features Generated - No Column(s) to Transform")
         return idf
-
-    if run_type in list(platform_root_path.keys()):
-        root_path = platform_root_path[run_type]
-    else:
-        root_path = ""
 
     if stats_missing == {}:
         missing_df = missingCount_computation(spark, idf, list_of_cols)
@@ -2595,6 +2689,25 @@ def autoencoder_latentFeatures(
             output = subprocess.check_output(["bash", "-c", bash_cmd])
             encoder = load_model("encoder.h5")
             model = load_model("model.h5")
+        elif run_type == "ak8s":
+            bash_cmd = (
+                'azcopy cp "'
+                + model_path
+                + "/autoencoders_latentFeatures/encoder.h5"
+                + str(auth_key)
+                + '" .'
+            )
+            output = subprocess.check_output(["bash", "-c", bash_cmd])
+            bash_cmd = (
+                'azcopy cp "'
+                + model_path
+                + "/autoencoders_latentFeatures/model.h5"
+                + str(auth_key)
+                + '" .'
+            )
+            output = subprocess.check_output(["bash", "-c", bash_cmd])
+            encoder = load_model("encoder.h5")
+            model = load_model("model.h5")
         else:
             encoder = load_model(model_path + "/autoencoders_latentFeatures/encoder.h5")
             model = load_model(model_path + "/autoencoders_latentFeatures/model.h5")
@@ -2651,6 +2764,25 @@ def autoencoder_latentFeatures(
                     "aws s3 cp model.h5 "
                     + model_path
                     + "/autoencoders_latentFeatures/model.h5"
+                )
+                output = subprocess.check_output(["bash", "-c", bash_cmd])
+            elif run_type == "ak8s":
+                encoder.save("encoder.h5")
+                model.save("model.h5")
+                bash_cmd = (
+                    'azcopy cp "encoder.h5" "'
+                    + model_path
+                    + "/autoencoders_latentFeatures/encoder.h5"
+                    + str(auth_key)
+                    + '" '
+                )
+                output = subprocess.check_output(["bash", "-c", bash_cmd])
+                bash_cmd = (
+                    'azcopy cp "model.h5" "'
+                    + model_path
+                    + "/autoencoders_latentFeatures/model.h5"
+                    + str(auth_key)
+                    + '" '
                 )
                 output = subprocess.check_output(["bash", "-c", bash_cmd])
             else:
@@ -2727,6 +2859,8 @@ def PCA_latentFeatures(
     stats_missing={},
     output_mode="replace",
     run_type="local",
+    root_path="",
+    auth_key="NA",
     print_impact=False,
 ):
     """
@@ -2794,7 +2928,11 @@ def PCA_latentFeatures(
         “append” option append transformed columns with format latent_<col_index> to the input dataset,
         e.g. latent_0, latent_1. (Default value = "replace")
     run_type
-        "local", "emr", "databricks" (Default value = "local")
+        "local", "emr", "databricks", "ak8s" (Default value = "local")
+    root_path
+        This argument takes in a base folder path for writing out intermediate_data/ folder to. Default value is ""
+    auth_key
+        Option to pass an authorization key to write to filesystems. Currently applicable only for ak8s run_type. Default value is kept as "NA"
     print_impact
         True, False
         This argument is to print descriptive statistics of the latest features (Default value = False)
@@ -2820,11 +2958,6 @@ def PCA_latentFeatures(
     if len(list_of_cols) == 0:
         warnings.warn("No Latent Features Generated - No Column(s) to Transform")
         return idf
-
-    if run_type in list(platform_root_path.keys()):
-        root_path = platform_root_path[run_type]
-    else:
-        root_path = ""
 
     if stats_missing == {}:
         missing_df = missingCount_computation(spark, idf, list_of_cols)
@@ -3300,13 +3433,15 @@ def outlier_categories(
     """
     This function replaces less frequently seen values (called as outlier values in the current context) in a
     categorical column by 'outlier_categories'. Outlier values can be defined in two ways –
-    a) Max N categories, where N is used defined value. In this method, top N-1 frequently seen categories are considered
+    a) Max N categories, where N is user defined value. In this method, top N-1 frequently seen categories are considered
     and rest are clubbed under single category 'outlier_categories'. or Alternatively,
     b) Coverage – top frequently seen categories are considered till it covers minimum N% of rows and rest lesser seen values
-    are mapped to mapped to 'outlier_categories'. Even if the Coverage is less, maximum category constraint is given priority. Further,
+    are mapped to 'outlier_categories'. Even if the Coverage is less, maximum category constraint is given priority. Further,
     there is a caveat that when multiple categories have same rank. Then, number of categorical values can be more than
     max_category defined by the user.
 
+    This function performs better when distinct values, in any column, are not more than 100. It is recommended that to drop those
+    columns from the computation which has more than 100 distinct values, to get better performance out of this function.
 
     Parameters
     ----------
@@ -3355,7 +3490,6 @@ def outlier_categories(
         Transformed Dataframe
 
     """
-
     cat_cols = attributeType_segregation(idf)[1]
     if list_of_cols == "all":
         list_of_cols = cat_cols
@@ -3381,6 +3515,8 @@ def outlier_categories(
     if output_mode not in ("replace", "append"):
         raise TypeError("Invalid input for output_mode")
 
+    idf = idf.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
+
     if pre_existing_model:
         df_model = spark.read.csv(
             model_path + "/outlier_categories", header=True, inferSchema=True
@@ -3389,7 +3525,8 @@ def outlier_categories(
         for index, i in enumerate(list_of_cols):
             window = Window.partitionBy().orderBy(F.desc("count_pct"))
             df_cats = (
-                idf.groupBy(i)
+                idf.select(i)
+                .groupBy(i)
                 .count()
                 .dropna()
                 .withColumn(
@@ -3414,14 +3551,21 @@ def outlier_categories(
             else:
                 df_model = df_model.union(df_cats)
 
+    df_params = df_model.rdd.groupByKey().mapValues(list).collect()
+    dict_params = dict(df_params)
+    broadcast_params = spark.sparkContext.broadcast(dict_params)
+
+    def get_params(key):
+        parameters = list()
+        dict_params = broadcast_params.value
+        params = dict_params.get(key)
+        if params:
+            parameters = params
+        return parameters
+
     odf = idf
     for i in list_of_cols:
-        parameters = (
-            df_model.where(F.col("attribute") == i)
-            .select("parameters")
-            .rdd.flatMap(lambda x: x)
-            .collect()
-        )
+        parameters = get_params(i)
         if output_mode == "replace":
             odf = odf.withColumn(
                 i,
@@ -3453,6 +3597,8 @@ def outlier_categories(
         uniqueCount_computation(spark, odf, output_cols).select(
             "attribute", F.col("unique_values").alias("uniqueValues_after")
         ).show(len(list_of_cols), False)
+
+    idf.unpersist()
 
     return odf
 

@@ -3,7 +3,9 @@ import os
 import pytest
 import platform
 from pyspark.sql import functions as F
+from pyspark.sql import SparkSession
 from pytest import approx
+
 
 from anovos.data_ingest.data_ingest import read_dataset
 from anovos.data_transformer.transformers import (
@@ -25,12 +27,154 @@ from anovos.data_transformer.transformers import (
     z_standardization,
 )
 
-sample_parquet = "./data/test_dataset/part-00001-3eb0f7bb-05c2-46ec-8913-23ba231d2734-c000.snappy.parquet"
+
+@pytest.fixture
+def df(spark_session: SparkSession):
+    sample_parquet = "./data/test_dataset/part-00001-3eb0f7bb-05c2-46ec-8913-23ba231d2734-c000.snappy.parquet"
+    df = read_dataset(spark_session, sample_parquet, "parquet")
+    return df
+
+
+# binning
+def test_attribute_binning(spark_session, df):
+    odf = attribute_binning(
+        spark_session,
+        df,
+        list_of_cols=["age", "fnlwgt", "hours-per-week"],
+        bin_size=20,
+        model_path="unit_testing/models/",
+    )
+    assert len(odf.columns) == 17
+    odf_min_dict = (
+        odf.describe().where(F.col("summary") == "min").toPandas().to_dict("list")
+    )
+    odf_max_dict = (
+        odf.describe().where(F.col("summary") == "max").toPandas().to_dict("list")
+    )
+    assert round(float(odf_min_dict["age"][0])) == 1
+    assert round(float(odf_min_dict["fnlwgt"][0])) == 1
+    assert round(float(odf_min_dict["hours-per-week"][0])) == 1
+    assert round(float(odf_min_dict["logfnl"][0])) != 1
+    assert round(float(odf_max_dict["age"][0])) == 20
+    assert round(float(odf_max_dict["fnlwgt"][0])) == 20
+    assert round(float(odf_max_dict["hours-per-week"][0])) == 20
+    assert round(float(odf_max_dict["logfnl"][0])) != 20
+
+    try:
+        odf = attribute_binning(
+            spark_session,
+            df,
+            list_of_cols=["education-num"],
+            bin_size=20,
+            pre_existing_model=True,
+            model_path="unit_testing/models/",
+        )
+    except Exception as error:
+        assert str(error) == "list index out of range"
+
+    odf = attribute_binning(spark_session, df, list_of_cols=[], bin_size=20)
+    odf_min_dict = (
+        odf.describe().where(F.col("summary") == "min").toPandas().to_dict("list")
+    )
+    odf_max_dict = (
+        odf.describe().where(F.col("summary") == "max").toPandas().to_dict("list")
+    )
+    df_min_dict = (
+        df.describe().where(F.col("summary") == "min").toPandas().to_dict("list")
+    )
+    df_max_dict = (
+        df.describe().where(F.col("summary") == "max").toPandas().to_dict("list")
+    )
+    assert round(float(odf_min_dict["age"][0])) == round(float(df_min_dict["age"][0]))
+    assert round(float(odf_min_dict["fnlwgt"][0])) == round(
+        float(df_min_dict["fnlwgt"][0])
+    )
+    assert round(float(odf_max_dict["age"][0])) == round(float(df_max_dict["age"][0]))
+    assert round(float(odf_max_dict["fnlwgt"][0])) == round(
+        float(df_max_dict["fnlwgt"][0])
+    )
+
+    odf = attribute_binning(
+        spark_session,
+        df,
+        list_of_cols=["age", "fnlwgt", "hours-per-week"],
+        bin_size=20,
+        output_mode="append",
+    )
+    assert len(odf.columns) == 20
+
+
+def test_monotonic_binning(spark_session, df):
+    odf = monotonic_binning(
+        spark_session,
+        df,
+        list_of_cols=["age", "fnlwgt", "hours-per-week"],
+        label_col="income",
+        event_label="<=50K",
+        bin_method="equal_range",
+        bin_size=10,
+    )
+    assert len(odf.columns) == 17
+    odf_min_dict = (
+        odf.describe().where(F.col("summary") == "min").toPandas().to_dict("list")
+    )
+    odf_max_dict = (
+        odf.describe().where(F.col("summary") == "max").toPandas().to_dict("list")
+    )
+    assert round(float(odf_min_dict["age"][0])) == 1
+    assert round(float(odf_min_dict["fnlwgt"][0])) == 1
+    assert round(float(odf_min_dict["hours-per-week"][0])) == 1
+    assert round(float(odf_min_dict["logfnl"][0])) != 1
+    assert round(float(odf_max_dict["age"][0])) == 10
+    assert round(float(odf_max_dict["fnlwgt"][0])) == 10
+    assert round(float(odf_max_dict["hours-per-week"][0])) == 10
+    assert round(float(odf_max_dict["logfnl"][0])) != 10
+
+    odf = monotonic_binning(
+        spark_session,
+        df,
+        list_of_cols=[],
+        label_col="income",
+        event_label="<=50K",
+        bin_method="equal_range",
+        bin_size=10,
+    )
+    odf_min_dict = (
+        odf.describe().where(F.col("summary") == "min").toPandas().to_dict("list")
+    )
+    odf_max_dict = (
+        odf.describe().where(F.col("summary") == "max").toPandas().to_dict("list")
+    )
+    df_min_dict = (
+        df.describe().where(F.col("summary") == "min").toPandas().to_dict("list")
+    )
+    df_max_dict = (
+        df.describe().where(F.col("summary") == "max").toPandas().to_dict("list")
+    )
+    assert round(float(odf_min_dict["age"][0])) == round(float(df_min_dict["age"][0]))
+    assert round(float(odf_min_dict["fnlwgt"][0])) == round(
+        float(df_min_dict["fnlwgt"][0])
+    )
+    assert round(float(odf_max_dict["age"][0])) == round(float(df_max_dict["age"][0]))
+    assert round(float(odf_max_dict["fnlwgt"][0])) == round(
+        float(df_max_dict["fnlwgt"][0])
+    )
+
+    odf = monotonic_binning(
+        spark_session,
+        df,
+        list_of_cols=["age", "fnlwgt", "hours-per-week"],
+        label_col="income",
+        event_label="<=50K",
+        bin_method="equal_range",
+        bin_size=10,
+        output_mode="append",
+    )
+    assert len(odf.columns) == 20
 
 
 # scaling
-def test_z_standardization(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+def test_z_standardization(spark_session, df):
     odf = z_standardization(
         spark_session,
         df,
@@ -73,8 +217,7 @@ def test_z_standardization(spark_session):
     assert len(odf.columns) == 20
 
 
-def test_IQR_standardization(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+def test_IQR_standardization(spark_session, df):
     odf = IQR_standardization(
         spark_session,
         df,
@@ -117,8 +260,7 @@ def test_IQR_standardization(spark_session):
     assert len(odf.columns) == 20
 
 
-def test_normalization(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+def test_normalization(spark_session, df):
     odf = normalization(
         df,
         list_of_cols=["age", "fnlwgt", "hours-per-week"],
@@ -169,8 +311,7 @@ def test_normalization(spark_session):
 
 
 # imputation
-def test_imputation_sklearn(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+def test_imputation_sklearn(spark_session, df):
     odf = imputation_sklearn(
         spark_session,
         df,
@@ -214,8 +355,7 @@ def test_imputation_sklearn(spark_session):
     assert len(odf.columns) == 20
 
 
-def test_imputation_matrixFactorization(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet").limit(100)
+def test_imputation_matrixFactorization(spark_session, df):
     odf = imputation_matrixFactorization(
         spark_session,
         df,
@@ -240,8 +380,7 @@ def test_imputation_matrixFactorization(spark_session):
     )
 
 
-def test_imputation_matrixFactorization_with_empty_list_of_cols(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+def test_imputation_matrixFactorization_with_empty_list_of_cols(spark_session, df):
     odf = imputation_matrixFactorization(
         spark_session, df, list_of_cols=[], id_col="ifa"
     )
@@ -255,8 +394,7 @@ def test_imputation_matrixFactorization_with_empty_list_of_cols(spark_session):
     )
 
 
-def test_imputation_matrixFactorization_with_appended_output(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+def test_imputation_matrixFactorization_with_appended_output(spark_session, df):
     odf = imputation_matrixFactorization(
         spark_session,
         df,
@@ -283,8 +421,7 @@ def test_imputation_matrixFactorization_with_appended_output(spark_session):
     assert odf.where(F.col("hours-per-week_imputed").isNull()).count() == 0
 
 
-def test_imputation_MMM(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+def test_imputation_MMM(spark_session, df):
     odf = imputation_MMM(
         spark_session,
         df,
@@ -330,8 +467,7 @@ def test_imputation_MMM(spark_session):
     assert len(odf.columns) == 22
 
 
-def test_auto_imputation(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+def test_auto_imputation(spark_session, df):
     odf = auto_imputation(
         spark_session,
         df,
@@ -346,8 +482,7 @@ def test_auto_imputation(spark_session):
     assert odf.where(F.col("education").isNull()).count() == 254
 
 
-def test_auto_imputation_with_empty_list_of_cols(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+def test_auto_imputation_with_empty_list_of_cols(spark_session, df):
     odf = auto_imputation(spark_session, df, list_of_cols=[], id_col="ifa")
     assert odf.where(F.col("age").isNull()).count() == 30
     assert odf.where(F.col("fnlwgt").isNull()).count() == 8
@@ -355,8 +490,7 @@ def test_auto_imputation_with_empty_list_of_cols(spark_session):
     assert odf.where(F.col("relationship").isNull()).count() == 4
 
 
-def test_auto_imputation_with_appended_output(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+def test_auto_imputation_with_appended_output(spark_session, df):
     odf = auto_imputation(
         spark_session,
         df,
@@ -368,8 +502,7 @@ def test_auto_imputation_with_appended_output(spark_session):
 
 
 # latent_features
-def test_PCA_latentFeatures(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+def test_PCA_latentFeatures(spark_session, df):
     odf = PCA_latentFeatures(
         spark_session,
         df,
@@ -412,8 +545,7 @@ def test_PCA_latentFeatures(spark_session):
     assert odf.where(F.col("latent_0").isNull()).count() == 0
 
 
-def test_autoencoder_latentFeatures(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+def test_autoencoder_latentFeatures(spark_session, df):
     odf = autoencoder_latentFeatures(
         spark_session,
         df,
@@ -468,8 +600,7 @@ def test_autoencoder_latentFeatures(spark_session):
 
 
 # feature_transformation
-def test_feature_transformation(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+def test_feature_transformation(spark_session, df):
     odf = feature_transformation(df, list_of_cols=["age", "fnlwgt", "hours-per-week"])
     assert len(odf.columns) == 17
     odf_pd = odf.where(F.col("ifa") == "27520a").toPandas()
@@ -483,8 +614,7 @@ def test_feature_transformation(spark_session):
     assert len(odf.columns) == 20
 
 
-def test_boxcox_transformation(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+def test_boxcox_transformation(spark_session, df):
     odf = boxcox_transformation(
         df, list_of_cols=["age", "fnlwgt", "hours-per-week"], boxcox_lambda=0.5
     )
@@ -503,8 +633,7 @@ def test_boxcox_transformation(spark_session):
     assert len(odf.columns) == 20
 
 
-def test_outlier_categories(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+def test_outlier_categories(spark_session, df):
     odf = outlier_categories(
         spark_session,
         df,
@@ -584,149 +713,8 @@ def test_outlier_categories(spark_session):
     assert len(odf.columns) == 22
 
 
-# binning
-def test_attribute_binning(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
-    odf = attribute_binning(
-        spark_session,
-        df,
-        list_of_cols=["age", "fnlwgt", "hours-per-week"],
-        bin_size=20,
-        model_path="unit_testing/models/",
-    )
-    assert len(odf.columns) == 17
-    odf_min_dict = (
-        odf.describe().where(F.col("summary") == "min").toPandas().to_dict("list")
-    )
-    odf_max_dict = (
-        odf.describe().where(F.col("summary") == "max").toPandas().to_dict("list")
-    )
-    assert round(float(odf_min_dict["age"][0])) == 1
-    assert round(float(odf_min_dict["fnlwgt"][0])) == 1
-    assert round(float(odf_min_dict["hours-per-week"][0])) == 1
-    assert round(float(odf_min_dict["logfnl"][0])) != 1
-    assert round(float(odf_max_dict["age"][0])) == 20
-    assert round(float(odf_max_dict["fnlwgt"][0])) == 20
-    assert round(float(odf_max_dict["hours-per-week"][0])) == 20
-    assert round(float(odf_max_dict["logfnl"][0])) != 20
-
-    try:
-        odf = attribute_binning(
-            spark_session,
-            df,
-            list_of_cols=["education-num"],
-            bin_size=20,
-            pre_existing_model=True,
-            model_path="unit_testing/models/",
-        )
-    except Exception as error:
-        assert str(error) == "list index out of range"
-
-    odf = attribute_binning(spark_session, df, list_of_cols=[], bin_size=20)
-    odf_min_dict = (
-        odf.describe().where(F.col("summary") == "min").toPandas().to_dict("list")
-    )
-    odf_max_dict = (
-        odf.describe().where(F.col("summary") == "max").toPandas().to_dict("list")
-    )
-    df_min_dict = (
-        df.describe().where(F.col("summary") == "min").toPandas().to_dict("list")
-    )
-    df_max_dict = (
-        df.describe().where(F.col("summary") == "max").toPandas().to_dict("list")
-    )
-    assert round(float(odf_min_dict["age"][0])) == round(float(df_min_dict["age"][0]))
-    assert round(float(odf_min_dict["fnlwgt"][0])) == round(
-        float(df_min_dict["fnlwgt"][0])
-    )
-    assert round(float(odf_max_dict["age"][0])) == round(float(df_max_dict["age"][0]))
-    assert round(float(odf_max_dict["fnlwgt"][0])) == round(
-        float(df_max_dict["fnlwgt"][0])
-    )
-
-    odf = attribute_binning(
-        spark_session,
-        df,
-        list_of_cols=["age", "fnlwgt", "hours-per-week"],
-        bin_size=20,
-        output_mode="append",
-    )
-    assert len(odf.columns) == 20
-
-
-def test_monotonic_binning(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
-    odf = monotonic_binning(
-        spark_session,
-        df,
-        list_of_cols=["age", "fnlwgt", "hours-per-week"],
-        label_col="income",
-        event_label="<=50K",
-        bin_method="equal_range",
-        bin_size=10,
-    )
-    assert len(odf.columns) == 17
-    odf_min_dict = (
-        odf.describe().where(F.col("summary") == "min").toPandas().to_dict("list")
-    )
-    odf_max_dict = (
-        odf.describe().where(F.col("summary") == "max").toPandas().to_dict("list")
-    )
-    assert round(float(odf_min_dict["age"][0])) == 1
-    assert round(float(odf_min_dict["fnlwgt"][0])) == 1
-    assert round(float(odf_min_dict["hours-per-week"][0])) == 1
-    assert round(float(odf_min_dict["logfnl"][0])) != 1
-    assert round(float(odf_max_dict["age"][0])) == 10
-    assert round(float(odf_max_dict["fnlwgt"][0])) == 10
-    assert round(float(odf_max_dict["hours-per-week"][0])) == 10
-    assert round(float(odf_max_dict["logfnl"][0])) != 10
-
-    odf = monotonic_binning(
-        spark_session,
-        df,
-        list_of_cols=[],
-        label_col="income",
-        event_label="<=50K",
-        bin_method="equal_range",
-        bin_size=10,
-    )
-    odf_min_dict = (
-        odf.describe().where(F.col("summary") == "min").toPandas().to_dict("list")
-    )
-    odf_max_dict = (
-        odf.describe().where(F.col("summary") == "max").toPandas().to_dict("list")
-    )
-    df_min_dict = (
-        df.describe().where(F.col("summary") == "min").toPandas().to_dict("list")
-    )
-    df_max_dict = (
-        df.describe().where(F.col("summary") == "max").toPandas().to_dict("list")
-    )
-    assert round(float(odf_min_dict["age"][0])) == round(float(df_min_dict["age"][0]))
-    assert round(float(odf_min_dict["fnlwgt"][0])) == round(
-        float(df_min_dict["fnlwgt"][0])
-    )
-    assert round(float(odf_max_dict["age"][0])) == round(float(df_max_dict["age"][0]))
-    assert round(float(odf_max_dict["fnlwgt"][0])) == round(
-        float(df_max_dict["fnlwgt"][0])
-    )
-
-    odf = monotonic_binning(
-        spark_session,
-        df,
-        list_of_cols=["age", "fnlwgt", "hours-per-week"],
-        label_col="income",
-        event_label="<=50K",
-        bin_method="equal_range",
-        bin_size=10,
-        output_mode="append",
-    )
-    assert len(odf.columns) == 20
-
-
 # categorical_to_numerical_transformation
-def test_cat_to_num_unsupervised(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+def test_cat_to_num_unsupervised_with_label_encoding(spark_session, df):
     odf = cat_to_num_unsupervised(
         spark_session,
         df,
@@ -741,14 +729,23 @@ def test_cat_to_num_unsupervised(spark_session):
     odf_min_dict = (
         odf.describe().where(F.col("summary") == "min").toPandas().to_dict("list")
     )
+    odf_max_dict = (
+        odf.describe().where(F.col("summary") == "max").toPandas().to_dict("list")
+    )
+
     assert round(float(odf_min_dict["workclass"][0])) == 0
     assert round(float(odf_min_dict["marital-status"][0])) == 0
     assert round(float(odf_min_dict["relationship"][0])) == 0
+    assert round(float(odf_max_dict["workclass"][0])) == 8
+    assert round(float(odf_max_dict["marital-status"][0])) == 6
+    assert round(float(odf_max_dict["relationship"][0])) == 7
     assert odf.select("workclass").dtypes[0][1] == "int"
     assert odf.select("marital-status").dtypes[0][1] == "int"
     assert odf.select("relationship").dtypes[0][1] == "int"
     assert odf.select("education").dtypes[0][1] == "string"
 
+
+def test_cat_to_num_unsupervised_with_empty_list_of_cols(spark_session, df):
     odf = cat_to_num_unsupervised(
         spark_session,
         df,
@@ -763,11 +760,12 @@ def test_cat_to_num_unsupervised(spark_session):
     assert odf.select("relationship").dtypes[0][1] == "string"
     assert odf.select("education").dtypes[0][1] == "string"
 
+
+def test_cat_to_num_unsupervised_with_appended_output(spark_session, df):
     odf = cat_to_num_unsupervised(
         spark_session,
         df,
         list_of_cols=["workclass", "relationship", "marital-status"],
-        drop_cols=["ifa"],
         method_type="label_encoding",
         index_order="frequencyDesc",
         cardinality_threshold=100,
@@ -775,12 +773,17 @@ def test_cat_to_num_unsupervised(spark_session):
     )
     assert len(odf.columns) == 20
 
+
+def test_cat_to_num_unsupervised_with_onehot_encoding_and_saving_model(
+    spark_session, df
+):
     odf = cat_to_num_unsupervised(
         spark_session,
         df,
-        drop_cols=["ifa"],
+        list_of_cols=["marital-status", "relationship"],
         method_type="onehot_encoding",
         cardinality_threshold=100,
+        model_path="unit_testing/models/",
     )
     odf_min_dict = (
         odf.describe().where(F.col("summary") == "min").toPandas().to_dict("list")
@@ -788,20 +791,36 @@ def test_cat_to_num_unsupervised(spark_session):
     odf_max_dict = (
         odf.describe().where(F.col("summary") == "max").toPandas().to_dict("list")
     )
-    assert round(float(odf_min_dict["relationship_0"][0])) == 0
-    assert round(float(odf_min_dict["race_7"][0])) == 0
-    assert round(float(odf_min_dict["marital-status_1"][0])) == 0
-    assert round(float(odf_min_dict["sex_1"][0])) == 0
-    assert round(float(odf_min_dict["occupation_12"][0])) == 0
-    assert round(float(odf_max_dict["relationship_0"][0])) == 1
-    assert round(float(odf_max_dict["race_7"][0])) == 1
-    assert round(float(odf_max_dict["marital-status_1"][0])) == 1
-    assert round(float(odf_max_dict["sex_1"][0])) == 1
-    assert round(float(odf_max_dict["occupation_12"][0])) == 1
+    assert len(odf.columns) == 32
+    assert round(float(odf_min_dict["marital-status_7"][0])) == 0
+    assert round(float(odf_min_dict["relationship_8"][0])) == 0
+    assert round(float(odf_max_dict["marital-status_7"][0])) == 1
+    assert round(float(odf_max_dict["relationship_8"][0])) == 1
+
+    odf = cat_to_num_unsupervised(
+        spark_session,
+        df,
+        list_of_cols=["marital-status", "relationship"],
+        method_type="onehot_encoding",
+        cardinality_threshold=100,
+        pre_existing_model=True,
+        model_path="unit_testing/models/",
+    )
+    odf_min_dict = (
+        odf.describe().where(F.col("summary") == "min").toPandas().to_dict("list")
+    )
+    odf_max_dict = (
+        odf.describe().where(F.col("summary") == "max").toPandas().to_dict("list")
+    )
+
+    assert len(odf.columns) == 32
+    assert round(float(odf_min_dict["marital-status_7"][0])) == 0
+    assert round(float(odf_min_dict["relationship_8"][0])) == 0
+    assert round(float(odf_max_dict["marital-status_7"][0])) == 1
+    assert round(float(odf_max_dict["relationship_8"][0])) == 1
 
 
-def test_cat_to_num_supervised(spark_session):
-    df = read_dataset(spark_session, sample_parquet, "parquet")
+def test_cat_to_num_supervised(spark_session, df):
     odf = cat_to_num_supervised(
         spark_session,
         df,

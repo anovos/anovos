@@ -17,6 +17,9 @@ At the column level, the following checks are done:
 - invalidEntries_detection
 
 """
+import copy
+import functools
+import pandas as pd
 import re
 import warnings
 
@@ -44,7 +47,7 @@ from anovos.shared.utils import (
 
 
 def duplicate_detection(
-    spark, idf, list_of_cols="all", drop_cols=[], treatment=False, print_impact=False
+    spark, idf, list_of_cols="all", drop_cols=[], treatment=True, print_impact=False
 ):
     """
     As the name implies, this function detects duplication in the input dataset. This means, for a pair of
@@ -75,20 +78,28 @@ def duplicate_detection(
         It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
         a few handful of them. (Default value = [])
     treatment
-        Boolean argument – True or False. If True, duplicate rows are removed from the input dataframe. (Default value = False)
+        Boolean argument – True or False. If True, duplicate rows are removed from the input dataframe. (Default value = True)
     print_impact
         True, False
         This argument is to print out the statistics.(Default value = False)
 
     Returns
     -------
-    odf : DataFrame
-        de-duplicated dataframe if treated, else original input dataframe.
-    odf_print : DataFrame
-        schema [metric, value] and contains metrics - number of rows, number of unique rows,
-        number of duplicate rows and percentage of duplicate rows in total.
-
+    if print_impact is True:
+        odf : DataFrame
+            de-duplicated dataframe if treated, else original input dataframe.
+        odf_print : DataFrame
+            schema [metric, value] and contains metrics - number of rows, number of unique rows,
+            number of duplicate rows and percentage of duplicate rows in total.
+    if print_impact is False:
+        odf : DataFrame
+            de-duplicated dataframe if treated, else original input dataframe.
     """
+    if not treatment and not print_impact:
+        warnings.warn(
+            "The original idf will be the only output. Set print_impact=True to perform detection without treatment"
+        )
+        return idf
     if list_of_cols == "all":
         num_cols, cat_cols, other_cols = attributeType_segregation(idf)
         list_of_cols = num_cols + cat_cols
@@ -108,28 +119,34 @@ def duplicate_detection(
     else:
         raise TypeError("Non-Boolean input for treatment")
 
-    odf_tmp = idf.drop_duplicates(subset=list_of_cols)
+    odf_tmp = idf.groupby(list_of_cols).count().drop("count")
     odf = odf_tmp if treatment else idf
 
-    odf_print = spark.createDataFrame(
-        [
-            ["rows_count", float(idf.count())],
-            ["unique_rows_count", float(odf_tmp.count())],
-            ["duplicate_rows", float(idf.count() - odf_tmp.count())],
-            ["duplicate_pct", round((idf.count() - odf_tmp.count()) / idf.count(), 4)],
-        ],
-        schema=["metric", "value"],
-    )
     if print_impact:
-        print("No. of Rows: " + str(idf.count()))
-        print("No. of UNIQUE Rows: " + str(odf_tmp.count()))
-        print("No. of Duplicate Rows: " + str(idf.count() - odf_tmp.count()))
-        print(
-            "Percentage of Duplicate Rows: "
-            + str(round((idf.count() - odf_tmp.count()) / idf.count(), 4))
+        idf_count = idf.count()
+        odf_tmp_count = odf_tmp.count()
+        odf_print = spark.createDataFrame(
+            [
+                ["rows_count", float(idf_count)],
+                ["unique_rows_count", float(odf_tmp_count)],
+                ["duplicate_rows", float(idf_count - odf_tmp_count)],
+                ["duplicate_pct", round((idf_count - odf_tmp_count) / idf_count, 4)],
+            ],
+            schema=["metric", "value"],
         )
 
-    return odf, odf_print
+        print("No. of Rows: " + str(idf_count))
+        print("No. of UNIQUE Rows: " + str(odf_tmp_count))
+        print("No. of Duplicate Rows: " + str(idf_count - odf_tmp_count))
+        print(
+            "Percentage of Duplicate Rows: "
+            + str(round((idf_count - odf_tmp_count) / idf_count, 4))
+        )
+
+    if print_impact:
+        return odf, odf_print
+    else:
+        return odf
 
 
 def nullRows_detection(
@@ -545,20 +562,21 @@ def outlier_detection(
         "IQR_upper": 1.5,
         "min_validation": 2,
     },
-    treatment=False,
+    treatment=True,
     treatment_method="value_replacement",
     pre_existing_model=False,
     model_path="NA",
+    sample_size=1000000,
     output_mode="replace",
-    stats_unique={},
     print_impact=False,
 ):
     """
     In Machine Learning, outlier detection identifies values that deviate drastically from the rest of the
     attribute values. An outlier may be caused simply by chance, measurement error, or inherent heavy-tailed
     distribution. This function identifies extreme values in both directions (or any direction provided by the user
-    via detection_side argument). Outlier is identified by 3 different methodologies and tagged an outlier only if it
-    is validated by at least 2 methods (can be changed by the user via min_validation under detection_configs argument).
+    via detection_side argument). By default, outlier is identified by 3 different methodologies and tagged an outlier
+    only if it is validated by at least 2 methods. Users can customize the methodologies they would like to apply and
+    the minimum number of methodologies to be validated under detection_configs argument.
 
     - Percentile Method: In this methodology, a value higher than a certain (default 95th) percentile value is considered
       as an outlier. Similarly, a value lower than a certain (default 5th) percentile value is considered as an outlier.
@@ -566,12 +584,9 @@ def outlier_detection(
     - Standard Deviation Method: In this methodology, if a value is a certain number of standard deviations (default 3)
       away from the mean, it is identified as an outlier.
 
-    - Interquartile Range (IQR) Method: A value below Q1 – 1.5 IQR or above Q3 + 1.5 IQR are identified as outliers, where Q1
-      is in first quantile/25th percentile, Q3 is in third quantile/75th percentile, and IQR is the difference between
-      third quantile & first quantile.
-
-    This function also leverages statistics which were computed as the part of the State Generator module so that
-    statistics are not computed twice if already available.
+    - Interquartile Range (IQR) Method: if a value is a certain number of IQRs (default 1.5) below Q1 or above Q3,
+    it is identified as an outlier. Q1 is in first quantile/25th percentile, Q3 is in third quantile/75th percentile,
+    and IQR is the difference between third quantile & first quantile.
 
     As part of treatments available, outlier values can be replaced by null so that it can be imputed by a reliable
     imputation methodology (null_replacement). It can also be replaced by maximum or minimum permissible by above
@@ -604,7 +619,7 @@ def outlier_detection(
     detection_side
         "upper", "lower", "both".
         "lower" detects outliers in the lower spectrum of the column range, whereas "upper" detects in the upper spectrum.
-        "Both" detects in both upper and lower end of the spectrum. (Default value = "upper")
+        "both" detects in both upper and lower end of the spectrum. (Default value = "upper")
     detection_configs
         Takes input in dictionary format with keys representing upper & lower parameter for
         three outlier detection methodologies.
@@ -616,9 +631,18 @@ def outlier_detection(
         is identified as outliers, where Q1 is first quartile/25th percentile, Q3 is third quartile/75th percentile and IQR is difference between
         third quartile & first quartile (default 1.5 & 1.5).
         If an attribute value is less (more) than its derived lower (upper) bound value, it is considered as outlier by a methodology.
-        A attribute value is considered as outlier if it is declared as outlier by atleast 'min_validation' methodologies (default 2).
+        A attribute value is considered as outlier if it is declared as outlier by at least 'min_validation' methodologies (default 2).
+        If 'min_validation' is not specified, the total number of methodologies will be used. In addition, it cannot be larger than the
+        total number of methodologies applied.
+        If detection_side is "upper", then "pctile_lower", "stdev_lower" and "IQR_lower" will be ignored and vice versa.
+        Examples (detection_side = "lower")
+        - If detection_configs={"pctile_lower": 0.05, "stdev_lower": 3.0, "min_validation": 1}, Percentile and Standard Deviation
+        methods will be applied and a value is considered as outlier if at least 1 methodology categorizes it as an outlier.
+        - If detection_configs={"pctile_lower": 0.05, "stdev_lower": 3.0}, since "min_validation" is not specified, 2 will be used
+        because there are 2 methodologies specified. A value is considered as outlier if at both 2 methodologies categorize it as an outlier.
     treatment
-        Boolean argument – True or False. If True, outliers are treated as per treatment_method argument. (Default value = False)
+        Boolean argument - True or False. If True, outliers are treated as per treatment_method argument.
+        If treatment is False, print_impact should be True to perform detection without treatment. (Default value = True)
     treatment_method
         "null_replacement", "row_removal", "value_replacement".
         In "null_replacement", outlier values are replaced by null so that it can be imputed by a
@@ -632,42 +656,43 @@ def outlier_detection(
         If pre_existing_model is True, this argument is path for the pre-saved model.
         If pre_existing_model is False, this field can be used for saving the model.
         Default "NA" means there is neither pre-existing model nor there is a need to save one.
+    sample_size
+        The maximum number of rows used to calculate the thresholds of outlier detection. Relevant computation includes
+        percentiles, means, standard deviations and quantiles calculation. The computed thresholds will be applied over
+        all rows in the original idf to detect outliers. If the number of rows of idf is smaller than sample_size,
+        the original idf will be used. (Default value = 1000000)
     output_mode
         "replace", "append".
         “replace” option replaces original columns with treated column. “append” option append treated
         column to the input dataset with a postfix "_outliered" e.g. column X is appended as X_outliered. (Default value = "replace")
-    stats_unique
-        Takes arguments for read_dataset (data_ingest module) function in a dictionary format
-        to read pre-saved statistics on unique value count i.e. if measures_of_cardinality or
-        uniqueCount_computation (data_analyzer.stats_generator module) has been computed & saved before. (Default value = {})
     print_impact
         True, False
-        This argument is to print out the statistics and the impact of treatment (if applicable).(Default value = False)
+        This argument is to calculate and print out the impact of treatment (if applicable).
+        If treatment is False, print_impact should be True to perform detection without treatment. (Default value = False).
 
     Returns
     -------
-    odf : DataFrame
-        Imputed dataframe if treated, else original input dataframe.
-    odf_print : DataFrame
-        schema [attribute, lower_outliers, upper_outliers].
-        lower_outliers is no. of outliers found in the lower spectrum of the attribute range, and
-        upper_outliers is outlier count in the upper spectrum.
-
+    if print_impact is True:
+        odf : DataFrame
+            Dataframe with outliers treated if treatment is True, else original input dataframe.
+        odf_print : DataFrame
+            schema [attribute, lower_outliers, upper_outliers, excluded_due_to_skewness].
+            lower_outliers is no. of outliers found in the lower spectrum of the attribute range,
+            upper_outliers is outlier count in the upper spectrum, and
+            excluded_due_to_skewness is 0 or 1 indicating whether an attribute is excluded from detection due to skewness.
+    if print_impact is False:
+        odf : DataFrame
+            Dataframe with outliers treated if treatment is True, else original input dataframe.
     """
-
+    column_order = idf.columns
     num_cols = attributeType_segregation(idf)[0]
-    if len(num_cols) == 0:
-        warnings.warn("No Outlier Check - No numerical column(s) to analyse")
-        odf = idf
-        schema = T.StructType(
-            [
-                T.StructField("attribute", T.StringType(), True),
-                T.StructField("lower_outliers", T.StringType(), True),
-                T.StructField("upper_outliers", T.StringType(), True),
-            ]
-        )
-        odf_print = spark.sparkContext.emptyRDD().toDF(schema)
-        return odf, odf_print
+
+    if not treatment and not print_impact:
+        if (not pre_existing_model and model_path == "NA") | pre_existing_model:
+            warnings.warn(
+                "The original idf will be the only output. Set print_impact=True to perform detection without treatment"
+            )
+            return idf
     if list_of_cols == "all":
         list_of_cols = num_cols
     if isinstance(list_of_cols, str):
@@ -675,26 +700,24 @@ def outlier_detection(
     if isinstance(drop_cols, str):
         drop_cols = [x.strip() for x in drop_cols.split("|")]
 
-    if stats_unique == {}:
-        remove_cols = (
-            uniqueCount_computation(spark, idf, list_of_cols)
-            .where(F.col("unique_values") < 2)
-            .select("attribute")
-            .rdd.flatMap(lambda x: x)
-            .collect()
-        )
-    else:
-        remove_cols = (
-            read_dataset(spark, **stats_unique)
-            .where(F.col("unique_values") < 2)
-            .select("attribute")
-            .rdd.flatMap(lambda x: x)
-            .collect()
-        )
+    list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
 
-    list_of_cols = list(
-        set([e for e in list_of_cols if e not in (drop_cols + remove_cols)])
+    schema = T.StructType(
+        [
+            T.StructField("attribute", T.StringType(), True),
+            T.StructField("lower_outliers", T.StringType(), True),
+            T.StructField("upper_outliers", T.StringType(), True),
+        ]
     )
+    empty_odf_print = spark.sparkContext.emptyRDD().toDF(schema)
+
+    if not list_of_cols:
+        warnings.warn("No Outlier Check - No numerical column to analyze")
+        if print_impact:
+            empty_odf_print.show()
+            return idf, empty_odf_print
+        else:
+            return idf
 
     if any(x not in num_cols for x in list_of_cols):
         raise TypeError("Invalid input for Column(s)")
@@ -721,187 +744,305 @@ def outlier_detection(
             if (detection_configs[arg] < 0) | (detection_configs[arg] > 1):
                 raise TypeError("Invalid input for " + arg)
 
-    recast_cols = []
-    recast_type = []
-    for i in list_of_cols:
-        if get_dtype(idf, i).startswith("decimal"):
-            idf = idf.withColumn(i, F.col(i).cast(T.DoubleType()))
-            recast_cols.append(i)
-            recast_type.append(get_dtype(idf, i))
-
     if pre_existing_model:
         df_model = spark.read.parquet(model_path + "/outlier_numcols")
+        model_dict_list = (
+            df_model.where(F.col("attribute").isin(list_of_cols))
+            .rdd.map(lambda row: {row[0]: row[1]})
+            .collect()
+        )
+        model_dict = {}
+        for d in model_dict_list:
+            model_dict.update(d)
+
         params = []
+        present_cols, skewed_cols = [], []
         for i in list_of_cols:
-            mapped_value = (
-                df_model.where(F.col("attribute") == i)
-                .select("parameters")
-                .rdd.flatMap(lambda x: x)
-                .collect()[0]
-            )
-            params.append(mapped_value)
+            param = model_dict.get(i)
+            if param:
+                if "skewed_attribute" in param:
+                    skewed_cols.append(i)
+                else:
+                    param = [float(p) if p else p for p in param]
+                    params.append(param)
+                    present_cols.append(i)
 
-        pctile_params = idf.approxQuantile(
-            list_of_cols,
-            [
-                detection_configs.get("pctile_lower", 0.05),
-                detection_configs.get("pctile_upper", 0.95),
-            ],
-            0.01,
-        )
-        skewed_cols = []
-        for i, p in zip(list_of_cols, pctile_params):
-            if p[0] == p[1]:
-                skewed_cols.append(i)
+        diff_cols = list(set(list_of_cols) - set(present_cols) - set(skewed_cols))
+        if diff_cols:
+            warnings.warn("Columns not found in model_path: " + ",".join(diff_cols))
+        if skewed_cols:
+            warnings.warn(
+                "Columns excluded from outlier detection due to highly skewed distribution: "
+                + ",".join(skewed_cols)
+            )
+        list_of_cols = present_cols
+
+        if not list_of_cols:
+            warnings.warn("No Outlier Check - No numerical column to analyze")
+            if print_impact:
+                empty_odf_print.show()
+                return idf, empty_odf_print
+            else:
+                return idf
+
     else:
-        detection_configs["pctile_lower"] = detection_configs["pctile_lower"] or 0.0
-        detection_configs["pctile_upper"] = detection_configs["pctile_upper"] or 1.0
-        pctile_params = idf.approxQuantile(
-            list_of_cols,
-            [detection_configs["pctile_lower"], detection_configs["pctile_upper"]],
-            0.01,
-        )
+        check_dict = {
+            "pctile": {"lower": 0, "upper": 0},
+            "stdev": {"lower": 0, "upper": 0},
+            "IQR": {"lower": 0, "upper": 0},
+        }
+        side_mapping = {
+            "lower": ["lower"],
+            "upper": ["upper"],
+            "both": ["lower", "upper"],
+        }
+
+        for methodology in ["pctile", "stdev", "IQR"]:
+            for side in side_mapping[detection_side]:
+                if methodology + "_" + side in detection_configs:
+                    check_dict[methodology][side] = 1
+
+        methodologies = []
+        for key, val in list(check_dict.items()):
+            val_list = list(val.values())
+            if detection_side == "both":
+                if val_list in ([1, 0], [0, 1]):
+                    raise TypeError(
+                        "Invalid input for detection_configs. If detection_side is 'both', the methodologies used on both sides should be the same"
+                    )
+                if val_list[0]:
+                    methodologies.append(key)
+            else:
+                if val[detection_side]:
+                    methodologies.append(key)
+        num_methodologies = len(methodologies)
+
+        if "min_validation" in detection_configs:
+            if detection_configs["min_validation"] > num_methodologies:
+                raise TypeError(
+                    "Invalid input for min_validation of detection_configs. It cannot be larger than the total number of methodologies on any side that detection will be applied over."
+                )
+        else:
+            # if min_validation is not present, num of specified methodologies will be used
+            detection_configs["min_validation"] = num_methodologies
+
+        empty_params = [[None, None]] * len(list_of_cols)
+
+        idf_count = idf.count()
+        if idf_count > sample_size:
+            idf_sample = idf.sample(sample_size / idf_count, False, 11).select(
+                list_of_cols
+            )
+        else:
+            idf_sample = idf.select(list_of_cols)
+
+        for i in list_of_cols:
+            if get_dtype(idf_sample, i).startswith("decimal"):
+                idf_sample = idf_sample.withColumn(i, F.col(i).cast(T.DoubleType()))
+
+        pctiles = [
+            detection_configs.get("pctile_lower", 0.05),
+            detection_configs.get("pctile_upper", 0.95),
+        ]
+        pctile_params = idf_sample.approxQuantile(list_of_cols, pctiles, 0.01)
         skewed_cols = []
         for i, p in zip(list_of_cols, pctile_params):
             if p[0] == p[1]:
                 skewed_cols.append(i)
 
-        detection_configs["stdev_lower"] = (
-            detection_configs["stdev_lower"] or detection_configs["stdev_upper"]
-        )
-        detection_configs["stdev_upper"] = (
-            detection_configs["stdev_upper"] or detection_configs["stdev_lower"]
-        )
-        stdev_params = []
-        for i in list_of_cols:
-            mean, stdev = idf.select(F.mean(i), F.stddev(i)).first()
-            stdev_params.append(
-                [
-                    mean - detection_configs["stdev_lower"] * stdev,
-                    mean + detection_configs["stdev_upper"] * stdev,
-                ]
+        if skewed_cols:
+            warnings.warn(
+                "Columns excluded from outlier detection due to highly skewed distribution: "
+                + ",".join(skewed_cols)
             )
+            for i in skewed_cols:
+                idx = list_of_cols.index(i)
+                list_of_cols.pop(idx)
+                pctile_params.pop(idx)
 
-        detection_configs["IQR_lower"] = (
-            detection_configs["IQR_lower"] or detection_configs["IQR_upper"]
-        )
-        detection_configs["IQR_upper"] = (
-            detection_configs["IQR_upper"] or detection_configs["IQR_lower"]
-        )
-        quantiles = idf.approxQuantile(list_of_cols, [0.25, 0.75], 0.01)
-        IQR_params = [
-            [
-                e[0] - detection_configs["IQR_lower"] * (e[1] - e[0]),
-                e[1] + detection_configs["IQR_upper"] * (e[1] - e[0]),
+        if "pctile" not in methodologies:
+            pctile_params = copy.deepcopy(empty_params)
+
+        if "stdev" in methodologies:
+            exprs = [f(F.col(c)) for f in [F.mean, F.stddev] for c in list_of_cols]
+            stats = idf_sample.select(exprs).rdd.flatMap(lambda x: x).collect()
+
+            mean, stdev = stats[: len(list_of_cols)], stats[len(list_of_cols) :]
+            stdev_lower = pd.Series(mean) - detection_configs.get(
+                "stdev_lower", 0.0
+            ) * pd.Series(stdev)
+            stdev_upper = pd.Series(mean) + detection_configs.get(
+                "stdev_upper", 0.0
+            ) * pd.Series(stdev)
+            stdev_params = list(zip(stdev_lower, stdev_upper))
+        else:
+            stdev_params = copy.deepcopy(empty_params)
+
+        if "IQR" in methodologies:
+            quantiles = idf_sample.approxQuantile(list_of_cols, [0.25, 0.75], 0.01)
+            IQR_params = [
+                [
+                    e[0] - detection_configs.get("IQR_lower", 0.0) * (e[1] - e[0]),
+                    e[1] + detection_configs.get("IQR_upper", 0.0) * (e[1] - e[0]),
+                ]
+                for e in quantiles
             ]
-            for e in quantiles
-        ]
+        else:
+            IQR_params = copy.deepcopy(empty_params)
+
         n = detection_configs["min_validation"]
-        params = [
-            [
-                sorted([x[0], y[0], z[0]], reverse=True)[n - 1],
-                sorted([x[1], y[1], z[1]])[n - 1],
-            ]
-            for x, y, z in list(zip(pctile_params, stdev_params, IQR_params))
-        ]
+        params = []
+        for x, y, z in list(zip(pctile_params, stdev_params, IQR_params)):
+            lower = sorted(
+                [i for i in [x[0], y[0], z[0]] if i is not None], reverse=True
+            )[n - 1]
+            upper = sorted([i for i in [x[1], y[1], z[1]] if i is not None])[n - 1]
+            if detection_side == "lower":
+                param = [lower, None]
+            elif detection_side == "upper":
+                param = [None, upper]
+            else:
+                param = [lower, upper]
+            params.append(param)
 
         # Saving model File if required
         if model_path != "NA":
+            if detection_side == "lower":
+                skewed_param = ["skewed_attribute", None]
+            elif detection_side == "upper":
+                skewed_param = [None, "skewed_attribute"]
+            else:
+                skewed_param = ["skewed_attribute", "skewed_attribute"]
+
+            schema = T.StructType(
+                [
+                    T.StructField("attribute", T.StringType(), True),
+                    T.StructField("parameters", T.ArrayType(T.StringType()), True),
+                ]
+            )
             df_model = spark.createDataFrame(
-                zip(list_of_cols, params), schema=["attribute", "parameters"]
+                zip(
+                    list_of_cols + skewed_cols,
+                    params + [skewed_param] * len(skewed_cols),
+                ),
+                schema=schema,
             )
             df_model.coalesce(1).write.parquet(
                 model_path + "/outlier_numcols", mode="overwrite"
             )
 
-    for i, j in zip(recast_cols, recast_type):
-        idf = idf.withColumn(i, F.col(i).cast(j))
+            if not treatment and not print_impact:
+                return idf
 
-    def composite_outlier(*v):
-        output = []
-        for idx, e in enumerate(v):
-            if e is None:
-                output.append(None)
-                continue
-            if detection_side in ("upper", "both"):
-                if e > params[idx][1]:
-                    output.append(1)
-                    continue
+    def composite_outlier_pandas(col_param):
+        def inner(v):
+            v = v.astype(float, errors="raise")
             if detection_side in ("lower", "both"):
-                if e < params[idx][0]:
-                    output.append(-1)
-                    continue
-            output.append(0)
-        return output
+                lower_v = ((v - col_param[0]) < 0).replace(True, -1).replace(False, 0)
+            if detection_side in ("upper", "both"):
+                upper_v = ((v - col_param[1]) > 0).replace(True, 1).replace(False, 0)
 
-    f_composite_outlier = F.udf(composite_outlier, T.ArrayType(T.IntegerType()))
+            if detection_side == "upper":
+                return upper_v
+            elif detection_side == "lower":
+                return lower_v
+            else:
+                return lower_v + upper_v
 
-    odf = idf.withColumn("outliered", f_composite_outlier(*list_of_cols))
-    odf.persist()
-    output_print = []
+        return inner
+
+    odf = idf
+
+    list_odf = []
     for index, i in enumerate(list_of_cols):
-        odf = odf.withColumn(i + "_outliered", F.col("outliered")[index])
-        output_print.append(
-            [
-                i,
-                odf.where(F.col(i + "_outliered") == -1).count(),
-                odf.where(F.col(i + "_outliered") == 1).count(),
-            ]
+        f_composite_outlier = F.pandas_udf(
+            composite_outlier_pandas(params[index]), returnType=T.IntegerType()
         )
+        odf = odf.withColumn(i + "_outliered", f_composite_outlier(i))
+
+        if print_impact:
+            odf_agg_col = (
+                odf.select(i + "_outliered").groupby().pivot(i + "_outliered").count()
+            )
+            odf_print_col = (
+                odf_agg_col.withColumn(
+                    "lower_outliers",
+                    F.col("-1") if "-1" in odf_agg_col.columns else F.lit(0),
+                )
+                .withColumn(
+                    "upper_outliers",
+                    F.col("1") if "1" in odf_agg_col.columns else F.lit(0),
+                )
+                .withColumn("excluded_due_to_skewness", F.lit(0))
+                .withColumn("attribute", F.lit(str(i)))
+                .select(
+                    "attribute",
+                    "lower_outliers",
+                    "upper_outliers",
+                    "excluded_due_to_skewness",
+                )
+                .fillna(0)
+            )
+            list_odf.append(odf_print_col)
 
         if treatment & (treatment_method in ("value_replacement", "null_replacement")):
-            if skewed_cols:
-                warnings.warn(
-                    "Columns dropped from outlier treatment due to highly skewed distribution: "
-                    + (",").join(skewed_cols)
-                )
-            if i not in skewed_cols:
-                replace_vals = {
-                    "value_replacement": [params[index][0], params[index][1]],
-                    "null_replacement": [None, None],
-                }
-                odf = odf.withColumn(
-                    i + "_outliered",
+            replace_vals = {
+                "value_replacement": [params[index][0], params[index][1]],
+                "null_replacement": [None, None],
+            }
+            odf = odf.withColumn(
+                i + "_outliered",
+                F.when(
+                    F.col(i + "_outliered") == 1, replace_vals[treatment_method][1]
+                ).otherwise(
                     F.when(
-                        F.col(i + "_outliered") == 1, replace_vals[treatment_method][1]
-                    ).otherwise(
-                        F.when(
-                            F.col(i + "_outliered") == -1,
-                            replace_vals[treatment_method][0],
-                        ).otherwise(F.col(i))
-                    ),
-                )
-                if output_mode == "replace":
-                    odf = odf.drop(i).withColumnRenamed(i + "_outliered", i)
-            else:
-                odf = odf.drop(i + "_outliered")
+                        F.col(i + "_outliered") == -1,
+                        replace_vals[treatment_method][0],
+                    ).otherwise(F.col(i))
+                ),
+            )
+            if output_mode == "replace":
+                odf = odf.drop(i).withColumnRenamed(i + "_outliered", i)
 
-    odf = odf.drop("outliered")
+    if print_impact:
+
+        def unionAll(dfs):
+            first, *_ = dfs
+            return first.sql_ctx.createDataFrame(
+                first.sql_ctx._sc.union([df.rdd for df in dfs]), first.schema
+            )
+
+        odf_print = unionAll(list_odf)
+
+        if skewed_cols:
+            skewed_cols_print = [(i, 0, 0, 1) for i in skewed_cols]
+            skewed_cols_odf_print = spark.createDataFrame(
+                skewed_cols_print, schema=odf_print.columns
+            )
+            odf_print = unionAll([odf_print, skewed_cols_odf_print])
+
+        odf_print.show(len(list_of_cols) + len(skewed_cols), False)
 
     if treatment & (treatment_method == "row_removal"):
-        if skewed_cols:
-            warnings.warn(
-                "Columns dropped from outlier treatment due to highly skewed distribution: "
-                + (",").join(skewed_cols)
-            )
-        for index, i in enumerate(list_of_cols):
-            if i not in skewed_cols:
-                odf = odf.where(
-                    (F.col(i + "_outliered") == 0) | (F.col(i + "_outliered").isNull())
-                ).drop(i + "_outliered")
-            else:
-                odf = odf.drop(i + "_outliered")
+        conditions = [
+            (F.col(i + "_outliered") == 0) | (F.col(i + "_outliered").isNull())
+            for i in list_of_cols
+        ]
+        conditions_combined = functools.reduce(lambda a, b: a & b, conditions)
+        odf = odf.where(conditions_combined).drop(
+            *[i + "_outliered" for i in list_of_cols]
+        )
 
-    if not treatment:
+    if treatment:
+        if output_mode == "replace":
+            odf = odf.select(column_order)
+    else:
         odf = idf
 
-    odf_print = spark.createDataFrame(
-        output_print, schema=["attribute", "lower_outliers", "upper_outliers"]
-    )
     if print_impact:
-        odf_print.show(len(list_of_cols))
-
-    return odf, odf_print
+        return odf, odf_print
+    else:
+        return odf
 
 
 def IDness_detection(

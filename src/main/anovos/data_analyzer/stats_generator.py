@@ -25,6 +25,7 @@ from pyspark.mllib.linalg import Vectors
 from pyspark.mllib.stat import Statistics
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
+import pyspark
 
 from anovos.shared.utils import attributeType_segregation, transpose_dataframe
 
@@ -366,9 +367,6 @@ def mode_computation(spark, idf, list_of_cols="all", drop_cols=[], print_impact=
         drop_cols = [x.strip() for x in drop_cols.split("|")]
 
     list_of_cols = list(set([e for e in list_of_cols if e not in drop_cols]))
-    for i in idf.select(list_of_cols).dtypes:
-        if i[1] not in ("string", "int", "bigint", "long"):
-            list_of_cols.remove(i[0])
 
     if any(x not in idf.columns for x in list_of_cols):
         raise TypeError("Invalid input for Column(s)")
@@ -385,30 +383,41 @@ def mode_computation(spark, idf, list_of_cols="all", drop_cols=[], print_impact=
         odf = spark.sparkContext.emptyRDD().toDF(schema)
         return odf
 
-    mode = [
-        list(
-            idf.select(i)
+    list_df = []
+    for col in list_of_cols:
+        out_df = (
+            idf.select(col)
             .dropna()
-            .groupby(i)
+            .groupby(col)
             .count()
             .orderBy("count", ascending=False)
-            .first()
-            or [None, None]
+            .limit(1)
+            .select(
+                F.lit(col).alias("attribute"),
+                F.col(col).alias("mode"),
+                F.col("count").alias("mode_rows"),
+            )
         )
-        for i in list_of_cols
-    ]
-    mode = [(str(i), str(j)) for i, j in mode]
+        list_df.append(out_df)
 
-    odf = spark.createDataFrame(
-        zip(list_of_cols, mode), schema=("attribute", "metric")
-    ).select(
-        "attribute",
-        (F.col("metric")["_1"]).alias("mode"),
-        (F.col("metric")["_2"]).cast("long").alias("mode_rows"),
-    )
+    def unionAll(dfs):
+        first, *_ = dfs
+        schema = T.StructType(
+            [
+                T.StructField("attribute", T.StringType(), True),
+                T.StructField("mode", T.StringType(), True),
+                T.StructField("mode_rows", T.LongType(), True),
+            ]
+        )
+        return first.sql_ctx.createDataFrame(
+            first.sql_ctx._sc.union([df.rdd for df in dfs]), schema
+        )
+
+    odf = unionAll(list_df)
 
     if print_impact:
         odf.show(len(list_of_cols))
+
     return odf
 
 
@@ -471,11 +480,24 @@ def measures_of_centralTendency(
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError("Invalid input for Column(s)")
 
-    odf = (
-        transpose_dataframe(
-            idf.select(list_of_cols).summary("mean", "50%", "count"), "summary"
+    df_mode_compute = mode_computation(spark, idf, list_of_cols)
+    summary_lst = []
+    for col in list_of_cols:
+        summary_col = (
+            idf.select(col)
+            .summary("mean", "50%", "count")
+            .rdd.map(lambda x: x[1])
+            .collect()
         )
-        .withColumn(
+        summary_col = [str(i) for i in summary_col if type(i) != "str"]
+        summary_col.insert(0, col)
+        summary_lst.append(summary_col)
+    summary_df = spark.createDataFrame(
+        summary_lst,
+        schema=("key", "mean", "50%", "count"),
+    )
+    odf = (
+        summary_df.withColumn(
             "mean",
             F.when(
                 F.col("key").isin(num_cols),
@@ -490,7 +512,7 @@ def measures_of_centralTendency(
             ).otherwise(None),
         )
         .withColumnRenamed("key", "attribute")
-        .join(mode_computation(spark, idf, list_of_cols), "attribute", "full_outer")
+        .join(df_mode_compute, "attribute", "full_outer")
         .withColumn(
             "mode_pct",
             F.round(F.col("mode_rows") / F.col("count").cast(T.DoubleType()), 4),
@@ -500,11 +522,18 @@ def measures_of_centralTendency(
 
     if print_impact:
         odf.show(len(list_of_cols))
+
     return odf
 
 
 def uniqueCount_computation(
-    spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
+    spark,
+    idf,
+    list_of_cols="all",
+    drop_cols=[],
+    compute_approx_unique_count=False,
+    rsd=0.05,
+    print_impact=False,
 ):
     """
 
@@ -527,6 +556,15 @@ def uniqueCount_computation(
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
         It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
         a few handful of them. (Default value = [])
+    compute_approx_unique_count
+        boolean, optional
+        This flag tells the function whether to compute approximate unique count or exact unique count
+        (Default value = False)
+    rsd
+        float, optional
+        This is used when compute_approx_unique_count is True.
+        This is the maximum relative standard deviation allowed (default = 0.05).
+        For rsd < 0.01, it is more efficient to use :func:`countDistinct`
     print_impact
         True, False
         This argument is to print out the statistics.(Default value = False)
@@ -563,9 +601,15 @@ def uniqueCount_computation(
         odf = spark.sparkContext.emptyRDD().toDF(schema)
         return odf
 
-    uniquevalue_count = idf.agg(
-        *(F.countDistinct(F.col(i)).alias(i) for i in list_of_cols)
-    )
+    if compute_approx_unique_count:
+        uniquevalue_count = idf.agg(
+            *(F.approx_count_distinct(F.col(i), rsd).alias(i) for i in list_of_cols)
+        )
+    else:
+        uniquevalue_count = idf.agg(
+            *(F.countDistinct(F.col(i)).alias(i) for i in list_of_cols)
+        )
+
     odf = spark.createDataFrame(
         zip(list_of_cols, uniquevalue_count.rdd.map(list).collect()[0]),
         schema=("attribute", "unique_values"),
@@ -576,7 +620,13 @@ def uniqueCount_computation(
 
 
 def measures_of_cardinality(
-    spark, idf, list_of_cols="all", drop_cols=[], print_impact=False
+    spark,
+    idf,
+    list_of_cols="all",
+    drop_cols=[],
+    use_approx_unique_count=True,
+    rsd=0.05,
+    print_impact=False,
 ):
     """
     The Measures of Cardinality function provides statistics that are related to unique values seen in an
@@ -584,7 +634,7 @@ def measures_of_cardinality(
     returns a Spark Dataframe with schema – attribute, unique_values, IDness.
 
     - Unique Value is defined as a distinct value count of a column. It relies on a supporting function uniqueCount_computation
-      for its computation and leverages the countDistinct functionality of Spark SQL.
+      for its computation and leverages the countDistinct/approx_count_distinct functionality of Spark SQL.
     - IDness is calculated as Unique Values divided by non-null values seen in a column. Non-null values count is used instead
       of total count because too many null values can give misleading results even if the column have all unique values
       (except null). It uses supporting functions - uniqueCount_computation and missingCount_computation.
@@ -608,6 +658,15 @@ def measures_of_cardinality(
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
         It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
         a few handful of them. (Default value = [])
+    use_approx_unique_count
+        boolean, optional
+        This flag tells the function whether to use approximate unique count to compute the IDness or use exact unique count
+        (Default value = True)
+    rsd
+        float, optional
+        This is used when use_approx_unique_count is True.
+        This is the maximum relative standard deviation allowed (default = 0.05).
+        For rsd < 0.01, it is more efficient to set use_approx_unique_count as False
     print_impact
         True, False
         This argument is to print out the statistics.(Default value = False)
@@ -646,7 +705,13 @@ def measures_of_cardinality(
         return odf
 
     odf = (
-        uniqueCount_computation(spark, idf, list_of_cols)
+        uniqueCount_computation(
+            spark,
+            idf,
+            list_of_cols,
+            compute_approx_unique_count=use_approx_unique_count,
+            rsd=rsd,
+        )
         .join(
             missingCount_computation(spark, idf, list_of_cols),
             "attribute",
@@ -923,10 +988,17 @@ def measures_of_shape(spark, idf, list_of_cols="all", drop_cols=[], print_impact
         odf = spark.sparkContext.emptyRDD().toDF(schema)
         return odf
 
+    exprs = [f(F.col(c)) for f in [F.skewness, F.kurtosis] for c in list_of_cols]
+    list_result = idf.groupby().agg(*exprs).rdd.flatMap(lambda x: x).collect()
     shapes = []
-    for i in list_of_cols:
-        s, k = idf.select(F.skewness(i), F.kurtosis(i)).first()
-        shapes.append([i, s, k])
+    for i in range(int(len(list_result) / 2)):
+        shapes.append(
+            [
+                list_of_cols[i],
+                list_result[i],
+                list_result[i + int(len(list_result) / 2)],
+            ]
+        )
     odf = (
         spark.createDataFrame(shapes, schema=("attribute", "skewness", "kurtosis"))
         .withColumn("skewness", F.round(F.col("skewness"), 4))

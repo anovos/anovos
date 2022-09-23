@@ -4,7 +4,7 @@
 
 # Anovos
 
-[![Release Latest](https://img.shields.io/badge/release-%20v0.3.0-yellowgreen?style=plastic)](https://github.com/anovos/anovos/releases/)
+[![Release Latest](https://img.shields.io/badge/release-%20v1.0.1-green?style=plastic)](https://github.com/anovos/anovos/releases/)
 [![Docs Latest](https://img.shields.io/badge/docs-latest-blue.svg?style=plastic)](https://docs.anovos.ai/)
 [![License](https://img.shields.io/badge/License-Apache_2.0-red.svg?style=plastic)](https://opensource.org/licenses/Apache-2.0)
 [![twitter](https://img.shields.io/badge/Follow--lightgrey?logo=twitter&style=social)](https://twitter.com/ml_anovos)
@@ -30,7 +30,7 @@ on your local machine.
 
 ```bash
 # Launch an anovos-examples Docker container
-sudo docker run -p 8888:8888 anovos/anovos-examples-3.2.1:latest
+sudo docker run -p 8888:8888 anovos/anovos-examples-3.2.2:latest
 ```
 
 To reach the Jupyter environment, open the link to `http://127.0.0.1:8888/?token...`
@@ -54,7 +54,7 @@ Currently, we officially support the following combinations:
 
 - Apache Spark 2.4.x on Java 8 with Python 3.7.x
 - Apache Spark 3.1.x on Java 11 with Python 3.9.x
-- Apache Spark 3.2.x on Java 11 with Python 3.9.x
+- Apache Spark 3.2.x on Java 11 with Python 3.10.x
 
 To see what we're currently testing, see
 [this configuration](https://github.com/anovos/anovos/blob/main/.github/workflows/full-demo.yml#L21).

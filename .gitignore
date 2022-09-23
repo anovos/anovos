@@ -40,3 +40,8 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+
+# Anovos-specific files and folders
+report_stats/
+output/
+*.tmp

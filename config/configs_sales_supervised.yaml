@@ -90,6 +90,13 @@ quality_checker:
       model_path: NA
       output_mode: replace
 
+cat_to_num_transformer:
+  list_of_cols: all
+  drop_cols: 'Item_Identifier'
+  method_type: supervised
+  encoding:
+  label_col: sales
+  event_label: '>2k'
 
 association_evaluator:
 
