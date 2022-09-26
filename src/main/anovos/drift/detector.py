@@ -33,9 +33,9 @@ def statistics(
     bin_size: int = 10,
     threshold: float = 0.1,
     pre_existing_source: bool = False,
+    source_save: bool = False,
     source_path: str = "NA",
     model_directory: str = "drift_statistics",
-    run_type: str = "local",
     print_impact: bool = False,
 ):
     """
@@ -120,6 +120,9 @@ def statistics(
     pre_existing_source
         Boolean argument – True or False. True if the drift_statistics folder (binning model &
         frequency counts for each attribute) exists already, False Otherwise. (Default value = False)
+    source_save
+        Boolean argument - True or False. Will determine whether or not to save the source to source_path.
+        (Default value = False)
     source_path
         If pre_existing_source is False, this argument can be used for saving the drift_statistics folder.
         The drift_statistics folder will have attribute_binning (binning model) & frequency_counts sub-folders.
@@ -130,8 +133,6 @@ def statistics(
         The default drift statics directory is drift_statistics folder will have attribute_binning
         If pre_existing_source is True, this argument is model_directory for referring the drift statistics dir.
         Default "drift_statistics" for temporarily saving source dataset attribute_binning folder. (Default value = "drift_statistics")
-    run_type
-        "local", "emr", "databricks" (Default value = "local")
     print_impact
         True, False. (Default value = False)
         This argument is to print out the drift statistics of all attributes and attributes meeting the threshold.
@@ -159,7 +160,7 @@ def statistics(
             pre_existing_model=False,
             model_path=source_path + "/" + model_directory,
         )
-        source_bin.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
+        source_bin = source_bin.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
 
     target_bin = attribute_binning(
         spark,
@@ -171,72 +172,131 @@ def statistics(
         model_path=source_path + "/" + model_directory,
     )
 
-    target_bin.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
+    target_bin = target_bin.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
     result = {"attribute": [], "flagged": []}
 
     for method in method_type:
         result[method] = []
 
-    for i in list_of_cols:
-        if pre_existing_source:
-            x = spark.read.csv(
-                source_path + "/" + model_directory + "/frequency_counts/" + i,
-                header=True,
-                inferSchema=True,
-            )
-        else:
-            x = (
-                source_bin.groupBy(i)
-                .agg((F.count(i) / idf_source.count()).alias("p"))
+    if method_type != ["PSI"]:
+        for i in list_of_cols:
+            if pre_existing_source:
+                x = spark.read.csv(
+                    source_path + "/" + model_directory + "/frequency_counts/" + i,
+                    header=True,
+                    inferSchema=True,
+                )
+            else:
+                x = (
+                    source_bin.groupBy(i)
+                    .agg((F.count(i) / idf_source.count()).alias("p"))
+                    .fillna(-1)
+                )
+                if source_save:
+                    x.coalesce(1).write.csv(
+                        source_path + "/" + model_directory + "/frequency_counts/" + i,
+                        header=True,
+                        mode="overwrite",
+                    )
+
+            y = (
+                target_bin.groupBy(i)
+                .agg((F.count(i) / idf_target.count()).alias("q"))
                 .fillna(-1)
             )
-            x.coalesce(1).write.csv(
-                source_path + "/" + model_directory + "/frequency_counts/" + i,
-                header=True,
-                mode="overwrite",
+
+            xy = (
+                x.join(y, i, "full_outer")
+                .fillna(0.0001, subset=["p", "q"])
+                .replace(0, 0.0001)
+                .orderBy(i)
             )
 
-        y = (
-            target_bin.groupBy(i)
-            .agg((F.count(i) / idf_target.count()).alias("q"))
-            .fillna(-1)
+            p = np.array(xy.select("p").rdd.flatMap(lambda x: x).collect())
+            q = np.array(xy.select("q").rdd.flatMap(lambda x: x).collect())
+
+            result["attribute"].append(i)
+            counter = 0
+
+            for idx, method in enumerate(method_type):
+                drift_function = {
+                    "PSI": psi,
+                    "JSD": js_divergence,
+                    "HD": hellinger,
+                    "KS": ks,
+                }
+                metric = float(round(drift_function[method](p, q), 4))
+                result[method].append(metric)
+                if counter == 0:
+                    if metric > threshold:
+                        result["flagged"].append(1)
+                        counter = 1
+                if (idx == (len(method_type) - 1)) & (counter == 0):
+                    result["flagged"].append(0)
+
+        odf = (
+            spark.createDataFrame(
+                pd.DataFrame.from_dict(result, orient="index").transpose()
+            )
+            .select(["attribute"] + method_type + ["flagged"])
+            .orderBy(F.desc("flagged"))
         )
 
-        xy = (
-            x.join(y, i, "full_outer")
-            .fillna(0.0001, subset=["p", "q"])
-            .replace(0, 0.0001)
-            .orderBy(i)
+    else:
+        temp_list = []
+        for i in list_of_cols:
+            if pre_existing_source:
+                x = spark.read.csv(
+                    source_path + "/" + model_directory + "/frequency_counts/" + i,
+                    header=True,
+                    inferSchema=True,
+                )
+            else:
+                x = (
+                    source_bin.groupBy(i)
+                    .agg((F.count(i) / idf_source.count()).alias("p"))
+                    .fillna(-1)
+                )
+                if source_save:
+                    x.coalesce(1).write.csv(
+                        source_path + "/" + model_directory + "/frequency_counts/" + i,
+                        header=True,
+                        mode="overwrite",
+                    )
+
+            y = (
+                target_bin.groupBy(i)
+                .agg((F.count(i) / idf_target.count()).alias("q"))
+                .fillna(-1)
+            )
+
+            xy = (
+                x.join(y, i, "full_outer")
+                .fillna(0.0001, subset=["p", "q"])
+                .replace(0, 0.0001)
+                .orderBy(i)
+            )
+
+            xy_temp = (
+                xy.withColumn(
+                    "deduct_ln_mul",
+                    ((F.col("p") - F.col("q")) * (F.log(F.col("p") / F.col("q")))),
+                )
+                .select(F.sum(F.col("deduct_ln_mul")).alias("PSI"))
+                .withColumn("attribute", F.lit(str(i)))
+                .select("attribute", "PSI")
+            )
+            temp_list.append(xy_temp)
+
+        def unionAll(dfs):
+            first, *_ = dfs
+            return first.sql_ctx.createDataFrame(
+                first.sql_ctx._sc.union([df.rdd for df in dfs]), first.schema
+            )
+
+        odf = unionAll(temp_list).withColumn(
+            "flagged", F.when(F.col("PSI") > threshold, 1).otherwise(0)
         )
-        p = np.array(xy.select("p").rdd.flatMap(lambda x: x).collect())
-        q = np.array(xy.select("q").rdd.flatMap(lambda x: x).collect())
-
-        result["attribute"].append(i)
-        counter = 0
-
-        for idx, method in enumerate(method_type):
-            drift_function = {
-                "PSI": psi,
-                "JSD": js_divergence,
-                "HD": hellinger,
-                "KS": ks,
-            }
-            metric = float(round(drift_function[method](p, q), 4))
-            result[method].append(metric)
-            if counter == 0:
-                if metric > threshold:
-                    result["flagged"].append(1)
-                    counter = 1
-            if (idx == (len(method_type) - 1)) & (counter == 0):
-                result["flagged"].append(0)
-
-    odf = (
-        spark.createDataFrame(
-            pd.DataFrame.from_dict(result, orient="index").transpose()
-        )
-        .select(["attribute"] + method_type + ["flagged"])
-        .orderBy(F.desc("flagged"))
-    )
 
     if print_impact:
         logger.info("All Attributes:")
@@ -245,6 +305,8 @@ def statistics(
         drift = odf.where(F.col("flagged") == 1)
         drift.show(drift.count())
 
+    source_bin.unpersist()
+    target_bin.unpersist()
     return odf
 
 
