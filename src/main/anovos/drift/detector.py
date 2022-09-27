@@ -170,6 +170,8 @@ def statistics(
     num_cols = attributeType_segregation(idf_target.select(list_of_cols))[0]
 
     if sample_use:
+        count_target = idf_target.count()
+        count_source = idf_source.count()
         if count_target > sample_size or count_source > sample_size:
             idf_target = idf_target.sample(
                 sample_size / max(count_target, count_source), sample_seed
