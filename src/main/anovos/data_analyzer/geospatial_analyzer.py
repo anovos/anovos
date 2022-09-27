@@ -215,27 +215,27 @@ def descriptive_stats_gen(
             .limit(max_val)
         )
 
-        top_lat = (
-            df.groupBy(lat_col)
-            .agg(
-                F.countDistinct(id_col).alias("count_id"),
-                F.count(id_col).alias("count_records"),
-            )
-            .orderBy("count_id", ascending=False)
-            .limit(max_val)
-            .toPandas()
-        )
-
-        top_long = (
-            df.groupBy(long_col)
-            .agg(
-                F.countDistinct(id_col).alias("count_id"),
-                F.count(id_col).alias("count_records"),
-            )
-            .orderBy("count_id", ascending=False)
-            .limit(max_val)
-            .toPandas()
-        )
+        # top_lat = (
+        #     df.groupBy(lat_col)
+        #     .agg(
+        #         F.countDistinct(id_col).alias("count_id"),
+        #         F.count(id_col).alias("count_records"),
+        #     )
+        #     .orderBy("count_id", ascending=False)
+        #     .limit(max_val)
+        #     .toPandas()
+        # )
+        #
+        # top_long = (
+        #     df.groupBy(long_col)
+        #     .agg(
+        #         F.countDistinct(id_col).alias("count_id"),
+        #         F.count(id_col).alias("count_records"),
+        #     )
+        #     .orderBy("count_id", ascending=False)
+        #     .limit(max_val)
+        #     .toPandas()
+        # )
 
         most_lat_long = top_lat_long.rdd.flatMap(lambda x: x).collect()[0]
         most_lat_long_cnt = top_lat_long.rdd.flatMap(lambda x: x).collect()[1]
@@ -377,8 +377,6 @@ def lat_long_col_stats_gen(df, lat_col, long_col, id_col, master_path, max_val):
 
     """
 
-    ll = []
-
     if len(lat_col) == 1 & len(long_col) == 1:
         descriptive_stats_gen(
             df, lat_col[0], long_col[0], None, id_col, master_path, max_val
@@ -417,8 +415,6 @@ def geohash_col_stats_gen(df, geohash_col, id_col, master_path, max_val):
     -------
 
     """
-
-    ll = []
 
     if len(geohash_col) == 1:
         descriptive_stats_gen(
@@ -1021,7 +1017,7 @@ def generate_loc_charts_processor(
             )
 
         elif len(lat_col) > 1:
-            l = []
+            # l = []
             for i in range(0, len(lat_col)):
                 df_ = (
                     df.groupBy(lat_col[i], long_col[i])
@@ -1088,7 +1084,7 @@ def generate_loc_charts_processor(
 
         elif len(geohash_col) > 1:
 
-            l = []
+            # l = []
             for i in range(0, len(geohash_col)):
                 col_ = geohash_col[i]
                 df_ = (
@@ -1285,8 +1281,6 @@ def geospatial_autodetection(
         len_geohash_col = 0
 
     if (len_lat_col > 0) or (len_geohash_col > 0):
-
-        all_cols = lat_cols + long_cols + gh_cols
 
         df.persist()
 
