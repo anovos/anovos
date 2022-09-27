@@ -32,6 +32,11 @@ def statistics(
     bin_method: str = "equal_range",
     bin_size: int = 10,
     threshold: float = 0.1,
+    sample_use: bool = True,
+    sample_size: int = 100000,
+    sample_seed: int = 42,
+    persist_use: bool = True,
+    persist_type=pyspark.StorageLevel.MEMORY_AND_DISK,
     pre_existing_source: bool = False,
     source_save: bool = False,
     source_path: str = "NA",
@@ -117,6 +122,23 @@ def statistics(
         Number of bins for creating histogram. (Default value = 10)
     threshold
         A column is flagged if any drift metric is above the threshold. (Default value = 0.1)
+    sample_use
+        Boolean argument - True or False. This argument is used to determine whether to use random sample method on
+        source and target dataset, True will enable the use of sample method, otherwise False.
+        It is recommended to set this as True for large datasets. (Default value = True)
+    sample_size
+        If sample_use is True, this argument is used to determine the sample size of sampling method.
+        (Default value = 100000)
+    sample_seed
+        If sample_use is True, this argument is used to determine the seed of sampling method.
+        (Default value = 42)
+    persist_use
+        Boolean argument - True or False. This argument is used to determine whether to persist on
+        binning result of source and target dataset, True will enable the use of persist, otherwise False.
+        It is recommended to set this as True for large datasets. (Default value = True)
+    persist_type
+        If persist_use is True, this argument is used to determine the type of persist.
+        (Default value = pyspark.StorageLevel.MEMORY_AND_DISK)
     pre_existing_source
         Boolean argument – True or False. True if the drift_statistics folder (binning model &
         frequency counts for each attribute) exists already, False Otherwise. (Default value = False)
@@ -147,6 +169,15 @@ def statistics(
     drop_cols = drop_cols or []
     num_cols = attributeType_segregation(idf_target.select(list_of_cols))[0]
 
+    if sample_use:
+        if count_target > sample_size or count_source > sample_size:
+            idf_target = idf_target.sample(
+                sample_size / max(count_target, count_source), sample_seed
+            )
+            idf_source = idf_source.sample(
+                sample_size / max(count_target, count_source), sample_seed
+            )
+
     if source_path == "NA":
         source_path = "intermediate_data"
 
@@ -160,7 +191,8 @@ def statistics(
             pre_existing_model=False,
             model_path=source_path + "/" + model_directory,
         )
-        source_bin = source_bin.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
+        if persist_use:
+            source_bin = source_bin.persist(persist_type)
 
     target_bin = attribute_binning(
         spark,
@@ -172,7 +204,8 @@ def statistics(
         model_path=source_path + "/" + model_directory,
     )
 
-    target_bin = target_bin.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
+    if persist_use:
+        target_bin = target_bin.persist(persist_type)
     result = {"attribute": [], "flagged": []}
 
     for method in method_type:
@@ -305,8 +338,9 @@ def statistics(
         drift = odf.where(F.col("flagged") == 1)
         drift.show(drift.count())
 
-    source_bin.unpersist()
-    target_bin.unpersist()
+    if persist_use:
+        source_bin.unpersist()
+        target_bin.unpersist()
     return odf
 
 
