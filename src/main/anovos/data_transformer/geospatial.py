@@ -635,7 +635,7 @@ def geohash_precision_control(
     output_precision
         Precision of the transformed geohash in the output dataframe. (Default value = 8)
     km_max_error
-        Maximum permissible error in kilometers. If km_max_error is sprcified, output_precision
+        Maximum permissible error in kilometers. If km_max_error is specified, output_precision
         will be ignored and km_max_error will be mapped to an output_precision according to the
         following dictionary: {2500: 1, 630: 2, 78: 3, 20: 4, 2.4: 5, 0.61: 6, 0.076: 7,
         0.019: 8, 0.0024: 9, 0.00060: 10, 0.000074: 11}. (Default value = None)
