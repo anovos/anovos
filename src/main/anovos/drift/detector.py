@@ -182,6 +182,8 @@ def statistics(
             idf_source = idf_source.sample(
                 sample_size / max(count_target, count_source), sample_seed
             )
+            count_target = idf_target.count()
+            count_source = idf_source.count()
 
     if source_path == "NA":
         source_path = "intermediate_data"
@@ -227,7 +229,7 @@ def statistics(
             else:
                 x = (
                     source_bin.groupBy(i)
-                    .agg((F.count(i) / idf_source.count()).alias("p"))
+                    .agg((F.count(i) / count_source).alias("p"))
                     .fillna(-1)
                 )
                 if source_save:
@@ -239,7 +241,7 @@ def statistics(
 
             y = (
                 target_bin.groupBy(i)
-                .agg((F.count(i) / idf_target.count()).alias("q"))
+                .agg((F.count(i) / count_target).alias("q"))
                 .fillna(-1)
             )
 
