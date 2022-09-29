@@ -168,6 +168,7 @@ def anovos_basic_report(
 
     def output_to_local(output_path):
         punctuations = ":"
+        local_path = output_path
         for x in output_path:
             if x in punctuations:
                 local_path = output_path.replace(x, "")

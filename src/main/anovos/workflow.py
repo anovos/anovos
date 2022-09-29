@@ -525,6 +525,7 @@ def main(all_configs, run_type, auth_key_val={}):
                                     reread=True,
                                     run_type=run_type,
                                     auth_key=auth_key,
+                                    mlflow_config=mlflow_config,
                                 ).show(100)
                                 appended_metric_path = value["configs"].get(
                                     "appended_metric_path", ""
@@ -636,7 +637,6 @@ def main(all_configs, run_type, auth_key_val={}):
                                 master_path=report_input_path,
                                 run_type=run_type,
                                 auth_key=auth_key,
-                                mlflow_config=mlflow_config,
                             )
                             end = timeit.default_timer()
                             logger.info(
