@@ -50,17 +50,6 @@ transformers:
       coverage: 0.9
       max_category: 20
 
-  categorical_encoding:
-    cat_to_num_supervised:
-      list_of_cols: all
-      drop_cols: ['ifa']
-      label_col: income
-      event_label: '>50K'
-
-  numerical_rescaling:
-    IQR_standardization:
-      list_of_cols: all
-
   numerical_latentFeatures:
     PCA_latentFeatures:
       list_of_cols: all
@@ -96,3 +85,10 @@ write_stats:
   file_type: parquet
   file_configs:
     mode: overwrite
+
+mlflow:
+  experiment: "Anovos"
+  tracking_uri: "http://127.0.0.1:8889"
+  track_output: True
+  track_reports: True
+  track_intermediates: False
