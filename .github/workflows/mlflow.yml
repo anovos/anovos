@@ -80,7 +80,7 @@ jobs:
 
       - name: Run the demo
         run: |
-          cp config/configs_basic.yaml dist/configs.yaml
+          cp config/configs_mlflow.yaml dist/configs.yaml
           cd dist/
           ./spark-submit.sh
 
