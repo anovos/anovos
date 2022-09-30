@@ -2,6 +2,7 @@
 
 from __future__ import division, print_function
 
+import sys
 import numpy as np
 import pandas as pd
 import pyspark
@@ -10,9 +11,11 @@ from loguru import logger
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
+from pyspark.sql.window import Window
 from scipy.stats import variation
 
 from anovos.data_ingest.data_ingest import concatenate_dataset
+from anovos.data_ingest.data_sampling import data_sample
 from anovos.data_transformer.transformers import attribute_binning
 from anovos.shared.utils import attributeType_segregation
 from .distances import hellinger, js_divergence, ks, psi
@@ -33,6 +36,9 @@ def statistics(
     bin_size: int = 10,
     threshold: float = 0.1,
     sample_use: bool = True,
+    sample_method: str = "random",
+    strata_cols: str = "all",
+    stratified_type: str = "population",
     sample_size: int = 100000,
     sample_seed: int = 42,
     persist_use: bool = True,
@@ -127,6 +133,20 @@ def statistics(
         Boolean argument - True or False. This argument is used to determine whether to use random sample method on
         source and target dataset, True will enable the use of sample method, otherwise False.
         It is recommended to set this as True for large datasets. (Default value = True)
+    sample_method
+        If sample_use is True, this argument is used to determine the sampling method.
+        "stratified" for Stratified sampling, "random" for Random Sampling.
+        For more details, please refer to https://docs.anovos.ai/api/data_ingest/data_sampling.html.
+        (Default value = "random")
+    strata_cols
+        If sample_use is True and sample_method is "stratified", this argument is used to determine the list
+        of columns used to be treated as strata. For more details, please refer to
+        https://docs.anovos.ai/api/data_ingest/data_sampling.html. (Default value = "all")
+    stratified_type
+        If sample_use is True and sample_method is "stratified", this argument is used to determine the stratified
+        sampling method. "population" stands for Proportionate Stratified Sampling,
+        "balanced" stands for Optimum Stratified Sampling. For more details, please refer to
+        https://docs.anovos.ai/api/data_ingest/data_sampling.html. (Default value = "population")
     sample_size
         If sample_use is True, this argument is used to determine the sample size of sampling method.
         (Default value = 100000)
@@ -176,12 +196,25 @@ def statistics(
         count_target = idf_target.count()
         count_source = idf_source.count()
         if count_target > sample_size or count_source > sample_size:
-            idf_target = idf_target.sample(
-                sample_size / max(count_target, count_source), sample_seed
+            idf_target = data_sample(
+                idf_target,
+                strata_cols=strata_cols,
+                fraction=sample_size / max(count_target, count_source),
+                method_type=sample_method,
+                stratified_type=stratified_type,
+                seed_value=sample_seed,
             )
-            idf_source = idf_source.sample(
-                sample_size / max(count_target, count_source), sample_seed
+            idf_source = data_sample(
+                idf_source,
+                strata_cols=strata_cols,
+                fraction=sample_size / max(count_target, count_source),
+                method_type=sample_method,
+                stratified_type=stratified_type,
+                seed_value=sample_seed,
             )
+            if persist_use:
+                idf_target = idf_target.persist(persist_type)
+                idf_source = idf_source.persist(persist_type)
             count_target = idf_target.count()
             count_source = idf_source.count()
 
@@ -213,111 +246,40 @@ def statistics(
 
     if persist_use:
         target_bin = target_bin.persist(persist_type)
-    result = {"attribute": [], "flagged": []}
 
-    for method in method_type:
-        result[method] = []
-
-    if method_type != ["PSI"]:
-        for i in list_of_cols:
-            if pre_existing_source:
-                x = spark.read.csv(
-                    source_path + "/" + model_directory + "/frequency_counts/" + i,
-                    header=True,
-                    inferSchema=True,
-                )
-            else:
-                x = (
-                    source_bin.groupBy(i)
-                    .agg((F.count(i) / count_source).alias("p"))
-                    .fillna(-1)
-                )
-                if source_save:
-                    x.coalesce(1).write.csv(
-                        source_path + "/" + model_directory + "/frequency_counts/" + i,
-                        header=True,
-                        mode="overwrite",
-                    )
-
-            y = (
-                target_bin.groupBy(i)
-                .agg((F.count(i) / count_target).alias("q"))
+    temp_list = []
+    for i in list_of_cols:
+        temp_method_join_list = []
+        if pre_existing_source:
+            x = spark.read.csv(
+                source_path + "/" + model_directory + "/frequency_counts/" + i,
+                header=True,
+                inferSchema=True,
+            )
+        else:
+            x = (
+                source_bin.groupBy(i)
+                .agg((F.count(i) / count_source).alias("p"))
                 .fillna(-1)
             )
+            if source_save:
+                x.coalesce(1).write.csv(
+                    source_path + "/" + model_directory + "/frequency_counts/" + i,
+                    header=True,
+                    mode="overwrite",
+                )
 
-            xy = (
-                x.join(y, i, "full_outer")
-                .fillna(0.0001, subset=["p", "q"])
-                .replace(0, 0.0001)
-                .orderBy(i)
-            )
+        y = target_bin.groupBy(i).agg((F.count(i) / count_target).alias("q")).fillna(-1)
 
-            p = np.array(xy.select("p").rdd.flatMap(lambda x: x).collect())
-            q = np.array(xy.select("q").rdd.flatMap(lambda x: x).collect())
-
-            result["attribute"].append(i)
-            counter = 0
-
-            for idx, method in enumerate(method_type):
-                drift_function = {
-                    "PSI": psi,
-                    "JSD": js_divergence,
-                    "HD": hellinger,
-                    "KS": ks,
-                }
-                metric = float(round(drift_function[method](p, q), 4))
-                result[method].append(metric)
-                if counter == 0:
-                    if metric > threshold:
-                        result["flagged"].append(1)
-                        counter = 1
-                if (idx == (len(method_type) - 1)) & (counter == 0):
-                    result["flagged"].append(0)
-
-        odf = (
-            spark.createDataFrame(
-                pd.DataFrame.from_dict(result, orient="index").transpose()
-            )
-            .select(["attribute"] + method_type + ["flagged"])
-            .orderBy(F.desc("flagged"))
+        xy = (
+            x.join(y, i, "full_outer")
+            .fillna(0.0001, subset=["p", "q"])
+            .replace(0, 0.0001)
+            .orderBy(i)
         )
 
-    else:
-        temp_list = []
-        for i in list_of_cols:
-            if pre_existing_source:
-                x = spark.read.csv(
-                    source_path + "/" + model_directory + "/frequency_counts/" + i,
-                    header=True,
-                    inferSchema=True,
-                )
-            else:
-                x = (
-                    source_bin.groupBy(i)
-                    .agg((F.count(i) / idf_source.count()).alias("p"))
-                    .fillna(-1)
-                )
-                if source_save:
-                    x.coalesce(1).write.csv(
-                        source_path + "/" + model_directory + "/frequency_counts/" + i,
-                        header=True,
-                        mode="overwrite",
-                    )
-
-            y = (
-                target_bin.groupBy(i)
-                .agg((F.count(i) / idf_target.count()).alias("q"))
-                .fillna(-1)
-            )
-
-            xy = (
-                x.join(y, i, "full_outer")
-                .fillna(0.0001, subset=["p", "q"])
-                .replace(0, 0.0001)
-                .orderBy(i)
-            )
-
-            xy_temp = (
+        if "PSI" in method_type:
+            xy_psi = (
                 xy.withColumn(
                     "deduct_ln_mul",
                     ((F.col("p") - F.col("q")) * (F.log(F.col("p") / F.col("q")))),
@@ -326,17 +288,86 @@ def statistics(
                 .withColumn("attribute", F.lit(str(i)))
                 .select("attribute", "PSI")
             )
-            temp_list.append(xy_temp)
+            temp_method_join_list.append(xy_psi)
 
-        def unionAll(dfs):
-            first, *_ = dfs
-            return first.sql_ctx.createDataFrame(
-                first.sql_ctx._sc.union([df.rdd for df in dfs]), first.schema
+        if "HD" in method_type:
+            xy_hd = (
+                xy.withColumn(
+                    "pow",
+                    F.pow((F.sqrt(F.col("p")) - F.sqrt(F.col("q"))), 2),
+                )
+                .select(F.sqrt(F.sum(F.col("pow")) / 2).alias("HD"))
+                .withColumn("attribute", F.lit(str(i)))
+                .select("attribute", "HD")
             )
+            temp_method_join_list.append(xy_hd)
 
-        odf = unionAll(temp_list).withColumn(
-            "flagged", F.when(F.col("PSI") > threshold, 1).otherwise(0)
+        if "JSD" in method_type:
+            xy_jsd = (
+                xy.withColumn("m", ((F.col("p") + F.col("q")) / 2))
+                .withColumn("log_pm", (F.col("p") * F.log(F.col("p") / F.col("m"))))
+                .withColumn("log_qm", (F.col("q") * F.log(F.col("q") / F.col("m"))))
+                .select(
+                    F.sum(F.col("log_pm")).alias("pm"),
+                    F.sum(F.col("log_qm")).alias("qm"),
+                )
+                .select(((F.col("pm") + F.col("qm")) / 2).alias("JSD"))
+                .withColumn("attribute", F.lit(str(i)))
+                .select("attribute", "JSD")
+            )
+            temp_method_join_list.append(xy_jsd)
+
+        if "KS" in method_type:
+            xy_ks = (
+                xy.withColumn(
+                    "cum_sum_p",
+                    F.sum(F.col("p")).over(
+                        Window.partitionBy().orderBy().rowsBetween(-sys.maxsize, 0)
+                    ),
+                )
+                .withColumn(
+                    "cum_sum_q",
+                    F.sum(F.col("q")).over(
+                        Window.partitionBy().orderBy().rowsBetween(-sys.maxsize, 0)
+                    ),
+                )
+                .withColumn(
+                    "deduct_abs", F.abs(F.col("cum_sum_p") - F.col("cum_sum_q"))
+                )
+                .select(
+                    F.max(F.col("deduct_abs")).alias("KS"),
+                )
+                .withColumn("attribute", F.lit(str(i)))
+                .select("attribute", "KS")
+            )
+        else:
+            temp_method_join_list.append(xy_ks)
+
+        xy_temp = temp_method_join_list[0]
+        if len(temp_method_join_list) > 1:
+            for count in range(1, len(temp_method_join_list)):
+                xy_temp = xy_temp.join(
+                    temp_method_join_list[count], "attribute", "inner"
+                )
+
+        temp_list.append(xy_temp)
+
+    def unionAll(dfs):
+        first, *_ = dfs
+        return first.sql_ctx.createDataFrame(
+            first.sql_ctx._sc.union([df.rdd for df in dfs]), first.schema
         )
+
+    odf_union = unionAll(temp_list)
+    odf = odf_union.withColumn(
+        "flagged",
+        F.coalesce(
+            *[
+                F.when(F.col(c) > threshold, 1).otherwise(0)
+                for c in odf_union.columns[1:]
+            ]
+        ),
+    )
 
     if print_impact:
         logger.info("All Attributes:")
@@ -346,6 +377,8 @@ def statistics(
         drift.show(drift.count())
 
     if persist_use:
+        idf_target.unpersist()
+        idf_source.unpersist()
         source_bin.unpersist()
         target_bin.unpersist()
     return odf
