@@ -96,10 +96,3 @@ write_stats:
   file_type: parquet
   file_configs:
     mode: overwrite
-
-mlflow:
-  experiment: "Anovos"
-  tracking_uri: "http://127.0.0.1:8889"
-  track_output: True
-  track_reports: True
-  track_intermediates: False
