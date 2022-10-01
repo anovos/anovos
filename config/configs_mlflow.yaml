@@ -58,7 +58,7 @@ transformers:
       imputation: True
 
 anovos_basic_report:
-  basic_report: True
+  basic_report: False
   report_args:
     id_col: ifa
     label_col: income
