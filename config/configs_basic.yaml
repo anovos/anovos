@@ -20,45 +20,8 @@ input_dataset:
     list_of_cols: ['age','education_num']
     list_of_dtypes: ['float','float']
 
-transformers:
-  numerical_mathops:
-    feature_transformation:
-      list_of_cols: all
-      drop_cols: []
-      method_type: sqrt
-
-    boxcox_transformation:
-      list_of_cols: age|education_num
-      drop_cols: []
-
-  numerical_binning:
-    attribute_binning:
-      list_of_cols: all
-      drop_cols: []
-      method_type: equal_frequency
-      bin_size: 10
-      bin_dtype: numerical
-
-  numerical_expression:
-    expression_parser:
-      list_of_expr: 'log(age) + 1.5|sin(capital-gain)+cos(capital-loss)'
-
-  categorical_outliers:
-    outlier_categories:
-      list_of_cols: all
-      drop_cols: ['ifa','income']
-      coverage: 0.9
-      max_category: 20
-
-  numerical_latentFeatures:
-    PCA_latentFeatures:
-      list_of_cols: all
-      explained_variance_cutoff: 0.95
-      standardization: False
-      imputation: True
-
 anovos_basic_report:
-  basic_report: False
+  basic_report: True
   report_args:
     id_col: ifa
     label_col: income
