@@ -71,7 +71,7 @@ timeseries_analyzer:
   max_days: 3600
 
 anovos_basic_report:
-  basic_report: False
+  basic_report: True
   report_args:
     id_col: ifa
     label_col: income
