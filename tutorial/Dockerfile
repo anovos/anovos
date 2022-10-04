@@ -1,4 +1,4 @@
-ARG spark_version=3.2.1
+ARG spark_version=3.2.2
 ARG image_version=latest
 
 FROM anovos/anovos-notebook-${spark_version}:${image_version}
