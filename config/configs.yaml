@@ -193,7 +193,7 @@ association_evaluator:
 
   variable_clustering:
     list_of_cols: all
-    drop_cols: "ifa|income"
+    drop_cols: ifa|income
 
 
 drift_detector:
@@ -350,7 +350,7 @@ transformers:
       method_type: sqrt
 
     boxcox_transformation:
-      list_of_cols: "age|education_num"
+      list_of_cols: age|education_num
       drop_cols: []
 
   numerical_binning:
