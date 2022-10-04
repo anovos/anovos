@@ -1,0 +1,3 @@
+[submodule "anovos-commons-scala"]
+	path = anovos-commons-scala
+	url = https://github.com/anovos/anovos-commons-scala
