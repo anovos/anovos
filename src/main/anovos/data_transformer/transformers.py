@@ -40,11 +40,6 @@ import pyspark
 from packaging import version
 from scipy import stats
 
-if version.parse(pyspark.__version__) < version.parse("3.0.0"):
-    from pyspark.ml.feature import OneHotEncoderEstimator as OneHotEncoder
-else:
-    from pyspark.ml.feature import OneHotEncoder
-
 from pyspark.ml.evaluation import RegressionEvaluator
 from pyspark.ml.feature import (
     PCA,
@@ -58,7 +53,6 @@ from pyspark.ml.feature import (
     StringIndexerModel,
     VectorAssembler,
 )
-from pyspark.ml.linalg import DenseVector
 from pyspark.ml.recommendation import ALS
 from pyspark.mllib.stat import Statistics
 from pyspark.sql import functions as F
@@ -643,12 +637,6 @@ def cat_to_num_unsupervised(
         warnings.warn("No Encoding Computation - No categorical column(s) to transform")
         return idf
 
-    list_of_cols_vec = []
-    list_of_cols_idx = []
-    for i in list_of_cols:
-        list_of_cols_vec.append(i + "_vec")
-        list_of_cols_idx.append(i + "_index")
-
     sc = spark.sparkContext
     sc.setLogLevel("ERROR")
     sqlContext = SQLContext(spark)
@@ -657,7 +645,7 @@ def cat_to_num_unsupervised(
     jvm = sc._jvm
     ssqlContext = sqlContext._ssql_ctx
     catToNumUnsupervisedObject = jvm.anovos.data.transformer.CatToNumUnsupervised(ssqlContext, jdf)
-    odf = DataFrame(catToNumUnsupervisedObject.apply(method_type, list_of_cols, list_of_cols_idx, list_of_cols_vec), ssqlContext)
+    odf = DataFrame(catToNumUnsupervisedObject.apply(method_type, list_of_cols), ssqlContext)
     odf.show()
     odf.sql_ctx._sc = sc
     odf.sql_ctx._conf = idf.sql_ctx._conf
