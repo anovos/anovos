@@ -19,8 +19,8 @@ jobs:
     runs-on: 'ubuntu-latest'
     environment: DOCKER_HUB_CREDENTIALS
     strategy:
+      max-parallel: 1
       matrix:
-        max-parallel: 1
         include:
           - spark: '2.4.8'
           - spark: '3.1.3'

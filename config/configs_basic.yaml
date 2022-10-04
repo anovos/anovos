@@ -21,7 +21,7 @@ input_dataset:
     list_of_dtypes: ['float','float']
 
 anovos_basic_report:
-  basic_report: False
+  basic_report: True
   report_args:
     id_col: ifa
     label_col: income
