@@ -340,7 +340,6 @@ def statistics(
                 .withColumn("attribute", F.lit(str(i)))
                 .select("attribute", "KS")
             )
-        else:
             temp_method_join_list.append(xy_ks)
 
         xy_temp = temp_method_join_list[0]
