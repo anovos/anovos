@@ -393,14 +393,6 @@ transformers:
       imputation: True
 
 
-    # autoencoder_latentFeatures:
-    #   list_of_cols: all
-    #   reduction_params: 0.5
-    #   sample_size: 10000
-    #   epochs: 20
-    #   batch_size: 256
-
-
 write_intermediate:
   file_path: "intermediate_data"
   file_type: csv
