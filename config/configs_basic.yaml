@@ -192,9 +192,9 @@ association_evaluator:
       bin_size: 10
       monotonicity_check: 0
 
-#  variable_clustering:
-#    list_of_cols: all
-#    drop_cols: ifa|income
+  variable_clustering:
+    list_of_cols: all
+    drop_cols: ifa|income|latitude|longitude|geohash
 
 
 drift_detector:
