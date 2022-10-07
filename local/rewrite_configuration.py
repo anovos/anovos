@@ -45,6 +45,9 @@ def find_input_data_paths(sub_config):
             add_path(file_path)
         elif k in ("metricDict_path", "dataDict_path"):
             add_path(v)
+        elif k in ("source_path", "model_path"):
+            if v != "NA":
+                add_path(v)
         else:
             if isinstance(v, dict):
                 find_input_data_paths(v)
@@ -72,6 +75,9 @@ def rewrite_input_data_paths(sub_config):
             v["file_path"] = rewrite_path(v["file_path"], data_directory, _DATA_DIR)
         elif k in ("metricDict_path", "dataDict_path"):
             sub_config[k] = rewrite_path(v, data_directory, _DATA_DIR)
+        elif k in ("source_path", "model_path"):
+            if v != "NA":
+                sub_config[k] = rewrite_path(v, data_directory, _DATA_DIR)
         else:
             if isinstance(v, dict):
                 rewrite_input_data_paths(v)
@@ -79,23 +85,47 @@ def rewrite_input_data_paths(sub_config):
 
 rewrite_input_data_paths(full_config)
 
-for write_key in ["write_intermediate", "write_main", "write_stats"]:
+
+def rewrite_output_path(sub_config, path_key):
     try:
-        old_path = full_config[write_key]["file_path"]
+        old_path = sub_config[path_key]
     except KeyError:
         pass
     else:
-        full_config[write_key]["file_path"] = str(_OUTPUT_DIR / pathlib.Path(old_path))
+        sub_config[path_key] = str(_OUTPUT_DIR / pathlib.Path(old_path))
 
-        
+
+def rewrite_paths_in_block(sub_config, block_key, path_keys):
+    for path_key in path_keys:
+        try:
+            rewrite_output_path(sub_config[block_key], path_key)
+        except KeyError:
+            pass
+
+
+for write_key in ["write_intermediate", "write_main", "write_stats"]:
+    rewrite_paths_in_block(full_config, write_key, ["file_path"])
+
+if "anovos_basic_report" in full_config:
+    rewrite_paths_in_block(
+        full_config["anovos_basic_report"], "report_args", ["output_path"]
+    )
+rewrite_paths_in_block(full_config, "report_preprocessing", ["master_path"])
+rewrite_paths_in_block(
+    full_config, "report_generation", ["master_path", "final_report_path"]
+)
+
+
 class OrderPreservingDumper(yaml.Dumper):
     """cf. https://stackoverflow.com/a/52621703"""
+
     def represent_dict_preserve_order(self, data):
-        return self.represent_dict(data.items())    
+        return self.represent_dict(data.items())
 
 
-OrderPreservingDumper.add_representer(dict, OrderPreservingDumper.represent_dict_preserve_order)
-    
+OrderPreservingDumper.add_representer(
+    dict, OrderPreservingDumper.represent_dict_preserve_order
+)
 
 with open(_NEW_CONFIG_NAME, "wt") as f:
     yaml.dump(full_config, f, Dumper=OrderPreservingDumper)
@@ -112,11 +142,11 @@ def diff_config(a, b, tree=None):
         else:
             if v != b[k]:
                 print(f"{'.'.join(tree + [k])}: {v} -> {b[k]}")
-    
-    
+
+
 with open(config_file, "rt") as f:
     old_config = yaml.load(f, yaml.SafeLoader)
-    
+
 with open(_NEW_CONFIG_NAME, "rt") as f:
     new_config = yaml.load(f, yaml.SafeLoader)
 

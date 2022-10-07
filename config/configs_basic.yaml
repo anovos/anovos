@@ -71,11 +71,12 @@ timeseries_analyzer:
   max_days: 3600
 
 anovos_basic_report:
-  basic_report: False
+  basic_report: True
   report_args:
     id_col: ifa
     label_col: income
     event_label: '>50K'
+    skip_corr_matrix: True
     output_path: report_stats
 
 #if anovos_basic_report.basic_report is True, then all configs below are ignored.
@@ -320,6 +321,17 @@ report_preprocessing:
     outlier_charts: False
     source_path: "NA"
 
+report_generation:
+  master_path: 'report_stats'
+  id_col: 'ifa'
+  label_col: 'income'
+  corr_threshold: 0.4
+  iv_threshold: 0.02
+  drift_threshold_model: 0.1
+  dataDict_path: 'data/income_dataset/data_dictionary.csv'
+  metricDict_path: 'data/metric_dictionary.csv'
+  final_report_path: 'report_stats'
+
 transformers:
   numerical_mathops:
     feature_transformation:
@@ -379,14 +391,6 @@ transformers:
       explained_variance_cutoff: 0.95
       standardization: False
       imputation: True
-
-
-    # autoencoder_latentFeatures:
-    #   list_of_cols: all
-    #   reduction_params: 0.5
-    #   sample_size: 10000
-    #   epochs: 20
-    #   batch_size: 256
 
 
 write_intermediate:
