@@ -44,7 +44,7 @@ def statistics(
     persist_use: bool = True,
     persist_type=pyspark.StorageLevel.MEMORY_AND_DISK,
     pre_existing_source: bool = False,
-    source_save: bool = False,
+    source_save: bool = True,
     source_path: str = "NA",
     model_directory: str = "drift_statistics",
     run_type: str = "local",
