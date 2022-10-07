@@ -30,8 +30,10 @@ jobs:
 
     - name: Prepare the demo
       run: |
+        mv ./data/metric_dictionary.csv .
         rm -rf ./data
         mkdir data
+        mv ./metric_dictionary.csv ./data
         mv ./examples/data/income_dataset ./data
         find ./data
         chmod +x ./local/run_workload.sh
