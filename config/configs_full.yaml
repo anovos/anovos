@@ -194,7 +194,7 @@ association_evaluator:
 
   variable_clustering:
     list_of_cols: all
-    drop_cols: ifa|income|latitude|longitude|geohash
+    drop_cols: ifa|income
 
 
 drift_detector:
