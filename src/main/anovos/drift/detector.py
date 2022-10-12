@@ -430,71 +430,43 @@ def stability_index_computation(
             "Invalid input for metric weightages. Either metric name is incorrect or sum of metric weightages is not 1.0"
         )
 
-    if existing_metric_path:
-        existing_metric_df = spark.read.csv(
-            existing_metric_path, header=True, inferSchema=True
-        )
-        dfs_count = existing_metric_df.select(F.max(F.col("idx"))).first()[0]
-    else:
-        schema = T.StructType(
-            [
-                T.StructField("idx", T.IntegerType(), True),
-                T.StructField("attribute", T.StringType(), True),
-                T.StructField("mean", T.DoubleType(), True),
-                T.StructField("stddev", T.DoubleType(), True),
-                T.StructField("kurtosis", T.DoubleType(), True),
-            ]
-        )
-        existing_metric_df = spark.sparkContext.emptyRDD().toDF(schema)
-        dfs_count = 0
-
-    metric_ls = []
-    for idf in idfs:
-        for i in list_of_cols:
-            mean, stddev, kurtosis = idf.select(
-                F.mean(i), F.stddev(i), F.kurtosis(i)
-            ).first()
-            metric_ls.append(
-                [dfs_count + 1, i, mean, stddev, kurtosis + 3.0 if kurtosis else None]
-            )
-        dfs_count += 1
-
-    new_metric_df = spark.createDataFrame(
-        metric_ls, schema=("idx", "attribute", "mean", "stddev", "kurtosis")
-    )
-    appended_metric_df = concatenate_dataset(existing_metric_df, new_metric_df)
-
-    if appended_metric_path:
-        appended_metric_df.coalesce(1).write.csv(
-            appended_metric_path, header=True, mode="overwrite"
+    def unionAll(dfs):
+        first, *_ = dfs
+        return first.sql_ctx.createDataFrame(
+            first.sql_ctx._sc.union([df.rdd for df in dfs]), first.schema
         )
 
-    result = []
+    list_temp_all_col = []
     for i in list_of_cols:
-        i_output = [i]
-        for metric in ["mean", "stddev", "kurtosis"]:
-            metric_stats = (
-                appended_metric_df.where(F.col("attribute") == i)
-                .orderBy("idx")
-                .select(metric)
-                .fillna(np.nan)
-                .rdd.flatMap(list)
-                .collect()
+        list_temp_col_in_idf = []
+        for idf in idfs:
+            df_stat_each = idf.select(
+                F.mean(i).alias("mean"),
+                F.stddev(i).alias("stddev"),
+                F.kurtosis(i).alias("kurtosis"),
             )
-            metric_cv = round(float(variation([a for a in metric_stats])), 4) or None
-            i_output.append(metric_cv)
-        result.append(i_output)
-
-    schema = T.StructType(
-        [
-            T.StructField("attribute", T.StringType(), True),
-            T.StructField("mean_cv", T.FloatType(), True),
-            T.StructField("stddev_cv", T.FloatType(), True),
-            T.StructField("kurtosis_cv", T.FloatType(), True),
-        ]
-    )
-
-    odf = spark.createDataFrame(result, schema=schema)
+            list_temp_col_in_idf.append(df_stat_each)
+        df_stat_col = (
+            unionAll(list_temp_col_in_idf)
+            .select(
+                F.stddev("mean").alias("std_of_mean"),
+                F.mean("mean").alias("mean_of_mean"),
+                F.stddev("stddev").alias("std_of_stddev"),
+                F.mean("stddev").alias("mean_of_stddev"),
+                F.stddev("kurtosis").alias("std_of_kurtosis"),
+                F.mean("kurtosis").alias("mean_of_kurtosis"),
+            )
+            .select(
+                F.lit(str(i)).alias("attribute"),
+                (F.col("std_of_mean") / F.col("mean_of_mean")).alias("mean_cv"),
+                (F.col("std_of_stddev") / F.col("mean_of_stddev")).alias("stddev_cv"),
+                (F.col("std_of_kurtosis") / F.col("mean_of_kurtosis")).alias(
+                    "kurtosis_cv"
+                ),
+            )
+        )
+        list_temp_all_col.append(df_stat_col)
+    odf = unionAll(list_temp_all_col)
 
     def score_cv(cv, thresholds=[0.03, 0.1, 0.2, 0.5]):
         if cv is None:
