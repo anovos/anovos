@@ -44,10 +44,6 @@ geospatial_controller:
     loc_output_format: "geohash"
     
     
-    
-    
-
-
     # geo_format_geohash_conversion:
     #  list_of_geohash: ["cel_geohash","cdl_geohash"]
     #  output_format: 'dd'
