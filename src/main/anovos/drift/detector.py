@@ -254,8 +254,8 @@ def stability_index_computation(
     list_of_cols="all",
     drop_cols=[],
     metric_weightages={"mean": 0.5, "stddev": 0.3, "kurtosis": 0.2},
-    existing_metric_path="",
-    appended_metric_path="",
+    persist_use: bool = True,
+    persist_type=pyspark.StorageLevel.MEMORY_AND_DISK,
     threshold=1,
     print_impact=False,
 ):
@@ -380,13 +380,13 @@ def stability_index_computation(
         Takes input in dictionary format with keys being the metric name - "mean","stdev","kurtosis"
         and value being the weightage of the metric (between 0 and 1). Sum of all weightages must be 1.
          (Default value = {"mean": 0.5, "stddev": 0.3, "kurtosis": 0.2})
-    existing_metric_path
-        This argument is path for referring pre-existing metrics of historical datasets and is
-        of schema [idx, attribute, mean, stdev, kurtosis].
-        idx is index number of historical datasets assigned in chronological order. (Default value = "")
-    appended_metric_path
-        This argument is path for saving input dataframes metrics after appending to the
-        historical datasets' metrics. (Default value = "")
+    persist_use
+        Boolean argument - True or False. This argument is used to determine whether to persist on
+        binning result of source and target dataset, True will enable the use of persist, otherwise False.
+        It is recommended to set this as True for large datasets. (Default value = True)
+    persist_type
+        If persist_use is True, this argument is used to determine the type of persist.
+        (Default value = pyspark.StorageLevel.MEMORY_AND_DISK)
     threshold
         A column is flagged if the stability index is below the threshold, which varies between 0 to 4.
         The following criteria can be used to classifiy stability_index (SI): very unstable: 0≤SI<1,
@@ -435,6 +435,10 @@ def stability_index_computation(
         return first.sql_ctx.createDataFrame(
             first.sql_ctx._sc.union([df.rdd for df in dfs]), first.schema
         )
+
+    if persist_use:
+        for i in range(len(idfs)):
+            idfs[i].persist(persist_type)
 
     list_temp_all_col = []
     for i in list_of_cols:
@@ -513,6 +517,10 @@ def stability_index_computation(
         logger.info("Potential Unstable Attributes:")
         unstable = odf.where(F.col("flagged") == 1)
         unstable.show(unstable.count())
+
+    if persist_use:
+        for i in range(len(idfs)):
+            idfs[i].unpersist()
 
     return odf
 
