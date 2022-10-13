@@ -1,8 +1,8 @@
 # coding=utf-8
 
-"""This module help to analyze & summarize the geospatial fields identified through the auto-detection module. Additionally, it generates the intermediate output which are fed in to the reporting section
+"""This module help to analyze & summarize the geospatial related data fields which are identified through the auto-detection module. Additionally, it generates the intermediate output which are fed in to the reporting section.
 
-As a part of generation of final output, there are various functions created such as -
+As a part of generation of final output, there are various functions created under this sub-module. All of them are listed below.
 
 - descriptive_stats_gen
 - lat_long_col_stats_gen
