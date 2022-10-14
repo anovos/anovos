@@ -249,8 +249,7 @@ def statistics(
 
 
 def stability_index_computation(
-    spark,
-    *idfs,
+    idfs,
     list_of_cols="all",
     drop_cols=[],
     metric_weightages={"mean": 0.5, "stddev": 0.3, "kurtosis": 0.2},
@@ -361,8 +360,6 @@ def stability_index_computation(
 
     Parameters
     ----------
-    spark
-        Spark Session
     idfs
         Variable number of input dataframes
     list_of_cols
