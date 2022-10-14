@@ -421,7 +421,6 @@ def main(all_configs, run_type, auth_key_val={}):
                             df,
                             source,
                             **value["configs"],
-                            run_type=run_type,
                             print_impact=False,
                         )
                         if report_input_path:

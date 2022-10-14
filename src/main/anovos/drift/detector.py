@@ -18,7 +18,6 @@ from anovos.data_ingest.data_ingest import concatenate_dataset
 from anovos.data_ingest.data_sampling import data_sample
 from anovos.data_transformer.transformers import attribute_binning
 from anovos.shared.utils import attributeType_segregation
-from .distances import hellinger, js_divergence, ks, psi
 from .validations import check_distance_method, check_list_of_columns
 
 
@@ -28,7 +27,6 @@ def statistics(
     spark: SparkSession,
     idf_target: DataFrame,
     idf_source: DataFrame,
-    *,
     list_of_cols: list = "all",
     drop_cols: list = None,
     method_type: str = "PSI",
@@ -47,7 +45,6 @@ def statistics(
     source_save: bool = True,
     source_path: str = "NA",
     model_directory: str = "drift_statistics",
-    run_type: str = "local",
     print_impact: bool = False,
 ):
     """
@@ -176,8 +173,6 @@ def statistics(
         The default drift statics directory is drift_statistics folder will have attribute_binning
         If pre_existing_source is True, this argument is model_directory for referring the drift statistics dir.
         Default "drift_statistics" for temporarily saving source dataset attribute_binning folder. (Default value = "drift_statistics")
-    run_type
-        "local", "emr", "databricks" (Default value = "local")
     print_impact
         True, False. (Default value = False)
         This argument is to print out the drift statistics of all attributes and attributes meeting the threshold.
