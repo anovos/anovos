@@ -42,6 +42,6 @@ def test_that_stability_index_can_be_calculated(
     df_stability.index = df_stability["attribute"]
     assert_almost_equal(
         df_stability.loc["A", cols_to_check_numerical],
-        [0.162, 0.62, -0.25, 2.0, 0.0, 1.0, 1.2, 0.0],
+        [0.162, 0.62, 0.198, 2.0, 0.0, 2.0, 1.4, 0.0],
         3,
     )

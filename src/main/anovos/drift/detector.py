@@ -444,7 +444,7 @@ def stability_index_computation(
             df_stat_each = idf.select(
                 F.mean(i).alias("mean"),
                 F.stddev(i).alias("stddev"),
-                F.kurtosis(i).alias("kurtosis"),
+                (F.kurtosis(i) + F.lit(3)).alias("kurtosis"),
             )
             list_temp_col_in_idf.append(df_stat_each)
         df_stat_col = (
