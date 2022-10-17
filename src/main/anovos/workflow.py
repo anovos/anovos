@@ -465,6 +465,25 @@ def main(all_configs, run_type, auth_key_val={}):
                                 run_type=run_type,
                                 auth_key=auth_key,
                             ).show(100)
+                            appended_metric_path = value["configs"].get(
+                                "appended_metric_path", ""
+                            )
+                            if appended_metric_path:
+                                df_metrics = data_ingest.read_dataset(
+                                    spark,
+                                    file_path=appended_metric_path,
+                                    file_type="csv",
+                                    file_configs={"header": True, "mode": "overwrite"},
+                                )
+                                save_stats(
+                                    spark,
+                                    df_metrics,
+                                    report_input_path,
+                                    "stabilityIndex_metrics",
+                                    reread=True,
+                                    run_type=run_type,
+                                    auth_key=auth_key,
+                                ).show(100)
                         else:
                             save(
                                 df_stats,

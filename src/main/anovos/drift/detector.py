@@ -253,6 +253,7 @@ def stability_index_computation(
     list_of_cols="all",
     drop_cols=[],
     metric_weightages={"mean": 0.5, "stddev": 0.3, "kurtosis": 0.2},
+    appended_metric_path="",
     persist_use: bool = True,
     persist_type=pyspark.StorageLevel.MEMORY_AND_DISK,
     threshold=1,
@@ -377,6 +378,9 @@ def stability_index_computation(
         Takes input in dictionary format with keys being the metric name - "mean","stdev","kurtosis"
         and value being the weightage of the metric (between 0 and 1). Sum of all weightages must be 1.
          (Default value = {"mean": 0.5, "stddev": 0.3, "kurtosis": 0.2})
+    appended_metric_path
+        This argument is path for saving input dataframes metrics after appending to the
+        historical datasets' metrics. (Default value = "")
     persist_use
         Boolean argument - True or False. This argument is used to determine whether to persist on
         binning result of source and target dataset, True will enable the use of persist, otherwise False.
@@ -438,8 +442,12 @@ def stability_index_computation(
             idfs[i].persist(persist_type)
 
     list_temp_all_col = []
+    if appended_metric_path:
+        list_append_all = []
     for i in list_of_cols:
         list_temp_col_in_idf = []
+        if appended_metric_path:
+            count_idf = 1
         for idf in idfs:
             df_stat_each = idf.select(
                 F.mean(i).alias("mean"),
@@ -447,6 +455,16 @@ def stability_index_computation(
                 (F.kurtosis(i) + F.lit(3)).alias("kurtosis"),
             )
             list_temp_col_in_idf.append(df_stat_each)
+            if appended_metric_path:
+                df_append_single = df_stat_each.select(
+                    F.lit(str(count_idf)).alias("idx"),
+                    F.lit(str(i)).alias("attribute"),
+                    "mean",
+                    "stddev",
+                    "kurtosis",
+                )
+                list_append_all.append(df_append_single)
+                count_idf += 1
         df_stat_col = (
             unionAll(list_temp_col_in_idf)
             .select(
@@ -468,6 +486,11 @@ def stability_index_computation(
         )
         list_temp_all_col.append(df_stat_col)
     odf = unionAll(list_temp_all_col)
+    if appended_metric_path:
+        df_append = unionAll(list_append_all).orderBy(F.col("idx"))
+        df_append.coalesce(1).write.csv(
+            appended_metric_path, header=True, mode="overwrite"
+        )
 
     def score_cv(cv, thresholds=[0.03, 0.1, 0.2, 0.5]):
         if cv is None:

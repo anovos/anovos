@@ -222,6 +222,7 @@ drift_detector:
         mean: 0.5
         stddev: 0.3
         kurtosis: 0.2
+      appended_metric_path: 'si_metrics'
       threshold: 2
 
     dataset1:
