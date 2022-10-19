@@ -57,7 +57,7 @@ jobs:
         uses: actions/checkout@master
 
       - name: Load PIP cache
-        uses: actions/cache@v3.0.8
+        uses: actions/cache@v3.0.11
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ matrix.python}}-${{ hashFiles('./requirements.txt') }}
@@ -77,7 +77,7 @@ jobs:
           ls $SPARK_HOME
 
       - name: Load sentence_transformer cache
-        uses: actions/cache@v3.0.8
+        uses: actions/cache@v3.0.11
         with:
           path: ~/.cache/sentence-transformers_all-mpnet-base-v2
           key: ${{ runner.os }}-sentence_transformers-${{ matrix.python}}-${{ hashFiles('./requirements.txt') }}
