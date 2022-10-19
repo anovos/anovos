@@ -250,6 +250,8 @@ def variable_clustering(
     idf_encoded = cat_to_num_unsupervised(
         spark, idf_sample, list_of_cols=cat_cols, method_type="label_encoding"
     )
+    num_cols, cat_cols, other_cols = attributeType_segregation(idf_encoded)
+    idf_encoded = idf_encoded.select(num_cols)
     idf_imputed = imputation_MMM(spark, idf_encoded, stats_mode=stats_mode)
     idf_imputed.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
     idf_sample.unpersist()
