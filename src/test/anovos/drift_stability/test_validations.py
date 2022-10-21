@@ -1,6 +1,6 @@
 import pytest
 
-from anovos.drift.validations import check_list_of_columns
+from anovos.drift_stability.validations import check_list_of_columns
 
 
 @check_list_of_columns
