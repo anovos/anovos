@@ -33,14 +33,14 @@ def statistics(
     bin_method: str = "equal_range",
     bin_size: int = 10,
     threshold: float = 0.1,
-    sample_use: bool = True,
+    use_sampling: bool = True,
     sample_method: str = "random",
     strata_cols: str = "all",
     stratified_type: str = "population",
     sample_size: int = 100000,
     sample_seed: int = 42,
-    persist_use: bool = True,
-    persist_type=pyspark.StorageLevel.MEMORY_AND_DISK,
+    persist: bool = True,
+    persist_option=pyspark.StorageLevel.MEMORY_AND_DISK,
     pre_existing_source: bool = False,
     source_save: bool = True,
     source_path: str = "NA",
@@ -126,36 +126,36 @@ def statistics(
         Number of bins for creating histogram. (Default value = 10)
     threshold
         A column is flagged if any drift metric is above the threshold. (Default value = 0.1)
-    sample_use
+    use_sampling
         Boolean argument - True or False. This argument is used to determine whether to use random sample method on
         source and target dataset, True will enable the use of sample method, otherwise False.
         It is recommended to set this as True for large datasets. (Default value = True)
     sample_method
-        If sample_use is True, this argument is used to determine the sampling method.
+        If use_sampling is True, this argument is used to determine the sampling method.
         "stratified" for Stratified sampling, "random" for Random Sampling.
         For more details, please refer to https://docs.anovos.ai/api/data_ingest/data_sampling.html.
         (Default value = "random")
     strata_cols
-        If sample_use is True and sample_method is "stratified", this argument is used to determine the list
+        If use_sampling is True and sample_method is "stratified", this argument is used to determine the list
         of columns used to be treated as strata. For more details, please refer to
         https://docs.anovos.ai/api/data_ingest/data_sampling.html. (Default value = "all")
     stratified_type
-        If sample_use is True and sample_method is "stratified", this argument is used to determine the stratified
+        If use_sampling is True and sample_method is "stratified", this argument is used to determine the stratified
         sampling method. "population" stands for Proportionate Stratified Sampling,
         "balanced" stands for Optimum Stratified Sampling. For more details, please refer to
         https://docs.anovos.ai/api/data_ingest/data_sampling.html. (Default value = "population")
     sample_size
-        If sample_use is True, this argument is used to determine the sample size of sampling method.
+        If use_sampling is True, this argument is used to determine the sample size of sampling method.
         (Default value = 100000)
     sample_seed
-        If sample_use is True, this argument is used to determine the seed of sampling method.
+        If use_sampling is True, this argument is used to determine the seed of sampling method.
         (Default value = 42)
-    persist_use
+    persist
         Boolean argument - True or False. This argument is used to determine whether to persist on
         binning result of source and target dataset, True will enable the use of persist, otherwise False.
         It is recommended to set this as True for large datasets. (Default value = True)
-    persist_type
-        If persist_use is True, this argument is used to determine the type of persist.
+    persist_option
+        If persist is True, this argument is used to determine the type of persist.
         (Default value = pyspark.StorageLevel.MEMORY_AND_DISK)
     pre_existing_source
         Boolean argument – True or False. True if the drift_statistics folder (binning model &
@@ -187,9 +187,9 @@ def statistics(
     drop_cols = drop_cols or []
     num_cols = attributeType_segregation(idf_target.select(list_of_cols))[0]
 
-    if sample_use:
-        count_target = idf_target.count()
-        count_source = idf_source.count()
+    count_target = idf_target.count()
+    count_source = idf_source.count()
+    if use_sampling:
         if count_target > sample_size or count_source > sample_size:
             idf_target = data_sample(
                 idf_target,
@@ -207,9 +207,9 @@ def statistics(
                 stratified_type=stratified_type,
                 seed_value=sample_seed,
             )
-            if persist_use:
-                idf_target = idf_target.persist(persist_type)
-                idf_source = idf_source.persist(persist_type)
+            if persist:
+                idf_target = idf_target.persist(persist_option)
+                idf_source = idf_source.persist(persist_option)
             count_target = idf_target.count()
             count_source = idf_source.count()
 
@@ -226,8 +226,8 @@ def statistics(
             pre_existing_model=False,
             model_path=source_path + "/" + model_directory,
         )
-        if persist_use:
-            source_bin = source_bin.persist(persist_type)
+        if persist:
+            source_bin = source_bin.persist(persist_option)
 
     target_bin = attribute_binning(
         spark,
@@ -239,8 +239,8 @@ def statistics(
         model_path=source_path + "/" + model_directory,
     )
 
-    if persist_use:
-        target_bin = target_bin.persist(persist_type)
+    if persist:
+        target_bin = target_bin.persist(persist_option)
 
     temp_list = []
     for i in list_of_cols:
@@ -370,7 +370,7 @@ def statistics(
         drift = odf.where(F.col("flagged") == 1)
         drift.show(drift.count())
 
-    if persist_use:
+    if persist:
         idf_target.unpersist()
         idf_source.unpersist()
         source_bin.unpersist()

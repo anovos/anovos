@@ -1,6 +1,6 @@
 import pandas
 import numpy
-from anovos.drift.detector import statistics
+from anovos.drift_stability.drift_detector import statistics
 from numpy.testing import assert_almost_equal
 
 
