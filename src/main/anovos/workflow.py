@@ -16,7 +16,7 @@ from anovos.data_report.basic_report_generation import anovos_basic_report
 from anovos.data_report.report_generation import anovos_report
 from anovos.data_report.report_preprocessing import save_stats
 from anovos.data_transformer import transformers
-from anovos.drift import detector as ddetector
+from anovos.drift_stability import drift_detector as ddetector
 from anovos.feature_store import feast_exporter
 from anovos.shared.spark import spark
 
