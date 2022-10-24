@@ -17,6 +17,7 @@ from anovos.data_report.report_generation import anovos_report
 from anovos.data_report.report_preprocessing import save_stats
 from anovos.data_transformer import transformers
 from anovos.drift import detector as ddetector
+from anovos.drift import stability as dstability
 from anovos.feature_store import feast_exporter
 from anovos.shared.spark import spark
 
@@ -452,7 +453,7 @@ def main(all_configs, run_type, auth_key_val={}):
                         for k in [e for e in value.keys() if e not in ("configs")]:
                             tmp = ETL(value.get(k))
                             idfs.append(tmp)
-                        df_stats = ddetector.stability_index_computation(
+                        df_stats = dstability.stability_index_computation(
                             idfs, **value["configs"], print_impact=False
                         )
                         if report_input_path:

@@ -2,7 +2,7 @@ import pytest
 import pandas
 import numpy
 from numpy.testing import assert_almost_equal
-from anovos.drift.detector import (
+from anovos.drift.stability import (
     stability_index_computation,
 )
 
@@ -17,6 +17,23 @@ def idfs_numerical(spark_session):
     for l in [list1, list2, list3]:
         idfs.append(spark_session.createDataFrame(pandas.DataFrame({"A": l})))
     return idfs
+
+
+@pytest.fixture
+def idfs_binary(spark_session):
+    list1 = numpy.array([0] * 10 + [1] * 10)
+    list2 = numpy.array([0] * 12 + [1] * 8)
+    list3 = numpy.array([0] * 14 + [1] * 6)
+
+    idf = []
+    for l in [list1, list2, list3]:
+        idf.append(spark_session.createDataFrame(pandas.DataFrame({"A": l})))
+    return idf
+
+
+@pytest.fixture
+def cols_to_check_binary():
+    return ["mean_stddev", "mean_si", "stability_index", "flagged"]
 
 
 @pytest.fixture
@@ -44,4 +61,14 @@ def test_that_stability_index_can_be_calculated(
         df_stability.loc["A", cols_to_check_numerical],
         [0.162, 0.62, 0.198, 2.0, 0.0, 2.0, 1.4, 0.0],
         3,
+    )
+
+
+def test_that_binary_column_can_be_calculated(idfs_binary, cols_to_check_binary):
+    df_stability = stability_index_computation(
+        spark_session, idfs_binary, binary_cols="A"
+    ).toPandas()
+    df_stability.index = df_stability["attribute"]
+    assert_almost_equal(
+        df_stability.loc["A", cols_to_check_binary], [0.1, 0.0, 0.0, 1.0], 3
     )

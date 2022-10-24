@@ -157,47 +157,67 @@ def line_chart_gen_stability(df1, df2, col):
     f1.update_layout(height=400, font={"color": "black", "family": "Arial"})
     f5 = "Stability Index for " + str(col.upper())
     if len(df1.columns) > 0:
-        df1 = df1[df1["attribute"] == col]
-        f2 = px.line(
-            df1,
-            x="idx",
-            y="mean",
-            markers=True,
-            title="CV of Mean is "
-            + str(list(df2[df2["attribute"] == col].mean_cv.values)[0]),
-        )
-        f2.update_traces(line_color=global_theme[2], marker=dict(size=14))
-        f2.layout.plot_bgcolor = global_plot_bg_color
-        f2.layout.paper_bgcolor = global_paper_bg_color
-        f3 = px.line(
-            df1,
-            x="idx",
-            y="stddev",
-            markers=True,
-            title="CV of Stddev is "
-            + str(list(df2[df2["attribute"] == col].stddev_cv.values)[0]),
-        )
-        f3.update_traces(line_color=global_theme[6], marker=dict(size=14))
-        f3.layout.plot_bgcolor = global_plot_bg_color
-        f3.layout.paper_bgcolor = global_paper_bg_color
-        f4 = px.line(
-            df1,
-            x="idx",
-            y="kurtosis",
-            markers=True,
-            title="CV of Kurtosis is "
-            + str(list(df2[df2["attribute"] == col].kurtosis_cv.values)[0]),
-        )
-        f4.update_traces(line_color=global_theme[4], marker=dict(size=14))
-        f4.layout.plot_bgcolor = global_plot_bg_color
-        f4.layout.paper_bgcolor = global_paper_bg_color
-        return dp.Group(
-            dp.Text("#"),
-            dp.Text(f5),
-            dp.Plot(f1),
-            dp.Group(dp.Plot(f2), dp.Plot(f3), dp.Plot(f4), columns=3),
-            label=col,
-        )
+        attr_type = df1["type"].tolist()[0]
+        if attr_type == "Numerical":
+            f2 = px.line(
+                df1,
+                x="idx",
+                y="mean",
+                markers=True,
+                title="CV of Mean is "
+                + str(list(df2[df2["attribute"] == col].mean_cv.values)[0]),
+            )
+            f2.update_traces(line_color=global_theme[2], marker=dict(size=14))
+            f2.layout.plot_bgcolor = global_plot_bg_color
+            f2.layout.paper_bgcolor = global_paper_bg_color
+            f3 = px.line(
+                df1,
+                x="idx",
+                y="stddev",
+                markers=True,
+                title="CV of Stddev is "
+                + str(list(df2[df2["attribute"] == col].stddev_cv.values)[0]),
+            )
+            f3.update_traces(line_color=global_theme[6], marker=dict(size=14))
+            f3.layout.plot_bgcolor = global_plot_bg_color
+            f3.layout.paper_bgcolor = global_paper_bg_color
+            f4 = px.line(
+                df1,
+                x="idx",
+                y="kurtosis",
+                markers=True,
+                title="CV of Kurtosis is "
+                + str(list(df2[df2["attribute"] == col].kurtosis_cv.values)[0]),
+            )
+            f4.update_traces(line_color=global_theme[4], marker=dict(size=14))
+            f4.layout.plot_bgcolor = global_plot_bg_color
+            f4.layout.paper_bgcolor = global_paper_bg_color
+            return dp.Group(
+                dp.Text("#"),
+                dp.Text(f5),
+                dp.Plot(f1),
+                dp.Group(dp.Plot(f2), dp.Plot(f3), dp.Plot(f4), columns=3),
+                label=col,
+            )
+        else:
+            f2 = px.line(
+                df1,
+                x="idx",
+                y="mean",
+                markers=True,
+                title="Standard deviation of Mean is "
+                + str(list(df2[df2["attribute"] == col].mean_stddev.values)[0]),
+            )
+            f2.update_traces(line_color=global_theme[2], marker=dict(size=14))
+            f2.layout.plot_bgcolor = global_plot_bg_color
+            f2.layout.paper_bgcolor = global_paper_bg_color
+            return dp.Group(
+                dp.Text("#"),
+                dp.Text(f5),
+                dp.Plot(f1),
+                dp.Group(dp.Plot(f2), columns=1),
+                label=col,
+            )
     else:
         return dp.Group(dp.Text("#"), dp.Text(f5), dp.Plot(f1), label=col)
 
