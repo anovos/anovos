@@ -190,27 +190,29 @@ def statistics(
     count_target = idf_target.count()
     count_source = idf_source.count()
     if use_sampling:
-        if count_target > sample_size or count_source > sample_size:
+        if count_target > sample_size:
             idf_target = data_sample(
                 idf_target,
                 strata_cols=strata_cols,
-                fraction=sample_size / max(count_target, count_source),
-                method_type=sample_method,
-                stratified_type=stratified_type,
-                seed_value=sample_seed,
-            )
-            idf_source = data_sample(
-                idf_source,
-                strata_cols=strata_cols,
-                fraction=sample_size / max(count_target, count_source),
+                fraction=sample_size / count_target,
                 method_type=sample_method,
                 stratified_type=stratified_type,
                 seed_value=sample_seed,
             )
             if persist:
                 idf_target = idf_target.persist(persist_option)
-                idf_source = idf_source.persist(persist_option)
             count_target = idf_target.count()
+        if count_source > sample_size:
+            idf_source = data_sample(
+                idf_source,
+                strata_cols=strata_cols,
+                fraction=sample_size / count_source,
+                method_type=sample_method,
+                stratified_type=stratified_type,
+                seed_value=sample_seed,
+            )
+            if persist:
+                idf_source = idf_source.persist(persist_option)
             count_source = idf_source.count()
 
     if source_path == "NA":
