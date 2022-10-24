@@ -65,9 +65,7 @@ def test_that_stability_index_can_be_calculated(
 
 
 def test_that_binary_column_can_be_calculated(idfs_binary, cols_to_check_binary):
-    df_stability = stability_index_computation(
-        spark_session, idfs_binary, binary_cols="A"
-    ).toPandas()
+    df_stability = stability_index_computation(idfs_binary, binary_cols="A").toPandas()
     df_stability.index = df_stability["attribute"]
     assert_almost_equal(
         df_stability.loc["A", cols_to_check_binary], [0.1, 0.0, 0.0, 1.0], 3
