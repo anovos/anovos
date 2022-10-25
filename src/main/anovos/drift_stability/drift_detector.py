@@ -3,6 +3,8 @@
 from __future__ import division, print_function
 
 import sys
+import operator
+import functools
 import numpy as np
 import pandas as pd
 import pyspark
@@ -355,15 +357,10 @@ def statistics(
         )
 
     odf_union = unionAll(temp_list)
-    odf = odf_union.withColumn(
-        "flagged",
-        F.coalesce(
-            *[
-                F.when(F.col(c) > threshold, 1).otherwise(0)
-                for c in odf_union.columns[1:]
-            ]
-        ),
+    cond_expr = functools.reduce(
+        operator.or_, [(F.col(c) > threshold) for c in odf_union.columns[1:]]
     )
+    odf = odf_union.withColumn("flagged", F.when(cond_expr, 1).otherwise(0))
 
     if print_impact:
         logger.info("All Attributes:")
