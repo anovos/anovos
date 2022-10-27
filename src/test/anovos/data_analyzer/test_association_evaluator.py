@@ -287,7 +287,7 @@ def test_variable_clustering(spark_session: SparkSession):
 
     result_df2 = variable_clustering(spark_session, test_df, drop_cols=["ifa", "label"])
 
-    assert result_df2.count() == 14
+    assert result_df2.count() == 15
     assert len(result_df2.columns) == 3
     assert (
             result_df2.where(
@@ -295,13 +295,13 @@ def test_variable_clustering(spark_session: SparkSession):
             )
             .toPandas()
             .to_dict("list")["RS_Ratio"][0]
-            == 0.3403
+            == 0.3409
     )
     assert (
             result_df2.where((F.col("cluster") == 0) & (F.col("attribute") == "sex"))
             .toPandas()
             .to_dict("list")["RS_Ratio"][0]
-            == 0.3362
+            == 0.3378
     )
     assert (
             result_df2.where(
@@ -309,7 +309,7 @@ def test_variable_clustering(spark_session: SparkSession):
             )
             .toPandas()
             .to_dict("list")["RS_Ratio"][0]
-            == 0.4695
+            == 0.4693
     )
     assert (
             result_df2.where(
@@ -317,35 +317,35 @@ def test_variable_clustering(spark_session: SparkSession):
             )
             .toPandas()
             .to_dict("list")["RS_Ratio"][0]
-            == 0.8133
+            == 0.8106
     )
     assert (
-            result_df2.where((F.col("cluster") == 3) & (F.col("attribute") == "fnlwgt"))
+            result_df2.where((F.col("cluster") == 1) & (F.col("attribute") == "fnlwgt"))
             .toPandas()
             .to_dict("list")["RS_Ratio"][0]
-            == 0.8215
-    )
-    assert (
-            result_df2.where(
-                (F.col("cluster") == 4) & (F.col("attribute") == "capital-loss")
-            )
-            .toPandas()
-            .to_dict("list")["RS_Ratio"][0]
-            == 0.4905
+            == 0.2262
     )
     assert (
             result_df2.where(
-                (F.col("cluster") == 1) & (F.col("attribute") == "education-num")
+                (F.col("cluster") == 2) & (F.col("attribute") == "capital-loss")
             )
             .toPandas()
             .to_dict("list")["RS_Ratio"][0]
-            == 0.3653
+            == 0.9185
     )
     assert (
-            result_df2.where((F.col("cluster") == 1) & (F.col("attribute") == "occupation"))
+            result_df2.where(
+                (F.col("cluster") == 2) & (F.col("attribute") == "education-num")
+            )
             .toPandas()
             .to_dict("list")["RS_Ratio"][0]
-            == 0.3997
+            == 0.3483
+    )
+    assert (
+            result_df2.where((F.col("cluster") == 2) & (F.col("attribute") == "occupation"))
+            .toPandas()
+            .to_dict("list")["RS_Ratio"][0]
+            == 0.3690
     )
 
 

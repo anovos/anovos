@@ -239,8 +239,7 @@ def variable_clustering(
             .rdd.flatMap(lambda x: x)
             .collect()
         )
-    double_cols = [i[0] for i in idf_sample.dtypes if i[1] == "double"]
-    list_of_cols = [e for e in list_of_cols if e not in remove_cols + double_cols]
+    list_of_cols = [e for e in list_of_cols if e not in remove_cols]
     idf_sample = idf_sample.select(list_of_cols)
     cat_cols = attributeType_segregation(idf_sample)[1]
 
