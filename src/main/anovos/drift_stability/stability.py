@@ -13,6 +13,7 @@ from .validations import compute_si, check_metric_weightages, check_threshold
 
 
 def stability_index_computation(
+    spark,
     idfs,
     list_of_cols="all",
     drop_cols=[],
@@ -127,6 +128,8 @@ def stability_index_computation(
 
     Parameters
     ----------
+    spark
+        Spark Session
     idfs
         Variable number of input dataframes
     list_of_cols
@@ -176,7 +179,7 @@ def stability_index_computation(
     Returns
     -------
     DataFrame
-        [attribute, mean_si, stddev_si, kurtosis_si, mean_cv, stddev_cv, kurtosis_cv, stability_index].
+        [attribute, mean_stddev, mean_si, stddev_si, kurtosis_si, mean_cv, stddev_cv, kurtosis_cv, stability_index].
         *_cv is coefficient of variation for each metric. *_si is stability index for each metric.
         stability_index is net weighted stability index based on the individual metrics' stability index.
 
