@@ -18,9 +18,10 @@ def stability_index_computation(
     drop_cols=[],
     metric_weightages={"mean": 0.5, "stddev": 0.3, "kurtosis": 0.2},
     binary_cols=[],
+    existing_metric_path="",
     appended_metric_path="",
-    persist_use: bool = True,
-    persist_type=pyspark.StorageLevel.MEMORY_AND_DISK,
+    persist: bool = True,
+    persist_option=pyspark.StorageLevel.MEMORY_AND_DISK,
     threshold=1,
     print_impact=False,
 ):
@@ -142,18 +143,27 @@ def stability_index_computation(
     metric_weightages
         Takes input in dictionary format with keys being the metric name - "mean","stdev","kurtosis"
         and value being the weightage of the metric (between 0 and 1). Sum of all weightages must be 1.
-         (Default value = {"mean": 0.5, "stddev": 0.3, "kurtosis": 0.2})
+        (Default value = {"mean": 0.5, "stddev": 0.3, "kurtosis": 0.2})
     binary_cols
-        SH
+        List of numerical columns to be treated as binary columns e.g., ["col1","col2"].
+        Alternatively, columns can be specified in a string format, where different column names are
+        separated by pipe delimiter “|”. For the specified binary columns,
+        only the mean value will be used as the statistical metric (standard deviation and kurtosis will be skipped).
+        In addition, standard deviation will be used to measure the stability of mean instead of CV.
+        (Default value = [])
+    existing_metric_path
+        This argument is path for referring pre-existing metrics of historical datasets and is
+        of schema [idx, attribute, mean, stdev, kurtosis].
+        idx is index number of historical datasets assigned in chronological order. (Default value = "")
     appended_metric_path
         This argument is path for saving input dataframes metrics after appending to the
         historical datasets' metrics. (Default value = "")
-    persist_use
+    persist
         Boolean argument - True or False. This argument is used to determine whether to persist on
         binning result of source and target dataset, True will enable the use of persist, otherwise False.
         It is recommended to set this as True for large datasets. (Default value = True)
-    persist_type
-        If persist_use is True, this argument is used to determine the type of persist.
+    persist_option
+        If persist is True, this argument is used to determine the type of persist.
         (Default value = pyspark.StorageLevel.MEMORY_AND_DISK)
     threshold
         A column is flagged if the stability index is below the threshold, which varies between 0 to 4.
@@ -193,23 +203,32 @@ def stability_index_computation(
     check_metric_weightages(metric_weightages)
     check_threshold(threshold)
 
+    if existing_metric_path:
+        existing_metric_df = spark.read.csv(
+            existing_metric_path, header=True, inferSchema=True
+        )
+        dfs_count = int(existing_metric_df.select(F.max(F.col("idx"))).first()[0]) + 1
+    else:
+        existing_metric_df = None
+        dfs_count = 1
+
     def unionAll(dfs):
         first, *_ = dfs
         return first.sql_ctx.createDataFrame(
             first.sql_ctx._sc.union([df.rdd for df in dfs]), first.schema
         )
 
-    if persist_use:
+    if persist:
         for i in range(len(idfs)):
-            idfs[i].persist(persist_type)
+            idfs[i] = idfs[i].select(list_of_cols)
+            idfs[i].persist(persist_option)
 
     list_temp_all_col = []
     if appended_metric_path:
         list_append_all = []
     for i in list_of_cols:
+        count_idf = dfs_count
         list_temp_col_in_idf = []
-        if appended_metric_path:
-            count_idf = 1
         for idf in idfs:
             df_stat_each = idf.select(
                 F.mean(i).alias("mean"),
@@ -241,6 +260,12 @@ def stability_index_computation(
                     list_append_all.append(df_append_single)
                     count_idf += 1
         if i in binary_cols:
+            if existing_metric_df:
+                existing_df_for_single_col = existing_metric_df.where(
+                    F.col("attribute") == str(i)
+                ).select("mean", "stddev", "kurtosis")
+                if existing_df_for_single_col.count() > 0:
+                    list_temp_col_in_idf.append(existing_df_for_single_col)
             df_stat_col = (
                 unionAll(list_temp_col_in_idf)
                 .select(
@@ -265,6 +290,12 @@ def stability_index_computation(
                 )
             )
         else:
+            if existing_metric_df:
+                existing_df_for_single_col = existing_metric_df.where(
+                    F.col("attribute") == str(i)
+                ).select("mean", "stddev", "kurtosis")
+                if existing_df_for_single_col.count() > 0:
+                    list_temp_col_in_idf.append(existing_df_for_single_col)
             df_stat_col = (
                 unionAll(list_temp_col_in_idf)
                 .select(
@@ -291,6 +322,8 @@ def stability_index_computation(
         list_temp_all_col.append(df_stat_col)
     odf = unionAll(list_temp_all_col)
     if appended_metric_path:
+        if existing_metric_df:
+            list_append_all.append(existing_metric_df)
         df_append = unionAll(list_append_all).orderBy(F.col("idx"))
         df_append.coalesce(1).write.csv(
             appended_metric_path, header=True, mode="overwrite"
@@ -316,6 +349,10 @@ def stability_index_computation(
                 1,
             ).otherwise(0),
         )
+        .withColumn("mean_stddev", F.round(F.col("mean_stddev"), 4))
+        .withColumn("mean_cv", F.round(F.col("mean_cv"), 4))
+        .withColumn("stddev_cv", F.round(F.col("stddev_cv"), 4))
+        .withColumn("kurtosis_cv", F.round(F.col("kurtosis_cv"), 4))
         .drop("si_array")
     )
 
@@ -326,7 +363,7 @@ def stability_index_computation(
         unstable = odf.where(F.col("flagged") == 1)
         unstable.show(unstable.count())
 
-    if persist_use:
+    if persist:
         for i in range(len(idfs)):
             idfs[i].unpersist()
 

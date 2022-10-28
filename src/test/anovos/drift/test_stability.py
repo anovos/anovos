@@ -2,7 +2,7 @@ import pytest
 import pandas
 import numpy
 from numpy.testing import assert_almost_equal
-from anovos.drift.stability import (
+from anovos.drift_stability.stability import (
     stability_index_computation,
 )
 
