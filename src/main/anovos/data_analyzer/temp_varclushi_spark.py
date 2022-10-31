@@ -1,4 +1,4 @@
-from pyspark.ml.feature import (PCA, VectorAssembler, StandardScaler)
+from pyspark.ml.feature import PCA, VectorAssembler, StandardScaler
 from pyspark.mllib.linalg.distributed import RowMatrix
 from pyspark.ml.functions import vector_to_array
 from pyspark.sql import functions as F
@@ -33,7 +33,9 @@ class VarClusHiSpark(object):
         stream_df = vecAssembler.transform(df)
 
         # Standardize
-        scaler = StandardScaler(inputCol="features", outputCol="scaledFeatures", withStd=True, withMean=True)
+        scaler = StandardScaler(
+            inputCol="features", outputCol="scaledFeatures", withStd=True, withMean=True
+        )
         scalerModel = scaler.fit(stream_df)
         scaled_df = scalerModel.transform(stream_df)
 
@@ -46,8 +48,11 @@ class VarClusHiSpark(object):
         trans_df = model.transform(scaled_df)
 
         # get principal Components
-        princomps = trans_df.select("output").withColumn("pc", vector_to_array("output")).select(
-            [F.col("pc")[i] for i in range(n_pcs)])  # expand Vector Rows into seperate columns
+        princomps = (
+            trans_df.select("output")
+            .withColumn("pc", vector_to_array("output"))
+            .select([F.col("pc")[i] for i in range(n_pcs)])
+        )  # expand Vector Rows into seperate columns
 
         # get eigenvectors
         eigvecs = model.pc.toArray()  # Numpy array first
