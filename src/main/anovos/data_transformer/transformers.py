@@ -1679,7 +1679,7 @@ def imputation_sklearn(
     list_of_cols="missing",
     drop_cols=[],
     method_type="KNN",
-    sample_size=500000,
+    sample_size=10000,
     pre_existing_model=False,
     model_path="NA",
     output_mode="replace",
@@ -1763,6 +1763,7 @@ def imputation_sklearn(
 
     """
 
+    idf = idf.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
     num_cols = attributeType_segregation(idf)[0]
     if stats_missing == {}:
         missing_df = missingCount_computation(spark, idf, num_cols)
@@ -1855,6 +1856,7 @@ def imputation_sklearn(
     else:
         sample_ratio = min(1.0, float(sample_size) / idf.count())
         idf_model = idf.sample(False, sample_ratio, 0)
+        idf_model = idf_model.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
         idf_pd = idf_model.select(list_of_cols).toPandas()
 
         if method_type == "KNN":
@@ -1900,7 +1902,7 @@ def imputation_sklearn(
         return pd.Series(row.tolist() for row in imputer.transform(X))
 
     odf = idf.withColumn("features", prediction(*list_of_cols))
-    odf.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
+    odf = odf.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
 
     odf_schema = odf.schema
     for i in list_of_cols:
@@ -1948,6 +1950,9 @@ def imputation_sklearn(
                 "inner",
             )
         odf_print.show(len(list_of_cols), False)
+    idf.unpersist()
+    idf_model.unpersist()
+    odf.unpersist()
     return odf
 
 
