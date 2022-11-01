@@ -45,7 +45,7 @@ default_template = (
         </html>
         """
     ),
-    dp.Text("# Anovos Data Assessment Report"),
+    dp.Text("# ML-Anovos Report"),
 )
 
 blank_df = dp.DataTable(pd.DataFrame(columns=[" "], index=range(1)), label=" ")
