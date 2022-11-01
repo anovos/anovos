@@ -70,6 +70,7 @@ from anovos.data_analyzer.stats_generator import (
     uniqueCount_computation,
 )
 from anovos.data_ingest.data_ingest import read_dataset, recast_column
+from anovos.data_ingest.data_sampling import data_sample
 from anovos.shared.utils import ends_with, attributeType_segregation, get_dtype
 
 # enable_iterative_imputer is prequisite for importing IterativeImputer
@@ -1676,17 +1677,24 @@ def imputation_MMM(
 def imputation_sklearn(
     spark,
     idf,
-    list_of_cols="missing",
-    drop_cols=[],
-    method_type="KNN",
-    sample_size=10000,
-    pre_existing_model=False,
-    model_path="NA",
-    output_mode="replace",
+    list_of_cols: list = "missing",
+    drop_cols: list = [],
+    method_type: str = "KNN",
+    use_sampling: bool = True,
+    sample_method: str = "random",
+    strata_cols: str = "all",
+    stratified_type: str = "population",
+    sample_size: int = 10000,
+    sample_seed: int = 42,
+    persist: bool = True,
+    persist_option=pyspark.StorageLevel.MEMORY_AND_DISK,
+    pre_existing_model: bool = False,
+    model_path: str = "NA",
+    output_mode: str = "replace",
     stats_missing={},
-    run_type="local",
-    auth_key="NA",
-    print_impact=False,
+    run_type: str = "local",
+    auth_key: str = "NA",
+    print_impact: bool = False,
 ):
     """
     The function "imputation_sklearn" leverages sklearn imputer algorithms. Two methods are supported via this function:
@@ -1732,8 +1740,37 @@ def imputation_sklearn(
     method_type
         "KNN", "regression".
         "KNN" option trains a sklearn.impute.KNNImputer. "regression" option trains a sklearn.impute.IterativeImputer (Default value = "KNN")
+    use_sampling
+        Boolean argument - True or False. This argument is used to determine whether to use random sample method on
+        source and target dataset, True will enable the use of sample method, otherwise False.
+        It is recommended to set this as True for large datasets. (Default value = True)
+    sample_method
+        If use_sampling is True, this argument is used to determine the sampling method.
+        "stratified" for Stratified sampling, "random" for Random Sampling.
+        For more details, please refer to https://docs.anovos.ai/api/data_ingest/data_sampling.html.
+        (Default value = "random")
+    strata_cols
+        If use_sampling is True and sample_method is "stratified", this argument is used to determine the list
+        of columns used to be treated as strata. For more details, please refer to
+        https://docs.anovos.ai/api/data_ingest/data_sampling.html. (Default value = "all")
+    stratified_type
+        If use_sampling is True and sample_method is "stratified", this argument is used to determine the stratified
+        sampling method. "population" stands for Proportionate Stratified Sampling,
+        "balanced" stands for Optimum Stratified Sampling. For more details, please refer to
+        https://docs.anovos.ai/api/data_ingest/data_sampling.html. (Default value = "population")
     sample_size
-        Maximum rows for training the sklearn imputer (Default value = 500000)
+        If use_sampling is True, this argument is used to determine maximum rows for training the sklearn imputer
+        (Default value = 10000)
+    sample_seed
+        If use_sampling is True, this argument is used to determine the seed of sampling method.
+        (Default value = 42)
+    persist
+        Boolean argument - True or False. This argument is used to determine whether to persist on
+        binning result of source and target dataset, True will enable the use of persist, otherwise False.
+        It is recommended to set this as True for large datasets. (Default value = True)
+    persist_option
+        If persist is True, this argument is used to determine the type of persist.
+        (Default value = pyspark.StorageLevel.MEMORY_AND_DISK)
     pre_existing_model
         Boolean argument – True or False. True if imputation model exists already, False otherwise. (Default value = False)
     model_path
@@ -1763,7 +1800,8 @@ def imputation_sklearn(
 
     """
 
-    idf = idf.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
+    if persist:
+        idf = idf.persist(persist_option)
     num_cols = attributeType_segregation(idf)[0]
     if stats_missing == {}:
         missing_df = missingCount_computation(spark, idf, num_cols)
@@ -1854,9 +1892,19 @@ def imputation_sklearn(
             imputer = pickle.load(open(model_path + "/imputation_sklearn.sav", "rb"))
         idf_rest = idf
     else:
-        sample_ratio = min(1.0, float(sample_size) / idf.count())
-        idf_model = idf.sample(False, sample_ratio, 0)
-        idf_model = idf_model.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
+        if use_sampling:
+            count_idf = idf.count()
+            if count_idf > sample_size:
+                idf_model = data_sample(
+                    idf,
+                    strata_cols=strata_cols,
+                    fraction=sample_size / count_idf,
+                    method_type=sample_method,
+                    stratified_type=stratified_type,
+                    seed_value=sample_seed,
+                )
+                if persist:
+                    idf_model = idf_model.persist(persist_option)
         idf_pd = idf_model.select(list_of_cols).toPandas()
 
         if method_type == "KNN":
@@ -1902,7 +1950,8 @@ def imputation_sklearn(
         return pd.Series(row.tolist() for row in imputer.transform(X))
 
     odf = idf.withColumn("features", prediction(*list_of_cols))
-    odf = odf.persist(pyspark.StorageLevel.MEMORY_AND_DISK)
+    if persist:
+        odf = odf.persist(persist_option)
 
     odf_schema = odf.schema
     for i in list_of_cols:
@@ -1950,9 +1999,10 @@ def imputation_sklearn(
                 "inner",
             )
         odf_print.show(len(list_of_cols), False)
-    idf.unpersist()
-    idf_model.unpersist()
-    odf.unpersist()
+    if persist:
+        idf.unpersist()
+        idf_model.unpersist()
+        odf.unpersist()
     return odf
 
 
