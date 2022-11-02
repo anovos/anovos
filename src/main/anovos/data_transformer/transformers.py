@@ -1989,7 +1989,7 @@ def imputation_sklearn(
             odf_print = missing_df.select(
                 "attribute", F.col("missing_count").alias("missingCount_before")
             ).join(
-                missingCount_computation(spark, odf, output_cols)
+                missingCount_computation(spark, odf, list_of_cols_rename)
                 .withColumnRenamed("attribute", "attribute_after")
                 .withColumn(
                     "attribute",
