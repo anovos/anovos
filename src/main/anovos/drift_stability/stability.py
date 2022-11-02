@@ -230,6 +230,10 @@ def stability_index_computation(
     if appended_metric_path:
         list_append_all = []
     for i in list_of_cols:
+        if i in binary_cols:
+            col_type = "Binary"
+        else:
+            col_type = "Numerical"
         count_idf = dfs_count
         list_temp_col_in_idf = []
         for idf in idfs:
@@ -240,88 +244,43 @@ def stability_index_computation(
             )
             list_temp_col_in_idf.append(df_stat_each)
             if appended_metric_path:
-                if i in binary_cols:
-                    df_append_single = df_stat_each.select(
-                        F.lit(str(count_idf)).alias("idx"),
-                        F.lit(str(i)).alias("attribute"),
-                        F.lit("Binary").alias("type"),
-                        "mean",
-                        "stddev",
-                        "kurtosis",
-                    )
-                    list_append_all.append(df_append_single)
-                    count_idf += 1
-                else:
-                    df_append_single = df_stat_each.select(
-                        F.lit(str(count_idf)).alias("idx"),
-                        F.lit(str(i)).alias("attribute"),
-                        F.lit("Numerical").alias("type"),
-                        "mean",
-                        "stddev",
-                        "kurtosis",
-                    )
-                    list_append_all.append(df_append_single)
-                    count_idf += 1
-        if i in binary_cols:
-            if existing_metric_df:
-                existing_df_for_single_col = existing_metric_df.where(
-                    F.col("attribute") == str(i)
-                ).select("mean", "stddev", "kurtosis")
-                if existing_df_for_single_col.count() > 0:
-                    list_temp_col_in_idf.append(existing_df_for_single_col)
-            df_stat_col = (
-                unionAll(list_temp_col_in_idf)
-                .select(
-                    F.stddev("mean").alias("std_of_mean"),
-                    F.mean("mean").alias("mean_of_mean"),
-                    F.stddev("stddev").alias("std_of_stddev"),
-                    F.mean("stddev").alias("mean_of_stddev"),
-                    F.stddev("kurtosis").alias("std_of_kurtosis"),
-                    F.mean("kurtosis").alias("mean_of_kurtosis"),
-                )
-                .select(
+                df_append_single = df_stat_each.select(
+                    F.lit(str(count_idf)).alias("idx"),
                     F.lit(str(i)).alias("attribute"),
-                    F.lit("Binary").alias("type"),
-                    F.col("std_of_mean").alias("mean_stddev"),
-                    (F.col("std_of_mean") / F.col("mean_of_mean")).alias("mean_cv"),
-                    (F.col("std_of_stddev") / F.col("mean_of_stddev")).alias(
-                        "stddev_cv"
-                    ),
-                    (F.col("std_of_kurtosis") / F.col("mean_of_kurtosis")).alias(
-                        "kurtosis_cv"
-                    ),
+                    F.lit(col_type).alias("type"),
+                    "mean",
+                    "stddev",
+                    "kurtosis",
                 )
+                list_append_all.append(df_append_single)
+                count_idf += 1
+        if existing_metric_df:
+            existing_df_for_single_col = existing_metric_df.where(
+                F.col("attribute") == str(i)
+            ).select("mean", "stddev", "kurtosis")
+            if existing_df_for_single_col.count() > 0:
+                list_temp_col_in_idf.append(existing_df_for_single_col)
+        df_stat_col = (
+            unionAll(list_temp_col_in_idf)
+            .select(
+                F.stddev("mean").alias("std_of_mean"),
+                F.mean("mean").alias("mean_of_mean"),
+                F.stddev("stddev").alias("std_of_stddev"),
+                F.mean("stddev").alias("mean_of_stddev"),
+                F.stddev("kurtosis").alias("std_of_kurtosis"),
+                F.mean("kurtosis").alias("mean_of_kurtosis"),
             )
-        else:
-            if existing_metric_df:
-                existing_df_for_single_col = existing_metric_df.where(
-                    F.col("attribute") == str(i)
-                ).select("mean", "stddev", "kurtosis")
-                if existing_df_for_single_col.count() > 0:
-                    list_temp_col_in_idf.append(existing_df_for_single_col)
-            df_stat_col = (
-                unionAll(list_temp_col_in_idf)
-                .select(
-                    F.stddev("mean").alias("std_of_mean"),
-                    F.mean("mean").alias("mean_of_mean"),
-                    F.stddev("stddev").alias("std_of_stddev"),
-                    F.mean("stddev").alias("mean_of_stddev"),
-                    F.stddev("kurtosis").alias("std_of_kurtosis"),
-                    F.mean("kurtosis").alias("mean_of_kurtosis"),
-                )
-                .select(
-                    F.lit(str(i)).alias("attribute"),
-                    F.lit("Numerical").alias("type"),
-                    F.col("std_of_mean").alias("mean_stddev"),
-                    (F.col("std_of_mean") / F.col("mean_of_mean")).alias("mean_cv"),
-                    (F.col("std_of_stddev") / F.col("mean_of_stddev")).alias(
-                        "stddev_cv"
-                    ),
-                    (F.col("std_of_kurtosis") / F.col("mean_of_kurtosis")).alias(
-                        "kurtosis_cv"
-                    ),
-                )
+            .select(
+                F.lit(str(i)).alias("attribute"),
+                F.lit(col_type).alias("type"),
+                F.col("std_of_mean").alias("mean_stddev"),
+                (F.col("std_of_mean") / F.col("mean_of_mean")).alias("mean_cv"),
+                (F.col("std_of_stddev") / F.col("mean_of_stddev")).alias("stddev_cv"),
+                (F.col("std_of_kurtosis") / F.col("mean_of_kurtosis")).alias(
+                    "kurtosis_cv"
+                ),
             )
+        )
         list_temp_all_col.append(df_stat_col)
     odf = unionAll(list_temp_all_col)
     if appended_metric_path:
