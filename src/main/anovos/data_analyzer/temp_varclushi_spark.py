@@ -8,6 +8,7 @@ import math
 from factor_analyzer import Rotator
 import pandas as pd
 import numpy as np
+import random
 
 # PySpark
 class VarClusHiSpark(object):
