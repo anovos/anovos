@@ -1944,34 +1944,35 @@ def imputation_sklearn(
                     open(model_path + "/imputation_sklearn.sav", "rb")
                 )
 
-    @F.pandas_udf(returnType=T.ArrayType(T.DoubleType()))
-    def prediction(*cols):
-        X = pd.concat(cols, axis=1)
-        return pd.Series(row.tolist() for row in imputer.transform(X))
-
-    odf = idf.withColumn("features", prediction(*list_of_cols))
-    if persist:
-        odf = odf.persist(persist_option)
-
-    odf_schema = odf.schema
+    list_append_schema = []
+    list_of_cols_rename = []
     for i in list_of_cols:
-        odf_schema = odf_schema.add(T.StructField(i + "_imputed", T.FloatType()))
-    odf = (
-        odf.rdd.map(lambda x: (*x, *x["features"]))
-        .toDF(schema=odf_schema)
-        .drop("features")
-    )
+        list_append_schema.append(T.StructField(str(i + "_imputed"), T.FloatType()))
+        list_of_cols_rename.append(str(i + "_imputed"))
+    schema = T.StructType(list_append_schema + idf.schema.fields)
 
-    output_cols = []
-    for i in list_of_cols:
-        if output_mode == "append":
-            if i not in missing_cols:
-                odf = odf.drop(i + "_imputed")
-            else:
-                output_cols.append(i + "_imputed")
-        else:
-            odf = odf.drop(i).withColumnRenamed(i + "_imputed", i)
-    odf = odf.select(idf.columns + output_cols)
+    @F.pandas_udf(schema, F.PandasUDFType.GROUPED_MAP)
+    def produce_odf(pdf):
+        pdf_1 = pdf[list_of_cols]
+        return pd.concat(
+            [
+                pd.DataFrame(
+                    data=imputer.transform(pdf_1), columns=list_of_cols_rename
+                ),
+                pdf,
+            ],
+            axis=1,
+        )
+
+    result_df = idf.groupby().apply(produce_odf)
+
+    if output_mode == "replace":
+        odf = result_df.drop(*list_of_cols)
+        for i in list_of_cols:
+            odf = odf.withColumnRenamed(i + "_imputed", i)
+        odf = odf.select(idf.columns)
+    else:
+        odf = result_df.select(idf.columns + list_of_cols_rename)
 
     if print_impact:
         if output_mode == "replace":
