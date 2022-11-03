@@ -89,10 +89,6 @@ jobs:
         run: |
           export SENTENCE_TRANSFORMERS_HOME="~/.cache"
 
-      - name: Install Anovos in editable mode
-        run: |
-          pip install -e .
-
       - name: Run all unit tests with coverage
         run: |
           pytest -v --cov=src/main/anovos src/test/anovos
