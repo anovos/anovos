@@ -435,6 +435,7 @@ class VarClusHiSpark(object):
                 break
 
         return self
+
     def _rsquarespu(self):
 
         cols = ["Cluster", "Variable", "RS_Own", "RS_NC", "RS_Ratio"]
