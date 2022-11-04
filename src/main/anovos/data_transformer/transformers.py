@@ -1679,7 +1679,7 @@ def imputation_sklearn(
     idf,
     list_of_cols: list = "missing",
     drop_cols: list = [],
-    method_type: str = "KNN",
+    method_type: str = "regression",
     use_sampling: bool = True,
     sample_method: str = "random",
     strata_cols: str = "all",
@@ -1707,7 +1707,8 @@ def imputation_sklearn(
     of missing values to most. All the hyperparameters used in the above mentioned imputers are their default values.
 
     However, sklearn imputers are not scalable, which might be slow if the size of the input dataframe is large.
-    Thus, an input sample_size (the default value is 500,000) can be set to control the number of samples to be used
+    In fact, if the input dataframe size exceeds 10 GigaBytes, the model fitting step powered by sklearn might fail.
+    Thus, an input sample_size (the default value is 10,000) can be set to control the number of samples to be used
     to train the imputer. If the total number of input dataset exceeds sample_size, the rest of the samples will be imputed
     using the trained imputer in a scalable manner. This is one of the way to demonstrate how Anovos has been
     designed as a scalable feature engineering library.
@@ -1739,7 +1740,8 @@ def imputation_sklearn(
         a few handful of them. (Default value = [])
     method_type
         "KNN", "regression".
-        "KNN" option trains a sklearn.impute.KNNImputer. "regression" option trains a sklearn.impute.IterativeImputer (Default value = "KNN")
+        "KNN" option trains a sklearn.impute.KNNImputer. "regression" option trains a sklearn.impute.IterativeImputer
+        (Default value = "regression")
     use_sampling
         Boolean argument - True or False. This argument is used to determine whether to use random sample method on
         source and target dataset, True will enable the use of sample method, otherwise False.
@@ -1945,8 +1947,8 @@ def imputation_sklearn(
 
     @F.pandas_udf(returnType=T.ArrayType(T.DoubleType()))
     def prediction(*cols):
-        X = pd.concat(cols, axis=1)
-        return pd.Series(row.tolist() for row in imputer.transform(X))
+        input_pdf = pd.concat(cols, axis=1)
+        return pd.Series(row.tolist() for row in imputer.transform(input_pdf))
 
     result_df = idf.withColumn("features", prediction(*list_of_cols))
     if persist:
