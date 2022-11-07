@@ -63,12 +63,13 @@ class VarClusHiSpark(object):
             # Eigvalues
             corr = rm.computeCovariance().toArray()
             cov = RowMatrix(sc.parallelize(corr))
-            svd_model = cov.computeSVD(n_pcs)
-            eigvals = svd_model.s.toArray()  # Numpy array
+            # svd_model = cov.computeSVD(n_pcs)
+            # eigvals = svd_model.s.toArray()  # Numpy array
 
-            # Variance_Explained
+            # Eigenvals & Variance_Explained
             raw_model = cov.computeSVD(rm.numCols())
             raw_eigvals = raw_model.s.toArray()
+            eigvals = raw_eigvals[:n_pcs]
             varprops = eigvals / sum(raw_eigvals)  # Numpyp array
 
         corr_df = pd.DataFrame(corr, columns=feat_list, index=feat_list)
@@ -486,7 +487,5 @@ class VarClusHiSpark(object):
                 row += [rs_own, rs_nc, (1 - rs_own) / (1 - rs_nc)]
                 rs_table.loc[n_row] = row
                 n_row += 1
-                print("rs_own, rs_nc")
-                print(rs_own, rs_nc)
 
         return rs_table
