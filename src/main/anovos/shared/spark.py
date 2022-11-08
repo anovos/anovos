@@ -13,16 +13,16 @@ if version.parse(pyspark.__version__) < version.parse("3.0.0"):
     SPARK_JARS_PACKAGES = [
         "io.github.histogrammar:histogrammar_2.11:1.0.20",
         "io.github.histogrammar:histogrammar-sparksql_2.11:1.0.20",
+        "anovos:anovos-commons-scala_2.11:spark-2.4.4_scala-2.11.12",
         "org.apache.spark:spark-avro_2.11:" + str(pyspark.__version__),
     ]
-    SPARK_JARS = "./jars/anovos-commons-scala-assembly-spark-2.4.4_scala-2.11.12.jar"
 else:
     SPARK_JARS_PACKAGES = [
         "io.github.histogrammar:histogrammar_2.12:1.0.20",
         "io.github.histogrammar:histogrammar-sparksql_2.12:1.0.20",
+        "anovos:anovos-commons-scala_2.12:spark-3.0.0_scala-2.12.3",
         "org.apache.spark:spark-avro_2.12:" + str(pyspark.__version__),
     ]
-    SPARK_JARS = "./jars/anovos-commons-scala-assembly-spark-3.0.0_scala-2.12.3.jar"
 
 
 def init_spark(
@@ -92,7 +92,6 @@ configs = {
         "spark.yarn.appMasterEnv.ARROW_PRE_0_15_IPC_FORMAT": "1",
         "spark.executorEnv.ARROW_PRE_0_15_IPC_FORMAT": "1",
         "spark.sql.session.timeZone": "GMT",
-        "spark.jars": SPARK_JARS,
     },
 }
 
