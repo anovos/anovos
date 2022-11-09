@@ -1906,6 +1906,8 @@ def imputation_sklearn(
                 )
                 if persist:
                     idf_model = idf_model.persist(persist_option)
+        else:
+            idf_model = idf
         idf_pd = idf_model.select(list_of_cols).toPandas()
 
         if method_type == "KNN":
