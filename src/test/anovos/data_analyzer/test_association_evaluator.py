@@ -269,6 +269,8 @@ def test_variable_clustering(spark_session: SparkSession):
             F.col("income") == ">50K", F.lit(1.0)
         ),
     ).drop("income")
+    test_df = test_df.withColumn("engagement", F.lit(1))
+
     assert test_df.where(F.col("ifa") == "4062a").count() == 1
     assert (
         test_df.where(F.col("ifa") == "4062a").toPandas().to_dict("list")["age"][0]
@@ -277,6 +279,10 @@ def test_variable_clustering(spark_session: SparkSession):
     assert (
         test_df.where(F.col("ifa") == "4062a").toPandas().to_dict("list")["sex"][0]
         == "Male"
+    )
+    assert (
+            test_df.where(F.col("ifa") == "4062a").toPandas().to_dict("list")["engagement"][0]
+            == 1
     )
     assert (
         test_df.where(F.col("ifa") == "4062a")

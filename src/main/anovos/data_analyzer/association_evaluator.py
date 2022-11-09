@@ -147,7 +147,6 @@ def variable_clustering(
     list_of_cols="all",
     drop_cols=[],
     sample_size=100000,
-    stats_unique={},
     stats_mode={},
     print_impact=False,
 ):
@@ -187,11 +186,6 @@ def variable_clustering(
     sample_size
         Maximum sample size (in terms of number of rows) taken for the computation.
         Sample dataset is extracted using random sampling. (Default value = 100000)
-    stats_unique
-        Takes arguments for read_dataset (data_ingest module) function in a dictionary format
-        to read pre-saved statistics on unique value count i.e. if measures_of_cardinality or
-        uniqueCount_computation (data_analyzer.stats_generator module) has been computed & saved before.
-        This is used to remove single value columns from the analysis purpose. (Default value = {})
     stats_mode
         Takes arguments for read_dataset (data_ingest module) function in a dictionary format
         to read pre-saved statistics on most frequently seen values i.e. if measures_of_centralTendency or
@@ -223,22 +217,14 @@ def variable_clustering(
 
     idf_sample = idf.sample(False, min(1.0, float(sample_size) / idf.count()), 0)
     idf_sample.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
-    if stats_unique == {}:
-        remove_cols = (
-            uniqueCount_computation(spark, idf_sample, list_of_cols)
-            .where(F.col("unique_values") < 2)
-            .select("attribute")
-            .rdd.flatMap(lambda x: x)
-            .collect()
-        )
-    else:
-        remove_cols = (
-            read_dataset(spark, **stats_unique)
-            .where(F.col("unique_values") < 2)
-            .select("attribute")
-            .rdd.flatMap(lambda x: x)
-            .collect()
-        )
+
+    remove_cols = (
+        uniqueCount_computation(spark, idf_sample, list_of_cols)
+        .where(F.col("unique_values") < 2)
+        .select("attribute")
+        .rdd.flatMap(lambda x: x)
+        .collect()
+    )
     list_of_cols = [e for e in list_of_cols if e not in remove_cols]
     idf_sample = idf_sample.select(list_of_cols)
     cat_cols = attributeType_segregation(idf_sample)[1]
