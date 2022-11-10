@@ -215,7 +215,7 @@ def variable_clustering(
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError("Invalid input for Column(s)")
 
-    idf_sample = idf.sample(False, min(1.0, float(sample_size) / idf.count()), 0)
+    idf_sample = data_sample(idf, fraction=min(1.0, float(sample_size)/idf.count()), method_type="random", seed_value=0)
     idf_sample.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
 
     remove_cols = (
