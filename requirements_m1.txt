@@ -24,6 +24,6 @@ reverse_geocoder
 soupsieve
 statsmodels==0.13.2
 sentence_transformers
-geopy
-pygeohash
-geojson
+geopy==2.2.0
+pygeohash==1.2.0
+geojson==2.5.0

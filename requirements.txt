@@ -14,7 +14,7 @@ pyaml==21.10.1
 isort==5.10.1
 boto3
 cython
-pygeohash
+pygeohash==1.2.0
 s3path
 s3fs
 pybind11
@@ -27,7 +27,6 @@ tensorflow
 soupsieve
 statsmodels==0.13.2
 sentence_transformers
-geopy
-pygeohash
-geohash2
-geojson
+geopy==2.2.0
+geohash2==1.1
+geojson==2.5.0

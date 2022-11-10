@@ -14,7 +14,15 @@ input_dataset:
   delete_column: ["venueId", "venueCategoryId"]
   select_column: null
 
-
+# geospatial_controller: configurations for geospatial-analysis
+# geospatial anlaysis details will be shown in full report, a separate tab called "Geospatial Analyzer". The section summarizes the information about the geospatial features identified in the data and their landscaping view
+# geospatial_analyzer: if auto_detection_analyzer is set to True, it will trigger geospatial_autodetection to generate intermediate data, which is further used for producing the geospatial analyzer report
+# arguments of geospatial_analyzer are inout parameters for geospatial_autodetection function
+# geo_transformation: transformation of geospatial fields
+# if geo_format_conversion is set to True, conversion of locations from "lat, lon" format to other formats specified in loc_output_format will be triggered
+# if location_in_country_detection is set to True, it will check whether each lat-lon pair is insided a country.
+# if centroid_calculation is set to True, the centroid of the dataframe will be calculated based on list_of_lat, list_of_lon and id_col
+# if rog_calculation is set to True, the Radius of Gyration (in meter) of the dataframe will be calculated based on list_of_lat, list_of_lon and id_col
 geospatial_controller:
   geospatial_analyzer:
     auto_detection_analyzer: True
@@ -42,24 +50,6 @@ geospatial_controller:
     result_prefix_geo: ["L1"]
     loc_input_format: "dd"
     loc_output_format: "geohash"
-    
-    
-    # geo_format_geohash_conversion:
-    #  list_of_geohash: ["cel_geohash","cdl_geohash"]
-    #  output_format: 'dd'
-    #  result_prefix: ["cel", "cdl"]
-     # appended columns: ["cel_lat_dd", "cel_lon_dd", "cdl_lat_dd", "cdl_lon_dd"]
-     # if result_prefix = [], appended columns would be ["cel_geohash_lat_dd", "cel_geohash_lon_dd", "cdl_geohash_lat_dd", "cdl_geohash_lon_dd"
-
-
-  # location_distance_calculation:
-  #  list_of_cols_loc1: ["cel_lat_dd", "cel_lon_dd"] # should be the appended column from geohash conversion
-  #  list_of_cols_loc2: ["cdl_lat_dd", "cdl_lon_dd"] # should be the appended column from geohash conversion
-  #  loc_format: 'dd'
-  #  result_prefix: ["cel_cdl"] # appended column: "cel_cdl_distance"
-  #   # if result_prefix = [], appended columns would be "cel_lat_dd_cel_lon_dd_cdl_lat_dd_cdl_lon_dd_distance"
-  #  distance_type: "haversine"
-  #  unit: "m"
 
 anovos_basic_report:
   basic_report: False
