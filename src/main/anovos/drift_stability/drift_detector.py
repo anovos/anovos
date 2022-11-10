@@ -26,28 +26,28 @@ from .validations import check_distance_method, check_list_of_columns
 @check_distance_method
 @check_list_of_columns
 def statistics(
-    spark: SparkSession,
-    idf_target: DataFrame,
-    idf_source: DataFrame,
-    list_of_cols: list = "all",
-    drop_cols: list = None,
-    method_type: str = "PSI",
-    bin_method: str = "equal_range",
-    bin_size: int = 10,
-    threshold: float = 0.1,
-    use_sampling: bool = True,
-    sample_method: str = "random",
-    strata_cols: str = "all",
-    stratified_type: str = "population",
-    sample_size: int = 100000,
-    sample_seed: int = 42,
-    persist: bool = True,
+    spark,
+    idf_target,
+    idf_source,
+    list_of_cols="all",
+    drop_cols=None,
+    method_type="PSI",
+    bin_method="equal_range",
+    bin_size=10,
+    threshold=0.1,
+    use_sampling=True,
+    sample_method="random",
+    strata_cols="all",
+    stratified_type="population",
+    sample_size=100000,
+    sample_seed=42,
+    persist=True,
     persist_option=pyspark.StorageLevel.MEMORY_AND_DISK,
-    pre_existing_source: bool = False,
-    source_save: bool = True,
-    source_path: str = "NA",
-    model_directory: str = "drift_statistics",
-    print_impact: bool = False,
+    pre_existing_source=False,
+    source_save=True,
+    source_path="NA",
+    model_directory="drift_statistics",
+    print_impact=False,
 ):
     """
     When the performance of a deployed machine learning model degrades in production, one potential reason is that
@@ -121,18 +121,19 @@ def statistics(
         One or more methods can be passed in a form of list or string where different metrics are separated
         by pipe delimiter “|” e.g. ["PSI", "JSD"] or "PSI|JSD". (Default value = "PSI")
     bin_method
-        "equal_frequency", "equal_range".
+        String argument - "equal_frequency" or "equal_range".
         In "equal_range" method, each bin is of equal size/width and in "equal_frequency", each bin
         has equal no. of rows, though the width of bins may vary. (Default value = "equal_range")
     bin_size
-        Number of bins for creating histogram. (Default value = 10)
+        Integer argument - Number of bins for creating histogram. (Default value = 10)
     threshold
-        A column is flagged if any drift metric is above the threshold. (Default value = 0.1)
+        Float argument - A column is flagged if any drift metric is above the threshold. (Default value = 0.1)
     use_sampling
         Boolean argument - True or False. This argument is used to determine whether to use random sample method on
         source and target dataset, True will enable the use of sample method, otherwise False.
         It is recommended to set this as True for large datasets. (Default value = True)
     sample_method
+        String argument - "random" or "stratified".
         If use_sampling is True, this argument is used to determine the sampling method.
         "stratified" for Stratified sampling, "random" for Random Sampling.
         For more details, please refer to https://docs.anovos.ai/api/data_ingest/data_sampling.html.
@@ -142,15 +143,16 @@ def statistics(
         of columns used to be treated as strata. For more details, please refer to
         https://docs.anovos.ai/api/data_ingest/data_sampling.html. (Default value = "all")
     stratified_type
-        If use_sampling is True and sample_method is "stratified", this argument is used to determine the stratified
-        sampling method. "population" stands for Proportionate Stratified Sampling,
-        "balanced" stands for Optimum Stratified Sampling. For more details, please refer to
+        String argument - "population" or "balanced". If use_sampling is True and sample_method is "stratified",
+        this string argument is used to determine the stratified sampling method. "population" stands for
+        Proportionate Stratified Sampling, "balanced" stands for Optimum Stratified Sampling.
+        For more details, please refer to
         https://docs.anovos.ai/api/data_ingest/data_sampling.html. (Default value = "population")
     sample_size
-        If use_sampling is True, this argument is used to determine the sample size of sampling method.
+        Integer argument - If use_sampling is True, this argument is used to determine the sample size of sampling method.
         (Default value = 100000)
     sample_seed
-        If use_sampling is True, this argument is used to determine the seed of sampling method.
+        Integer argument - If use_sampling is True, this argument is used to determine the seed of sampling method.
         (Default value = 42)
     persist
         Boolean argument - True or False. This argument is used to determine whether to persist on
@@ -163,7 +165,7 @@ def statistics(
         Boolean argument – True or False. True if the drift_statistics folder (binning model &
         frequency counts for each attribute) exists already, False Otherwise. (Default value = False)
     source_save
-        Boolean argument - True or False. Will determine whether or not to save the source to source_path.
+        Boolean argument - True or False. This argument will determine whether or not to save the source to source_path.
         (Default value = False)
     source_path
         If pre_existing_source is False, this argument can be used for saving the drift_statistics folder.
@@ -174,10 +176,11 @@ def statistics(
         If pre_existing_source is False, this argument can be used for saving the drift stats to folder.
         The default drift statics directory is drift_statistics folder will have attribute_binning
         If pre_existing_source is True, this argument is model_directory for referring the drift statistics dir.
-        Default "drift_statistics" for temporarily saving source dataset attribute_binning folder. (Default value = "drift_statistics")
+        Default "drift_statistics" for temporarily saving source dataset attribute_binning folder.
+        (Default value = "drift_statistics")
     print_impact
-        True, False. (Default value = False)
-        This argument is to print out the drift statistics of all attributes and attributes meeting the threshold.
+        Boolean argument - True or False. This argument is to print out the drift statistics of all attributes
+        and attributes meeting the threshold. (Default value = False)
 
     Returns
     -------
