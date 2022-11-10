@@ -1677,24 +1677,25 @@ def imputation_MMM(
 def imputation_sklearn(
     spark,
     idf,
-    list_of_cols: list = "missing",
-    drop_cols: list = [],
-    method_type: str = "regression",
-    use_sampling: bool = True,
-    sample_method: str = "random",
-    strata_cols: str = "all",
-    stratified_type: str = "population",
-    sample_size: int = 10000,
-    sample_seed: int = 42,
-    persist: bool = True,
+    list_of_cols="missing",
+    drop_cols=[],
+    missing_threshold=1.0,
+    method_type="regression",
+    use_sampling=True,
+    sample_method="random",
+    strata_cols="all",
+    stratified_type="population",
+    sample_size=10000,
+    sample_seed=42,
+    persist=True,
     persist_option=pyspark.StorageLevel.MEMORY_AND_DISK,
-    pre_existing_model: bool = False,
-    model_path: str = "NA",
-    output_mode: str = "replace",
+    pre_existing_model=False,
+    model_path="NA",
+    output_mode="replace",
     stats_missing={},
-    run_type: str = "local",
-    auth_key: str = "NA",
-    print_impact: bool = False,
+    run_type="local",
+    auth_key="NA",
+    print_impact=False,
 ):
     """
     The function "imputation_sklearn" leverages sklearn imputer algorithms. Two methods are supported via this function:
@@ -1738,12 +1739,16 @@ def imputation_sklearn(
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
         It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
         a few handful of them. (Default value = [])
+    missing_threshold
+        Float argument - If list_of_cols is "missing", this argument is used to determined the missing threshold
+        for every column. The column that has more (count of missing value/ count of total value) >= missing_threshold
+        will be excluded from the list of columns to be imputed. (Default value = 1.0)
     method_type
         "KNN", "regression".
         "KNN" option trains a sklearn.impute.KNNImputer. "regression" option trains a sklearn.impute.IterativeImputer
         (Default value = "regression")
     use_sampling
-        Boolean argument - True or False. This argument is used to determine whether to use random sample method on
+        Boolean argument - True or False. This argument is used to determine whether to use sampling on
         source and target dataset, True will enable the use of sample method, otherwise False.
         It is recommended to set this as True for large datasets. (Default value = True)
     sample_method
@@ -1772,6 +1777,8 @@ def imputation_sklearn(
         It is recommended to set this as True for large datasets. (Default value = True)
     persist_option
         If persist is True, this argument is used to determine the type of persist.
+        For all the pyspark.StorageLevel option available in persist, please refer to
+        https://spark.apache.org/docs/latest/api/python/reference/api/pyspark.StorageLevel.html
         (Default value = pyspark.StorageLevel.MEMORY_AND_DISK)
     pre_existing_model
         Boolean argument – True or False. True if imputation model exists already, False otherwise. (Default value = False)
@@ -1827,7 +1834,7 @@ def imputation_sklearn(
 
     missing_cols = (
         missing_df.where(F.col("missing_count") > 0)
-        .where(F.col("missing_pct") < 1.0)
+        .where(F.col("missing_pct") < missing_threshold)
         .select("attribute")
         .rdd.flatMap(lambda x: x)
         .collect()
@@ -1904,10 +1911,10 @@ def imputation_sklearn(
                     stratified_type=stratified_type,
                     seed_value=sample_seed,
                 )
-                if persist:
-                    idf_model = idf_model.persist(persist_option)
         else:
             idf_model = idf
+        if persist:
+            idf_model = idf_model.persist(persist_option)
         idf_pd = idf_model.select(list_of_cols).toPandas()
 
         if method_type == "KNN":
