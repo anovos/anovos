@@ -24,7 +24,7 @@ from anovos.data_transformer.geospatial import (
     centroid,
 )
 from anovos.data_transformer.geo_utils import EARTH_RADIUS
-from anovos.drift_stability import detector as ddetector
+from anovos.drift_stability import drift_detector as ddetector
 from anovos.feature_store import feast_exporter
 from anovos.shared.spark import spark
 
