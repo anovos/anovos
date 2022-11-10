@@ -281,8 +281,10 @@ def test_variable_clustering(spark_session: SparkSession):
         == "Male"
     )
     assert (
-            test_df.where(F.col("ifa") == "4062a").toPandas().to_dict("list")["engagement"][0]
-            == 1
+        test_df.where(F.col("ifa") == "4062a")
+        .toPandas()
+        .to_dict("list")["engagement"][0]
+        == 1
     )
     assert (
         test_df.where(F.col("ifa") == "4062a")
@@ -296,62 +298,62 @@ def test_variable_clustering(spark_session: SparkSession):
     assert result_df2.count() == 15
     assert len(result_df2.columns) == 3
     assert (
-            result_df2.where(
-                (F.col("cluster") == 0) & (F.col("attribute") == "relationship")
-            )
-            .toPandas()
-            .to_dict("list")["RS_Ratio"][0]
-            == 0.3409
+        result_df2.where(
+            (F.col("cluster") == 0) & (F.col("attribute") == "relationship")
+        )
+        .toPandas()
+        .to_dict("list")["RS_Ratio"][0]
+        == 0.3409
     )
     assert (
-            result_df2.where((F.col("cluster") == 0) & (F.col("attribute") == "sex"))
-            .toPandas()
-            .to_dict("list")["RS_Ratio"][0]
-            == 0.3378
+        result_df2.where((F.col("cluster") == 0) & (F.col("attribute") == "sex"))
+        .toPandas()
+        .to_dict("list")["RS_Ratio"][0]
+        == 0.3378
     )
     assert (
-            result_df2.where(
-                (F.col("cluster") == 0) & (F.col("attribute") == "marital-status")
-            )
-            .toPandas()
-            .to_dict("list")["RS_Ratio"][0]
-            == 0.4693
+        result_df2.where(
+            (F.col("cluster") == 0) & (F.col("attribute") == "marital-status")
+        )
+        .toPandas()
+        .to_dict("list")["RS_Ratio"][0]
+        == 0.4693
     )
     assert (
-            result_df2.where(
-                (F.col("cluster") == 0) & (F.col("attribute") == "hours-per-week")
-            )
-            .toPandas()
-            .to_dict("list")["RS_Ratio"][0]
-            == 0.8106
+        result_df2.where(
+            (F.col("cluster") == 0) & (F.col("attribute") == "hours-per-week")
+        )
+        .toPandas()
+        .to_dict("list")["RS_Ratio"][0]
+        == 0.8106
     )
     assert (
-            result_df2.where((F.col("cluster") == 1) & (F.col("attribute") == "fnlwgt"))
-            .toPandas()
-            .to_dict("list")["RS_Ratio"][0]
-            == 0.2262
+        result_df2.where((F.col("cluster") == 1) & (F.col("attribute") == "fnlwgt"))
+        .toPandas()
+        .to_dict("list")["RS_Ratio"][0]
+        == 0.2262
     )
     assert (
-            result_df2.where(
-                (F.col("cluster") == 2) & (F.col("attribute") == "capital-loss")
-            )
-            .toPandas()
-            .to_dict("list")["RS_Ratio"][0]
-            == 0.9185
+        result_df2.where(
+            (F.col("cluster") == 2) & (F.col("attribute") == "capital-loss")
+        )
+        .toPandas()
+        .to_dict("list")["RS_Ratio"][0]
+        == 0.9185
     )
     assert (
-            result_df2.where(
-                (F.col("cluster") == 2) & (F.col("attribute") == "education-num")
-            )
-            .toPandas()
-            .to_dict("list")["RS_Ratio"][0]
-            == 0.3483
+        result_df2.where(
+            (F.col("cluster") == 2) & (F.col("attribute") == "education-num")
+        )
+        .toPandas()
+        .to_dict("list")["RS_Ratio"][0]
+        == 0.3483
     )
     assert (
-            result_df2.where((F.col("cluster") == 2) & (F.col("attribute") == "occupation"))
-            .toPandas()
-            .to_dict("list")["RS_Ratio"][0]
-            == 0.3690
+        result_df2.where((F.col("cluster") == 2) & (F.col("attribute") == "occupation"))
+        .toPandas()
+        .to_dict("list")["RS_Ratio"][0]
+        == 0.3690
     )
 
 
