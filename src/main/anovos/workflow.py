@@ -675,6 +675,14 @@ def main(all_configs, run_type, auth_key_val={}):
                                     df_transformed = f(
                                         df, **value2, **extra_args, print_impact=True
                                     )
+                                elif subkey2 in "imputation_sklearn":
+                                    df_transformed = f(
+                                        spark,
+                                        df,
+                                        **value2,
+                                        **extra_args,
+                                        print_impact=False,
+                                    )
                                 else:
                                     df_transformed = f(
                                         spark,
