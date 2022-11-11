@@ -16,7 +16,6 @@ from anovos.data_report.basic_report_generation import anovos_basic_report
 from anovos.data_report.report_generation import anovos_report
 from anovos.data_report.report_preprocessing import save_stats
 from anovos.data_transformer import transformers
-from anovos.drift_stability import detector as ddetector
 from anovos.drift_stability import stability as dstability
 from anovos.data_transformer.geospatial import (
     location_in_country,
