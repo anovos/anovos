@@ -73,7 +73,7 @@ def stats_args(path, func):
         "biasedness_detection": ["stats_mode"],
         "IDness_detection": ["stats_unique"],
         "nullColumns_detection": ["stats_unique", "stats_mode", "stats_missing"],
-        "variable_clustering": ["stats_unique", "stats_mode"],
+        "variable_clustering": ["stats_mode"],
     }
     args_to_statsfunc = {
         "stats_unique": "measures_of_cardinality",

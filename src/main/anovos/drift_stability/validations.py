@@ -93,7 +93,6 @@ def check_distance_method(func=None, param="method_type"):
 
     return validate
 
-
 def compute_score(value, method_type, cv_thresholds=[0.03, 0.1, 0.2, 0.5]):
     """
     This function maps CV or SD to a score between 0 and 4.

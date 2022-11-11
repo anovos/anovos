@@ -576,10 +576,8 @@ def uniqueCount_computation(
 
     """
     if list_of_cols == "all":
-        list_of_cols = []
-        for i in idf.dtypes:
-            if i[1] in ("string", "int", "bigint", "long"):
-                list_of_cols.append(i[0])
+        num_cols, cat_cols, other_cols = attributeType_segregation(idf)
+        list_of_cols = num_cols + cat_cols
     if isinstance(list_of_cols, str):
         list_of_cols = [x.strip() for x in list_of_cols.split("|")]
     if isinstance(drop_cols, str):
@@ -681,10 +679,8 @@ def measures_of_cardinality(
 
     """
     if list_of_cols == "all":
-        list_of_cols = []
-        for i in idf.dtypes:
-            if i[1] in ("string", "int", "bigint", "long"):
-                list_of_cols.append(i[0])
+        num_cols, cat_cols, other_cols = attributeType_segregation(idf)
+        list_of_cols = num_cols + cat_cols
     if isinstance(list_of_cols, str):
         list_of_cols = [x.strip() for x in list_of_cols.split("|")]
     if isinstance(drop_cols, str):

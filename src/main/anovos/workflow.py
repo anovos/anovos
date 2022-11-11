@@ -26,6 +26,7 @@ from anovos.data_transformer.geospatial import (
     centroid,
 )
 from anovos.data_transformer.geo_utils import EARTH_RADIUS
+from anovos.drift_stability import drift_detector as ddetector
 from anovos.feature_store import feast_exporter
 from anovos.shared.spark import spark
 
@@ -93,7 +94,7 @@ def stats_args(all_configs, func):
             "biasedness_detection": ["stats_mode"],
             "IDness_detection": ["stats_unique"],
             "nullColumns_detection": ["stats_unique", "stats_mode", "stats_missing"],
-            "variable_clustering": ["stats_unique", "stats_mode"],
+            "variable_clustering": ["stats_mode"],
             "charts_to_objects": ["stats_unique"],
             "cat_to_num_unsupervised": ["stats_unique"],
             "PCA_latentFeatures": ["stats_missing"],
@@ -564,7 +565,6 @@ def main(all_configs, run_type, auth_key_val={}):
                             df,
                             source,
                             **value["configs"],
-                            run_type=run_type,
                             print_impact=False,
                         )
                         if report_input_path:
