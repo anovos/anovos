@@ -2,6 +2,9 @@
 
 from __future__ import division, print_function
 
+import sys
+import operator
+import functools
 import numpy as np
 import pandas as pd
 import pyspark
@@ -10,33 +13,41 @@ from loguru import logger
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
+from pyspark.sql.window import Window
 from scipy.stats import variation
 
 from anovos.data_ingest.data_ingest import concatenate_dataset
+from anovos.data_ingest.data_sampling import data_sample
 from anovos.data_transformer.transformers import attribute_binning
 from anovos.shared.utils import attributeType_segregation
-from .distances import hellinger, js_divergence, ks, psi
 from .validations import check_distance_method, check_list_of_columns
 
 
 @check_distance_method
 @check_list_of_columns
 def statistics(
-    spark: SparkSession,
-    idf_target: DataFrame,
-    idf_source: DataFrame,
-    *,
-    list_of_cols: list = "all",
-    drop_cols: list = None,
-    method_type: str = "PSI",
-    bin_method: str = "equal_range",
-    bin_size: int = 10,
-    threshold: float = 0.1,
-    pre_existing_source: bool = False,
-    source_path: str = "NA",
-    model_directory: str = "drift_statistics",
-    run_type: str = "local",
-    print_impact: bool = False,
+    spark,
+    idf_target,
+    idf_source,
+    list_of_cols="all",
+    drop_cols=None,
+    method_type="PSI",
+    bin_method="equal_range",
+    bin_size=10,
+    threshold=0.1,
+    use_sampling=True,
+    sample_method="random",
+    strata_cols="all",
+    stratified_type="population",
+    sample_size=100000,
+    sample_seed=42,
+    persist=True,
+    persist_option=pyspark.StorageLevel.MEMORY_AND_DISK,
+    pre_existing_source=False,
+    source_save=True,
+    source_path="NA",
+    model_directory="drift_statistics",
+    print_impact=False,
 ):
     """
     When the performance of a deployed machine learning model degrades in production, one potential reason is that
@@ -110,16 +121,52 @@ def statistics(
         One or more methods can be passed in a form of list or string where different metrics are separated
         by pipe delimiter “|” e.g. ["PSI", "JSD"] or "PSI|JSD". (Default value = "PSI")
     bin_method
-        "equal_frequency", "equal_range".
+        String argument - "equal_frequency" or "equal_range".
         In "equal_range" method, each bin is of equal size/width and in "equal_frequency", each bin
         has equal no. of rows, though the width of bins may vary. (Default value = "equal_range")
     bin_size
-        Number of bins for creating histogram. (Default value = 10)
+        Integer argument - Number of bins for creating histogram. (Default value = 10)
     threshold
-        A column is flagged if any drift metric is above the threshold. (Default value = 0.1)
+        Float argument - A column is flagged if any drift metric is above the threshold. (Default value = 0.1)
+    use_sampling
+        Boolean argument - True or False. This argument is used to determine whether to use random sample method on
+        source and target dataset, True will enable the use of sample method, otherwise False.
+        It is recommended to set this as True for large datasets. (Default value = True)
+    sample_method
+        String argument - "random" or "stratified".
+        If use_sampling is True, this argument is used to determine the sampling method.
+        "stratified" for Stratified sampling, "random" for Random Sampling.
+        For more details, please refer to https://docs.anovos.ai/api/data_ingest/data_sampling.html.
+        (Default value = "random")
+    strata_cols
+        If use_sampling is True and sample_method is "stratified", this argument is used to determine the list
+        of columns used to be treated as strata. For more details, please refer to
+        https://docs.anovos.ai/api/data_ingest/data_sampling.html. (Default value = "all")
+    stratified_type
+        String argument - "population" or "balanced". If use_sampling is True and sample_method is "stratified",
+        this string argument is used to determine the stratified sampling method. "population" stands for
+        Proportionate Stratified Sampling, "balanced" stands for Optimum Stratified Sampling.
+        For more details, please refer to
+        https://docs.anovos.ai/api/data_ingest/data_sampling.html. (Default value = "population")
+    sample_size
+        Integer argument - If use_sampling is True, this argument is used to determine the sample size of sampling method.
+        (Default value = 100000)
+    sample_seed
+        Integer argument - If use_sampling is True, this argument is used to determine the seed of sampling method.
+        (Default value = 42)
+    persist
+        Boolean argument - True or False. This argument is used to determine whether to persist on
+        binning result of source and target dataset, True will enable the use of persist, otherwise False.
+        It is recommended to set this as True for large datasets. (Default value = True)
+    persist_option
+        If persist is True, this argument is used to determine the type of persist.
+        (Default value = pyspark.StorageLevel.MEMORY_AND_DISK)
     pre_existing_source
         Boolean argument – True or False. True if the drift_statistics folder (binning model &
         frequency counts for each attribute) exists already, False Otherwise. (Default value = False)
+    source_save
+        Boolean argument - True or False. This argument will determine whether or not to save the source to source_path.
+        (Default value = False)
     source_path
         If pre_existing_source is False, this argument can be used for saving the drift_statistics folder.
         The drift_statistics folder will have attribute_binning (binning model) & frequency_counts sub-folders.
@@ -129,12 +176,11 @@ def statistics(
         If pre_existing_source is False, this argument can be used for saving the drift stats to folder.
         The default drift statics directory is drift_statistics folder will have attribute_binning
         If pre_existing_source is True, this argument is model_directory for referring the drift statistics dir.
-        Default "drift_statistics" for temporarily saving source dataset attribute_binning folder. (Default value = "drift_statistics")
-    run_type
-        "local", "emr", "databricks" (Default value = "local")
+        Default "drift_statistics" for temporarily saving source dataset attribute_binning folder.
+        (Default value = "drift_statistics")
     print_impact
-        True, False. (Default value = False)
-        This argument is to print out the drift statistics of all attributes and attributes meeting the threshold.
+        Boolean argument - True or False. This argument is to print out the drift statistics of all attributes
+        and attributes meeting the threshold. (Default value = False)
 
     Returns
     -------
@@ -145,6 +191,34 @@ def statistics(
     """
     drop_cols = drop_cols or []
     num_cols = attributeType_segregation(idf_target.select(list_of_cols))[0]
+
+    count_target = idf_target.count()
+    count_source = idf_source.count()
+    if use_sampling:
+        if count_target > sample_size:
+            idf_target = data_sample(
+                idf_target,
+                strata_cols=strata_cols,
+                fraction=sample_size / count_target,
+                method_type=sample_method,
+                stratified_type=stratified_type,
+                seed_value=sample_seed,
+            )
+            if persist:
+                idf_target = idf_target.persist(persist_option)
+            count_target = idf_target.count()
+        if count_source > sample_size:
+            idf_source = data_sample(
+                idf_source,
+                strata_cols=strata_cols,
+                fraction=sample_size / count_source,
+                method_type=sample_method,
+                stratified_type=stratified_type,
+                seed_value=sample_seed,
+            )
+            if persist:
+                idf_source = idf_source.persist(persist_option)
+            count_source = idf_source.count()
 
     if source_path == "NA":
         source_path = "intermediate_data"
@@ -159,7 +233,8 @@ def statistics(
             pre_existing_model=False,
             model_path=source_path + "/" + model_directory,
         )
-        source_bin.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
+        if persist:
+            source_bin = source_bin.persist(persist_option)
 
     target_bin = attribute_binning(
         spark,
@@ -171,13 +246,12 @@ def statistics(
         model_path=source_path + "/" + model_directory,
     )
 
-    target_bin.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
-    result = {"attribute": [], "flagged": []}
+    if persist:
+        target_bin = target_bin.persist(persist_option)
 
-    for method in method_type:
-        result[method] = []
-
+    temp_list = []
     for i in list_of_cols:
+        temp_method_join_list = []
         if pre_existing_source:
             x = spark.read.csv(
                 source_path + "/" + model_directory + "/frequency_counts/" + i,
@@ -187,20 +261,17 @@ def statistics(
         else:
             x = (
                 source_bin.groupBy(i)
-                .agg((F.count(i) / idf_source.count()).alias("p"))
+                .agg((F.count(i) / count_source).alias("p"))
                 .fillna(-1)
             )
-            x.coalesce(1).write.csv(
-                source_path + "/" + model_directory + "/frequency_counts/" + i,
-                header=True,
-                mode="overwrite",
-            )
+            if source_save:
+                x.coalesce(1).write.csv(
+                    source_path + "/" + model_directory + "/frequency_counts/" + i,
+                    header=True,
+                    mode="overwrite",
+                )
 
-        y = (
-            target_bin.groupBy(i)
-            .agg((F.count(i) / idf_target.count()).alias("q"))
-            .fillna(-1)
-        )
+        y = target_bin.groupBy(i).agg((F.count(i) / count_target).alias("q")).fillna(-1)
 
         xy = (
             x.join(y, i, "full_outer")
@@ -208,35 +279,91 @@ def statistics(
             .replace(0, 0.0001)
             .orderBy(i)
         )
-        p = np.array(xy.select("p").rdd.flatMap(lambda x: x).collect())
-        q = np.array(xy.select("q").rdd.flatMap(lambda x: x).collect())
 
-        result["attribute"].append(i)
-        counter = 0
+        if "PSI" in method_type:
+            xy_psi = (
+                xy.withColumn(
+                    "deduct_ln_mul",
+                    ((F.col("p") - F.col("q")) * (F.log(F.col("p") / F.col("q")))),
+                )
+                .select(F.sum(F.col("deduct_ln_mul")).alias("PSI"))
+                .withColumn("attribute", F.lit(str(i)))
+                .select("attribute", "PSI")
+            )
+            temp_method_join_list.append(xy_psi)
 
-        for idx, method in enumerate(method_type):
-            drift_function = {
-                "PSI": psi,
-                "JSD": js_divergence,
-                "HD": hellinger,
-                "KS": ks,
-            }
-            metric = float(round(drift_function[method](p, q), 4))
-            result[method].append(metric)
-            if counter == 0:
-                if metric > threshold:
-                    result["flagged"].append(1)
-                    counter = 1
-            if (idx == (len(method_type) - 1)) & (counter == 0):
-                result["flagged"].append(0)
+        if "HD" in method_type:
+            xy_hd = (
+                xy.withColumn(
+                    "pow",
+                    F.pow((F.sqrt(F.col("p")) - F.sqrt(F.col("q"))), 2),
+                )
+                .select(F.sqrt(F.sum(F.col("pow")) / 2).alias("HD"))
+                .withColumn("attribute", F.lit(str(i)))
+                .select("attribute", "HD")
+            )
+            temp_method_join_list.append(xy_hd)
 
-    odf = (
-        spark.createDataFrame(
-            pd.DataFrame.from_dict(result, orient="index").transpose()
+        if "JSD" in method_type:
+            xy_jsd = (
+                xy.withColumn("m", ((F.col("p") + F.col("q")) / 2))
+                .withColumn("log_pm", (F.col("p") * F.log(F.col("p") / F.col("m"))))
+                .withColumn("log_qm", (F.col("q") * F.log(F.col("q") / F.col("m"))))
+                .select(
+                    F.sum(F.col("log_pm")).alias("pm"),
+                    F.sum(F.col("log_qm")).alias("qm"),
+                )
+                .select(((F.col("pm") + F.col("qm")) / 2).alias("JSD"))
+                .withColumn("attribute", F.lit(str(i)))
+                .select("attribute", "JSD")
+            )
+            temp_method_join_list.append(xy_jsd)
+
+        if "KS" in method_type:
+            xy_ks = (
+                xy.withColumn(
+                    "cum_sum_p",
+                    F.sum(F.col("p")).over(
+                        Window.partitionBy().orderBy().rowsBetween(-sys.maxsize, 0)
+                    ),
+                )
+                .withColumn(
+                    "cum_sum_q",
+                    F.sum(F.col("q")).over(
+                        Window.partitionBy().orderBy().rowsBetween(-sys.maxsize, 0)
+                    ),
+                )
+                .withColumn(
+                    "deduct_abs", F.abs(F.col("cum_sum_p") - F.col("cum_sum_q"))
+                )
+                .select(
+                    F.max(F.col("deduct_abs")).alias("KS"),
+                )
+                .withColumn("attribute", F.lit(str(i)))
+                .select("attribute", "KS")
+            )
+            temp_method_join_list.append(xy_ks)
+
+        xy_temp = temp_method_join_list[0]
+        if len(temp_method_join_list) > 1:
+            for count in range(1, len(temp_method_join_list)):
+                xy_temp = xy_temp.join(
+                    temp_method_join_list[count], "attribute", "inner"
+                )
+
+        temp_list.append(xy_temp)
+
+    def unionAll(dfs):
+        first, *_ = dfs
+        return first.sql_ctx.createDataFrame(
+            first.sql_ctx._sc.union([df.rdd for df in dfs]), first.schema
         )
-        .select(["attribute"] + method_type + ["flagged"])
-        .orderBy(F.desc("flagged"))
+
+    odf_union = unionAll(temp_list)
+    cond_expr = functools.reduce(
+        operator.or_, [(F.col(c) > threshold) for c in odf_union.columns[1:]]
     )
+    odf = odf_union.withColumn("flagged", F.when(cond_expr, 1).otherwise(0))
 
     if print_impact:
         logger.info("All Attributes:")
@@ -245,6 +372,11 @@ def statistics(
         drift = odf.where(F.col("flagged") == 1)
         drift.show(drift.count())
 
+    if persist:
+        idf_target.unpersist()
+        idf_source.unpersist()
+        source_bin.unpersist()
+        target_bin.unpersist()
     return odf
 
 

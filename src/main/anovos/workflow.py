@@ -24,7 +24,7 @@ from anovos.data_transformer.geospatial import (
     centroid,
 )
 from anovos.data_transformer.geo_utils import EARTH_RADIUS
-from anovos.drift import detector as ddetector
+from anovos.drift_stability import drift_detector as ddetector
 from anovos.feature_store import feast_exporter
 from anovos.shared.spark import spark
 
@@ -563,7 +563,6 @@ def main(all_configs, run_type, auth_key_val={}):
                             df,
                             source,
                             **value["configs"],
-                            run_type=run_type,
                             print_impact=False,
                         )
                         if report_input_path:
