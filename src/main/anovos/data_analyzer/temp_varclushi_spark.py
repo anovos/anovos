@@ -26,24 +26,14 @@ class VarClusHiSpark(object):
         self.maxclus = maxclus
         self.n_rs = n_rs
 
-    @staticmethod
-    def correig(df, feat_list=None, n_pcs=2):
+        # 11.11 change: get correlation df
+        if len(self.feat_list) <= 1:
+            all_corr = [len(self.feat_list)]
 
-        if feat_list is None:
-            feat_list = df.columns
-        else:
-            df = df.select(feat_list)
-
-        if len(feat_list) <= 1:
-            corr = [len(feat_list)]
-            eigvals = [len(feat_list)] + [0] * (n_pcs - 1)
-            eigvecs = np.array([[len(feat_list)]])
-            varprops = [sum(eigvals)]
         else:
             # change rows to vector
-            vecAssembler = VectorAssembler(inputCols=feat_list, outputCol="features")
+            vecAssembler = VectorAssembler(inputCols=self.feat_list, outputCol="features")
             stream_df = vecAssembler.transform(df)
-
             # Standardize
             scaler = StandardScaler(
                 inputCol="features",
@@ -56,21 +46,28 @@ class VarClusHiSpark(object):
 
             # Create Row Matrix
             rm = RowMatrix(scaled_df.select("scaledFeatures").rdd.map(list))
+            all_corr = rm.computeCovariance().toArray()
+        self.corr_df = pd.DataFrame(all_corr, columns=self.feat_list, index=self.feat_list)
 
-            # Eigenvectors
-            eigvecs = rm.computePrincipalComponents(n_pcs).toArray()  # Numpy array
+    def correig(self, df, feat_list=None, n_pcs=2, print_i=False):
 
-            # Eigvalues
-            corr = rm.computeCovariance().toArray()
-            cov = RowMatrix(sc.parallelize(corr))
-            # svd_model = cov.computeSVD(n_pcs)
-            # eigvals = svd_model.s.toArray()  # Numpy array
+        if feat_list is None:
+            feat_list = df.columns
+        else:
+            df = df.select(feat_list)
 
-            # Eigenvals & Variance_Explained
-            raw_model = cov.computeSVD(rm.numCols())
-            raw_eigvals = raw_model.s.toArray()
-            eigvals = raw_eigvals[:n_pcs]
-            varprops = eigvals / sum(raw_eigvals)  # Numpyp array
+        if len(feat_list) <= 1:
+            corr = [len(feat_list)]
+            eigvals = [len(feat_list)] + [0] * (n_pcs - 1)
+            eigvecs = np.array([[len(feat_list)]])
+            varprops = [sum(eigvals)]
+        else:
+            corr = self.corr_df.loc[feat_list, feat_list].values
+            raw_eigvals, raw_eigvecs = np.linalg.eigh(corr)
+            idx = np.argsort(raw_eigvals)[::-1]
+            eigvals, eigvecs = raw_eigvals[idx], raw_eigvecs[:, idx]
+            eigvals, eigvecs = eigvals[:n_pcs], eigvecs[:, :n_pcs]
+            varprops = eigvals / sum(raw_eigvals)
 
         corr_df = pd.DataFrame(corr, columns=feat_list, index=feat_list)
 
@@ -133,8 +130,7 @@ class VarClusHiSpark(object):
             eigvals = svd_model.s.toArray()  # Numpy array
         return eigvals, eigvecs, princomps, varprops
 
-    @staticmethod
-    def _calc_tot_var(df, *clusters):
+    def _calc_tot_var(self, df, *clusters):
         # e.g.: *clusters = clus1, clus2 = ["col1", "col2", ...], ["col6", "col7"] - each clus is a list of column names inside that cluster
 
         tot_len, tot_var, tot_prop = (0,) * 3
@@ -146,30 +142,27 @@ class VarClusHiSpark(object):
                 continue
 
             c_len = len(clus)
-            c_eigvals, _, _, c_varprops = VarClusHiSpark.correig(df.select(clus))
+            c_eigvals, _, _, c_varprops = self.correig(df.select(clus))
             tot_var += c_eigvals[0]
             tot_prop = (tot_prop * tot_len + c_varprops[0] * c_len) / (tot_len + c_len)
             tot_len += c_len
-
         # return total variance explained and proportion for clus1 and clus2
         return tot_var, tot_prop
 
-    @staticmethod
-    def _reassign(df, clus1, clus2, feat_list=None):
+    def _reassign(self, df, clus1, clus2, feat_list=None):
 
         if feat_list is None:
             feat_list = clus1 + clus2
 
         # get the initial variance (sum of first eigenvalues for the intial clusters)
-        init_var = VarClusHiSpark._calc_tot_var(df, clus1, clus2)[0]
+        init_var = self._calc_tot_var(df, clus1, clus2)[0]
         fin_clus1, fin_clus2 = clus1[:], clus2[:]
         check_var, max_var = (init_var,) * 2
-
         while True:
 
             for feat in feat_list:
                 new_clus1, new_clus2 = fin_clus1[:], fin_clus2[:]
-                # reassign to anothe rcluster
+                # reassign to another cluster
                 if feat in new_clus1:
                     new_clus1.remove(feat)
                     new_clus2.append(feat)
@@ -180,7 +173,7 @@ class VarClusHiSpark(object):
                     continue
 
                 # after reassigning, get the new "tot_var" of these clusters
-                new_var = VarClusHiSpark._calc_tot_var(df, new_clus1, new_clus2)[0]
+                new_var = self._calc_tot_var(df, new_clus1, new_clus2)[0]
                 # if new variance > initial variance, the new clusters will be final cluster, and check_var will be updated to new_var (larger value)
                 if new_var > check_var:
                     check_var = new_var
@@ -191,20 +184,18 @@ class VarClusHiSpark(object):
                 break
             else:
                 max_var = check_var
-
         return fin_clus1, fin_clus2, max_var
 
-    @staticmethod
-    def _reassign_rs(df, clus1, clus2, n_rs=0):
+    def _reassign_rs(self, df, clus1, clus2, n_rs=0):
 
         feat_list = clus1 + clus2
-        fin_rs_clus1, fin_rs_clus2, max_rs_var = VarClusHiSpark._reassign(
+        fin_rs_clus1, fin_rs_clus2, max_rs_var = self._reassign(
             df, clus1, clus2
         )
 
         for _ in range(n_rs):
             random.shuffle(feat_list)
-            rs_clus1, rs_clus2, rs_var = VarClusHiSpark._reassign(
+            rs_clus1, rs_clus2, rs_var = self._reassign(
                 df, clus1, clus2, feat_list
             )
             if rs_var > max_rs_var:
@@ -218,7 +209,7 @@ class VarClusHiSpark(object):
         ClusInfo = collections.namedtuple(
             "ClusInfo", ["clus", "eigval1", "eigval2", "eigvecs", "varprop"]
         )
-        c_eigvals, c_eigvecs, c_corrs, c_varprops = VarClusHiSpark.correig(
+        c_eigvals, c_eigvecs, c_corrs, c_varprops = self.correig(
             self.df.select(self.feat_list)
         )
 
@@ -241,7 +232,7 @@ class VarClusHiSpark(object):
             idx = max(self.clusters, key=lambda x: self.clusters.get(x).eigval2)
             if self.clusters[idx].eigval2 > self.maxeigval2:
                 split_clus = self.clusters[idx].clus
-                c_eigvals, c_eigvecs, split_corrs, _ = VarClusHiSpark.correig(
+                c_eigvals, c_eigvecs, split_corrs, _ = self.correig(
                     self.df.select(split_clus)
                 )
             else:
@@ -252,19 +243,20 @@ class VarClusHiSpark(object):
                 rotator = Rotator(method="quartimax")
                 r_eigvecs = rotator.fit_transform(pd.DataFrame(c_eigvecs))
 
-                comb_sigma1 = math.sqrt(
-                    np.dot(
-                        np.dot(r_eigvecs[:, 0], split_corrs.values), r_eigvecs[:, 0].T
-                    )
-                )
-                comb_sigma2 = math.sqrt(
-                    np.dot(
-                        np.dot(r_eigvecs[:, 1], split_corrs.values), r_eigvecs[:, 1].T
-                    )
-                )
+                # 11.14 test version
+                num_rows, num_cols = r_eigvecs.shape
+                r_eigvecs_dm = DenseMatrix(num_rows, num_cols, r_eigvecs.ravel(order="F"))
+                r_eigvecs_rm = RowMatrix(sc.parallelize(r_eigvecs.T))
+                dm = DenseMatrix(num_rows, num_rows, split_corrs.values.ravel())
+
+                comb_sigmas = r_eigvecs_rm.multiply(dm).multiply(r_eigvecs_dm)  # RowMatrix 2x2
+                comb_sigmas = np.sqrt(
+                    np.diag(comb_sigmas.rows.map(lambda row: np.array(row)).collect()))  # get diagonals only
+
+                comb_sigma1 = comb_sigmas[0]
+                comb_sigma2 = comb_sigmas[1]
 
                 for feat in split_clus:
-
                     comb_cov1 = np.dot(r_eigvecs[:, 0], split_corrs[feat].values.T)
                     comb_cov2 = np.dot(r_eigvecs[:, 1], split_corrs[feat].values.T)
 
@@ -276,13 +268,14 @@ class VarClusHiSpark(object):
                     else:
                         clus2.append(feat)
 
-                fin_clus1, fin_clus2, _ = VarClusHiSpark._reassign_rs(
+                fin_clus1, fin_clus2, _ = self._reassign_rs(
                     self.df, clus1, clus2, self.n_rs
                 )
-                c1_eigvals, c1_eigvecs, _, c1_varprops = VarClusHiSpark.correig(
+
+                c1_eigvals, c1_eigvecs, _, c1_varprops = self.correig(
                     self.df.select(fin_clus1)
                 )
-                c2_eigvals, c2_eigvecs, _, c2_varprops = VarClusHiSpark.correig(
+                c2_eigvals, c2_eigvecs, _, c2_varprops = self.correig(
                     self.df.select(fin_clus2)
                 )
 
@@ -448,7 +441,7 @@ class VarClusHiSpark(object):
             c_sigma = math.sqrt(
                 np.dot(
                     np.dot(
-                        c_eigvec, self.corrs.loc[clusinfo.clus, clusinfo.clus].values
+                        c_eigvec, self.corr_df.loc[clusinfo.clus, clusinfo.clus].values
                     ),
                     c_eigvec.T,
                 )
@@ -460,11 +453,12 @@ class VarClusHiSpark(object):
             for feat in clus_own.clus:
                 row = [i, feat]
                 cov_own = np.dot(
-                    clus_own.eigvecs[:, 0], self.corrs.loc[feat, clus_own.clus].values.T
+                    clus_own.eigvecs[:, 0], self.corr_df.loc[feat, clus_own.clus].values.T
                 )  # equals cov(df[feat], clus_own.pc1) / std(df[feat])
+
                 # since corr(df[feat], pc1) = cov(df[feat, pc1)/(std(df[feat])*std(pc1))
                 if (
-                    len(clus_own.clus) == 1 and feat == clus_own.clus[0]
+                        len(clus_own.clus) == 1 and feat == clus_own.clus[0]
                 ):  # single-feature cluster
                     rs_own = 1
                 else:
@@ -477,7 +471,7 @@ class VarClusHiSpark(object):
 
                     cov_other = np.dot(
                         clus_other.eigvecs[:, 0],
-                        self.corrs.loc[feat, clus_other.clus].values.T,
+                        self.corr_df.loc[feat, clus_other.clus].values.T,
                     )  # equals to cov(df[feat], other_clus.pc1) / std(df[feat])
                     rs = (cov_other / sigmas[j]) ** 2
 
