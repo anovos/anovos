@@ -32,7 +32,9 @@ class VarClusHiSpark(object):
 
         else:
             # change rows to vector
-            vecAssembler = VectorAssembler(inputCols=self.feat_list, outputCol="features")
+            vecAssembler = VectorAssembler(
+                inputCols=self.feat_list, outputCol="features"
+            )
             stream_df = vecAssembler.transform(df)
             # Standardize
             scaler = StandardScaler(
@@ -47,7 +49,9 @@ class VarClusHiSpark(object):
             # Create Row Matrix
             rm = RowMatrix(scaled_df.select("scaledFeatures").rdd.map(list))
             all_corr = rm.computeCovariance().toArray()
-        self.corr_df = pd.DataFrame(all_corr, columns=self.feat_list, index=self.feat_list)
+        self.corr_df = pd.DataFrame(
+            all_corr, columns=self.feat_list, index=self.feat_list
+        )
 
     def correig(self, df, feat_list=None, n_pcs=2, print_i=False):
 
@@ -189,15 +193,11 @@ class VarClusHiSpark(object):
     def _reassign_rs(self, df, clus1, clus2, n_rs=0):
 
         feat_list = clus1 + clus2
-        fin_rs_clus1, fin_rs_clus2, max_rs_var = self._reassign(
-            df, clus1, clus2
-        )
+        fin_rs_clus1, fin_rs_clus2, max_rs_var = self._reassign(df, clus1, clus2)
 
         for _ in range(n_rs):
             random.shuffle(feat_list)
-            rs_clus1, rs_clus2, rs_var = self._reassign(
-                df, clus1, clus2, feat_list
-            )
+            rs_clus1, rs_clus2, rs_var = self._reassign(df, clus1, clus2, feat_list)
             if rs_var > max_rs_var:
                 max_rs_var = rs_var
                 fin_rs_clus1, fin_rs_clus2 = rs_clus1, rs_clus2
@@ -245,13 +245,18 @@ class VarClusHiSpark(object):
 
                 # 11.14 test version
                 num_rows, num_cols = r_eigvecs.shape
-                r_eigvecs_dm = DenseMatrix(num_rows, num_cols, r_eigvecs.ravel(order="F"))
+                r_eigvecs_dm = DenseMatrix(
+                    num_rows, num_cols, r_eigvecs.ravel(order="F")
+                )
                 r_eigvecs_rm = RowMatrix(sc.parallelize(r_eigvecs.T))
                 dm = DenseMatrix(num_rows, num_rows, split_corrs.values.ravel())
 
-                comb_sigmas = r_eigvecs_rm.multiply(dm).multiply(r_eigvecs_dm)  # RowMatrix 2x2
+                comb_sigmas = r_eigvecs_rm.multiply(dm).multiply(
+                    r_eigvecs_dm
+                )  # RowMatrix 2x2
                 comb_sigmas = np.sqrt(
-                    np.diag(comb_sigmas.rows.map(lambda row: np.array(row)).collect()))  # get diagonals only
+                    np.diag(comb_sigmas.rows.map(lambda row: np.array(row)).collect())
+                )  # get diagonals only
 
                 comb_sigma1 = comb_sigmas[0]
                 comb_sigma2 = comb_sigmas[1]
@@ -453,12 +458,13 @@ class VarClusHiSpark(object):
             for feat in clus_own.clus:
                 row = [i, feat]
                 cov_own = np.dot(
-                    clus_own.eigvecs[:, 0], self.corr_df.loc[feat, clus_own.clus].values.T
+                    clus_own.eigvecs[:, 0],
+                    self.corr_df.loc[feat, clus_own.clus].values.T,
                 )  # equals cov(df[feat], clus_own.pc1) / std(df[feat])
 
                 # since corr(df[feat], pc1) = cov(df[feat, pc1)/(std(df[feat])*std(pc1))
                 if (
-                        len(clus_own.clus) == 1 and feat == clus_own.clus[0]
+                    len(clus_own.clus) == 1 and feat == clus_own.clus[0]
                 ):  # single-feature cluster
                     rs_own = 1
                 else:
