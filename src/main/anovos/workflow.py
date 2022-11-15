@@ -16,6 +16,7 @@ from anovos.data_report.basic_report_generation import anovos_basic_report
 from anovos.data_report.report_generation import anovos_report
 from anovos.data_report.report_preprocessing import save_stats
 from anovos.data_transformer import transformers
+from anovos.drift_stability import stability as dstability
 from anovos.data_transformer.geospatial import (
     location_in_country,
     geo_format_latlon,
@@ -593,8 +594,8 @@ def main(all_configs, run_type, auth_key_val={}):
                         for k in [e for e in value.keys() if e not in ("configs")]:
                             tmp = ETL(value.get(k))
                             idfs.append(tmp)
-                        df_stats = ddetector.stability_index_computation(
-                            spark, *idfs, **value["configs"], print_impact=False
+                        df_stats = dstability.stability_index_computation(
+                            spark, idfs, **value["configs"], print_impact=False
                         )
                         if report_input_path:
                             save_stats(
