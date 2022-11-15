@@ -269,6 +269,8 @@ def test_variable_clustering(spark_session: SparkSession):
             F.col("income") == ">50K", F.lit(1.0)
         ),
     ).drop("income")
+    test_df = test_df.withColumn("engagement", F.lit(1))
+
     assert test_df.where(F.col("ifa") == "4062a").count() == 1
     assert (
         test_df.where(F.col("ifa") == "4062a").toPandas().to_dict("list")["age"][0]
@@ -277,6 +279,12 @@ def test_variable_clustering(spark_session: SparkSession):
     assert (
         test_df.where(F.col("ifa") == "4062a").toPandas().to_dict("list")["sex"][0]
         == "Male"
+    )
+    assert (
+        test_df.where(F.col("ifa") == "4062a")
+        .toPandas()
+        .to_dict("list")["engagement"][0]
+        == 1
     )
     assert (
         test_df.where(F.col("ifa") == "4062a")
@@ -320,18 +328,12 @@ def test_variable_clustering(spark_session: SparkSession):
             == 0.8106
     )
     assert (
-            result_df2.where((F.col("cluster") == 1) & (F.col("attribute") == "fnlwgt"))
-            .toPandas()
-            .to_dict("list")["RS_Ratio"][0]
-            == 0.2262
-    )
-    assert (
-            result_df2.where(
-                (F.col("cluster") == 2) & (F.col("attribute") == "capital-loss")
-            )
-            .toPandas()
-            .to_dict("list")["RS_Ratio"][0]
-            == 0.9185
+        result_df2.where(
+            (F.col("cluster") == 2) & (F.col("attribute") == "capital-loss")
+        )
+        .toPandas()
+        .to_dict("list")["RS_Ratio"][0]
+        == 0.9185
     )
     assert (
             result_df2.where(

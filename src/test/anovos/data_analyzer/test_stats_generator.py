@@ -87,10 +87,10 @@ def test_uniqueCount_computation(spark_session):
         == "HS-grad"
     )
     assert (
-            test_df1.where(F.col("ifa") == "27520a")
-            .toPandas()
-            .to_dict("list")["engagement"][0]
-            == 0
+        test_df1.where(F.col("ifa") == "27520a")
+        .toPandas()
+        .to_dict("list")["engagement"][0]
+        == 0
     )
 
     result_df1 = uniqueCount_computation(spark_session, test_df1)
@@ -108,10 +108,10 @@ def test_uniqueCount_computation(spark_session):
         == 4
     )
     assert (
-            result_df1.where(F.col("attribute") == "engagement")
-            .toPandas()
-            .to_dict("list")["unique_values"][0]
-            == 1
+        result_df1.where(F.col("attribute") == "engagement")
+        .toPandas()
+        .to_dict("list")["unique_values"][0]
+        == 1
     )
 
     result_df1_2 = uniqueCount_computation(
@@ -177,10 +177,10 @@ def test_uniqueCount_computation(spark_session):
         == 4
     )
     assert (
-            result_df1_4.where(F.col("attribute") == "engagement")
-            .toPandas()
-            .to_dict("list")["unique_values"][0]
-            == 1
+        result_df1_4.where(F.col("attribute") == "engagement")
+        .toPandas()
+        .to_dict("list")["unique_values"][0]
+        == 1
     )
 
 
@@ -361,10 +361,10 @@ def test_measures_of_cardinality(spark_session):
         == "HS-grad"
     )
     assert (
-            test_df5.where(F.col("ifa") == "27520a")
-            .toPandas()
-            .to_dict("list")["engagement"][0]
-            == 0
+        test_df5.where(F.col("ifa") == "27520a")
+        .toPandas()
+        .to_dict("list")["engagement"][0]
+        == 0
     )
 
     result_df5 = measures_of_cardinality(spark_session, test_df5)
@@ -394,16 +394,16 @@ def test_measures_of_cardinality(spark_session):
         == 0.6667
     )
     assert (
-            result_df5.where(F.col("attribute") == "engagement")
-            .toPandas()
-            .to_dict("list")["unique_values"][0]
-            == 1
+        result_df5.where(F.col("attribute") == "engagement")
+        .toPandas()
+        .to_dict("list")["unique_values"][0]
+        == 1
     )
     assert (
-            result_df5.where(F.col("attribute") == "engagement")
-            .toPandas()
-            .to_dict("list")["IDness"][0]
-            == 0.25
+        result_df5.where(F.col("attribute") == "engagement")
+        .toPandas()
+        .to_dict("list")["IDness"][0]
+        == 0.25
     )
 
     result_df5_2 = measures_of_cardinality(
@@ -435,16 +435,16 @@ def test_measures_of_cardinality(spark_session):
         == 0.6667
     )
     assert (
-            result_df5_2.where(F.col("attribute") == "engagement")
-            .toPandas()
-            .to_dict("list")["unique_values"][0]
-            == 1
+        result_df5_2.where(F.col("attribute") == "engagement")
+        .toPandas()
+        .to_dict("list")["unique_values"][0]
+        == 1
     )
     assert (
-            result_df5_2.where(F.col("attribute") == "engagement")
-            .toPandas()
-            .to_dict("list")["IDness"][0]
-            == 0.25
+        result_df5_2.where(F.col("attribute") == "engagement")
+        .toPandas()
+        .to_dict("list")["IDness"][0]
+        == 0.25
     )
 
 

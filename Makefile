@@ -68,5 +68,6 @@ build: clean
 	cd ./dist && zip -r anovos.zip ./anovos
 	cd ./dist && tar -cvzf anovos.tar.gz ./anovos
 	cp -rf ./examples/data/income_dataset ./dist/data/income_dataset
+	cp -rf ./examples/data/geospatial_dataset ./dist/data/geospatial_dataset
 	cp -rf ./data/metric_dictionary.csv ./dist/data/metric_dictionary.csv
 	cp ./bin/spark-submit.sh ./dist
