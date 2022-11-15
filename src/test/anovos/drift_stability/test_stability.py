@@ -96,7 +96,7 @@ def test_that_binary_column_can_be_calculated(
 def attribute_stats(spark_session, idfs_numerical):
     metric_path = "unit_testing/stats/stability/df1_4"
     stability_index_computation(
-        spark_session, *idfs_numerical, appended_metric_path=metric_path
+        spark_session, idfs_numerical, appended_metric_path=metric_path
     ).toPandas()
     attribute_stats = read_dataset(
         spark_session, metric_path, "csv", {"header": True, "inferSchema": True}
