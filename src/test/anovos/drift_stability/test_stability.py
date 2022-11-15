@@ -39,6 +39,20 @@ def cols_to_check_binary():
 
 
 @pytest.fixture
+def cols_to_check_numerical():
+    return [
+        "mean_cv",
+        "stddev_cv",
+        "kurtosis_cv",
+        "mean_si",
+        "stddev_si",
+        "kurtosis_si",
+        "stability_index",
+        "flagged",
+    ]
+
+
+@pytest.fixture
 def cols_to_check_si_estimation():
     return [
         "mean_cv",
