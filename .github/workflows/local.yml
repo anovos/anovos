@@ -11,7 +11,6 @@ on:
   push:
     paths:
       - '.github/workflows/local.yml'
-      - 'config/configs_basic.yaml'
       - 'local/**'
 
 jobs:

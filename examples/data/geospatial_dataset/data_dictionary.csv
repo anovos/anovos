@@ -1,0 +1,9 @@
+﻿attribute,definition
+userId,User ID (anonymized)
+venueId,Venue ID (Foursquare)
+venueCategoryId,Venue category ID (Foursquare)
+venueCategory,Venue category name (Foursquare)
+latitude,Latitude
+longitude,Longitude
+timezoneOffset,Timezone offset in minutes (The offset in minutes between when this check-in occurred and the same time in)
+utcTimestamp,UTC time
