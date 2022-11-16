@@ -554,7 +554,7 @@ def ts_loop_cols_pre(idf, id_col):
 
     """
 
-    This function helps to analyze the potential columns which can be passed for tiime series check. The columns are passed on to the auto-detection block.
+    This function helps to analyze the potential columns which can be passed for the time series check. The columns are passed on to the auto-detection block.
 
     Parameters
     ----------
