@@ -136,15 +136,15 @@ def compute_si(metric_weightages):
             mean_si = compute_score(mean_cv, "cv")
             stddev_si = compute_score(stddev_cv, "cv")
             kurtosis_si = compute_score(kurtosis_cv, "cv")
-            if mean_si and stddev_si and kurtosis_si:
+            if mean_si is None or stddev_si is None or kurtosis_si is None:
+                stability_index = None
+            else:
                 stability_index = round(
                     mean_si * metric_weightages.get("mean", 0)
                     + stddev_si * metric_weightages.get("stddev", 0)
                     + kurtosis_si * metric_weightages.get("kurtosis", 0),
                     4,
                 )
-            else:
-                stability_index = None
         return [mean_si, stddev_si, kurtosis_si, stability_index]
 
     return compute_si_
