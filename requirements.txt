@@ -1,5 +1,5 @@
 black==22.10.0
-pandas>=1.2.5,<1.5.1
+pandas>=1.2.5,<1.5.2
 numpy>=1.20.0,<1.23.4
 scipy<=1.8.0
 scikit-learn==1.0.2
@@ -7,7 +7,7 @@ sympy>=1.6,<1.12
 matplotlib>=3.4.3,<3.5.4
 plotly==5.7.0
 datapane==0.15.3
-pyarrow<9.0.0
+pyarrow<11.0.0
 findspark==2.0.1
 loguru==0.6.0
 pyaml==21.10.1
