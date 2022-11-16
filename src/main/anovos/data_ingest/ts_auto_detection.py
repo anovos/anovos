@@ -61,7 +61,7 @@ def regex_date_time_parser(
 
     """
 
-    This function helps to produce the transformed output (if applicable) based on the auto-detection of timestamp / date type. The output from this function is decoupled as a part of ingestion.
+    This function helps to produce the transformed output in timestamp (if auto-detected) based on the input data.
 
 
     Parameters
