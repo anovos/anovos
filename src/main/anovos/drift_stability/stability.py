@@ -405,6 +405,18 @@ def feature_stability_estimation(
         and upper bounds for stability index.
 
     """
+    if (
+        round(
+            metric_weightages.get("mean", 0)
+            + metric_weightages.get("stddev", 0)
+            + metric_weightages.get("kurtosis", 0),
+            3,
+        )
+        != 1
+    ):
+        raise ValueError(
+            "Invalid input for metric weightages. Either metric name is incorrect or sum of metric weightages is not 1.0."
+        )
 
     def stats_estimation(attributes, transformation, mean, stddev):
         attribute_means = list(zip(attributes, mean))
@@ -500,7 +512,7 @@ def feature_stability_estimation(
                 .rdd.flatMap(list)
                 .collect()
             )
-            metric_cv = round(float(variation([a for a in metric_stats])), 4) or None
+            metric_cv = round(float(variation([a for a in metric_stats])), 4)
             i_output.append(metric_cv)
         output.append(i_output)
 
