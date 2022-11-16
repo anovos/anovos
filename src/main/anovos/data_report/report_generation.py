@@ -3229,7 +3229,7 @@ def overall_stats_gen(lat_col_list, long_col_list, geohash_col_list):
     #     for idx,i in enumerate([lat_col_list,long_col_list,geohash_col_list,polygon_col_list]):
     for idx, i in enumerate([lat_col_list, long_col_list, geohash_col_list]):
         if i is None:
-            ll = None
+            ll = []
         elif i is not None:
             ll = []
             for j in i:
