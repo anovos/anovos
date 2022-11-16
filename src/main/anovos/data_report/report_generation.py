@@ -3236,14 +3236,8 @@ def overall_stats_gen(lat_col_list, long_col_list, geohash_col_list):
                 ll.append(j)
         d[col_list[idx]] = ",".join(ll)
 
-    if lat_col_list:
-        l1 = len(lat_col_list)
-    else:
-        l1 = []
-    if geohash_col_list:
-        l2 = len(geohash_col_list)
-    else:
-        l2 = []
+    l1 = len(lat_col_list)
+    l2 = len(geohash_col_list)
 
     return d, l1, l2
 
@@ -4052,9 +4046,9 @@ def anovos_report(
     run_type="local",
     final_report_path=".",
     output_type=None,
-    lat_cols=None,
-    long_cols=None,
-    gh_cols=None,
+    lat_cols=[],
+    long_cols=[],
+    gh_cols=[],
     max_records=100000,
     top_geo_records=100,
     auth_key="NA",
