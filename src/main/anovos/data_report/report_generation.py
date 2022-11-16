@@ -3236,8 +3236,14 @@ def overall_stats_gen(lat_col_list, long_col_list, geohash_col_list):
                 ll.append(j)
         d[col_list[idx]] = ",".join(ll)
 
-    l1 = len(lat_col_list)
-    l2 = len(geohash_col_list)
+    if lat_col_list:
+        l1 = len(lat_col_list)
+    else:
+        l1 = []
+    if geohash_col_list:
+        l2 = len(geohash_col_list)
+    else:
+        l2 = []
 
     return d, l1, l2
 
