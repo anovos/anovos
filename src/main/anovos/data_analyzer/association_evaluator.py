@@ -147,17 +147,15 @@ def variable_clustering(
     idf,
     list_of_cols="all",
     drop_cols=[],
-    sample_size=100000,
     stats_mode={},
     print_impact=False,
 ):
     """
     Variable Clustering groups attributes that are as correlated as possible among themselves within a cluster and
-    as uncorrelated as possible with attribute in other clusters. The function is leveraging [VarClusHi] [2] library
-    to do variable clustering; however, this library is not implemented in a scalable manner due to which the
-    analysis is done on a sample dataset. Further, it is found to be a bit computational expensive especially when
-    number of columns in the input dataset is on higher side (number of pairs to analyse increases exponentially with
-    number of columns).
+    as uncorrelated as possible with attribute in other clusters. The function is leveraging VarClusHiSpark class from
+    anovos.data_analyzer.association_eval_varclus file, which is a scalable version of [VarClusHi] [2] library
+    to do variable clustering. The VarClusHiSpark is implemented in a scalble manner with necessary optimizations,
+    thus sampling is not required.
 
     [2]: https://github.com/jingtt/varclushi   "VarCluShi"
 
@@ -216,36 +214,29 @@ def variable_clustering(
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError("Invalid input for Column(s)")
 
-    idf_sample = data_sample(
-        idf,
-        fraction=min(1.0, float(sample_size) / idf.count()),
-        method_type="random",
-        seed_value=0,
-    )
-    idf_sample.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
-
+    idf.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
     remove_cols = (
-        uniqueCount_computation(spark, idf_sample, list_of_cols)
+        uniqueCount_computation(spark, idf, list_of_cols)
         .where(F.col("unique_values") < 2)
         .select("attribute")
         .rdd.flatMap(lambda x: x)
         .collect()
     )
     list_of_cols = [e for e in list_of_cols if e not in remove_cols]
-    idf_sample = idf_sample.select(list_of_cols)
-    cat_cols = attributeType_segregation(idf_sample)[1]
+    idf = idf.select(list_of_cols)
+    cat_cols = attributeType_segregation(idf)[1]
 
-    for i in idf_sample.dtypes:
+    for i in idf.dtypes:
         if i[1].startswith("decimal"):
-            idf_sample = idf_sample.withColumn(i[0], F.col(i[0]).cast("double"))
+            idf = idf.withColumn(i[0], F.col(i[0]).cast("double"))
     idf_encoded = cat_to_num_unsupervised(
-        spark, idf_sample, list_of_cols=cat_cols, method_type="label_encoding"
+        spark, idf, list_of_cols=cat_cols, method_type="label_encoding"
     )
     num_cols = attributeType_segregation(idf_encoded)[0]
     idf_encoded = idf_encoded.select(num_cols)
     idf_imputed = imputation_MMM(spark, idf_encoded, stats_mode=stats_mode)
     idf_imputed.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
-    idf_sample.unpersist()
+    idf.unpersist()
     vc = VarClusHiSpark(spark, idf_imputed, maxeigval2=1, maxclus=None)
     vc._varclusspu()
     odf_pd = vc._rsquarespu()
