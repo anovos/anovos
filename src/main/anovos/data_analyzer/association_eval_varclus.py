@@ -8,8 +8,8 @@ import pandas as pd
 import numpy as np
 import random
 
-class VarClusHiSpark(object):
 
+class VarClusHiSpark(object):
     def __init__(self, spark, df, feat_list=None, maxeigval2=1, maxclus=None, n_rs=0):
         """
         Parameters
@@ -273,9 +273,7 @@ class VarClusHiSpark(object):
                 r_eigvecs_rm = RowMatrix(self.sc.parallelize(r_eigvecs.T))
                 dm = DenseMatrix(num_rows, num_rows, split_corrs.values.ravel())
 
-                comb_sigmas = r_eigvecs_rm.multiply(dm).multiply(
-                    r_eigvecs_dm
-                )
+                comb_sigmas = r_eigvecs_rm.multiply(dm).multiply(r_eigvecs_dm)
                 comb_sigmas = np.sqrt(
                     np.diag(comb_sigmas.rows.map(lambda row: np.array(row)).collect())
                 )
@@ -364,9 +362,7 @@ class VarClusHiSpark(object):
                     self.corr_df.loc[feat, clus_own.clus].values.T,
                 )
 
-                if (
-                    len(clus_own.clus) == 1 and feat == clus_own.clus[0]
-                ):
+                if len(clus_own.clus) == 1 and feat == clus_own.clus[0]:
                     rs_own = 1
                 else:
                     rs_own = (cov_own / sigmas[i]) ** 2
