@@ -26,6 +26,7 @@ from varclushi import VarClusHi
 from pyspark.ml.feature import VectorAssembler
 from pyspark.ml.stat import Correlation
 from anovos.data_analyzer.stats_generator import uniqueCount_computation
+from anovos.data_analyzer.association_eval_varclus import VarClusHiSpark
 from anovos.data_ingest.data_ingest import read_dataset
 from anovos.data_ingest.data_sampling import data_sample
 from anovos.data_transformer.transformers import (
@@ -245,10 +246,9 @@ def variable_clustering(
     idf_imputed = imputation_MMM(spark, idf_encoded, stats_mode=stats_mode)
     idf_imputed.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
     idf_sample.unpersist()
-    idf_pd = idf_imputed.toPandas()
-    vc = VarClusHi(idf_pd, maxeigval2=1, maxclus=None)
-    vc.varclus()
-    odf_pd = vc.rsquare
+    vc = VarClusHiSpark(spark, idf_imputed, maxeigval2=1, maxclus=None)
+    vc._varclusspu()
+    odf_pd = vc._rsquarespu()
     odf = spark.createDataFrame(odf_pd).select(
         "Cluster",
         F.col("Variable").alias("Attribute"),
