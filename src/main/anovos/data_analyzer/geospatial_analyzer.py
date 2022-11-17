@@ -18,8 +18,6 @@ Respective functions have sections containing the detailed definition of the par
 
 """
 
-from anovos.data_ingest.data_ingest import read_dataset
-from anovos.shared.spark import spark
 from anovos.shared.utils import ends_with, output_to_local, path_ak8s_modify
 from anovos.data_ingest import data_sampling
 from anovos.data_ingest.geo_auto_detection import ll_gh_cols, geo_to_latlong
@@ -30,19 +28,12 @@ from sklearn.metrics import silhouette_score
 from itertools import product
 from pathlib import Path
 
-# from branca.element import Figure
-# from folium.plugins import FastMarkerCluster, HeatMapWithTime
-# from folium import plugins
+
 from pyspark.sql import functions as F
-from pyspark.sql import types as T
-import geohash2 as gh
 from sklearn.cluster import DBSCAN
-import json
-import os
 import subprocess
 import plotly.express as px
 import plotly.graph_objects as go
-from loguru import logger
 import warnings
 
 warnings.filterwarnings("ignore")
@@ -54,7 +45,6 @@ global_paper_bg_color = "rgba(0,0,0,0)"
 
 
 blank_chart = go.Figure()
-# blank_chart.update_layout(autosize=False, width=10, height=10)
 blank_chart.layout.plot_bgcolor = global_plot_bg_color
 blank_chart.layout.paper_bgcolor = global_paper_bg_color
 blank_chart.update_xaxes(visible=False)
@@ -71,108 +61,21 @@ mapbox_list = [
 ]
 
 
-# def zoom_center(
-#     lons: tuple = None,
-#     lats: tuple = None,
-#     lonlats: tuple = None,
-#     format: str = "lonlat",
-#     projection: str = "mercator",
-#     width_to_height: float = 2.0,
-# ) -> (float, dict):
-#     """Finds optimal zoom and centering for a plotly mapbox.
-#     Must be passed (lons & lats) or lonlats.
-#     Temporary solution awaiting official implementation, see:
-#     https://github.com/plotly/plotly.js/issues/3434
-
-#     Parameters
-#     --------
-#     lons: tuple, optional, longitude component of each location
-#     lats: tuple, optional, latitude component of each location
-#     lonlats: tuple, optional, gps locations
-#     format: str, specifying the order of longitud and latitude dimensions,
-#         expected values: 'lonlat' or 'latlon', only used if passed lonlats
-#     projection: str, only accepting 'mercator' at the moment,
-#         raises `NotImplementedError` if other is passed
-#     width_to_height: float, expected ratio of final graph's with to height,
-#         used to select the constrained axis.
-
-#     Returns
-#     --------
-#     zoom: float, from 1 to 20
-#     center: dict, gps position with 'lon' and 'lat' keys
-
-#     >>> print(zoom_center((-109.031387, -103.385460),
-#     ...     (25.587101, 31.784620)))
-#     (5.75, {'lon': -106.208423, 'lat': 28.685861})
-#     """
-#     if lons is None and lats is None:
-#         if isinstance(lonlats, tuple):
-#             lons, lats = zip(*lonlats)
-#         else:
-#             raise ValueError("Must pass lons & lats or lonlats")
-
-#     maxlon, minlon = max(lons), min(lons)
-#     maxlat, minlat = max(lats), min(lats)
-#     center = {
-#         "lon": round((maxlon + minlon) / 2, 6),
-#         "lat": round((maxlat + minlat) / 2, 6),
-#     }
-
-#     # longitudinal range by zoom level (20 to 1)
-#     # in degrees, if centered at equator
-#     lon_zoom_range = np.array(
-#         [
-#             0.0007,
-#             0.0014,
-#             0.003,
-#             0.006,
-#             0.012,
-#             0.024,
-#             0.048,
-#             0.096,
-#             0.192,
-#             0.3712,
-#             0.768,
-#             1.536,
-#             3.072,
-#             6.144,
-#             11.8784,
-#             23.7568,
-#             47.5136,
-#             98.304,
-#             190.0544,
-#             360.0,
-#         ]
-#     )
-
-#     if projection == "mercator":
-#         margin = 1.2
-#         height = (maxlat - minlat) * margin * width_to_height
-#         width = (maxlon - minlon) * margin
-#         lon_zoom = np.interp(width, lon_zoom_range, range(20, 0, -1))
-#         lat_zoom = np.interp(height, lon_zoom_range, range(20, 0, -1))
-#         zoom = round(min(lon_zoom, lat_zoom), 2)
-#     else:
-#         raise NotImplementedError(f"{projection} projection is not implemented")
-
-#     return zoom, center
-
-
 def descriptive_stats_gen(
     df, lat_col, long_col, geohash_col, id_col, master_path, max_val
 ):
 
     """
 
-    This function helps to produce descriptive stats for the analyzed geospatial fields
-
+    This function helps to produce descriptive stats for the geospatial fields.
+    If lat_col and long_col are valid, an overall summary table and a table showing top lat-long pairs will be saved into master_path.
+    If geohash_col is valid, an overall summary table and a table showing top geohash distributions will be saved into master_path
 
     Parameters
     ----------
 
     df
-        Analysis DataFrame
-
+        DataFrame to be analyzed
     lat_col
         Latitude column
     long_col
@@ -215,28 +118,6 @@ def descriptive_stats_gen(
             .limit(max_val)
         )
 
-        # top_lat = (
-        #     df.groupBy(lat_col)
-        #     .agg(
-        #         F.countDistinct(id_col).alias("count_id"),
-        #         F.count(id_col).alias("count_records"),
-        #     )
-        #     .orderBy("count_id", ascending=False)
-        #     .limit(max_val)
-        #     .toPandas()
-        # )
-        #
-        # top_long = (
-        #     df.groupBy(long_col)
-        #     .agg(
-        #         F.countDistinct(id_col).alias("count_id"),
-        #         F.count(id_col).alias("count_records"),
-        #     )
-        #     .orderBy("count_id", ascending=False)
-        #     .limit(max_val)
-        #     .toPandas()
-        # )
-
         most_lat_long = top_lat_long.rdd.flatMap(lambda x: x).collect()[0]
         most_lat_long_cnt = top_lat_long.rdd.flatMap(lambda x: x).collect()[1]
 
@@ -256,16 +137,9 @@ def descriptive_stats_gen(
             .reset_index()
             .rename(columns={"index": "Stats", 0: "Count"})
         )
-        # l = [
-        #     "Overall_Summary",
-        #     "Top_" + str(max_val) + "_Lat",
-        #     "Top_" + str(max_val) + "_Long",
-        #     "Top_" + str(max_val) + "_Lat_Long",
-        # ]
 
         l = ["Overall_Summary", "Top_" + str(max_val) + "_Lat_Long"]
 
-        # for idx, i in enumerate([gen_stats, top_lat, top_long, top_lat_long]):
         for idx, i in enumerate([gen_stats, top_lat_long]):
 
             i.to_csv(
@@ -352,15 +226,13 @@ def lat_long_col_stats_gen(df, lat_col, long_col, id_col, master_path, max_val):
 
     """
 
-    This function helps to produce descriptive stats for the latitude longitude columns
-
-
+    This function helps to produce descriptive stats for the latitude and longitude columns.
+    If there's more than 1 latitude-longitude pair, all the pairs' descriptive statistics will be generated.
     Parameters
     ----------
 
     df
-        Analysis DataFrame
-
+        DataFrame to be analyzed
     lat_col
         Latitude column
     long_col
@@ -393,8 +265,8 @@ def geohash_col_stats_gen(df, geohash_col, id_col, master_path, max_val):
 
     """
 
-    This function helps to produce descriptive stats for the geohash columns
-
+    This function helps to produce descriptive stats for the geohash columns.
+    If there's more than 1 geohash column all the geohash columns' descriptive statistics will be generated.
 
     Parameters
     ----------
@@ -433,9 +305,11 @@ def stats_gen_lat_long_geo(
 
     """
 
-    This function helps to produce descriptive stats for the analyzed geospatial fields
-
-
+    This function helps to produce descriptive stats for the geospatial fields.
+    If lat_col and long_col are valid, intermediate files (overall summary and tables showing top lat-long pairs) will
+    be stored for showing geospatial analysis in Anovos full report.
+    If geohash_col is valid, intermediate files (overall summary and tables showing top geohash distribution) will
+    be stored for showing geospatial analysis in Anovos full report.
     Parameters
     ----------
 
@@ -514,7 +388,8 @@ def geo_cluster_analysis(
 
     """
 
-    This function helps to generate cluster analysis stats for the identified geospatial fields
+    This function helps to generate cluster analysis stats for the identified geospatial fields.
+    Cluster identification, cluster distribtuion, visualization and outlier points will be generated and stored into master_path.
 
     Parameters
     ----------
@@ -599,7 +474,6 @@ def geo_cluster_analysis(
 
     # Use `hole` to create a donut-like pie chart
     cluster_dtls = df_.groupby(["cluster"]).size().reset_index(name="counts")
-    # zoom, center = zoom_center(lons=df_[long_col].values.tolist(),lats=df_[lat_col].values.tolist())
 
     f2 = go.Figure(
         go.Pie(
@@ -683,14 +557,6 @@ def geo_cluster_analysis(
     pivot_1 = pd.pivot_table(
         tmp, values="Sil_score", index="Min_samples", columns="Eps"
     )
-
-    # def df_to_plotly(df):
-    #     return {'z': df.values.tolist(),
-    #             'x': df.columns.tolist(),
-    #             'y': df.index.tolist()}
-
-    # f1_ = go.Figure(data=go.Heatmap(df_to_plotly(pivot_1),colorscale=global_theme_r,texttemplate="%{text}", textfont={"size":12}))
-    # f1_ = go.Figure(data=go.Heatmap(z=df_to_plotly(pivot_1)['z'],x = df_to_plotly(pivot_1)['x'], y = df_to_plotly(pivot_1)['y'] ,colorscale=global_theme_r))
     f1_ = px.imshow(
         pivot_1.values,
         text_auto=".3f",
@@ -749,7 +615,6 @@ def geo_cluster_analysis(
         title_text="Cluster Wise Geospatial Datapoints "
         + "<br><sup>Algorithm Used : DBSCAN</sup>"
     )
-    # f3_.update_layout(titlecoloraxis_showscale=False, autosize=False, width=1200, height=900)
     f3_.update_layout(autosize=False, width=1200, height=900)
     f3_.update_coloraxes(showscale=False)
     f3_.write_json(ends_with(master_path) + "cluster_plot_3_dbscan_" + col_name)
@@ -840,7 +705,8 @@ def geo_cluster_generator(
 
     """
 
-    This function helps to trigger cluster analysis stats for the identified geospatial fields
+    This function helps to trigger cluster analysis stats for the identified geospatial fields by calling geo_cluster_analysis.
+    It will generate cluster analysis for all valid columns inside lat_col_list, long_col_list and geo_col_list.
 
     Parameters
     ----------
@@ -946,7 +812,9 @@ def generate_loc_charts_processor(
 
     """
 
-    This function helps to generate the output of location charts for the analyzed geospatial fields
+    This function helps to generate the output of location charts for the geospatial fields.
+    If lat_col and long_col is valid, scatter plot of latitude-longitude will be generated.
+    If geohash_col is valid, geohash-to-lat-long transformation will be conducted and the transformed lat-long pairs will be used for scatter plot.
 
     Parameters
     ----------
@@ -992,7 +860,6 @@ def generate_loc_charts_processor(
                 .limit(max_val)
                 .toPandas()
             )
-            # zoom, center = zoom_center(lons=df_[long_col[0]].values.tolist(),lats=df_[lat_col[0]].values.tolist())
             base_map = px.scatter_mapbox(
                 df_,
                 lat=lat_col[0],
@@ -1026,7 +893,6 @@ def generate_loc_charts_processor(
                     .limit(max_val)
                     .toPandas()
                 )
-                # zoom, center = zoom_center(lons=df_[long_col[i]].values.tolist(),lats=df_[lat_col[i]].values.tolist())
                 base_map = px.scatter_mapbox(
                     df_,
                     lat=lat_col[i],
@@ -1064,7 +930,6 @@ def generate_loc_charts_processor(
             )
             df_["latitude"] = df_.apply(lambda x: geo_to_latlong(x[col_], 0), axis=1)
             df_["longitude"] = df_.apply(lambda x: geo_to_latlong(x[col_], 1), axis=1)
-            # zoom, center = zoom_center(lons=df_["longitude"].values.tolist(),lats=df_["latitude"].values.tolist())
             base_map = px.scatter_mapbox(
                 df_,
                 lat="latitude",
@@ -1100,7 +965,6 @@ def generate_loc_charts_processor(
                 df_["longitude"] = df_.apply(
                     lambda x: geo_to_latlong(x[col_], 1), axis=1
                 )
-                # zoom, center = zoom_center(lons=df_["longitude"].values.tolist(),lats=df_["latitude"].values.tolist())
                 base_map = px.scatter_mapbox(
                     df_,
                     lat="latitude",
@@ -1125,7 +989,9 @@ def generate_loc_charts_controller(
 
     """
 
-    This function helps to trigger the output generation of location charts for the analyzed geospatial fields
+    This function helps to trigger the output generation of location charts for the geospatial fields by calling generate_loc_charts_processor.
+    If lat_col and long_col are valid, scatter plot for latitude-longitude will be generated.
+    If geohash_col is valid, geohash-to-lat-long transformation will be conducted in order to generate scatter plot of latitude-longitude.
 
     Parameters
     ----------
@@ -1222,7 +1088,8 @@ def geospatial_autodetection(
 
     """
 
-    This function helps to trigger the output of intermediate data which is further used for producing the geospatial analyzer report
+    This function helps to trigger the output of intermediate data including which is further used for producing the geospatial analyzer report.
+    Intermediate data include descriptive analysis, cluster analysis and visualization of geospatial fields.
 
     Parameters
     ----------
