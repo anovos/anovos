@@ -3165,6 +3165,9 @@ def ts_viz_generate(master_path, id_col, print_report=False, output_type=None):
             label="Time Series Analyzer",
         )
 
+    elif output_type is None:
+        report = "null_report"
+
     else:
 
         report = dp.Group(
@@ -4018,13 +4021,7 @@ def loc_report_gen(
 
     elif (len(lat_cols) + len(geohash_cols)) == 0:
 
-        dp2 = dp.Group(
-            dp.Text("#"),
-            dp.Text(
-                "*No further geospatial based analysis could be done owing to the unavailability of any geospatial field*"
-            ),
-        )
-        report = dp.Group(dp1, dp2, label="Geospatial Analyzer")
+        report = "null_report"
 
     if print_report:
         dp.Report(default_template[0], default_template[1], report).save(

@@ -70,6 +70,9 @@ timeseries_analyzer:
   analysis_level: 'daily'
   max_days: 3600
 
+# if there are no geospatial columns in the dataset and no geospatial analysis need to be performed, geospatial_controller.geospatial_analyzer.auto_detection_analyzer should be set to False.
+# setting auto_detection_analyzer to False is equivalent to removing the "geospatial_controller" block. If full report is required, the output will not have geospatial-analysis tab.
+# for detailed explanation on "geospatial_controller" block, please check configs_geospatial.yaml file
 geospatial_controller:
   geospatial_analyzer:
     auto_detection_analyzer: True

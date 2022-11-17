@@ -338,6 +338,9 @@ def main(all_configs, run_type, auth_key_val={}):
                     for idx, i in enumerate(lat_cols):
                         df_ = rog_calculation(df, lat_cols[idx], long_cols[idx], id_col)
 
+            if (not auto_detection_analyzer_flag) & (not geo_transformations):
+                lat_cols, long_cols, gh_cols = [], [], []
+
             continue
 
         if (key == "timeseries_analyzer") & (args is not None):
@@ -731,13 +734,10 @@ def main(all_configs, run_type, auth_key_val={}):
                     analysis_level = timeseries_analyzer.get("analysis_level", None)
                 else:
                     analysis_level = None
-
-                geospatial_analyzer = all_configs.get("geospatial_analyzer", None)
-                if geospatial_analyzer:
-                    max_analysis_records = geospatial_analyzer.get(
-                        "max_analysis_records", None
-                    )
-                    top_geo_records = geospatial_analyzer.get("top_geo_records", None)
+                geospatial_controller = all_configs.get("geospatial_controller", None)
+                if not geospatial_controller:
+                    lat_cols, long_cols, gh_cols = [], [], []
+                    max_analysis_records, top_geo_records = None, None
 
                 anovos_report(
                     **args,

@@ -18,7 +18,8 @@ input_dataset:
 # geospatial anlaysis details will be shown in full report, a separate tab called "Geospatial Analyzer". The section summarizes the information about the geospatial features identified in the data and their landscaping view
 # geospatial_analyzer: if auto_detection_analyzer is set to True, it will trigger geospatial_autodetection to generate intermediate data, which is further used for producing the geospatial analyzer report
 # arguments of geospatial_analyzer are inout parameters for geospatial_autodetection function
-# geo_transformation: transformation of geospatial fields
+# geo_transformation: transformation of geospatial fields. This must be placed after "geospatial_analyzer"
+# to run any functions under geo_transformation, "geospatial_analyzer.auto_detection_analyzer" must be set to True
 # if geo_format_conversion is set to True, conversion of locations from "lat, lon" format to other formats specified in loc_output_format will be triggered
 # if location_in_country_detection is set to True, it will check whether each lat-lon pair is insided a country.
 # if centroid_calculation is set to True, the centroid of the dataframe will be calculated based on list_of_lat, list_of_lon and id_col
