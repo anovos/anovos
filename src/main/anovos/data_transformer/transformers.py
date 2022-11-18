@@ -1911,6 +1911,8 @@ def imputation_sklearn(
                     stratified_type=stratified_type,
                     seed_value=sample_seed,
                 )
+            else:
+                idf_model = idf
         else:
             idf_model = idf
         if persist:
