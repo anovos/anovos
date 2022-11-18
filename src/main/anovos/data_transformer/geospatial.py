@@ -18,14 +18,14 @@ from anovos.data_transformer.geo_utils import (
 
 
 def geo_format_latlon(
-        idf,
-        list_of_lat,
-        list_of_lon,
-        input_format,
-        output_format,
-        result_prefix=[],
-        optional_configs={"geohash_precision": 8, "radius": EARTH_RADIUS},
-        output_mode="append",
+    idf,
+    list_of_lat,
+    list_of_lon,
+    input_format,
+    output_format,
+    result_prefix=[],
+    optional_configs={"geohash_precision": 8, "radius": EARTH_RADIUS},
+    output_mode="append",
 ):
     """
     This function is the main function to convert the input data's location columns from lat,lon format to desired format
@@ -169,14 +169,14 @@ def geo_format_latlon(
 
 
 def geo_format_cartesian(
-        idf,
-        list_of_x,
-        list_of_y,
-        list_of_z,
-        output_format,
-        result_prefix=[],
-        optional_configs={"geohash_precision": 8, "radius": EARTH_RADIUS},
-        output_mode="append",
+    idf,
+    list_of_x,
+    list_of_y,
+    list_of_z,
+    output_format,
+    result_prefix=[],
+    optional_configs={"geohash_precision": 8, "radius": EARTH_RADIUS},
+    output_mode="append",
 ):
     """
     This function helps to convert the input data's location columns from cartesian format to desired format based on
@@ -312,12 +312,12 @@ def geo_format_cartesian(
 
 
 def geo_format_geohash(
-        idf,
-        list_of_geohash,
-        output_format,
-        result_prefix=[],
-        optional_configs={"radius": EARTH_RADIUS},
-        output_mode="append",
+    idf,
+    list_of_geohash,
+    output_format,
+    result_prefix=[],
+    optional_configs={"radius": EARTH_RADIUS},
+    output_mode="append",
 ):
     """
     This function is the main function to convert the input data's location columns from geohash  format to desired
@@ -439,15 +439,15 @@ def geo_format_geohash(
 
 
 def location_distance(
-        idf,
-        list_of_cols_loc1,
-        list_of_cols_loc2,
-        loc_format="dd",
-        result_prefix="",
-        distance_type="haversine",
-        unit="m",
-        optional_configs={"radius": EARTH_RADIUS, "vincenty_model": "WGS-84"},
-        output_mode="append",
+    idf,
+    list_of_cols_loc1,
+    list_of_cols_loc2,
+    loc_format="dd",
+    result_prefix="",
+    distance_type="haversine",
+    unit="m",
+    optional_configs={"radius": EARTH_RADIUS, "vincenty_model": "WGS-84"},
+    output_mode="append",
 ):
     """
     This function calculates the distance between 2 locations, and the distance formula is determined by distance_type.
@@ -632,7 +632,7 @@ def location_distance(
 
 
 def geohash_precision_control(
-        idf, list_of_geohash, output_precision=8, km_max_error=None, output_mode="append"
+    idf, list_of_geohash, output_precision=8, km_max_error=None, output_mode="append"
 ):
     """
     This function controls the precision of input data's geohash columns.
@@ -706,7 +706,7 @@ def geohash_precision_control(
 
 
 def location_in_polygon(
-        idf, list_of_lat, list_of_lon, polygon, result_prefix=[], output_mode="append"
+    idf, list_of_lat, list_of_lon, polygon, result_prefix=[], output_mode="append"
 ):
     """
     This function checks whether each lat-lon pair is insided a GeoJSON object. The following types of GeoJSON objects
@@ -793,15 +793,15 @@ def location_in_polygon(
 
 
 def location_in_country(
-        spark,
-        idf,
-        list_of_lat,
-        list_of_lon,
-        country,
-        country_shapefile_path="",
-        method_type="approx",
-        result_prefix=[],
-        output_mode="append",
+    spark,
+    idf,
+    list_of_lat,
+    list_of_lon,
+    country,
+    country_shapefile_path="",
+    method_type="approx",
+    result_prefix=[],
+    output_mode="append",
 ):
     """
     This function checks whether each lat-lon pair is insided a country. Two ways of checking are supported: "approx" (using the
@@ -991,10 +991,10 @@ def centroid(idf, lat_col, long_col, id_col=None):
         idf = idf.dropna(subset=(lat_col, long_col))
 
     if not idf.where(
-            (F.col(lat_col) > 90)
-            | (F.col(lat_col) < -90)
-            | (F.col(long_col) > 180)
-            | (F.col(long_col) < -180)
+        (F.col(lat_col) > 90)
+        | (F.col(lat_col) < -90)
+        | (F.col(long_col) > 180)
+        | (F.col(long_col) < -180)
     ).rdd.isEmpty():
         warnings.warn(
             "Rows dropped due to longitude and/or latitude values being out of the valid range"
@@ -1110,10 +1110,10 @@ def weighted_centroid(idf, id_col, lat_col, long_col):
         idf = idf.dropna(subset=(lat_col, long_col))
 
     if not idf.where(
-            (F.col(lat_col) > 90)
-            | (F.col(lat_col) < -90)
-            | (F.col(long_col) > 180)
-            | (F.col(long_col) < -180)
+        (F.col(lat_col) > 90)
+        | (F.col(lat_col) < -90)
+        | (F.col(long_col) > 180)
+        | (F.col(long_col) < -180)
     ).rdd.isEmpty():
         warnings.warn(
             "Rows dropped due to longitude and/or latitude values being out of the valid range"
@@ -1233,10 +1233,10 @@ def rog_calculation(idf, lat_col, long_col, id_col=None):
         idf = idf.dropna(subset=(lat_col, long_col))
 
     if not idf.where(
-            (F.col(lat_col) > 90)
-            | (F.col(lat_col) < -90)
-            | (F.col(long_col) > 180)
-            | (F.col(long_col) < -180)
+        (F.col(lat_col) > 90)
+        | (F.col(lat_col) < -90)
+        | (F.col(long_col) > 180)
+        | (F.col(long_col) < -180)
     ).rdd.isEmpty():
         warnings.warn(
             "Rows dropped due to longitude and/or latitude values being out of the valid range"
@@ -1341,10 +1341,10 @@ def reverse_geocoding(idf, lat_col, long_col):
         idf = idf.dropna(subset=(lat_col, long_col))
 
     if not idf.where(
-            (F.col(lat_col) > 90)
-            | (F.col(lat_col) < -90)
-            | (F.col(long_col) > 180)
-            | (F.col(long_col) < -180)
+        (F.col(lat_col) > 90)
+        | (F.col(lat_col) < -90)
+        | (F.col(long_col) > 180)
+        | (F.col(long_col) < -180)
     ).rdd.isEmpty():
         warnings.warn(
             "Rows dropped due to longitude and/or latitude values being out of the valid range"
@@ -1367,11 +1367,11 @@ def reverse_geocoding(idf, lat_col, long_col):
         location = rg.search(coordinates, mode=1)
         if location:
             return (
-                    str(location[0]["name"])
-                    + ","
-                    + str(location[0]["admin1"])
-                    + ","
-                    + str(location[0]["cc"])
+                str(location[0]["name"])
+                + ","
+                + str(location[0]["admin1"])
+                + ","
+                + str(location[0]["cc"])
             )
         else:
             return "N/A"
