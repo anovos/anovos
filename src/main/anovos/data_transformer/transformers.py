@@ -2013,7 +2013,8 @@ def imputation_sklearn(
         odf_print.show(len(list_of_cols), False)
     if persist:
         idf.unpersist()
-        idf_model.unpersist()
+        if not pre_existing_model:
+            idf_model.unpersist()
         result_df.unpersist()
     return odf
 
