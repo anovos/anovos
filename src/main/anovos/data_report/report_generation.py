@@ -3351,32 +3351,6 @@ def read_stats_ll_geo(lat_col, long_col, geohash_col, master_path, top_geo_recor
                                     ),
                                     label="Overall Summary",
                                 ),
-                                # dp.DataTable(
-                                #     pd.read_csv(
-                                #         ends_with(master_path)
-                                #         + "Top_"
-                                #         + str(top_geo_records)
-                                #         + "_Lat_1_"
-                                #         + lat_col[idx]
-                                #         + "_"
-                                #         + long_col[idx]
-                                #         + ".csv"
-                                #     ),
-                                #     label="Top " + str(top_geo_records) + "  Lat",
-                                # ),
-                                # dp.DataTable(
-                                #     pd.read_csv(
-                                #         ends_with(master_path)
-                                #         + "Top_"
-                                #         + str(top_geo_records)
-                                #         + "_Long_1_"
-                                #         + lat_col[idx]
-                                #         + "_"
-                                #         + long_col[idx]
-                                #         + ".csv"
-                                #     ),
-                                #     label="Top " + str(top_geo_records) + " Long",
-                                # ),
                                 dp.DataTable(
                                     pd.read_csv(
                                         ends_with(master_path)
@@ -3422,32 +3396,6 @@ def read_stats_ll_geo(lat_col, long_col, geohash_col, master_path, top_geo_recor
                                     ),
                                     label="Overall Summary",
                                 ),
-                                # dp.DataTable(
-                                #     pd.read_csv(
-                                #         ends_with(master_path)
-                                #         + "Top_"
-                                #         + str(top_geo_records)
-                                #         + "_Lat_1_"
-                                #         + lat_col[idx]
-                                #         + "_"
-                                #         + long_col[idx]
-                                #         + ".csv"
-                                #     ),
-                                #     label="Top " + str(top_geo_records) + "  Lat",
-                                # ),
-                                # dp.DataTable(
-                                #     pd.read_csv(
-                                #         ends_with(master_path)
-                                #         + "Top_"
-                                #         + str(top_geo_records)
-                                #         + "_Long_1_"
-                                #         + lat_col[idx]
-                                #         + "_"
-                                #         + long_col[idx]
-                                #         + ".csv"
-                                #     ),
-                                #     label="Top " + str(top_geo_records) + " Long",
-                                # ),
                                 dp.DataTable(
                                     pd.read_csv(
                                         ends_with(master_path)
