@@ -2,11 +2,18 @@
 
 Copyright 2021-2022 Anovos Developers
 
-Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at:
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at:
 
 [http://www.apache.org/licenses/LICENSE-2.0.](http://www.apache.org/licenses/LICENSE-2.0)
 
-Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 
 ```other
 Apache License
@@ -214,6 +221,11 @@ Apache License Version 2.0, see
 
 ### Python packages
 
+#### black
+
+MIT License, see
+[https://github.com/psf/black/blob/main/LICENSE](https://github.com/psf/black/blob/main/LICENSE)
+
 #### boto3
 
 Apache License Version 2.0, see
@@ -238,6 +250,11 @@ BSD 3-Clause License, see
 
 BSD 3-Clause License, see
 [https://github.com/fsspec/filesystem_spec/blob/master/LICENSE](https://github.com/fsspec/filesystem_spec/blob/master/LICENSE)
+
+#### isort
+
+MIT License, see
+[https://github.com/PyCQA/isort/blob/main/LICENSE](https://github.com/PyCQA/isort/blob/main/LICENSE)
 
 #### loguru
 
@@ -289,6 +306,11 @@ Apache License Version 2.0, see
 BSD 3-Clause License, see
 [https://github.com/pybind/pybind11/blob/master/LICENSE](https://github.com/pybind/pybind11/blob/master/LICENSE)
 
+#### reverse_geocoder
+
+GNU Lesser General Public License Version 2.1, see
+[https://github.com/thampiman/reverse-geocoder/blob/master/LICENSE](https://github.com/thampiman/reverse-geocoder/blob/master/LICENSE)
+
 #### s3fs
 
 BSD 3-Clause License, see
@@ -319,12 +341,22 @@ Apache License Version 2.0, see
 MIT License, see
 [https://github.com/facelessuser/soupsieve/blob/main/LICENSE.md](https://github.com/facelessuser/soupsieve/blob/main/LICENSE.md)
 
+#### statsmodels
+
+BSD 3-Clause License, see
+[https://github.com/statsmodels/statsmodels/blob/main/LICENSE.txt](https://github.com/statsmodels/statsmodels/blob/main/LICENSE.txt)
+
 #### sympy
 
 BSD 3-Clause License, see
 [https://github.com/sympy/sympy/blob/master/LICENSE](https://github.com/sympy/sympy/blob/master/LICENSE)
 
 Note that some submodules are published under different Licenses.
+
+#### tensorflow
+
+Apache License Version 2.0, see
+[https://github.com/tensorflow/tensorflow/blob/master/LICENSE](https://github.com/tensorflow/tensorflow/blob/master/LICENSE)
 
 #### varclushi
 
