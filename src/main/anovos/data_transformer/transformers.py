@@ -65,6 +65,7 @@ from anovos.data_analyzer.stats_generator import (
     uniqueCount_computation,
 )
 from anovos.data_ingest.data_ingest import read_dataset, recast_column
+from anovos.data_ingest.data_sampling import data_sample
 from anovos.shared.utils import ends_with, attributeType_segregation, get_dtype
 
 # enable_iterative_imputer is prequisite for importing IterativeImputer
@@ -1561,8 +1562,16 @@ def imputation_sklearn(
     idf,
     list_of_cols="missing",
     drop_cols=[],
-    method_type="KNN",
-    sample_size=500000,
+    missing_threshold=1.0,
+    method_type="regression",
+    use_sampling=True,
+    sample_method="random",
+    strata_cols="all",
+    stratified_type="population",
+    sample_size=10000,
+    sample_seed=42,
+    persist=True,
+    persist_option=pyspark.StorageLevel.MEMORY_AND_DISK,
     pre_existing_model=False,
     model_path="NA",
     output_mode="replace",
@@ -1582,7 +1591,8 @@ def imputation_sklearn(
     of missing values to most. All the hyperparameters used in the above mentioned imputers are their default values.
 
     However, sklearn imputers are not scalable, which might be slow if the size of the input dataframe is large.
-    Thus, an input sample_size (the default value is 500,000) can be set to control the number of samples to be used
+    In fact, if the input dataframe size exceeds 10 GigaBytes, the model fitting step powered by sklearn might fail.
+    Thus, an input sample_size (the default value is 10,000) can be set to control the number of samples to be used
     to train the imputer. If the total number of input dataset exceeds sample_size, the rest of the samples will be imputed
     using the trained imputer in a scalable manner. This is one of the way to demonstrate how Anovos has been
     designed as a scalable feature engineering library.
@@ -1612,11 +1622,47 @@ def imputation_sklearn(
         where different column names are separated by pipe delimiter “|” e.g., "col1|col2".
         It is most useful when coupled with the “all” value of list_of_cols, when we need to consider all columns except
         a few handful of them. (Default value = [])
+    missing_threshold
+        Float argument - If list_of_cols is "missing", this argument is used to determined the missing threshold
+        for every column. The column that has more (count of missing value/ count of total value) >= missing_threshold
+        will be excluded from the list of columns to be imputed. (Default value = 1.0)
     method_type
         "KNN", "regression".
-        "KNN" option trains a sklearn.impute.KNNImputer. "regression" option trains a sklearn.impute.IterativeImputer (Default value = "KNN")
+        "KNN" option trains a sklearn.impute.KNNImputer. "regression" option trains a sklearn.impute.IterativeImputer
+        (Default value = "regression")
+    use_sampling
+        Boolean argument - True or False. This argument is used to determine whether to use sampling on
+        source and target dataset, True will enable the use of sample method, otherwise False.
+        It is recommended to set this as True for large datasets. (Default value = True)
+    sample_method
+        If use_sampling is True, this argument is used to determine the sampling method.
+        "stratified" for Stratified sampling, "random" for Random Sampling.
+        For more details, please refer to https://docs.anovos.ai/api/data_ingest/data_sampling.html.
+        (Default value = "random")
+    strata_cols
+        If use_sampling is True and sample_method is "stratified", this argument is used to determine the list
+        of columns used to be treated as strata. For more details, please refer to
+        https://docs.anovos.ai/api/data_ingest/data_sampling.html. (Default value = "all")
+    stratified_type
+        If use_sampling is True and sample_method is "stratified", this argument is used to determine the stratified
+        sampling method. "population" stands for Proportionate Stratified Sampling,
+        "balanced" stands for Optimum Stratified Sampling. For more details, please refer to
+        https://docs.anovos.ai/api/data_ingest/data_sampling.html. (Default value = "population")
     sample_size
-        Maximum rows for training the sklearn imputer (Default value = 500000)
+        If use_sampling is True, this argument is used to determine maximum rows for training the sklearn imputer
+        (Default value = 10000)
+    sample_seed
+        If use_sampling is True, this argument is used to determine the seed of sampling method.
+        (Default value = 42)
+    persist
+        Boolean argument - True or False. This argument is used to determine whether to persist on
+        binning result of source and target dataset, True will enable the use of persist, otherwise False.
+        It is recommended to set this as True for large datasets. (Default value = True)
+    persist_option
+        If persist is True, this argument is used to determine the type of persist.
+        For all the pyspark.StorageLevel option available in persist, please refer to
+        https://spark.apache.org/docs/latest/api/python/reference/api/pyspark.StorageLevel.html
+        (Default value = pyspark.StorageLevel.MEMORY_AND_DISK)
     pre_existing_model
         Boolean argument – True or False. True if imputation model exists already, False otherwise. (Default value = False)
     model_path
@@ -1646,6 +1692,8 @@ def imputation_sklearn(
 
     """
 
+    if persist:
+        idf = idf.persist(persist_option)
     num_cols = attributeType_segregation(idf)[0]
     if stats_missing == {}:
         missing_df = missingCount_computation(spark, idf, num_cols)
@@ -1669,7 +1717,7 @@ def imputation_sklearn(
 
     missing_cols = (
         missing_df.where(F.col("missing_count") > 0)
-        .where(F.col("missing_pct") < 1.0)
+        .where(F.col("missing_pct") < missing_threshold)
         .select("attribute")
         .rdd.flatMap(lambda x: x)
         .collect()
@@ -1734,10 +1782,22 @@ def imputation_sklearn(
             imputer = pickle.load(open("imputation_sklearn.sav", "rb"))
         else:
             imputer = pickle.load(open(model_path + "/imputation_sklearn.sav", "rb"))
-        idf_rest = idf
     else:
-        sample_ratio = min(1.0, float(sample_size) / idf.count())
-        idf_model = idf.sample(False, sample_ratio, 0)
+        if use_sampling:
+            count_idf = idf.count()
+            if count_idf > sample_size:
+                idf_model = data_sample(
+                    idf,
+                    strata_cols=strata_cols,
+                    fraction=sample_size / count_idf,
+                    method_type=sample_method,
+                    stratified_type=stratified_type,
+                    seed_value=sample_seed,
+                )
+        else:
+            idf_model = idf
+        if persist:
+            idf_model = idf_model.persist(persist_option)
         idf_pd = idf_model.select(list_of_cols).toPandas()
 
         if method_type == "KNN":
@@ -1779,17 +1839,18 @@ def imputation_sklearn(
 
     @F.pandas_udf(returnType=T.ArrayType(T.DoubleType()))
     def prediction(*cols):
-        X = pd.concat(cols, axis=1)
-        return pd.Series(row.tolist() for row in imputer.transform(X))
+        input_pdf = pd.concat(cols, axis=1)
+        return pd.Series(row.tolist() for row in imputer.transform(input_pdf))
 
-    odf = idf.withColumn("features", prediction(*list_of_cols))
-    odf.persist(pyspark.StorageLevel.MEMORY_AND_DISK).count()
+    result_df = idf.withColumn("features", prediction(*list_of_cols))
+    if persist:
+        result_df = result_df.persist(persist_option)
 
-    odf_schema = odf.schema
+    odf_schema = result_df.schema
     for i in list_of_cols:
         odf_schema = odf_schema.add(T.StructField(i + "_imputed", T.FloatType()))
     odf = (
-        odf.rdd.map(lambda x: (*x, *x["features"]))
+        result_df.rdd.map(lambda x: (*x, *x["features"]))
         .toDF(schema=odf_schema)
         .drop("features")
     )
@@ -1831,6 +1892,10 @@ def imputation_sklearn(
                 "inner",
             )
         odf_print.show(len(list_of_cols), False)
+    if persist:
+        idf.unpersist()
+        idf_model.unpersist()
+        result_df.unpersist()
     return odf
 
 
