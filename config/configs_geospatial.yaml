@@ -1,0 +1,175 @@
+#input_dataset: ETL configurations of main dataset.
+#input_dataset can be renamed but need to change the name in main script as well
+#keys of input_dataset are function names (cannot be renamed) & values are function arguments (value can be null to skip except for read_dataset)
+#delete_column/select_column: arguments can be in front or under as list_of_cols
+#list_of_cols: list or string with multiple columns separated by | (refer doc string for further details)
+input_dataset:
+  read_dataset:
+    file_path: "data/geospatial_dataset/csv"
+    file_type: csv
+    file_configs:
+      header: True
+      delimiter: ","
+      inferSchema: True
+  delete_column: ["venueId", "venueCategoryId"]
+  select_column: null
+
+# geospatial_controller: configurations for geospatial-analysis
+# geospatial anlaysis details will be shown in full report, a separate tab called "Geospatial Analyzer". The section summarizes the information about the geospatial features identified in the data and their landscaping view
+# geospatial_analyzer: if auto_detection_analyzer is set to True, it will trigger geospatial_autodetection to generate intermediate data, which is further used for producing the geospatial analyzer report
+# arguments of geospatial_analyzer are inout parameters for geospatial_autodetection function
+# geo_transformation: transformation of geospatial fields
+# if geo_format_conversion is set to True, conversion of locations from "lat, lon" format to other formats specified in loc_output_format will be triggered
+# if location_in_country_detection is set to True, it will check whether each lat-lon pair is insided a country.
+# if centroid_calculation is set to True, the centroid of the dataframe will be calculated based on list_of_lat, list_of_lon and id_col
+# if rog_calculation is set to True, the Radius of Gyration (in meter) of the dataframe will be calculated based on list_of_lat, list_of_lon and id_col
+geospatial_controller:
+  geospatial_analyzer:
+    auto_detection_analyzer: True
+    id_col: 'userId'
+    max_analysis_records: 100000
+    top_geo_records: 100
+    max_cluster: 20
+    eps: '0.3,0.5,0.05'
+    min_samples: '500,1100,100'
+    global_map_box_val: 'open-street-map'
+
+  geo_transformations:
+    geo_format_conversion: True
+    location_in_country_detection: True
+    centroid_calculation: True
+    rog_calculation: True
+    id_col: 'userId'
+    list_of_lat: ["latitude"]
+    list_of_lon: ["longitude"]
+    list_of_geohash: []
+    country: 'US'
+    country_shapefile_path: ""
+    method_type: "approx"
+    result_prefix_lat_lon: ["lat_long"]
+    result_prefix_geo: ["L1"]
+    loc_input_format: "dd"
+    loc_output_format: "geohash"
+
+anovos_basic_report:
+  basic_report: False
+  report_args:
+    id_col: 'userId'
+    label_col: null
+    event_label: null
+    skip_corr_matrix: True
+    output_path: report_stats
+
+#if anovos_basic_report.basic_report is True, then all configs below are ignored.
+stats_generator:
+  metric: ['global_summary','measures_of_counts','measures_of_centralTendency','measures_of_cardinality'
+            ,'measures_of_percentiles','measures_of_dispersion','measures_of_shape']
+  metric_args:
+    list_of_cols: all
+    drop_cols: ['userId']
+
+quality_checker:
+  duplicate_detection:
+    list_of_cols: all
+    drop_cols: ['userId']
+    treatment: True
+
+  nullRows_detection:
+    list_of_cols: all
+    drop_cols: []
+    treatment: True
+    treatment_threshold: 0.75
+
+  invalidEntries_detection:
+    list_of_cols: all
+    drop_cols: ['userId']
+    treatment: True
+    output_mode: replace
+
+  IDness_detection:
+    list_of_cols: all
+    drop_cols: ['userId']
+    treatment: True
+    treatment_threshold: 0.9
+
+  biasedness_detection:
+    list_of_cols: all
+    drop_cols: ['userId']
+    treatment: True
+    treatment_threshold: 0.98
+
+  nullColumns_detection:
+    list_of_cols: all
+    drop_cols: ['userId']
+    treatment: True
+    treatment_method: MMM
+    treatment_configs:
+      method_type: median
+      pre_existing_model: False
+      model_path: NA
+      output_mode: replace
+
+
+cat_to_num_transformer:
+  list_of_cols: all
+  drop_cols: 'userId'
+  method_type: unsupervised
+  encoding: label_encoding
+  label_col: 
+  event_label:
+
+association_evaluator:
+
+  correlation_matrix:
+    list_of_cols: all
+    drop_cols: ['userId']
+
+  variable_clustering:
+    list_of_cols: all
+    drop_cols: 'userId'
+
+
+report_preprocessing:
+  master_path: 'report_stats'
+  charts_to_objects:
+    list_of_cols: all
+    drop_cols: userId
+    label_col: null
+    event_label: null
+    bin_method: equal_frequency
+    bin_size: 10
+    drift_detector: False
+    outlier_charts: False
+    source_path: "NA"
+
+report_generation:
+  master_path: 'report_stats'
+  id_col: 'userId'
+  label_col: null
+  corr_threshold: 0.4
+  iv_threshold: 0.02
+  drift_threshold_model: 0.1
+  dataDict_path: 'data/geospatial_dataset/data_dictionary.csv'
+  metricDict_path: 'data/metric_dictionary.csv'
+  final_report_path: 'report_stats'
+
+write_intermediate:
+  file_path: "intermediate_data"
+  file_type: csv
+  file_configs:
+    mode: overwrite
+    header: True
+    delimiter: ","
+    inferSchema: True
+
+write_main:
+  file_path: "output"
+  file_type: parquet
+  file_configs:
+    mode: overwrite
+
+write_stats:
+  file_path: "stats"
+  file_type: parquet
+  file_configs:
+    mode: overwrite

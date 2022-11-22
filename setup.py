@@ -22,7 +22,7 @@ setup(
         "anovos.data_transformer",
         "anovos.data_ingest",
         "anovos.data_analyzer",
-        "anovos.drift",
+        "anovos.drift_stability",
         "anovos.data_report",
         "anovos.feature_recommender",
         "anovos.feature_store",

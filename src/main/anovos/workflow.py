@@ -3,22 +3,41 @@ import glob
 import os
 import subprocess
 import timeit
-
 import yaml
 from loguru import logger
-
 from anovos.data_analyzer import association_evaluator, quality_checker, stats_generator
 from anovos.data_analyzer.ts_analyzer import ts_analyzer
+from anovos.data_analyzer.geospatial_analyzer import geospatial_autodetection
 from anovos.data_ingest import data_ingest
 from anovos.data_ingest.ts_auto_detection import ts_preprocess
+from anovos.data_ingest.geo_auto_detection import ll_gh_cols
 from anovos.data_report import report_preprocessing
 from anovos.data_report.basic_report_generation import anovos_basic_report
 from anovos.data_report.report_generation import anovos_report
 from anovos.data_report.report_preprocessing import save_stats
 from anovos.data_transformer import transformers
-from anovos.drift import detector as ddetector
+from anovos.drift_stability import stability as dstability
+from anovos.data_transformer.geospatial import (
+    location_in_country,
+    geo_format_latlon,
+    geo_format_geohash,
+    rog_calculation,
+    centroid,
+)
+from anovos.data_transformer.geo_utils import EARTH_RADIUS
+from anovos.drift_stability import drift_detector as ddetector
 from anovos.feature_store import feast_exporter
 from anovos.shared.spark import spark
+
+mapbox_list = [
+    "open-street-map",
+    "white-bg",
+    "carto-positron",
+    "carto-darkmatter",
+    "stamen-terrain",
+    "stamen-toner",
+    "stamen-watercolor",
+]
 
 
 def ETL(args):
@@ -74,7 +93,7 @@ def stats_args(all_configs, func):
             "biasedness_detection": ["stats_mode"],
             "IDness_detection": ["stats_unique"],
             "nullColumns_detection": ["stats_unique", "stats_mode", "stats_missing"],
-            "variable_clustering": ["stats_unique", "stats_mode"],
+            "variable_clustering": ["stats_mode"],
             "charts_to_objects": ["stats_unique"],
             "cat_to_num_unsupervised": ["stats_unique"],
             "PCA_latentFeatures": ["stats_missing"],
@@ -195,6 +214,130 @@ def main(all_configs, run_type, auth_key_val={}):
             )
             end = timeit.default_timer()
             logger.info(f"{key}: execution time (in secs) = {round(end - start, 4)}")
+            continue
+
+        if (key == "geospatial_controller") & (args is not None):
+
+            start = timeit.default_timer()
+
+            auto_detection_analyzer_flag = args.get("geospatial_analyzer").get(
+                "auto_detection_analyzer", False
+            )
+            geo_transformations = args.get("geo_transformations", False)
+            id_col = args.get("geospatial_analyzer").get("id_col", None)
+            max_analysis_records = args.get("geospatial_analyzer").get(
+                "max_analysis_records", None
+            )
+            top_geo_records = args.get("geospatial_analyzer").get(
+                "top_geo_records", None
+            )
+            max_cluster = args.get("geospatial_analyzer").get("max_cluster", None)
+            eps = args.get("geospatial_analyzer").get("eps", None)
+            min_samples = args.get("geospatial_analyzer").get("min_samples", None)
+
+            try:
+                global_map_box_val = mapbox_list.index(
+                    args.get("geospatial_analyzer", None).get(
+                        "global_map_box_val", None
+                    )
+                )
+            except:
+                global_map_box_val = 0
+
+            if auto_detection_analyzer_flag:
+
+                start = timeit.default_timer()
+
+                lat_cols, long_cols, gh_cols = geospatial_autodetection(
+                    df,
+                    id_col,
+                    report_input_path,
+                    max_analysis_records,
+                    top_geo_records,
+                    max_cluster,
+                    eps,
+                    min_samples,
+                    global_map_box_val,
+                    run_type,
+                    auth_key,
+                )
+
+                end = timeit.default_timer()
+                logger.info(
+                    f"{key}, auto_detection_geospatial: execution time (in secs) ={round(end - start, 4)}"
+                )
+
+            if geo_transformations:
+
+                country_val = args.get("geo_transformations").get("country", None)
+                country_shapefile_path = args.get("geo_transformations").get(
+                    "country_shapefile_path", None
+                )
+                method_type = args.get("geo_transformations").get("method_type", None)
+                result_prefix = args.get("geo_transformations").get(
+                    "result_prefix", None
+                )
+                loc_input_format = args.get("geo_transformations").get(
+                    "loc_input_format", None
+                )
+                loc_output_format = args.get("geo_transformations").get(
+                    "loc_output_format", None
+                )
+                result_prefix_lat_lon = args.get("geo_transformations").get(
+                    "result_prefix_lat_lon", None
+                )
+                result_prefix_geo = args.get("geo_transformations").get(
+                    "result_prefix_geo", None
+                )
+                id_col = args.get("geo_transformations").get("id_col", None)
+
+                if ((lat_cols == []) & (long_cols == [])) or (gh_cols == []):
+                    lat_cols = args.get("geo_transformations").get("list_of_lat", None)
+                    long_cols = args.get("geo_transformations").get("list_of_lon", None)
+                    gh_cols = args.get("geo_transformations").get(
+                        "list_of_geohash", None
+                    )
+
+                if args.get("geo_transformations").get("location_in_country_detection"):
+
+                    df = location_in_country(
+                        spark,
+                        df,
+                        lat_cols,
+                        long_cols,
+                        country_val,
+                        country_shapefile_path,
+                        method_type,
+                        result_prefix_lat_lon,
+                    )
+
+                if args.get("geo_transformations").get("geo_format_conversion"):
+
+                    if len(lat_cols) >= 1:
+                        df = geo_format_latlon(
+                            df,
+                            lat_cols,
+                            long_cols,
+                            loc_input_format,
+                            loc_output_format,
+                            result_prefix_geo,
+                        )
+
+                    if len(gh_cols) >= 1:
+                        df = geo_format_geohash(
+                            df, gh_cols, loc_output_format, result_prefix_lat_lon
+                        )
+
+                if args.get("geo_transformations").get("centroid_calculation"):
+
+                    for idx, i in enumerate(lat_cols):
+                        df_ = centroid(df, lat_cols[idx], long_cols[idx], id_col)
+
+                if args.get("geo_transformations").get("rog_calculation"):
+
+                    for idx, i in enumerate(lat_cols):
+                        df_ = rog_calculation(df, lat_cols[idx], long_cols[idx], id_col)
+
             continue
 
         if (key == "timeseries_analyzer") & (args is not None):
@@ -421,7 +564,6 @@ def main(all_configs, run_type, auth_key_val={}):
                             df,
                             source,
                             **value["configs"],
-                            run_type=run_type,
                             print_impact=False,
                         )
                         if report_input_path:
@@ -452,8 +594,8 @@ def main(all_configs, run_type, auth_key_val={}):
                         for k in [e for e in value.keys() if e not in ("configs")]:
                             tmp = ETL(value.get(k))
                             idfs.append(tmp)
-                        df_stats = ddetector.stability_index_computation(
-                            spark, *idfs, **value["configs"], print_impact=False
+                        df_stats = dstability.stability_index_computation(
+                            spark, idfs, **value["configs"], print_impact=False
                         )
                         if report_input_path:
                             save_stats(
@@ -534,6 +676,14 @@ def main(all_configs, run_type, auth_key_val={}):
                                     df_transformed = f(
                                         df, **value2, **extra_args, print_impact=True
                                     )
+                                elif subkey2 in "imputation_sklearn":
+                                    df_transformed = f(
+                                        spark,
+                                        df,
+                                        **value2,
+                                        **extra_args,
+                                        print_impact=False,
+                                    )
                                 else:
                                     df_transformed = f(
                                         spark,
@@ -581,10 +731,23 @@ def main(all_configs, run_type, auth_key_val={}):
                     analysis_level = timeseries_analyzer.get("analysis_level", None)
                 else:
                     analysis_level = None
+
+                geospatial_analyzer = all_configs.get("geospatial_analyzer", None)
+                if geospatial_analyzer:
+                    max_analysis_records = geospatial_analyzer.get(
+                        "max_analysis_records", None
+                    )
+                    top_geo_records = geospatial_analyzer.get("top_geo_records", None)
+
                 anovos_report(
                     **args,
                     run_type=run_type,
                     output_type=analysis_level,
+                    lat_cols=lat_cols,
+                    long_cols=long_cols,
+                    gh_cols=gh_cols,
+                    max_records=max_analysis_records,
+                    top_geo_records=top_geo_records,
                     auth_key=auth_key,
                 )
                 end = timeit.default_timer()
