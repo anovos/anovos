@@ -1,3 +1,22 @@
+"""
+The geospatial module supports transformation & calculation functions for geospatial fields, such as transforming
+between different formats, controlling geohash values precisions, checking if a location is inside a country, calculating
+centroid and Radius of Gyration, and reverse latitude-longitude pairs into address.
+Functions supported through this module are listed below:
+- geo_format_latlon
+- geo_format_cartesian
+- geo_format_geohash
+- location_distance
+- geohash_precision_control
+- location_in_polygon
+- location_in_country
+- centroid
+- weighted_centroid
+- rog_calculation
+- reverse_geocoding
+"""
+
+
 from math import sin, cos, sqrt, atan2, pi, radians
 from loguru import logger
 from pyspark.sql import functions as F
