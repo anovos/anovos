@@ -13,14 +13,14 @@ if version.parse(pyspark.__version__) < version.parse("3.0.0"):
     SPARK_JARS_PACKAGES = [
         "io.github.histogrammar:histogrammar_2.11:1.0.20",
         "io.github.histogrammar:histogrammar-sparksql_2.11:1.0.20",
-        "anovos:anovos-commons-scala_2.11:spark-2.4.4_scala-2.11.12",
+        "io.github.anovos:anovos-commons-scala_2.11:0.1",
         "org.apache.spark:spark-avro_2.11:" + str(pyspark.__version__),
     ]
 else:
     SPARK_JARS_PACKAGES = [
         "io.github.histogrammar:histogrammar_2.12:1.0.20",
         "io.github.histogrammar:histogrammar-sparksql_2.12:1.0.20",
-        "anovos:anovos-commons-scala_2.12:spark-3.0.0_scala-2.12.3",
+        "io.github.anovos:anovos-commons-scala_2.12:0.1",
         "org.apache.spark:spark-avro_2.12:" + str(pyspark.__version__),
     ]
 
@@ -67,6 +67,7 @@ def init_spark(
     if jars_packages is not None and jars_packages:
         spark_jars_packages = ",".join(list(jars_packages))
         spark_builder.config("spark.jars.packages", spark_jars_packages)
+        spark_builder.config("spark.jars.repositories","https://s01.oss.sonatype.org/content/groups/public")
 
     if py_files is not None and py_files:
         spark_files = ",".join(list(py_files))
