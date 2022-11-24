@@ -1059,12 +1059,14 @@ def centroid(idf, lat_col, long_col, id_col=None):
                 ),
             )
             .withColumn(
-                "lat_centroid", F.atan2(F.col("z_group"), F.col("hyp")) * 180 / pi
+                lat_col + "_centroid",
+                F.atan2(F.col("z_group"), F.col("hyp")) * 180 / pi,
             )
             .withColumn(
-                "long_centroid", F.atan2(F.col("y_group"), F.col("x_group")) * 180 / pi
+                long_col + "_centroid",
+                F.atan2(F.col("y_group"), F.col("x_group")) * 180 / pi,
             )
-            .select(id_col, "lat_centroid", "long_centroid")
+            .select(id_col, lat_col + "_centroid", long_col + "_centroid")
         )
     else:
         idf_groupby = idf_rad.groupby().agg(
@@ -1082,12 +1084,14 @@ def centroid(idf, lat_col, long_col, id_col=None):
                 ),
             )
             .withColumn(
-                "lat_centroid", F.atan2(F.col("z_group"), F.col("hyp")) * 180 / pi
+                lat_col + "_centroid",
+                F.atan2(F.col("z_group"), F.col("hyp")) * 180 / pi,
             )
             .withColumn(
-                "long_centroid", F.atan2(F.col("y_group"), F.col("x_group")) * 180 / pi
+                long_col + "_centroid",
+                F.atan2(F.col("y_group"), F.col("x_group")) * 180 / pi,
             )
-            .select("lat_centroid", "long_centroid")
+            .select(lat_col + "_centroid", long_col + "_centroid")
         )
     return odf
 
@@ -1209,8 +1213,8 @@ def weighted_centroid(idf, id_col, lat_col, long_col):
 
     odf = (
         idf_groupby.select(id_col)
-        .withColumn("lat_centroid", F.lit(lat_centroid))
-        .withColumn("long_centroid", F.lit(long_centroid))
+        .withColumn(lat_col + "_centroid", F.lit(lat_centroid))
+        .withColumn(long_col + "_centroid", F.lit(long_centroid))
     )
 
     return odf
@@ -1299,8 +1303,8 @@ def rog_calculation(idf, lat_col, long_col, id_col=None):
             udf_harver_dist(
                 F.col(lat_col),
                 F.col(long_col),
-                F.col("lat_centroid"),
-                F.col("long_centroid"),
+                F.col(lat_col + "_centroid"),
+                F.col(long_col + "_centroid"),
             ),
         )
 
@@ -1311,16 +1315,16 @@ def rog_calculation(idf, lat_col, long_col, id_col=None):
         centroid_info = centroid(idf, lat_col, long_col, id_col).rdd.collect()
         lat_centroid = centroid_info[0][0]
         long_centroid = centroid_info[0][1]
-        idf_join = idf.withColumn("lat_centroid", F.lit(lat_centroid)).withColumn(
-            "long_centroid", F.lit(long_centroid)
-        )
+        idf_join = idf.withColumn(
+            lat_col + "_centroid", F.lit(lat_centroid)
+        ).withColumn(long_col + "_centroid", F.lit(long_centroid))
         idf_calc = idf_join.withColumn(
             "distance",
             udf_harver_dist(
                 F.col(lat_col),
                 F.col(long_col),
-                F.col("lat_centroid"),
-                F.col("long_centroid"),
+                F.col(lat_col + "_centroid"),
+                F.col(long_col + "_centroid"),
             ),
         )
 

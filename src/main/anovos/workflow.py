@@ -323,6 +323,12 @@ def main(all_configs, run_type, auth_key_val={}):
                             result_prefix_geo,
                         )
 
+                    if (len(lat_cols) >= 1) & (len(gh_cols) >= 1):
+                        logger.info(
+                            f"Transformation of Latitude and Longitude columns has been done. Transformation of Geohash columns will be skipped."
+                        )
+                        continue
+
                     if len(gh_cols) >= 1:
                         df = geo_format_geohash(
                             df, gh_cols, loc_output_format, result_prefix_lat_lon
@@ -332,11 +338,19 @@ def main(all_configs, run_type, auth_key_val={}):
 
                     for idx, i in enumerate(lat_cols):
                         df_ = centroid(df, lat_cols[idx], long_cols[idx], id_col)
+                        df = df.join(df_, id_col, "inner")
 
                 if args.get("geo_transformations").get("rog_calculation"):
 
                     for idx, i in enumerate(lat_cols):
-                        df_ = rog_calculation(df, lat_cols[idx], long_cols[idx], id_col)
+                        cols_drop = [
+                            lat_cols[idx] + "_centroid",
+                            long_cols[idx] + "_centroid",
+                        ]
+                        df_ = rog_calculation(
+                            df.drop(*cols_drop), lat_cols[idx], long_cols[idx], id_col
+                        )
+                        df = df.join(df_, id_col, "inner")
 
             if (not auto_detection_analyzer_flag) & (not geo_transformations):
                 lat_cols, long_cols, gh_cols = [], [], []
