@@ -166,16 +166,6 @@ def anovos_basic_report(
     AT_funcs = [IV_calculation, IG_calculation]
     all_funcs = SG_funcs + QC_rows_funcs + QC_cols_funcs + AA_funcs + AT_funcs
 
-    def output_to_local(output_path):
-        punctuations = ":"
-        local_path = output_path
-        for x in output_path:
-            if x in punctuations:
-                local_path = output_path.replace(x, "")
-                local_path = "/" + local_path
-
-        return local_path
-
     if run_type == "local":
         local_path = output_path
     elif run_type == "databricks":

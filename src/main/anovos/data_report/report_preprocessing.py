@@ -37,15 +37,6 @@ num_cols = []
 cat_cols = []
 
 
-def master_to_local(master_path):
-    punctuations = ":"
-    for x in master_path:
-        if x in punctuations:
-            local_path = master_path.replace(x, "")
-            local_path = "/" + local_path
-    return local_path
-
-
 def save_stats(
     spark,
     idf,
