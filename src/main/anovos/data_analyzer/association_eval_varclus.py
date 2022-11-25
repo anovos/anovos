@@ -40,18 +40,18 @@ class VarClusHiSpark(object):
             List of features to perform variable clustering e.g., ["col1","col2"].
             If feat_list is None, all columns of the input dataframe will be used.
             If feat_list is specified, only columns inside feat_list will be used.
-            To run the algorithm successfully, df[feat_list] should only contain numerical values.
+            To run the algorithm successfully, df[feat_list] should only contain numerical values. (Default value = None)
         maxeigval2
-            Maximum value of second-largest eigenvalue e.g., 1
+            Maximum value of second-largest eigenvalue e.g., 1 (Default value = 1)
         maxclus
             Maximum number of clusters e.g., 20
             If maxclus is None, there will be no restrictions on total number of clusters.
-            If maxclus is specified, the algorithm will stop splitting data when number of clusters reaches maxclus.
+            If maxclus is specified, the algorithm will stop splitting data when number of clusters reaches maxclus. (Default value = None)
         n_rs
             Number of random shuffles e.g., 0
             This parameter controls the number of random shuffle iterations after re-assignment.
             If n_rs is 0, re-assignment of each feature will be conducted with no extra random-shuffling.
-            If n_rs is not 0, extra random shuffling of the features and re-assignment will be conducted.
+            If n_rs is not 0, extra random shuffling of the features and re-assignment will be conducted. (Default value = 0)
         """
 
         if feat_list is None:
@@ -99,11 +99,11 @@ class VarClusHiSpark(object):
             list of features columns e.g. ["col1", "col2"]
             If feat_list is None, all columns of the input dataframe will be used.
             If feat_list is specified, only columns inside feat_list will be used.
-            To run the algorithm successfully, df[feat_list] should only contain numerical values.
+            To run the algorithm successfully, df[feat_list] should only contain numerical values. (Default value = None)
         n_pcs
             number of PCs e.g. 2
             This parameter controls the size of Principal Components. e.g. If n_pcs=2, only the first 2 eigenvalues,
-            eigenvectors of the correlation matrix will be extracted.
+            eigenvectors of the correlation matrix will be extracted. (Default value = 2)
         Returns
         -------
         (top n_pcs) eigenvalues, associated eigenvectors, correlation matrix in Pandas dataframe and variance proportions
@@ -188,7 +188,7 @@ class VarClusHiSpark(object):
             List of features to re-assign e.g. ["feat1", "feat2"]
             If feat_list is None, all features inside clus1 and clus2 will be re-assigned
             If feat_list is specified, it should only contain columns in clus1 and/or clus2, and only the specified columns
-            will be re-assigned
+            will be re-assigned. (Default value = None)
 
         Returns
         -------
@@ -242,8 +242,7 @@ class VarClusHiSpark(object):
         n_rs
             Number of random shuffles e.g. 2
             If n_rs is 0, random shuffling of the features after re-assignment will not be conducted.
-            If n_rs is >0, random shuffling of n_rs times will be conducted to perform re-assignment.
-
+            If n_rs is >0, random shuffling of n_rs times will be conducted to perform re-assignment. (Default value = 0)
 
         Returns
         -------
