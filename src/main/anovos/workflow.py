@@ -459,6 +459,7 @@ def main(all_configs, run_type, auth_key_val={}):
                     **args.get("report_args", {}),
                     run_type=run_type,
                     auth_key=auth_key,
+                    mlflow_config=mlflow_config,
                 )
                 end = timeit.default_timer()
                 logger.info(
@@ -486,6 +487,7 @@ def main(all_configs, run_type, auth_key_val={}):
                                 reread=True,
                                 run_type=run_type,
                                 auth_key=auth_key,
+                                mlflow_config=mlflow_config,
                             ).show(100)
                         else:
                             save(
@@ -828,6 +830,7 @@ def main(all_configs, run_type, auth_key_val={}):
                         max_records=max_analysis_records,
                         top_geo_records=top_geo_records,
                         auth_key=auth_key,
+                        mlflow_config=mlflow_config,
                     )
                     end = timeit.default_timer()
                     logger.info(
