@@ -25,6 +25,6 @@ soupsieve
 statsmodels==0.13.2
 sentence_transformers
 mlflow==1.27.0
-geopy==2.2.0
+geopy==2.3.0
 pygeohash==1.2.0
 geojson==2.5.0
