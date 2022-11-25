@@ -532,7 +532,7 @@ def uniqueCount_computation(
     list_of_cols="all",
     drop_cols=[],
     compute_approx_unique_count=False,
-    rsd=0.05,
+    rsd=None,
     print_impact=False,
 ):
     """
@@ -576,10 +576,8 @@ def uniqueCount_computation(
 
     """
     if list_of_cols == "all":
-        list_of_cols = []
-        for i in idf.dtypes:
-            if i[1] in ("string", "int", "bigint", "long"):
-                list_of_cols.append(i[0])
+        num_cols, cat_cols, other_cols = attributeType_segregation(idf)
+        list_of_cols = num_cols + cat_cols
     if isinstance(list_of_cols, str):
         list_of_cols = [x.strip() for x in list_of_cols.split("|")]
     if isinstance(drop_cols, str):
@@ -589,6 +587,9 @@ def uniqueCount_computation(
 
     if any(x not in idf.columns for x in list_of_cols):
         raise TypeError("Invalid input for Column(s)")
+
+    if rsd != None and rsd < 0:
+        raise ValueError("rsd value can not be less than 0 (default value is 0.05)")
 
     if len(list_of_cols) == 0:
         warnings.warn("No Unique Count Computation - No discrete column(s) to analyze")
@@ -625,7 +626,7 @@ def measures_of_cardinality(
     list_of_cols="all",
     drop_cols=[],
     use_approx_unique_count=True,
-    rsd=0.05,
+    rsd=None,
     print_impact=False,
 ):
     """
@@ -678,10 +679,8 @@ def measures_of_cardinality(
 
     """
     if list_of_cols == "all":
-        list_of_cols = []
-        for i in idf.dtypes:
-            if i[1] in ("string", "int", "bigint", "long"):
-                list_of_cols.append(i[0])
+        num_cols, cat_cols, other_cols = attributeType_segregation(idf)
+        list_of_cols = num_cols + cat_cols
     if isinstance(list_of_cols, str):
         list_of_cols = [x.strip() for x in list_of_cols.split("|")]
     if isinstance(drop_cols, str):
@@ -691,6 +690,9 @@ def measures_of_cardinality(
 
     if any(x not in idf.columns for x in list_of_cols):
         raise TypeError("Invalid input for Column(s)")
+
+    if rsd != None and rsd < 0:
+        raise ValueError("rsd value can not be less than 0 (default value is 0.05)")
 
     if len(list_of_cols) == 0:
         warnings.warn("No Cardinality Computation - No discrete column(s) to analyze")

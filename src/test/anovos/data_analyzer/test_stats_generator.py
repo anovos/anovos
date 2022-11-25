@@ -68,12 +68,12 @@ def test_missingCount_computation(spark_session):
 def test_uniqueCount_computation(spark_session):
     test_df1 = spark_session.createDataFrame(
         [
-            ("27520a", 51, "HS-grad"),
-            ("10a", 42, "Postgrad"),
-            ("11a", 55, None),
-            ("1100b", 23, "HS-grad"),
+            ("27520a", 51, "HS-grad", 0.0),
+            ("10a", 42, "Postgrad", 0.0),
+            ("11a", 55, None, 0.0),
+            ("1100b", 23, "HS-grad", 0.0),
         ],
-        ["ifa", "age", "education"],
+        ["ifa", "age", "education", "engagement"],
     )
     assert test_df1.where(F.col("ifa") == "27520a").count() == 1
     assert (
@@ -86,9 +86,15 @@ def test_uniqueCount_computation(spark_session):
         .to_dict("list")["education"][0]
         == "HS-grad"
     )
+    assert (
+        test_df1.where(F.col("ifa") == "27520a")
+        .toPandas()
+        .to_dict("list")["engagement"][0]
+        == 0
+    )
 
     result_df1 = uniqueCount_computation(spark_session, test_df1)
-    assert result_df1.count() == 3
+    assert result_df1.count() == 4
     assert (
         result_df1.where(F.col("attribute") == "education")
         .toPandas()
@@ -100,6 +106,81 @@ def test_uniqueCount_computation(spark_session):
         .toPandas()
         .to_dict("list")["unique_values"][0]
         == 4
+    )
+    assert (
+        result_df1.where(F.col("attribute") == "engagement")
+        .toPandas()
+        .to_dict("list")["unique_values"][0]
+        == 1
+    )
+
+    result_df1_2 = uniqueCount_computation(
+        spark_session, test_df1, compute_approx_unique_count=True
+    )
+    assert result_df1_2.count() == 4
+    assert (
+        result_df1_2.where(F.col("attribute") == "education")
+        .toPandas()
+        .to_dict("list")["unique_values"][0]
+        == 2
+    )
+    assert (
+        result_df1_2.where(F.col("attribute") == "age")
+        .toPandas()
+        .to_dict("list")["unique_values"][0]
+        == 4
+    )
+    assert (
+        result_df1_2.where(F.col("attribute") == "engagement")
+        .toPandas()
+        .to_dict("list")["unique_values"][0]
+        == 1
+    )
+
+    result_df1_3 = uniqueCount_computation(
+        spark_session, test_df1, compute_approx_unique_count=True, rsd=0.05
+    )
+    assert result_df1_3.count() == 4
+    assert (
+        result_df1_3.where(F.col("attribute") == "education")
+        .toPandas()
+        .to_dict("list")["unique_values"][0]
+        == 2
+    )
+    assert (
+        result_df1_3.where(F.col("attribute") == "age")
+        .toPandas()
+        .to_dict("list")["unique_values"][0]
+        == 4
+    )
+    assert (
+        result_df1_3.where(F.col("attribute") == "engagement")
+        .toPandas()
+        .to_dict("list")["unique_values"][0]
+        == 1
+    )
+
+    result_df1_4 = uniqueCount_computation(
+        spark_session, test_df1, compute_approx_unique_count=True, rsd=0.2
+    )
+    assert result_df1_4.count() == 4
+    assert (
+        result_df1_4.where(F.col("attribute") == "education")
+        .toPandas()
+        .to_dict("list")["unique_values"][0]
+        == 2
+    )
+    assert (
+        result_df1_4.where(F.col("attribute") == "age")
+        .toPandas()
+        .to_dict("list")["unique_values"][0]
+        == 4
+    )
+    assert (
+        result_df1_4.where(F.col("attribute") == "engagement")
+        .toPandas()
+        .to_dict("list")["unique_values"][0]
+        == 1
     )
 
 
@@ -261,12 +342,12 @@ def test_measures_of_centralTendency(spark_session):
 def test_measures_of_cardinality(spark_session):
     test_df5 = spark_session.createDataFrame(
         [
-            ("27520a", 51, "HS-grad"),
-            ("10a", 42, "Postgrad"),
-            ("11a", 55, None),
-            ("1100b", 23, "HS-grad"),
+            ("27520a", 51, "HS-grad", 0.0),
+            ("10a", 42, "Postgrad", 0.0),
+            ("11a", 55, None, 0.0),
+            ("1100b", 23, "HS-grad", 0.0),
         ],
-        ["ifa", "age", "education"],
+        ["ifa", "age", "education", "engagement"],
     )
     assert test_df5.where(F.col("ifa") == "27520a").count() == 1
     assert (
@@ -279,9 +360,15 @@ def test_measures_of_cardinality(spark_session):
         .to_dict("list")["education"][0]
         == "HS-grad"
     )
+    assert (
+        test_df5.where(F.col("ifa") == "27520a")
+        .toPandas()
+        .to_dict("list")["engagement"][0]
+        == 0
+    )
 
     result_df5 = measures_of_cardinality(spark_session, test_df5)
-    assert result_df5.count() == 3
+    assert result_df5.count() == 4
     assert (
         result_df5.where(F.col("attribute") == "education")
         .toPandas()
@@ -305,6 +392,59 @@ def test_measures_of_cardinality(spark_session):
         .toPandas()
         .to_dict("list")["IDness"][0]
         == 0.6667
+    )
+    assert (
+        result_df5.where(F.col("attribute") == "engagement")
+        .toPandas()
+        .to_dict("list")["unique_values"][0]
+        == 1
+    )
+    assert (
+        result_df5.where(F.col("attribute") == "engagement")
+        .toPandas()
+        .to_dict("list")["IDness"][0]
+        == 0.25
+    )
+
+    result_df5_2 = measures_of_cardinality(
+        spark_session, test_df5, use_approx_unique_count=False
+    )
+    assert result_df5_2.count() == 4
+    assert (
+        result_df5_2.where(F.col("attribute") == "education")
+        .toPandas()
+        .to_dict("list")["unique_values"][0]
+        == 2
+    )
+    assert (
+        result_df5_2.where(F.col("attribute") == "age")
+        .toPandas()
+        .to_dict("list")["unique_values"][0]
+        == 4
+    )
+    assert (
+        result_df5_2.where(F.col("attribute") == "age")
+        .toPandas()
+        .to_dict("list")["IDness"][0]
+        == 1.0
+    )
+    assert (
+        result_df5_2.where(F.col("attribute") == "education")
+        .toPandas()
+        .to_dict("list")["IDness"][0]
+        == 0.6667
+    )
+    assert (
+        result_df5_2.where(F.col("attribute") == "engagement")
+        .toPandas()
+        .to_dict("list")["unique_values"][0]
+        == 1
+    )
+    assert (
+        result_df5_2.where(F.col("attribute") == "engagement")
+        .toPandas()
+        .to_dict("list")["IDness"][0]
+        == 0.25
     )
 
 
