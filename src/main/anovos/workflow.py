@@ -837,6 +837,10 @@ def main(all_configs, run_type, auth_key_val={}):
                         f"{key}, full_report: execution time (in secs) ={round(end - start, 4)}"
                     )
 
+        if write_feast_features is not None:
+            file_source_config = write_feast_features["file_source"]
+            df = feast_exporter.add_timestamp_columns(df, file_source_config)
+
         save(df, write_main, folder_name="final_dataset", reread=False)
 
         if write_feast_features is not None:
