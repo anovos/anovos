@@ -1,5 +1,5 @@
 pandas>=1.2.5,<1.5.2
-numpy>=1.20.0,<1.23.4
+numpy>=1.20.0,<1.23.5
 scipy<=1.8.0
 scikit-learn==1.0.2
 sympy>=1.6,<1.12
@@ -24,6 +24,7 @@ reverse_geocoder
 soupsieve
 statsmodels==0.13.2
 sentence_transformers
+mlflow==1.27.0
 geopy==2.2.0
 pygeohash==1.2.0
 geojson==2.5.0
