@@ -328,6 +328,12 @@ def test_variable_clustering(spark_session: SparkSession):
         == 0.8106
     )
     assert (
+        result_df2.where((F.col("cluster") == 1) & (F.col("attribute") == "fnlwgt"))
+        .toPandas()
+        .to_dict("list")["RS_Ratio"][0]
+        == 0.2262
+    )
+    assert (
         result_df2.where(
             (F.col("cluster") == 2) & (F.col("attribute") == "capital-loss")
         )
