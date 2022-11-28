@@ -365,6 +365,7 @@ def statistics(
     if persist:
         idf_target.unpersist()
         idf_source.unpersist()
-        source_bin.unpersist()
+        if not pre_existing_source:
+            source_bin.unpersist()
         target_bin.unpersist()
     return odf

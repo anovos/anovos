@@ -2,8 +2,10 @@ import pytest
 import pandas
 import numpy
 from numpy.testing import assert_almost_equal
+from anovos.data_ingest.data_ingest import read_dataset
 from anovos.drift_stability.stability import (
     stability_index_computation,
+    feature_stability_estimation,
 )
 
 
@@ -50,6 +52,20 @@ def cols_to_check_numerical():
     ]
 
 
+@pytest.fixture
+def cols_to_check_si_estimation():
+    return [
+        "mean_cv",
+        "stddev_cv",
+        "mean_si",
+        "stddev_si",
+        "stability_index_lower_bound",
+        "stability_index_upper_bound",
+        "flagged_lower",
+        "flagged_upper",
+    ]
+
+
 def test_that_stability_index_can_be_calculated(
     spark_session, idfs_numerical, cols_to_check_numerical
 ):
@@ -73,4 +89,47 @@ def test_that_binary_column_can_be_calculated(
     df_stability.index = df_stability["attribute"]
     assert_almost_equal(
         df_stability.loc["A", cols_to_check_binary], [0.1, 0.0, 0.0, 1.0], 3
+    )
+
+
+@pytest.fixture
+def attribute_stats(spark_session, idfs_numerical):
+    metric_path = "unit_testing/stats/stability/df1_4"
+    stability_index_computation(
+        spark_session, idfs_numerical, appended_metric_path=metric_path
+    ).toPandas()
+    attribute_stats = read_dataset(
+        spark_session, metric_path, "csv", {"header": True, "inferSchema": True}
+    )
+    return attribute_stats
+
+
+def test_that_feature_stability_can_be_estimated(
+    spark_session, attribute_stats, cols_to_check_si_estimation
+):
+    df_stability = feature_stability_estimation(
+        spark_session, attribute_stats, {"A": "A**2"}
+    ).toPandas()
+    df_stability.index = df_stability["feature_formula"]
+    assert_almost_equal(
+        df_stability.loc["A**2", cols_to_check_si_estimation],
+        [0.298, 0.603, 1.0, 0.0, 0.5, 1.3, 1.0, 0.0],
+        3,
+    )
+
+
+def test_that_different_weightages_can_be_used(
+    spark_session, attribute_stats, cols_to_check_si_estimation
+):
+    df_stability = feature_stability_estimation(
+        spark_session,
+        attribute_stats,
+        {"A": "A**2"},
+        metric_weightages={"mean": 0.7, "stddev": 0.3},
+    ).toPandas()
+    df_stability.index = df_stability["feature_formula"]
+    assert_almost_equal(
+        df_stability.loc["A**2", cols_to_check_si_estimation],
+        [0.298, 0.603, 1.0, 0.0, 0.7, 0.7, 1.0, 1.0],
+        3,
     )
