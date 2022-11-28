@@ -27,8 +27,10 @@ input_dataset:
 #    if only list_of_geohash is available, transformation of geohash columns to loc_output_format will be conducted, and loc_output_format should be "dd", "dms", "radian" or "cartesian"
 
 # if location_in_country_detection is set to True, list_of_lat and list_of_lon must be specified as it checks whether each lat-lon pair is insided a country.
-# if centroid_calculation is set to True, the centroid of the dataframe will be calculated based on list_of_lat, list_of_lon and id_col
-# if rog_calculation is set to True, the Radius of Gyration (in meter) of the dataframe will be calculated based on list_of_lat, list_of_lon and id_col
+# if centroid_calculation is set to True, list_of_lat and list_of_lon must be specified as it calculates the centroid of the dataframe.
+#     if id_col is also specified, weighted centroid for each id_col will be calculated. Otherwise, overall centroid will be calculated.
+# if rog_calculation is set to True, list_of_lat and list_of_lon must be specified as it calculates the Radius of Gyration (in meter) of the dataframe.
+#     if id_col is also specified, ROG based on each id_col will be calculated. Otherwise, overall ROG will be calculated.
 geospatial_controller:
   geospatial_analyzer:
     auto_detection_analyzer: True
