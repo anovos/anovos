@@ -409,7 +409,10 @@ def main(all_configs, run_type, auth_key_val={}):
                                 long_cols[idx] + "_centroid",
                             ]
                             df_ = rog_calculation(
-                                df.drop(*cols_drop), lat_cols[idx], long_cols[idx], id_col
+                                df.drop(*cols_drop),
+                                lat_cols[idx],
+                                long_cols[idx],
+                                id_col,
                             )
                             df = df.join(df_, id_col, "inner")
 
@@ -825,7 +828,9 @@ def main(all_configs, run_type, auth_key_val={}):
                         analysis_level = timeseries_analyzer.get("analysis_level", None)
                     else:
                         analysis_level = None
-                    geospatial_controller = all_configs.get("geospatial_controller", None)
+                    geospatial_controller = all_configs.get(
+                        "geospatial_controller", None
+                    )
                     if not geospatial_controller:
                         lat_cols, long_cols, gh_cols = [], [], []
                         max_analysis_records, top_geo_records = None, None
