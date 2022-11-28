@@ -1,3 +1,22 @@
+"""
+The geospatial module supports transformation & calculation functions for geospatial fields, such as transforming
+between different formats, controlling geohash values precisions, checking if a location is inside a country, calculating
+centroid and Radius of Gyration, and reverse latitude-longitude pairs into address.
+Functions supported through this module are listed below:
+- geo_format_latlon
+- geo_format_cartesian
+- geo_format_geohash
+- location_distance
+- geohash_precision_control
+- location_in_polygon
+- location_in_country
+- centroid
+- weighted_centroid
+- rog_calculation
+- reverse_geocoding
+"""
+
+
 from math import sin, cos, sqrt, atan2, pi, radians
 from loguru import logger
 from pyspark.sql import functions as F
@@ -28,7 +47,13 @@ def geo_format_latlon(
     output_mode="append",
 ):
     """
-    Convert locations from lat, lon format to other formats.
+    This function is the main function to convert the input data's location columns from lat,lon format to desired format
+    based on output_format. If output_mode is set to True, the original location columns will be dropped.
+    For each location column, "to_latlon_decimal_degrees" will be called to convert them to decimal degrees, and then
+    "from_latlon_decimal_degrees" will be called to transform decimal degrees to output_format
+    If output_format is "dd" or "dms" or "radian", 2 new columns containing "_lat_", "_long_" in the column names will be created.
+    If output_format is "cartesian", 3 new columns containing "_x_", "_y_", "_z_" in the column names will be created.
+    If output_format is "geohash", 1 new column containing "_geohash" in the column name will be created.
 
     Parameters
     ----------
@@ -173,7 +198,12 @@ def geo_format_cartesian(
     output_mode="append",
 ):
     """
-    Convert locations from cartesian format to other formats.
+    This function helps to convert the input data's location columns from cartesian format to desired format based on
+    output_format. If output_mode is set to True, the original location columns will be dropped.
+    For each location column, "to_latlon_decimal_degrees" will be called to convert them to decimal degrees, and then
+    "from_latlon_decimal_degrees" will be called to transform decimal degrees to output_format
+    If output_format is "dd" or "dms" or "radian", 2 new columns containing "_lat_", "_long_" in the column names will be created.
+    If output_format is "geohash", 1 new column containing "_geohash" in the column name will be created.
 
     Parameters
     ----------
@@ -309,7 +339,12 @@ def geo_format_geohash(
     output_mode="append",
 ):
     """
-    Convert locations from geohash format to other formats.
+    This function is the main function to convert the input data's location columns from geohash  format to desired
+    format based on output_format. If output_mode is set to True, the original location columns will be dropped.
+    For each location column, "to_latlon_decimal_degrees" will be called to convert them to decimal degrees, and then
+    "from_latlon_decimal_degrees" will be called to transform decimal degrees to output_format
+    If output_format is "dd" or "dms" or "radian", 2 new columns containing "_lat_", "_long_" in the column names will be created.
+    If output_format is "cartesian", 3 new columns containing "_x_", "_y_", "_z_" in the column names will be created.
 
     Parameters
     ----------
@@ -434,7 +469,18 @@ def location_distance(
     output_mode="append",
 ):
     """
-    Calculate the distance between 2 locations.
+    This function calculates the distance between 2 locations, and the distance formula is determined by distance_type.
+    If distance_type = "vincenty", thed loc_format should be "dd", and list_of_cols_loc1, list_of_cols_loc2
+    should be in [lat1, lon1] and [lat2, lon2] format respectively. "vincenty_distance" function will be called to
+    calculate the distance.
+    If distance_type = "haversine", then loc_format should be "radian", and list_of_cols_loc1, list_of_cols_loc2
+    should be in [lat1, lon1] and [lat2, lon2] format respectively. "haversine_distance" function will be called to
+    calculate the distance.
+     If distance_type = "euclidean", then loc_format should be "cartesian", and list_of_cols_loc1, list_of_cols_loc2
+    should be in  [x1, y1, z1] and [x2, y2, z2] format respectively. "euclidean_distance" function will be called to
+    calculate the distance.
+    If loc_format does not match with distance_type's desired format, necessary conversion of location columns will be performed
+    with the help of "geo_format_latlon", "geo_format_cartesian" and "geo_format_geohash" functions.
 
     Parameters
     ----------
@@ -512,18 +558,8 @@ def location_distance(
     format_mapping = {"vincenty": "dd", "haversine": "radian", "euclidean": "cartesian"}
     format_required = format_mapping[distance_type]
 
-    # dd/radian/dms: [lat1, lon1, lat2, lon2]
-    # cartesian: [x1, y1, z1, x2, y2, z2]
-    # geohash: [gh1, gh2]
-
     if loc_format != format_required:
-        # format_required
-        # dd: + cols [temp_loc1_lat_dd, temp_loc1_lon_dd, temp_loc2_lat_dd, temp_loc2_lon_dd]
-        # radian: + cols [temp_loc1_lat_radian, temp_loc1_lon_radian, temp_loc2_lat_radian, temp_loc2_lon_radian]
-        # cartesian: + cols [temp_loc1_x, temp_loc1_y, temp_loc1_z, temp_loc2_x, temp_loc2_y, temp_loc2_z]
         if loc_format in ["dd", "dms", "radian"]:
-            # list_of_cols_loc1 = [lat1, lon1]
-            # list_of_cols_loc2 = [lat2, lon2]
             idf = geo_format_latlon(
                 idf,
                 list_of_lat=[list_of_cols_loc1[0], list_of_cols_loc2[0]],
@@ -536,8 +572,6 @@ def location_distance(
             )
 
         elif loc_format == "cartesian":
-            # list_of_cols_loc1 = [x1, y1, z1]
-            # list_of_cols_loc2 = [x2, y2, z2]
             idf = geo_format_cartesian(
                 idf,
                 list_of_x=[list_of_cols_loc1[0], list_of_cols_loc2[0]],
@@ -550,8 +584,6 @@ def location_distance(
             )
 
         elif loc_format == "geohash":
-            # list_of_cols_loc1 = [gh1]
-            # list_of_cols_loc2 = [gh2]
             idf = geo_format_geohash(
                 idf,
                 list_of_geohash=[list_of_cols_loc1[0], list_of_cols_loc2[0]],
@@ -622,7 +654,7 @@ def geohash_precision_control(
     idf, list_of_geohash, output_precision=8, km_max_error=None, output_mode="append"
 ):
     """
-    Control the precision of geohash columns.
+    This function controls the precision of input data's geohash columns.
 
     Parameters
     ----------
@@ -696,7 +728,7 @@ def location_in_polygon(
     idf, list_of_lat, list_of_lon, polygon, result_prefix=[], output_mode="append"
 ):
     """
-    To check whether each lat-lon pair is insided a GeoJSON object. The following types of GeoJSON objects
+    This function checks whether each lat-lon pair is insided a GeoJSON object. The following types of GeoJSON objects
     are supported by this function: Polygon, MultiPolygon, Feature or FeatureCollection
 
     Parameters
@@ -791,7 +823,7 @@ def location_in_country(
     output_mode="append",
 ):
     """
-    To check whether each lat-lon pair is insided a country. Two ways of checking are supported: "approx" (using the
+    This function checks whether each lat-lon pair is insided a country. Two ways of checking are supported: "approx" (using the
     bounding box of a country) and "exact" (using the shapefile of a country).
 
     Parameters
@@ -942,7 +974,8 @@ def location_in_country(
 
 def centroid(idf, lat_col, long_col, id_col=None):
     """
-    Calculate centroid of a given DataFrame
+    This function calculates the centroid of a given DataFrame using lat-long pairs based on its identifier column (if applicable)
+
     Parameters
     ----------
     idf
@@ -1026,12 +1059,14 @@ def centroid(idf, lat_col, long_col, id_col=None):
                 ),
             )
             .withColumn(
-                "lat_centroid", F.atan2(F.col("z_group"), F.col("hyp")) * 180 / pi
+                lat_col + "_centroid",
+                F.atan2(F.col("z_group"), F.col("hyp")) * 180 / pi,
             )
             .withColumn(
-                "long_centroid", F.atan2(F.col("y_group"), F.col("x_group")) * 180 / pi
+                long_col + "_centroid",
+                F.atan2(F.col("y_group"), F.col("x_group")) * 180 / pi,
             )
-            .select(id_col, "lat_centroid", "long_centroid")
+            .select(id_col, lat_col + "_centroid", long_col + "_centroid")
         )
     else:
         idf_groupby = idf_rad.groupby().agg(
@@ -1049,19 +1084,22 @@ def centroid(idf, lat_col, long_col, id_col=None):
                 ),
             )
             .withColumn(
-                "lat_centroid", F.atan2(F.col("z_group"), F.col("hyp")) * 180 / pi
+                lat_col + "_centroid",
+                F.atan2(F.col("z_group"), F.col("hyp")) * 180 / pi,
             )
             .withColumn(
-                "long_centroid", F.atan2(F.col("y_group"), F.col("x_group")) * 180 / pi
+                long_col + "_centroid",
+                F.atan2(F.col("y_group"), F.col("x_group")) * 180 / pi,
             )
-            .select("lat_centroid", "long_centroid")
+            .select(lat_col + "_centroid", long_col + "_centroid")
         )
     return odf
 
 
 def weighted_centroid(idf, id_col, lat_col, long_col):
     """
-    Calculate weighted centroid of a given DataFrame, based on its identifier column
+    This function calculates the weighted centroid of a given DataFrame using lat-long pairs based on its identifier column
+
     Parameters
     ----------
     idf
@@ -1175,8 +1213,8 @@ def weighted_centroid(idf, id_col, lat_col, long_col):
 
     odf = (
         idf_groupby.select(id_col)
-        .withColumn("lat_centroid", F.lit(lat_centroid))
-        .withColumn("long_centroid", F.lit(long_centroid))
+        .withColumn(lat_col + "_centroid", F.lit(lat_centroid))
+        .withColumn(long_col + "_centroid", F.lit(long_centroid))
     )
 
     return odf
@@ -1184,7 +1222,7 @@ def weighted_centroid(idf, id_col, lat_col, long_col):
 
 def rog_calculation(idf, lat_col, long_col, id_col=None):
     """
-    Calculate Radius of Gyration (in meter) of a given DataFrame, based on its identifier column (if applicable)
+    This function calculates the Radius of Gyration (in meter) of a given DataFrame, based on its identifier column (if applicable)
     Parameters
     ----------
     idf
@@ -1265,8 +1303,8 @@ def rog_calculation(idf, lat_col, long_col, id_col=None):
             udf_harver_dist(
                 F.col(lat_col),
                 F.col(long_col),
-                F.col("lat_centroid"),
-                F.col("long_centroid"),
+                F.col(lat_col + "_centroid"),
+                F.col(long_col + "_centroid"),
             ),
         )
 
@@ -1277,16 +1315,16 @@ def rog_calculation(idf, lat_col, long_col, id_col=None):
         centroid_info = centroid(idf, lat_col, long_col, id_col).rdd.collect()
         lat_centroid = centroid_info[0][0]
         long_centroid = centroid_info[0][1]
-        idf_join = idf.withColumn("lat_centroid", F.lit(lat_centroid)).withColumn(
-            "long_centroid", F.lit(long_centroid)
-        )
+        idf_join = idf.withColumn(
+            lat_col + "_centroid", F.lit(lat_centroid)
+        ).withColumn(long_col + "_centroid", F.lit(long_centroid))
         idf_calc = idf_join.withColumn(
             "distance",
             udf_harver_dist(
                 F.col(lat_col),
                 F.col(long_col),
-                F.col("lat_centroid"),
-                F.col("long_centroid"),
+                F.col(lat_col + "_centroid"),
+                F.col(long_col + "_centroid"),
             ),
         )
 
@@ -1296,7 +1334,7 @@ def rog_calculation(idf, lat_col, long_col, id_col=None):
 
 def reverse_geocoding(idf, lat_col, long_col):
     """
-    Reverse the input latitude and longitude of a given DataFrame into address
+    This function reverses the input latitude and longitude of a given DataFrame into address
     Parameters
     ----------
     idf

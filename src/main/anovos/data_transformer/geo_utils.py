@@ -13,6 +13,8 @@ UNIT_FACTOR = {"m": 1.0, "km": 1000.0}
 
 def in_range(loc, loc_format="dd"):
     """
+    This function helps to check if the input location is in range based on loc_format.
+
     Parameters
     ----------
     loc
@@ -48,6 +50,7 @@ def in_range(loc, loc_format="dd"):
 
 def to_latlon_decimal_degrees(loc, input_format, radius=EARTH_RADIUS):
     """
+    This function helps to format input location into [lat,lon] format
     Parameters
     ----------
     loc
@@ -135,6 +138,7 @@ def to_latlon_decimal_degrees(loc, input_format, radius=EARTH_RADIUS):
 
 def decimal_degrees_to_degrees_minutes_seconds(dd):
     """
+    This function helps to divide float value dd in decimal degree into [degreee, minute, second]
     Parameters
     ----------
     dd
@@ -158,6 +162,7 @@ def from_latlon_decimal_degrees(
     loc, output_format, radius=EARTH_RADIUS, geohash_precision=8
 ):
     """
+    This function helps to transform [lat,lon] locations into desired output_format.
     Parameters
     ----------
     loc
@@ -222,6 +227,7 @@ def from_latlon_decimal_degrees(
 
 def haversine_distance(loc1, loc2, loc_format, unit="m", radius=EARTH_RADIUS):
     """
+    This function helps to calculate the haversine distance between loc1 and loc2.
     Parameters
     ----------
     loc1
@@ -361,7 +367,7 @@ def euclidean_distance(loc1, loc2, unit="m"):
 
 def point_in_polygon(x, y, polygon):
     """
-    Check whether (x,y) is inside a polygon
+    This function helps to check whether (x,y) is inside a polygon
 
     Parameters
     ----------
@@ -446,7 +452,7 @@ def point_in_polygon(x, y, polygon):
 
 def point_in_polygons(x, y, polygon_list, south_west_loc=[], north_east_loc=[]):
     """
-    Check whether (x,y) is inside any polygon in a list of polygon
+    This function helps to check whether (x,y) is inside any polygon in a list of polygon
 
     Parameters
     ----------

@@ -3166,6 +3166,9 @@ def ts_viz_generate(master_path, id_col, print_report=False, output_type=None):
             label="Time Series Analyzer",
         )
 
+    elif output_type is None:
+        report = "null_report"
+
     else:
 
         report = dp.Group(
@@ -3230,7 +3233,7 @@ def overall_stats_gen(lat_col_list, long_col_list, geohash_col_list):
     #     for idx,i in enumerate([lat_col_list,long_col_list,geohash_col_list,polygon_col_list]):
     for idx, i in enumerate([lat_col_list, long_col_list, geohash_col_list]):
         if i is None:
-            ll = None
+            ll = []
         elif i is not None:
             ll = []
             for j in i:
@@ -3349,32 +3352,6 @@ def read_stats_ll_geo(lat_col, long_col, geohash_col, master_path, top_geo_recor
                                     ),
                                     label="Overall Summary",
                                 ),
-                                # dp.DataTable(
-                                #     pd.read_csv(
-                                #         ends_with(master_path)
-                                #         + "Top_"
-                                #         + str(top_geo_records)
-                                #         + "_Lat_1_"
-                                #         + lat_col[idx]
-                                #         + "_"
-                                #         + long_col[idx]
-                                #         + ".csv"
-                                #     ),
-                                #     label="Top " + str(top_geo_records) + "  Lat",
-                                # ),
-                                # dp.DataTable(
-                                #     pd.read_csv(
-                                #         ends_with(master_path)
-                                #         + "Top_"
-                                #         + str(top_geo_records)
-                                #         + "_Long_1_"
-                                #         + lat_col[idx]
-                                #         + "_"
-                                #         + long_col[idx]
-                                #         + ".csv"
-                                #     ),
-                                #     label="Top " + str(top_geo_records) + " Long",
-                                # ),
                                 dp.DataTable(
                                     pd.read_csv(
                                         ends_with(master_path)
@@ -3420,32 +3397,6 @@ def read_stats_ll_geo(lat_col, long_col, geohash_col, master_path, top_geo_recor
                                     ),
                                     label="Overall Summary",
                                 ),
-                                # dp.DataTable(
-                                #     pd.read_csv(
-                                #         ends_with(master_path)
-                                #         + "Top_"
-                                #         + str(top_geo_records)
-                                #         + "_Lat_1_"
-                                #         + lat_col[idx]
-                                #         + "_"
-                                #         + long_col[idx]
-                                #         + ".csv"
-                                #     ),
-                                #     label="Top " + str(top_geo_records) + "  Lat",
-                                # ),
-                                # dp.DataTable(
-                                #     pd.read_csv(
-                                #         ends_with(master_path)
-                                #         + "Top_"
-                                #         + str(top_geo_records)
-                                #         + "_Long_1_"
-                                #         + lat_col[idx]
-                                #         + "_"
-                                #         + long_col[idx]
-                                #         + ".csv"
-                                #     ),
-                                #     label="Top " + str(top_geo_records) + " Long",
-                                # ),
                                 dp.DataTable(
                                     pd.read_csv(
                                         ends_with(master_path)
@@ -4019,13 +3970,7 @@ def loc_report_gen(
 
     elif (len(lat_cols) + len(geohash_cols)) == 0:
 
-        dp2 = dp.Group(
-            dp.Text("#"),
-            dp.Text(
-                "*No further geospatial based analysis could be done owing to the unavailability of any geospatial field*"
-            ),
-        )
-        report = dp.Group(dp1, dp2, label="Geospatial Analyzer")
+        report = "null_report"
 
     if print_report:
         dp.Report(default_template[0], default_template[1], report).save(
@@ -4048,9 +3993,9 @@ def anovos_report(
     final_report_path=".",
     output_type=None,
     mlflow_config=None,
-    lat_cols=None,
-    long_cols=None,
-    gh_cols=None,
+    lat_cols=[],
+    long_cols=[],
+    gh_cols=[],
     max_records=100000,
     top_geo_records=100,
     auth_key="NA",

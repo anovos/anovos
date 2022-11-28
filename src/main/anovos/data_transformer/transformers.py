@@ -2,7 +2,7 @@
 """
 The data transformer module supports selected pre-processing & transformation functions, such as binning, encoding,
 scaling, imputation, to name a few, which are required for statistics generation and quality checks. Functions
-supported through this modules are listed below:
+supported through this module are listed below:
 
 - attribute_binning
 - monotonic_binning
