@@ -25,7 +25,7 @@ varclushi
 reverse_geocoder
 tensorflow
 soupsieve
-statsmodels==0.13.2
+statsmodels==0.13.5
 sentence_transformers
 mlflow==1.27.0
 geopy==2.3.0
