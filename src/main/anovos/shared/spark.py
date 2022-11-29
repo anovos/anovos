@@ -67,7 +67,6 @@ def init_spark(
     if jars_packages is not None and jars_packages:
         spark_jars_packages = ",".join(list(jars_packages))
         spark_builder.config("spark.jars.packages", spark_jars_packages)
-        spark_builder.config("spark.jars.repositories","https://s01.oss.sonatype.org/content/groups/public")
 
     if py_files is not None and py_files:
         spark_files = ",".join(list(py_files))
