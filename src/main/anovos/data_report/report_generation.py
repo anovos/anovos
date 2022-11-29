@@ -42,6 +42,7 @@ import warnings
 
 import datapane as dp
 import dateutil.parser
+import mlflow
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -4046,6 +4047,7 @@ def anovos_report(
     run_type="local",
     final_report_path=".",
     output_type=None,
+    mlflow_config=None,
     lat_cols=None,
     long_cols=None,
     gh_cols=None,
@@ -4427,11 +4429,19 @@ def anovos_report(
         else:
             final_tabs_list.append(i)
     if run_type in ("local", "databricks"):
+        run_id = (
+            mlflow_config["run_id"]
+            if mlflow_config is not None and mlflow_config["track_reports"]
+            else ""
+        )
+
+        report_run_path = ends_with(final_report_path) + run_id + "/"
         dp.Report(
             default_template[0],
             default_template[1],
             dp.Select(blocks=final_tabs_list, type=dp.SelectType.TABS),
-        ).save(ends_with(final_report_path) + "ml_anovos_report.html", open=True)
+        ).save(report_run_path + "ml_anovos_report.html", open=True)
+        mlflow.log_artifact(report_run_path)
     elif run_type == "emr":
         dp.Report(
             default_template[0],

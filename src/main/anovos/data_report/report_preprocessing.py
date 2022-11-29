@@ -2,6 +2,7 @@ import subprocess
 import warnings
 from pathlib import Path
 
+import mlflow
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -43,6 +44,7 @@ def save_stats(
     function_name,
     reread=False,
     run_type="local",
+    mlflow_config=None,
     auth_key="NA",
 ):
     """
@@ -77,9 +79,18 @@ def save_stats(
     else:
         raise ValueError("Invalid run_type")
 
+    local_path = (
+        local_path + "/" + mlflow_config["run_id"]
+        if mlflow_config is not None and mlflow_config.get("track_reports", False)
+        else local_path
+    )
+
     Path(local_path).mkdir(parents=True, exist_ok=True)
 
     idf.toPandas().to_csv(ends_with(local_path) + function_name + ".csv", index=False)
+
+    if mlflow_config is not None:
+        mlflow.log_artifact(local_path)
 
     if run_type == "emr":
         bash_cmd = (
