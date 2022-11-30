@@ -71,15 +71,19 @@ timeseries_analyzer:
   max_days: 3600
 
 
-geospatial_analyzer:
-  auto_detection_analyzer: False
-  id_col: 'ifa'
-  max_analysis_records: 100000
-  top_geo_records: 100
-  max_cluster: 20
-  eps: '0.3,0.5,0.05'
-  min_samples: '500,1100,100'
-  global_map_box_val: 'carto-positron'
+# if there are no geospatial columns in the dataset and no geospatial analysis need to be performed, geospatial_controller.geospatial_analyzer.auto_detection_analyzer should be set to False.
+# setting auto_detection_analyzer to False is equivalent to removing the "geospatial_controller" block. If full report is required, the output will not have geospatial-analysis tab.
+# for detailed explanation on "geospatial_controller" block, please check configs_geospatial.yaml file
+geospatial_controller:
+  geospatial_analyzer:
+    auto_detection_analyzer: False
+    id_col: 'ifa'
+    max_analysis_records: 100000
+    top_geo_records: 100
+    max_cluster: 20
+    eps: '0.3,0.5,0.05'
+    min_samples: '500,1100,100'
+    global_map_box_val: 'carto-positron'
 
 
 anovos_basic_report:

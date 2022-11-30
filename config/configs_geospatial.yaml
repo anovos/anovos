@@ -18,11 +18,19 @@ input_dataset:
 # geospatial anlaysis details will be shown in full report, a separate tab called "Geospatial Analyzer". The section summarizes the information about the geospatial features identified in the data and their landscaping view
 # geospatial_analyzer: if auto_detection_analyzer is set to True, it will trigger geospatial_autodetection to generate intermediate data, which is further used for producing the geospatial analyzer report
 # arguments of geospatial_analyzer are inout parameters for geospatial_autodetection function
-# geo_transformation: transformation of geospatial fields
-# if geo_format_conversion is set to True, conversion of locations from "lat, lon" format to other formats specified in loc_output_format will be triggered
-# if location_in_country_detection is set to True, it will check whether each lat-lon pair is insided a country.
-# if centroid_calculation is set to True, the centroid of the dataframe will be calculated based on list_of_lat, list_of_lon and id_col
-# if rog_calculation is set to True, the Radius of Gyration (in meter) of the dataframe will be calculated based on list_of_lat, list_of_lon and id_col
+# geo_transformation: transformation of geospatial fields. This must be placed after "geospatial_analyzer"
+# to run any functions under geo_transformation, "geospatial_analyzer.auto_detection_analyzer" must be set to True
+
+# if geo_format_conversion is set to True, conversion of locations across formats will be triggered
+#    if only list_of_lat, list_of_lon are available, transformation of latitude-longitude pairs from loc_input_format to loc_output_format ("dd", "dms", "radian", "cartesian" or "geohash") will be conducted
+#    If list_of_lat, list_of_lon, list_of_geohash are all available, only transformation of latitude-longitude pairs will be conducted.
+#    if only list_of_geohash is available, transformation of geohash columns to loc_output_format will be conducted, and loc_output_format should be "dd", "dms", "radian" or "cartesian"
+
+# if location_in_country_detection is set to True, list_of_lat and list_of_lon must be specified as it checks whether each lat-lon pair is insided a country.
+# if centroid_calculation is set to True, list_of_lat and list_of_lon must be specified as it calculates the centroid of the dataframe.
+#     if id_col is also specified, weighted centroid for each id_col will be calculated. Otherwise, overall centroid will be calculated.
+# if rog_calculation is set to True, list_of_lat and list_of_lon must be specified as it calculates the Radius of Gyration (in meter) of the dataframe.
+#     if id_col is also specified, ROG based on each id_col will be calculated. Otherwise, overall ROG will be calculated.
 geospatial_controller:
   geospatial_analyzer:
     auto_detection_analyzer: True
