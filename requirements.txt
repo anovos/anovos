@@ -1,6 +1,6 @@
 black==22.10.0
 pandas>=1.2.5,<1.5.2
-numpy>=1.20.0,<1.23.5
+numpy>=1.20.0,<1.23.6
 scipy<=1.8.0
 scikit-learn==1.0.2
 sympy>=1.6,<1.12
@@ -28,6 +28,6 @@ soupsieve
 statsmodels==0.13.2
 sentence_transformers
 mlflow==1.27.0
-geopy==2.2.0
+geopy==2.3.0
 geohash2==1.1
 geojson==2.5.0

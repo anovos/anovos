@@ -23,9 +23,7 @@ from pyspark.sql import types as T
 def reg_lat_lon(option):
 
     """
-
     This function helps to produce the relevant regular expression to be used for further processing based on the input field category - latitude / longitude
-
 
     Parameters
     ----------
@@ -47,9 +45,7 @@ def reg_lat_lon(option):
 def conv_str_plus(col):
 
     """
-
     This function helps to produce an extra "+" to the positive values while negative values are kept as is
-
 
     Parameters
     ----------
@@ -76,9 +72,7 @@ f_conv_str_plus = F.udf(conv_str_plus, T.StringType())
 def precision_lev(col):
 
     """
-
-    This function helps to capture the precision level after decimal point
-
+    This function helps to capture the precision level after decimal point.
 
     Parameters
     ----------
@@ -107,9 +101,7 @@ f_precision_lev = F.udf(precision_lev, T.StringType())
 def geo_to_latlong(x, option):
 
     """
-
-    This function helps to convert geohash to latitude / longitude
-
+    This function helps to convert geohash to latitude / longitude with the help of pygeohash library.
 
     Parameters
     ----------
@@ -151,9 +143,7 @@ f_geo_to_latlong = F.udf(geo_to_latlong, T.FloatType())
 def latlong_to_geo(lat, long, precision=9):
 
     """
-
-    This function helps to convert latitude-longitude to geohash
-
+    This function helps to convert latitude-longitude to geohash with the help of pygeohash library.
 
     Parameters
     ----------
@@ -187,9 +177,17 @@ f_latlong_to_geo = F.udf(latlong_to_geo, T.StringType())
 def ll_gh_cols(df, max_records):
 
     """
-
-    This function helps to auto-detect latitude, longitude & geohash from a given dataset
-
+    This function is the main function to auto-detect latitude, longitude and geohash columns from a given dataset df.
+    To detect latitude and longitude columns, it will check whether "latitude" or "longitude" appears in the columns.
+    If not, it will calculate the precision level, maximum, standard deviation and mean value of each float or double-type
+    column, and convert to string type by calling "conv_str_plus".
+        If the converted string matches regular expression of latitude and the absolute value of maximum is <= 90,
+        then it will be regarded as latitude column.
+        If the converted string matches regular expression of longitude and the absolute value of maximum is > 90, then
+        it will be regarded as longitude column.
+    To detect geohash column, it will calculate the maximum string-length of every string column, and convert it to
+    lat-long pairs by calling "geo_to_lat_long". If the conversion is successful and the maximum string-length is
+    between 4 and 12 (exclusive), this string column will be regarded as geohash column.
 
     Parameters
     ----------
