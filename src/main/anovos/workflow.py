@@ -388,9 +388,8 @@ def main(all_configs, run_type, auth_key_val={}):
                             logger.info(
                                 f"Transformation of Latitude and Longitude columns have been done. Transformation of Geohash columns will be skipped."
                             )
-                            continue
 
-                        if len(gh_cols) >= 1:
+                        elif len(gh_cols) >= 1:
                             df = geo_format_geohash(
                                 df, gh_cols, loc_output_format, result_prefix_lat_lon
                             )
