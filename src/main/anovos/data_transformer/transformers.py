@@ -645,9 +645,22 @@ def cat_to_num_unsupervised(
     jdf = idf._jdf
     jvm = sc._jvm
     ssqlContext = sqlContext._ssql_ctx
-    catToNumUnsupervisedObject = jvm.anovos.data.transformer.CatToNumUnsupervised(ssqlContext, jdf)
-    odf = DataFrame(catToNumUnsupervisedObject.apply(method_type, index_order, list_of_cols, skip_cols,
-                                                     pre_existing_model, model_path, output_mode, print_impact), ssqlContext)
+    catToNumUnsupervisedObject = jvm.anovos.data.transformer.CatToNumUnsupervised(
+        ssqlContext, jdf
+    )
+    odf = DataFrame(
+        catToNumUnsupervisedObject.apply(
+            method_type,
+            index_order,
+            list_of_cols,
+            skip_cols,
+            pre_existing_model,
+            model_path,
+            output_mode,
+            print_impact,
+        ),
+        ssqlContext,
+    )
 
     odf.sql_ctx._sc = sc
     odf.sql_ctx._conf = idf.sql_ctx._conf
