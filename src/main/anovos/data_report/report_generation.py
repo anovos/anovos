@@ -1,7 +1,7 @@
 # coding=utf-8
 
 """This module generates the final report output specific to the intermediate data generated across each of the modules. The final report, however, can be proccessed through the config.yaml file or by generating it through the respective functions.
- 
+
 Below are some of the functions used to process the final output.
 
 - line_chart_gen_stability
@@ -51,9 +51,10 @@ import plotly.tools as tls
 from loguru import logger
 from plotly.subplots import make_subplots
 from sklearn.preprocessing import PowerTransformer
-from anovos.shared.utils import ends_with, path_ak8s_modify, output_to_local
 from statsmodels.tsa.seasonal import seasonal_decompose
 from statsmodels.tsa.stattools import adfuller, kpss
+
+from anovos.shared.utils import ends_with, output_to_local, path_ak8s_modify
 
 warnings.filterwarnings("ignore")
 
@@ -4030,6 +4031,8 @@ def anovos_report(
         Path where the report will be saved. (Default value = ".")
     output_type
         Time category of analysis which can be between "Daily", "Hourly", "Weekly"
+    mlflow_config
+        MLflow configuration. If None, all MLflow features are disabled.
     lat_cols
         Latitude columns identified in the data
     long_cols
@@ -4386,7 +4389,8 @@ def anovos_report(
             default_template[1],
             dp.Select(blocks=final_tabs_list, type=dp.SelectType.TABS),
         ).save(report_run_path + "ml_anovos_report.html", open=True)
-        mlflow.log_artifact(report_run_path)
+        if mlflow_config is not None:
+            mlflow.log_artifact(report_run_path)
     elif run_type == "emr":
         dp.Report(
             default_template[0],
