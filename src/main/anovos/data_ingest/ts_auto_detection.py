@@ -620,7 +620,7 @@ def ts_loop_cols_pre(idf, id_col):
 
 
 def ts_preprocess(
-    spark, idf, id_col, output_path, tz_offset="local", run_type="local", auth_key="NA"
+    spark, idf, id_col, output_path, tz_offset="local", run_type="local", mlflow_config=None, auth_key="NA"
 ):
 
     """
@@ -725,7 +725,8 @@ def ts_preprocess(
 
     f.to_csv(ends_with(local_path) + "ts_cols_stats.csv", index=False)
 
-    mlflow.log_artifact(ends_with(local_path) + "ts_cols_stats.csv")
+    if mlflow_config is not None:
+        mlflow.log_artifact(ends_with(local_path) + "ts_cols_stats.csv")
 
     if run_type == "emr":
         bash_cmd = (

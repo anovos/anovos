@@ -438,6 +438,7 @@ def main(all_configs, run_type, auth_key_val={}):
                         output_path=report_input_path,
                         tz_offset=tz_val,
                         run_type=run_type,
+                        mlflow_config=mlflow_config,
                         auth_key=auth_key,
                     )
                     end = timeit.default_timer()
