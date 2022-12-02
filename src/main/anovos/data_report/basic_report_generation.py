@@ -134,6 +134,8 @@ def anovos_basic_report(
     print_impact
         True, False.
         This argument is to print out the data analyzer statistics.(Default value = False)
+    mlflow_config
+        MLflow configuration. If None, all MLflow features are disabled.
     """
     global num_cols
     global cat_cols

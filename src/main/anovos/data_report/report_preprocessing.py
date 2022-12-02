@@ -63,6 +63,8 @@ def save_stats(
         option to reread. Default value is kept as False
     run_type
         local or emr or databricks or ak8s based on the mode of execution. Default value is kept as local
+    mlflow_config
+        MLflow configuration. If None, all MLflow features are disabled.
     auth_key
         Option to pass an authorization key to write to filesystems. Currently applicable only for ak8s run_type. Default value is kept as "NA"
 
