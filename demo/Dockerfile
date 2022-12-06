@@ -8,7 +8,7 @@ RUN add-apt-repository ppa:deadsnakes/ppa \
 RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.6 1 \
     && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.7 2
 
-RUN wget "https://downloads.apache.org/spark/spark-3.2.2/spark-3.2.2-bin-hadoop2.7.tgz" \
+RUN wget "https://mobilewalla-anovos.s3.amazonaws.com/spark_dist/spark-3.2.2/spark-3.2.2-bin-hadoop2.7.tgz" \
     && tar -xzvf spark-3.2.2-bin-hadoop2.7.tgz \
     && rm spark-3.2.2-bin-hadoop2.7.tgz
 
