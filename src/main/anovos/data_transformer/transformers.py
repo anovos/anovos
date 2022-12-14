@@ -657,28 +657,37 @@ def cat_to_num_unsupervised(
     catToNumUnsupervisedObject = jvm.anovos.data.transformer.CatToNumUnsupervised(
         ssqlContext, jdf
     )
-    odf = DataFrame(
-        catToNumUnsupervisedObject.apply(
-            method_type,
-            index_order,
-            list_of_cols,
-            skip_cols,
-            pre_existing_model,
-            model_path,
-            output_mode,
-            print_impact,
-        ),
-        ssqlContext,
-    )
-
     if version.parse(pyspark.__version__) < version.parse("3.3.0"):
+        odf = DataFrame(
+            catToNumUnsupervisedObject.apply(
+                method_type,
+                index_order,
+                list_of_cols,
+                skip_cols,
+                pre_existing_model,
+                model_path,
+                output_mode,
+                print_impact,
+            ),
+            ssqlContext,
+        )
         odf.sql_ctx._sc = sc
         odf.sql_ctx._conf = idf.sql_ctx._conf
         odf.sql_ctx._sc._jsc = sc._jsc
     else:
-        odf.sparkSession._sc._jvm = jvm
-        odf.sparkSession._jconf = idf.sparkSession._jconf
-        odf.sparkSession._sc._jsc = sc._jsc
+        odf = DataFrame(
+            catToNumUnsupervisedObject.apply(
+                method_type,
+                index_order,
+                list_of_cols,
+                skip_cols,
+                pre_existing_model,
+                model_path,
+                output_mode,
+                print_impact,
+            ),
+            spark,
+        )
 
     return odf
 
