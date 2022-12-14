@@ -665,12 +665,12 @@ def cat_to_num_unsupervised(
             output_mode,
             print_impact,
         ),
-        ssqlContext,
+        spark,
     )
 
-    odf.sql_ctx._sc = sc
-    odf.sql_ctx._conf = idf.sql_ctx._conf
-    odf.sql_ctx._sc._jsc = sc._jsc
+    #odf.sql_ctx._sc = sc
+    #odf.sql_ctx._conf = idf.sql_ctx._conf
+    #odf.sql_ctx._sc._jsc = sc._jsc
 
     return odf
 
