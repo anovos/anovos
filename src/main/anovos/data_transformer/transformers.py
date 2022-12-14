@@ -531,6 +531,9 @@ def cat_to_num_unsupervised(
     attribute will be added as a feature in a form of dummy/binary attribute. However, using this method on high
     cardinality attributes can further aggravate the dimensionality issue.
 
+    Actual computation is happening in Scala for performance reason and the code is in the
+    repo https://github.com/anovos/anovos-commons-scala
+
     Parameters
     ----------
     spark
@@ -665,12 +668,17 @@ def cat_to_num_unsupervised(
             output_mode,
             print_impact,
         ),
-        spark,
+        ssqlContext,
     )
 
-    # odf.sql_ctx._sc = sc
-    # odf.sql_ctx._conf = idf.sql_ctx._conf
-    # odf.sql_ctx._sc._jsc = sc._jsc
+    if version.parse(pyspark.__version__) < version.parse("3.3.0"):
+        odf.sql_ctx._sc = sc
+        odf.sql_ctx._conf = idf.sql_ctx._conf
+        odf.sql_ctx._sc._jsc = sc._jsc
+    else:
+        odf.sparkSession._sc._jvm = jvm
+        odf.sparkSession._jconf = idf.sparkSession._jconf
+        odf.sparkSession._sc._jsc = sc._jsc
 
     return odf
 
