@@ -1,5 +1,6 @@
 import pytest
 from pyspark.sql import functions as F
+from src.test.anovos.utils import assert_spark_data_frames_equal
 
 from anovos.data_analyzer.stats_generator import (
     global_summary,
@@ -312,31 +313,16 @@ def test_measures_of_centralTendency(spark_session):
     )
 
     result_df4 = measures_of_centralTendency(spark_session, test_df4)
-    assert result_df4.count() == 3
-    assert (
-        result_df4.where(F.col("attribute") == "education")
-        .toPandas()
-        .to_dict("list")["mode"][0]
-        == "HS-grad"
-    )
-    assert (
-        result_df4.where(F.col("attribute") == "age")
-        .toPandas()
-        .to_dict("list")["mean"][0]
-        == 42.75
-    )
-    assert (
-        result_df4.where(F.col("attribute") == "age")
-        .toPandas()
-        .to_dict("list")["median"][0]
-        == 42.0
-    )
-    assert (
-        result_df4.where(F.col("attribute") == "education")
-        .toPandas()
-        .to_dict("list")["mode_pct"][0]
-        == 0.6667
-    )
+
+    expected_df = spark_session.createDataFrame(
+        [
+            ('age', 42.75,  42.0, '51', 1, 0.25),
+            ('education', None, None, 'HS-grad', 2, 0.6667),
+            ('ifa', None, None, '10a', 1, 0.25)
+        ],
+        ['attribute', 'mean', 'median', 'mode', 'mode_rows', 'mode_pct'])
+
+    assert_spark_data_frames_equal(result_df4, expected_df, exact=False)
 
 
 def test_measures_of_cardinality(spark_session):
