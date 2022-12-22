@@ -24,7 +24,7 @@ reverse_geocoder
 soupsieve
 statsmodels==0.13.5
 sentence_transformers
-mlflow==1.27.0
+mlflow==2.1.0
 geopy==2.3.0
 pygeohash==1.2.0
 geojson==2.5.0
