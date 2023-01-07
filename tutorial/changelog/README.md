@@ -1,4 +1,4 @@
-# Changelog of Docker Images 
+# Changelog of Docker Images
 
 This is a log file to document older versions of Anovos tutorial/workshop Docker images
 

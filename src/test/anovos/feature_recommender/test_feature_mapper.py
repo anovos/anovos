@@ -1,11 +1,12 @@
-import pytest
 import pandas as pd
+import pytest
+
+from anovos.feature_recommender.featrec_init import model_download
 from anovos.feature_recommender.feature_mapper import (
     feature_mapper,
     find_attr_by_relevance,
     sankey_visualization,
 )
-from anovos.feature_recommender.featrec_init import model_download
 
 model_download()
 

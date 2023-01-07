@@ -1,6 +1,5 @@
 import pytest
 from pyspark.sql import functions as F
-from src.test.anovos.utils import assert_spark_data_frames_equal
 
 from anovos.data_analyzer.stats_generator import (
     global_summary,
@@ -15,6 +14,7 @@ from anovos.data_analyzer.stats_generator import (
     nonzeroCount_computation,
     uniqueCount_computation,
 )
+from src.test.anovos.utils import assert_spark_data_frames_equal
 
 sample_parquet = "./data/test_dataset/part-00001-3eb0f7bb-05c2-46ec-8913-23ba231d2734-c000.snappy.parquet"
 sample_csv = (
@@ -316,11 +316,12 @@ def test_measures_of_centralTendency(spark_session):
 
     expected_df = spark_session.createDataFrame(
         [
-            ('age', 42.75,  42.0, '51', 1, 0.25),
-            ('education', None, None, 'HS-grad', 2, 0.6667),
-            ('ifa', None, None, '10a', 1, 0.25)
+            ("age", 42.75, 42.0, "51", 1, 0.25),
+            ("education", None, None, "HS-grad", 2, 0.6667),
+            ("ifa", None, None, "10a", 1, 0.25),
         ],
-        ['attribute', 'mean', 'median', 'mode', 'mode_rows', 'mode_pct'])
+        ["attribute", "mean", "median", "mode", "mode_rows", "mode_pct"],
+    )
 
     assert_spark_data_frames_equal(result_df4, expected_df, exact=False)
 

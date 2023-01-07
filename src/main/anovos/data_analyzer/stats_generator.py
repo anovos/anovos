@@ -382,20 +382,24 @@ def mode_computation(spark, idf, list_of_cols="all", drop_cols=[], print_impact=
         odf = spark.sparkContext.emptyRDD().toDF(schema)
         return odf
 
-    mode_comp_exp = ''
+    mode_comp_exp = ""
     first_run = True
     for col in list_of_cols:
         if first_run:
-            mode_comp_exp += f'idf.select(\'{col}\').dropna().groupby(\'{col}\').count()' \
-                             f'.orderBy(\'count\', ascending=False).limit(1)' \
-                             f'.select(F.lit(\'{col}\').alias(\'attribute\'), F.col(\'{col}\').alias(\'mode\'), ' \
-                             f'F.col(\'count\').alias(\'mode_rows\'))'
+            mode_comp_exp += (
+                f"idf.select('{col}').dropna().groupby('{col}').count()"
+                f".orderBy('count', ascending=False).limit(1)"
+                f".select(F.lit('{col}').alias('attribute'), F.col('{col}').alias('mode'), "
+                f"F.col('count').alias('mode_rows'))"
+            )
             first_run = False
         else:
-            mode_comp_exp += f'.union(idf.select(\'{col}\').dropna().groupby(\'{col}\').count()' \
-                             f'.orderBy(\'count\', ascending=False).limit(1)' \
-                             f'.select(F.lit(\'{col}\').alias(\'attribute\'), F.col(\'{col}\').alias(\'mode\'), ' \
-                             f'F.col(\'count\').alias(\'mode_rows\')))'
+            mode_comp_exp += (
+                f".union(idf.select('{col}').dropna().groupby('{col}').count()"
+                f".orderBy('count', ascending=False).limit(1)"
+                f".select(F.lit('{col}').alias('attribute'), F.col('{col}').alias('mode'), "
+                f"F.col('count').alias('mode_rows')))"
+            )
 
     odf = eval(mode_comp_exp)
 
@@ -463,27 +467,31 @@ def measures_of_centralTendency(
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError("Invalid input for Column(s)")
 
-    '''
+    """
         Code performance optimisation version 1(of 3):
         For element in `list_of_cols` create str expression of Spark data transformation,
         concatenate str expressions for each column into 1 expression covering entire data transformation,
-        pass str expression to be evaluated by Spark. 
+        pass str expression to be evaluated by Spark.
         Performance ranking: fastest code version.
-    '''
+    """
     df_mode_compute = mode_computation(spark, idf, list_of_cols)
 
-    stats_exp = ''
+    stats_exp = ""
     first_run = True
     for col in list_of_cols:
         if first_run:
-            stats_exp += f'idf.select(\'{col}\').summary(\'mean\', \'50%\', \'count\')' \
-                         f'.withColumn(\'key\', F.lit(\'{col}\')).groupby(\'key\').pivot(\'summary\')' \
-                         f'.agg(F.first(\'{col}\'))'
+            stats_exp += (
+                f"idf.select('{col}').summary('mean', '50%', 'count')"
+                f".withColumn('key', F.lit('{col}')).groupby('key').pivot('summary')"
+                f".agg(F.first('{col}'))"
+            )
             first_run = False
         else:
-            stats_exp += f'.union(idf.select(\'{col}\').summary(\'mean\', \'50%\', \'count\')' \
-                         f'.withColumn(\'key\', F.lit(\'{col}\')).groupby(\'key\').pivot(\'summary\')' \
-                         f'.agg(F.first(\'{col}\')))'
+            stats_exp += (
+                f".union(idf.select('{col}').summary('mean', '50%', 'count')"
+                f".withColumn('key', F.lit('{col}')).groupby('key').pivot('summary')"
+                f".agg(F.first('{col}')))"
+            )
 
     summary_df = eval(stats_exp).withColumnRenamed("key", "attribute")
 

@@ -93,7 +93,7 @@ cat_to_num_transformer:
   drop_cols: 'ID'
   method_type: unsupervised
   encoding: label_encoding
-  label_col: 
+  label_col:
   event_label:
 
 association_evaluator:

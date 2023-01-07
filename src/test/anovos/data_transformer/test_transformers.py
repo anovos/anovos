@@ -1,11 +1,10 @@
 import os
+import platform
 
 import pytest
-import platform
-from pyspark.sql import functions as F
 from pyspark.sql import SparkSession
+from pyspark.sql import functions as F
 from pytest import approx
-
 
 from anovos.data_ingest.data_ingest import read_dataset
 from anovos.data_transformer.transformers import (

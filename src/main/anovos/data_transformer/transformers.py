@@ -27,8 +27,8 @@ supported through this module are listed below:
 import copy
 import os
 import pickle
-import random
 import platform
+import random
 import subprocess
 import tempfile
 import warnings
@@ -59,12 +59,17 @@ from pyspark.ml.feature import (
     VectorAssembler,
 )
 from pyspark.ml.functions import vector_to_array
-from pyspark.sql.types import IntegerType
 from pyspark.ml.recommendation import ALS
 from pyspark.mllib.stat import Statistics
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
+from pyspark.sql.types import IntegerType
 from pyspark.sql.window import Window
+
+# enable_iterative_imputer is prequisite for importing IterativeImputer
+# check the following issue for more details https://github.com/scikit-learn/scikit-learn/issues/16833
+from sklearn.experimental import enable_iterative_imputer  # noqa
+from sklearn.impute import IterativeImputer, KNNImputer
 
 from anovos.data_analyzer.stats_generator import (
     missingCount_computation,
@@ -72,17 +77,12 @@ from anovos.data_analyzer.stats_generator import (
 )
 from anovos.data_ingest.data_ingest import read_dataset, recast_column
 from anovos.data_ingest.data_sampling import data_sample
-from anovos.shared.utils import ends_with, attributeType_segregation, get_dtype
-
-# enable_iterative_imputer is prequisite for importing IterativeImputer
-# check the following issue for more details https://github.com/scikit-learn/scikit-learn/issues/16833
-from sklearn.experimental import enable_iterative_imputer  # noqa
-from sklearn.impute import KNNImputer, IterativeImputer
+from anovos.shared.utils import attributeType_segregation, ends_with, get_dtype
 
 if "arm64" not in platform.version().lower():
     import tensorflow
-    from tensorflow.keras.models import load_model, Model
-    from tensorflow.keras.layers import Dense, Input, BatchNormalization, LeakyReLU
+    from tensorflow.keras.layers import BatchNormalization, Dense, Input, LeakyReLU
+    from tensorflow.keras.models import Model, load_model
 
 
 def attribute_binning(
@@ -716,13 +716,17 @@ def cat_to_num_unsupervised(
         for i in list_of_cols:
             uniq_cats = odf_sample[0].asDict()[i + "_vec"].size
             odf_cols = odf.schema.names
-            '''
+            """
                 Code performance optimisation:
                 Utilise spark native vector explode function to turn dense vector into separate columns.
-            '''
-            odf = odf.withColumn(i + '_array', vector_to_array(i + "_vec")) \
-                .select(odf_cols + [F.col(i + '_array')[x].cast(IntegerType()).alias(i + '_' + str(x)) for x in
-                                     range(uniq_cats)])
+            """
+            odf = odf.withColumn(i + "_array", vector_to_array(i + "_vec")).select(
+                odf_cols
+                + [
+                    F.col(i + "_array")[x].cast(IntegerType()).alias(i + "_" + str(x))
+                    for x in range(uniq_cats)
+                ]
+            )
 
             for j in range(0, uniq_cats):
                 new_cols.append(i + "_" + str(j))

@@ -1,7 +1,8 @@
-import pandas
 import numpy
-from anovos.drift_stability.drift_detector import statistics
+import pandas
 from numpy.testing import assert_almost_equal
+
+from anovos.drift_stability.drift_detector import statistics
 
 
 def test_that_drift_statistics_can_be_calculated(spark_session):
