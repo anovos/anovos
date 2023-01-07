@@ -14,7 +14,7 @@ from anovos.data_analyzer.stats_generator import (
     nonzeroCount_computation,
     uniqueCount_computation,
 )
-from src.test.anovos.utils import assert_spark_data_frames_equal
+from anovos.shared.test_utils import assert_spark_frame_equal
 
 sample_parquet = "./data/test_dataset/part-00001-3eb0f7bb-05c2-46ec-8913-23ba231d2734-c000.snappy.parquet"
 sample_csv = (
@@ -323,7 +323,7 @@ def test_measures_of_centralTendency(spark_session):
         ["attribute", "mean", "median", "mode", "mode_rows", "mode_pct"],
     )
 
-    assert_spark_data_frames_equal(result_df4, expected_df, exact=False)
+    assert_spark_frame_equal(result_df4, expected_df, exact=False)
 
 
 def test_measures_of_cardinality(spark_session):
