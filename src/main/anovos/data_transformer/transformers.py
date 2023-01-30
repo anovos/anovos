@@ -714,7 +714,7 @@ def cat_to_num_unsupervised(
         new_cols = []
         odf_sample = odf.take(1)
         for i in list_of_cols:
-            if version.parse(pyspark.__version__) < version.parse("3.0.0"):
+            if version.parse(pyspark.__version__) >= version.parse("3.0.0"):
                 from pyspark.ml.functions import vector_to_array
 
                 uniq_cats = odf_sample[0].asDict()[i + "_vec"].size
