@@ -58,7 +58,7 @@ from pyspark.ml.feature import (
     StringIndexerModel,
     VectorAssembler,
 )
-from pyspark.ml.functions import vector_to_array
+from pyspark.ml.linalg import DenseVector
 from pyspark.ml.recommendation import ALS
 from pyspark.mllib.stat import Statistics
 from pyspark.sql import functions as F
@@ -714,27 +714,52 @@ def cat_to_num_unsupervised(
         new_cols = []
         odf_sample = odf.take(1)
         for i in list_of_cols:
-            uniq_cats = odf_sample[0].asDict()[i + "_vec"].size
-            odf_cols = odf.schema.names
-            """
-                Code performance optimisation:
-                Utilise spark native vector explode function to turn dense vector into separate columns.
-            """
-            odf = odf.withColumn(i + "_array", vector_to_array(i + "_vec")).select(
-                odf_cols
-                + [
-                    F.col(i + "_array")[x].cast(IntegerType()).alias(i + "_" + str(x))
-                    for x in range(uniq_cats)
-                ]
-            )
+            if version.parse(pyspark.__version__) < version.parse("3.0.0"):
+                from pyspark.ml.functions import vector_to_array
 
-            for j in range(0, uniq_cats):
-                new_cols.append(i + "_" + str(j))
+                uniq_cats = odf_sample[0].asDict()[i + "_vec"].size
+                odf_cols = odf.schema.names
+                """
+                    Code performance optimisation:
+                    Utilise spark native vector explode function to turn dense vector into separate columns.
+                """
+                odf = odf.withColumn(i + "_array", vector_to_array(i + "_vec")).select(
+                    odf_cols
+                    + [
+                        F.col(i + "_array")[x]
+                        .cast(IntegerType())
+                        .alias(i + "_" + str(x))
+                        for x in range(uniq_cats)
+                    ]
+                )
 
-            if output_mode == "replace":
-                odf = odf.drop(i, i + "_vec", i + "_index")
+                for j in range(0, uniq_cats):
+                    new_cols.append(i + "_" + str(j))
+
+                if output_mode == "replace":
+                    odf = odf.drop(i, i + "_vec", i + "_index")
+                else:
+                    odf = odf.drop(i + "_vec", i + "_index")
             else:
-                odf = odf.drop(i + "_vec", i + "_index")
+                odf_schema = odf.schema
+                uniq_cats = odf_sample[0].asDict()[i + "_vec"].size
+                for j in range(0, uniq_cats):
+                    odf_schema = odf_schema.add(
+                        T.StructField(i + "_" + str(j), T.IntegerType())
+                    )
+                    new_cols.append(i + "_" + str(j))
+
+                odf = odf.rdd.map(
+                    lambda x: (
+                        *x,
+                        *(DenseVector(x[i + "_vec"]).toArray().astype(int).tolist()),
+                    )
+                ).toDF(schema=odf_schema)
+
+                if output_mode == "replace":
+                    odf = odf.drop(i, i + "_vec", i + "_index")
+                else:
+                    odf = odf.drop(i + "_vec", i + "_index")
 
     else:
         odf = odf_indexed
