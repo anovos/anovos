@@ -1,11 +1,10 @@
 import os
+import platform
 
 import pytest
-import platform
-from pyspark.sql import functions as F
 from pyspark.sql import SparkSession
+from pyspark.sql import functions as F
 from pytest import approx
-
 
 from anovos.data_ingest.data_ingest import read_dataset
 from anovos.data_transformer.transformers import (
@@ -28,7 +27,7 @@ from anovos.data_transformer.transformers import (
 )
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def df(spark_session: SparkSession):
     sample_parquet = "./data/test_dataset/part-00001-3eb0f7bb-05c2-46ec-8913-23ba231d2734-c000.snappy.parquet"
     df = read_dataset(spark_session, sample_parquet, "parquet")

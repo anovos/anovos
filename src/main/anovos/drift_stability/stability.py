@@ -9,7 +9,8 @@ from scipy.stats import variation
 
 from anovos.data_transformer.transformers import attribute_binning
 from anovos.shared.utils import attributeType_segregation
-from .validations import compute_si, check_metric_weightages, check_threshold
+
+from .validations import check_metric_weightages, check_threshold, compute_si
 
 
 def stability_index_computation(

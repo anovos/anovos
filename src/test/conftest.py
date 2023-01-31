@@ -3,7 +3,7 @@ import pytest
 from anovos.shared.spark import SPARK_JARS_PACKAGES, init_spark
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def spark_session():
     configs = {
         "app_name": "Anovos_test_pipeline",

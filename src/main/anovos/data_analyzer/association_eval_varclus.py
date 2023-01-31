@@ -1,11 +1,12 @@
-from pyspark.ml.feature import VectorAssembler, StandardScaler
-from pyspark.mllib.linalg.distributed import RowMatrix, DenseMatrix
-import math
 import collections
-from factor_analyzer import Rotator
-import pandas as pd
-import numpy as np
+import math
 import random
+
+import numpy as np
+import pandas as pd
+from factor_analyzer import Rotator
+from pyspark.ml.feature import StandardScaler, VectorAssembler
+from pyspark.mllib.linalg.distributed import DenseMatrix, RowMatrix
 
 
 class VarClusHiSpark(object):

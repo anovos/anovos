@@ -1,11 +1,12 @@
-import pytest
-import pandas
 import numpy
+import pandas
+import pytest
 from numpy.testing import assert_almost_equal
+
 from anovos.data_ingest.data_ingest import read_dataset
 from anovos.drift_stability.stability import (
-    stability_index_computation,
     feature_stability_estimation,
+    stability_index_computation,
 )
 
 

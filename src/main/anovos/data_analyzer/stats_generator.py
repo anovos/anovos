@@ -25,7 +25,6 @@ from pyspark.mllib.linalg import Vectors
 from pyspark.mllib.stat import Statistics
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
-import pyspark
 
 from anovos.shared.utils import attributeType_segregation, transpose_dataframe
 
@@ -383,37 +382,26 @@ def mode_computation(spark, idf, list_of_cols="all", drop_cols=[], print_impact=
         odf = spark.sparkContext.emptyRDD().toDF(schema)
         return odf
 
-    list_df = []
+    mode_comp_exp = ""
+    first_run = True
     for col in list_of_cols:
-        out_df = (
-            idf.select(col)
-            .dropna()
-            .groupby(col)
-            .count()
-            .orderBy("count", ascending=False)
-            .limit(1)
-            .select(
-                F.lit(col).alias("attribute"),
-                F.col(col).alias("mode"),
-                F.col("count").alias("mode_rows"),
+        if first_run:
+            mode_comp_exp += (
+                f"idf.select('{col}').dropna().groupby('{col}').count()"
+                f".orderBy('count', ascending=False).limit(1)"
+                f".select(F.lit('{col}').alias('attribute'), F.col('{col}').alias('mode'), "
+                f"F.col('count').alias('mode_rows'))"
             )
-        )
-        list_df.append(out_df)
+            first_run = False
+        else:
+            mode_comp_exp += (
+                f".union(idf.select('{col}').dropna().groupby('{col}').count()"
+                f".orderBy('count', ascending=False).limit(1)"
+                f".select(F.lit('{col}').alias('attribute'), F.col('{col}').alias('mode'), "
+                f"F.col('count').alias('mode_rows')))"
+            )
 
-    def unionAll(dfs):
-        first, *_ = dfs
-        schema = T.StructType(
-            [
-                T.StructField("attribute", T.StringType(), True),
-                T.StructField("mode", T.StringType(), True),
-                T.StructField("mode_rows", T.LongType(), True),
-            ]
-        )
-        return first.sql_ctx.createDataFrame(
-            first.sql_ctx._sc.union([df.rdd for df in dfs]), schema
-        )
-
-    odf = unionAll(list_df)
+    odf = eval(mode_comp_exp)
 
     if print_impact:
         odf.show(len(list_of_cols))
@@ -429,9 +417,9 @@ def measures_of_centralTendency(
     likely value of an attribute. It returns a Spark DataFrame with schema – attribute, mean, median, mode, mode_rows, mode_pct.
 
     - Mean is arithmetic average of a column i.e. sum of all values seen in the column divided by the number of rows.
-      It leverage mean statistic from summary functionality of Spark SQL. Mean is calculated only for numerical columns.
+      It leverages mean statistic from summary functionality of Spark SQL. Mean is calculated only for numerical columns.
     - Median is 50th percentile or middle value in a column when the values are arranged in ascending or descending order.
-      It leverage ‘50%’ statistic from summary functionality of Spark SQL. Median is calculated only for numerical columns.
+      It leverages ‘50%’ statistic from summary functionality of Spark SQL. Median is calculated only for numerical columns.
     - Mode is most frequently seen value in a column. Mode is calculated only for discrete columns (categorical + Integer/Long columns).
     - Mode Rows is the numer of rows seen with Mode value. Mode Rows is calculated only for discrete columns (categorical + Integer/Long columns).
     - Mode Pct is defined as Mode Rows divided by non-null values seen in a column.
@@ -466,7 +454,6 @@ def measures_of_centralTendency(
         [attribute, mean, median, mode, mode_rows, mode_pct]
 
     """
-
     num_cols, cat_cols, other_cols = attributeType_segregation(idf)
     if list_of_cols == "all":
         list_of_cols = num_cols + cat_cols
@@ -480,39 +467,50 @@ def measures_of_centralTendency(
     if any(x not in idf.columns for x in list_of_cols) | (len(list_of_cols) == 0):
         raise TypeError("Invalid input for Column(s)")
 
+    """
+        Code performance optimisation version 1(of 3):
+        For element in `list_of_cols` create str expression of Spark data transformation,
+        concatenate str expressions for each column into 1 expression covering entire data transformation,
+        pass str expression to be evaluated by Spark.
+        Performance ranking: fastest code version.
+    """
     df_mode_compute = mode_computation(spark, idf, list_of_cols)
-    summary_lst = []
+
+    stats_exp = ""
+    first_run = True
     for col in list_of_cols:
-        summary_col = (
-            idf.select(col)
-            .summary("mean", "50%", "count")
-            .rdd.map(lambda x: x[1])
-            .collect()
-        )
-        summary_col = [str(i) for i in summary_col if type(i) != "str"]
-        summary_col.insert(0, col)
-        summary_lst.append(summary_col)
-    summary_df = spark.createDataFrame(
-        summary_lst,
-        schema=("key", "mean", "50%", "count"),
-    )
+        if first_run:
+            stats_exp += (
+                f"idf.select('{col}').summary('mean', '50%', 'count')"
+                f".withColumn('key', F.lit('{col}')).groupby('key').pivot('summary')"
+                f".agg(F.first('{col}'))"
+            )
+            first_run = False
+        else:
+            stats_exp += (
+                f".union(idf.select('{col}').summary('mean', '50%', 'count')"
+                f".withColumn('key', F.lit('{col}')).groupby('key').pivot('summary')"
+                f".agg(F.first('{col}')))"
+            )
+
+    summary_df = eval(stats_exp).withColumnRenamed("key", "attribute")
+
     odf = (
         summary_df.withColumn(
             "mean",
             F.when(
-                F.col("key").isin(num_cols),
+                F.col("attribute").isin(num_cols),
                 F.round(F.col("mean").cast(T.DoubleType()), 4),
             ).otherwise(None),
         )
         .withColumn(
             "median",
             F.when(
-                F.col("key").isin(num_cols),
+                F.col("attribute").isin(num_cols),
                 F.round(F.col("50%").cast(T.DoubleType()), 4),
             ).otherwise(None),
         )
-        .withColumnRenamed("key", "attribute")
-        .join(df_mode_compute, "attribute", "full_outer")
+        .join(F.broadcast(df_mode_compute), "attribute", "full_outer")
         .withColumn(
             "mode_pct",
             F.round(F.col("mode_rows") / F.col("count").cast(T.DoubleType()), 4),
