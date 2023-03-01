@@ -30,4 +30,4 @@ sentence_transformers
 mlflow==1.27.0
 geopy==2.3.0
 geohash2==1.1
-geojson==2.5.0
+geojson==3.0.1
