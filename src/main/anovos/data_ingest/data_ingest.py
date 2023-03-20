@@ -13,6 +13,7 @@ and perform some basic ETL actions such as selecting, deleting, renaming and/or 
 """
 import warnings
 
+import pyspark
 import pyspark.sql.functions as F
 from pyspark.sql import DataFrame
 from pyspark.sql import types as T
@@ -20,10 +21,25 @@ from pyspark.sql import types as T
 from anovos.shared.utils import attributeType_segregation, pairwise_reduce
 
 
-def read_dataset(spark, file_path, file_type, file_configs={}):
+def read_dataset(
+    spark,
+    file_path,
+    file_type,
+    file_configs={},
+    persist_use=True,
+    persist_option=pyspark.StorageLevel.MEMORY_AND_DISK,
+    parquet_conversion=False,
+    parquet_output_path="",
+    treatment=False,
+    id_cols=[],
+    threshold_num=50,
+    threshold_ratio=0.005,
+    threshold_string=0.5,
+):
     """
     This function reads the input data path and return a Spark DataFrame. Under the hood, this function is based
-    on generic Load functionality of Spark SQL.
+    on generic Load functionality of Spark SQL. It can also a schema treatment based on cardinality ratio,
+    as well as converting the file format to parquet.
 
     Parameters
     ----------
@@ -41,6 +57,49 @@ def read_dataset(spark, file_path, file_type, file_configs={}):
         e.g. {"header": "True","delimiter": "|","inferSchema": "True"} for csv files.
         All the key/value pairs in this argument are passed as options to DataFrameReader,
         which is created using SparkSession.read. (Default value = {})
+    persist_use
+        This boolean flag provides an option to whether persist the input dataframe or not.
+        Generally, persisting the input dataframe is highly recommended for runtime and memory optimization.
+        (Default value = True)
+    persist_option
+        This argument is passed as the StorageLevel option when persist_use is set to True. Possible values are
+        pyspark.StorageLevel.DISK_ONLY, pyspark.StorageLevel.DISK_ONLY_2, pyspark.StorageLevel.MEMORY_AND_DISK,
+        pyspark.StorageLevel.MEMORY_AND_DISK_2, pyspark.StorageLevel.MEMORY_AND_DISK_SER,
+        pyspark.StorageLevel.MEMORY_AND_DISK_SER_2, pyspark.StorageLevel.MEMORY_ONLY,
+        pyspark.StorageLevel.MEMORY_ONLY_SER, pyspark.StorageLevel.MEMORY_ONLY_SER_2, pyspark.StorageLevel.OFF_HEAP.
+        For further explanation, please visit pyspark.StorageLevel official documentation
+        (https://spark.apache.org/docs/latest/api/python/reference/api/pyspark.StorageLevel.html).
+        (Default value = pyspark.StorageLevel.MEMORY_AND_DISK)
+    parquet_conversion
+        This boolean flag provides an option to whether convert the file type to parquet or not.
+        Schema treatment is highly recommended when using this method, as the schema when converted will
+        be kept the same as the original file, thus might defeat the purpose of converting to parquet.
+        (Default value = False)
+    parquet_output_path
+        This argument is passed as output path to write out parquet file, if parquet_conversion
+        is set to True. (Default value = '')
+    treatment
+        This boolean flag provides an option to whether treat the dataframe schema or not. It might not
+        work on parquet filetype, as parquet has its own strict Schema.
+        (Default value = False)
+    id_cols
+        This argument is a list contains all the identifier columns, such as ID, Number, Code, etc
+        when treatment is set to True.
+        (Default value = [])
+    threshold_num
+        This argument determines the numerical threshold of cardinality for every column. If the number of
+        unique values of a column is larger than threshold_num, its DataType will be treated as Double.
+        Otherwise its DataType will be treated as String. (Default value = 50)
+    threshold_ratio
+        This argument determines the cardinality ratio for every column. The cardinality ratio is defined
+        by number of non-null unique values divided by number of non-null total values in a column.
+        If the cardinality ratio is larger than threshold_ratio, its DataType will be treated as Double.
+        Otherwise its DataType will be treated as String. (Default value = 0.005)
+    threshold_string
+        This argument determines the string ratio for every column. The string ratio is defined
+        by number of non-null string values divided by number of non-null total values in a column.
+        If the string ratio is smaller than threshold_ratio, its DataType will be treated as Double.
+        Otherwise its DataType will be treated as String. (Default value = 0.5)
 
     Returns
     -------
@@ -48,6 +107,122 @@ def read_dataset(spark, file_path, file_type, file_configs={}):
 
     """
     odf = spark.read.format(file_type).options(**file_configs).load(file_path)
+    if not isinstance(parquet_conversion, bool):
+        raise TypeError("parquet_conversion must be boolean")
+    if parquet_conversion:
+        if not parquet_output_path:
+            raise ValueError(
+                "parquet_output_path cannot be blank for parquet conversion"
+            )
+    if not isinstance(treatment, bool):
+        raise TypeError("treatment must be boolean")
+    if treatment:
+        if id_cols:
+            for col in id_cols:
+                if col not in odf.columns:
+                    raise ValueError("Column not in the input dataframe: " + col)
+        if not isinstance(threshold_num, int):
+            raise TypeError("threshold_num must be integer")
+        if not isinstance(threshold_ratio, float):
+            raise TypeError("threshold_ratio must be float")
+        if threshold_ratio < 0 or threshold_ratio > 1:
+            raise ValueError("threshold_ratio value must be between 0 and 1")
+        if not isinstance(threshold_string, float):
+            raise TypeError("threshold_string must be float")
+        if threshold_string < 0 or threshold_string > 1:
+            raise ValueError("threshold_string value must be between 0 and 1")
+        if not isinstance(persist_use, bool):
+            raise TypeError("persist_use must be boolean")
+        if persist_use:
+            try:
+                odf = odf.persist(persist_option)
+            except Exception:
+                raise TypeError(
+                    "Input persist_option does not exist in Spark StorageLevel"
+                )
+        list_of_cols = list(c for c in odf.columns if c not in id_cols)
+        odf_recast = odf.select(
+            [F.col(c).cast(T.DoubleType()).alias(c) for c in list_of_cols]
+        )
+        nums_of_count_functions = [F.count]
+        nums_of_count_expressions = [
+            f(F.col(c)) for f in nums_of_count_functions for c in list_of_cols
+        ]
+        list_nums_of_count_recast = (
+            odf_recast.groupby()
+            .agg(*nums_of_count_expressions)
+            .rdd.flatMap(lambda x: x)
+            .collect()
+        )
+
+        list_nums_of_count = (
+            odf.groupby()
+            .agg(*nums_of_count_expressions)
+            .rdd.flatMap(lambda x: x)
+            .collect()
+        )
+
+        nums_of_distinct_functions = [F.countDistinct]
+        nums_of_distinct_expressions = [
+            f(F.col(c)) for f in nums_of_distinct_functions for c in list_of_cols
+        ]
+        list_nums_of_distinct = (
+            odf.select(*nums_of_distinct_expressions).rdd.flatMap(lambda x: x).collect()
+        )
+        list_distinct_over_count_ratio = [
+            i / j for i, j in zip(list_nums_of_distinct, list_nums_of_count)
+        ]
+        list_recast_string_threshold_cutoff = [
+            i / j for i, j in zip(list_nums_of_count_recast, list_nums_of_count)
+        ]
+
+        list_treated_schema = []
+        if id_cols:
+            for col in id_cols:
+                list_treated_schema.append(
+                    T.StructField(str(col), T.StringType(), True)
+                )
+        for k in range(0, len(list_nums_of_count)):
+            if list_recast_string_threshold_cutoff[k] < threshold_string:
+                list_treated_schema.append(
+                    T.StructField(str(list_of_cols[k]), T.StringType(), True)
+                )
+            elif list_nums_of_count[k] <= threshold_num:
+                if list_distinct_over_count_ratio[k] > threshold_ratio:
+                    list_treated_schema.append(
+                        T.StructField(str(list_of_cols[k]), T.DoubleType(), True)
+                    )
+                else:
+                    list_treated_schema.append(
+                        T.StructField(str(list_of_cols[k]), T.StringType(), True)
+                    )
+            elif (
+                list_distinct_over_count_ratio[k] < threshold_ratio
+                or list_nums_of_distinct[k] < threshold_num
+            ):
+                list_treated_schema.append(
+                    T.StructField(str(list_of_cols[k]), T.StringType(), True)
+                )
+
+            else:
+                list_treated_schema.append(
+                    T.StructField(str(list_of_cols[k]), T.DoubleType(), True)
+                )
+        odf.unpersist()
+        full_schema = T.StructType(list_treated_schema)
+        odf = (
+            spark.read.format(file_type)
+            .options(**file_configs)
+            .schema(full_schema)
+            .load(file_path)
+        )
+    if parquet_conversion:
+        file_path = parquet_output_path
+        file_type = "parquet"
+        odf.write.format(file_type).options(**file_configs).save(
+            file_path, mode="overwrite"
+        )
+        odf = spark.read.format(file_type).options(**file_configs).load(file_path)
     return odf
 
 
