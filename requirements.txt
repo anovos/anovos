@@ -27,7 +27,7 @@ tensorflow
 soupsieve
 statsmodels==0.13.5
 sentence_transformers
-mlflow==1.27.0
+mlflow==2.3.1
 geopy==2.3.0
 geohash2==1.1
 geojson==2.5.0
