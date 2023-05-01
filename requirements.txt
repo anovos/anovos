@@ -9,7 +9,7 @@ plotly==5.7.0
 datapane==0.15.3
 pyarrow<11.0.0
 findspark==2.0.1
-loguru==0.6.0
+loguru==0.7.0
 pyaml==21.10.1
 isort==5.11.4
 boto3
